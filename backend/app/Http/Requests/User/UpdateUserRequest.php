@@ -37,8 +37,12 @@ class UpdateUserRequest extends FormRequest
                 Rule::unique('users', 'nip')->ignore($userId),
             ],
             'phone' => ['nullable', 'string', 'max:20'],
+            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
+            'pangkat_gol' => ['nullable', 'string', 'max:60'],
+            'jabatan' => ['nullable', 'string', 'max:150'],
             'role' => ['required', 'string', 'exists:roles,name'],
-            'status' => ['required', 'string', 'in:active,inactive,suspended'],
+            'status' => ['required', 'string', 'in:active,inactive,suspended,pending_activation'],
+
             'password' => [
                 'nullable',
                 'string',

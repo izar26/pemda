@@ -8,6 +8,9 @@ export interface CreateUserPayload {
   phone?: string
   role: string
   status?: UserStatus
+  pangkat_gol?: string | null
+  jabatan?: string | null
+  opd_id?: number | null
   password?: string
 }
 
@@ -18,6 +21,9 @@ export interface UpdateUserPayload {
   phone?: string
   role: string
   status: UserStatus
+  pangkat_gol?: string | null
+  jabatan?: string | null
+  opd_id?: number | null
   password?: string
 }
 
@@ -25,6 +31,7 @@ export interface UserQueryParams {
   search?: string
   role?: string
   status?: string
+  opd_id?: number | string
   page?: number
   per_page?: number
   sort_by?: string
@@ -53,6 +60,8 @@ export interface InviteUserPayload {
   name: string
   email: string
   role: string
+  opd_id?: number | null
+  jabatan?: string | null
   notes?: string
 }
 

@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\OpdSeeder;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +28,7 @@ class UserInvitationTest extends TestCase
 
         Mail::fake();
 
+        $this->seed(OpdSeeder::class);
         $this->seed(RbacSeeder::class);
         $this->seed(SystemSettingSeeder::class);
 
@@ -52,10 +54,14 @@ class UserInvitationTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
+        $opd = \App\Models\Opd::first();
+
         $payload = [
             'name' => 'Ahmad Dahlan, S.Kom',
             'email' => 'ahmad.dahlan@pemda.go.id',
             'role' => 'Pranata Komputer',
+            'opd_id' => $opd?->id,
+            'jabatan' => 'Pranata Komputer Ahli Pertama',
             'notes' => 'Selamat bergabung di unit kerja Diskominfostandi.',
         ];
 
@@ -65,6 +71,7 @@ class UserInvitationTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('user.name', 'Ahmad Dahlan, S.Kom')
             ->assertJsonPath('user.email', 'ahmad.dahlan@pemda.go.id')
+            ->assertJsonPath('user.jabatan', 'Pranata Komputer Ahli Pertama')
             ->assertJsonPath('user.status', 'pending_activation')
             ->assertJsonStructure(['activation_url']);
 
@@ -131,6 +138,8 @@ class UserInvitationTest extends TestCase
     public function test_user_can_activate_account_and_set_password(): void
     {
         $token = 'sample_activation_token_for_activate_test_1234567890abcdefghijklm';
+        $opd = \App\Models\Opd::first();
+
         $user = User::factory()->create([
             'name' => 'Siti Nurhaliza',
             'email' => 'siti.nur@pemda.go.id',
@@ -144,6 +153,9 @@ class UserInvitationTest extends TestCase
             'token' => $token,
             'nip' => '199505122020012003',
             'phone' => '081298765432',
+            'pangkat_gol' => 'Penata Muda (III/a)',
+            'jabatan' => 'Bendahara Pengeluaran',
+            'opd_id' => $opd?->id,
             'password' => 'SandiKuat@2026',
             'password_confirmation' => 'SandiKuat@2026',
         ]);
@@ -155,6 +167,9 @@ class UserInvitationTest extends TestCase
         $this->assertNull($user->activation_token);
         $this->assertEquals('199505122020012003', $user->nip);
         $this->assertEquals('081298765432', $user->phone);
+        $this->assertEquals('Penata Muda (III/a)', $user->pangkat_gol);
+        $this->assertEquals('Bendahara Pengeluaran', $user->jabatan);
+        $this->assertEquals($opd?->id, $user->opd_id);
         $this->assertTrue(Hash::check('SandiKuat@2026', $user->password));
 
         // Replay attack: using same token again should fail

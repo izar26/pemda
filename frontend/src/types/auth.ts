@@ -1,11 +1,24 @@
 export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending_activation'
 
+export interface OpdItem {
+  id: number
+  nama: string
+  kode: string
+  kategori: string
+  kepala?: string | null
+  is_active: boolean
+}
+
 export interface AuthUser {
   id: number
   name: string
   email: string
   nip: string | null
   phone: string | null
+  pangkat_gol?: string | null
+  jabatan?: string | null
+  opd_id?: number | null
+  opd?: OpdItem | null
   role: string
   roles?: string[]
   permissions?: string[]
@@ -83,6 +96,12 @@ export interface ValidateActivationTokenResponse {
     name: string
     email: string
     role: string
+    nip?: string | null
+    phone?: string | null
+    opd_id?: number | null
+    opd?: OpdItem | null
+    pangkat_gol?: string | null
+    jabatan?: string | null
   }
 }
 
@@ -91,8 +110,20 @@ export interface ActivateUserPayload {
   name?: string
   nip?: string
   phone?: string
+  pangkat_gol?: string
+  jabatan?: string
+  opd_id?: number
   password: string
   password_confirmation: string
+}
+
+export interface UpdateProfilePayload {
+  name: string
+  nip?: string | null
+  phone?: string | null
+  pangkat_gol?: string | null
+  jabatan?: string | null
+  opd_id?: number | null
 }
 
 export interface ActivateUserResponse {

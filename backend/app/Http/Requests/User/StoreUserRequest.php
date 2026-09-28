@@ -21,8 +21,12 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
             'nip' => ['nullable', 'string', 'max:30', 'unique:users,nip'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
+            'pangkat_gol' => ['nullable', 'string', 'max:60'],
+            'jabatan' => ['nullable', 'string', 'max:150'],
             'role' => ['required', 'string', 'exists:roles,name'],
             'status' => ['sometimes', 'string', 'in:active,inactive,suspended'],
+
             'password' => [
                 'required',
                 'string',

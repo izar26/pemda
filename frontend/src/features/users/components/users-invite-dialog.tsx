@@ -3,11 +3,12 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2, MailPlus, Send } from 'lucide-react'
+import { Building2, Loader2, MailPlus, Send } from 'lucide-react'
 
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { rbacService } from '@/services/rbac-service'
+import { opdService } from '@/services/opd-service'
 import { userService } from '@/services/user-service'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,6 +48,8 @@ const formSchema = z.object({
     .min(1, 'Email dinas wajib diisi.')
     .email('Format alamat email tidak valid.')
     .max(100, 'Email maksimal 100 karakter.'),
+  opd_id: z.string().optional(),
+  jabatan: z.string().max(150, 'Jabatan maksimal 150 karakter.').optional(),
   role: z.string().min(1, 'Peran (Role) wajib dipilih.'),
   notes: z.string().max(500, 'Catatan maksimal 500 karakter.').optional(),
 })
@@ -72,11 +75,20 @@ export function UsersInviteDialog({
     enabled: open,
   })
 
+  // Fetch dynamic OPDs
+  const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
+    queryKey: ['opds'],
+    queryFn: () => opdService.getOpds(),
+    enabled: open,
+  })
+
   const form = useForm<UserInviteFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
+      opd_id: '',
+      jabatan: '',
       role: '',
       notes: '',
     },
@@ -89,6 +101,8 @@ export function UsersInviteDialog({
         name: values.name.trim(),
         email: values.email.trim().toLowerCase(),
         role: values.role,
+        opd_id: values.opd_id ? Number(values.opd_id) : undefined,
+        jabatan: values.jabatan?.trim() || undefined,
         notes: values.notes?.trim() || undefined,
       })
 
@@ -99,35 +113,12 @@ export function UsersInviteDialog({
       toast.success(response.message || `Undangan berhasil dikirim ke ${values.email}`, {
         description: 'Pegawai dapat langsung mengaktifkan akun dan melengkapi data mandiri melalui tautan di email.',
       })
-    } catch (error: unknown) {
-      if (isAxiosError(error) && error.response?.data) {
-        const errorData = error.response.data as {
-          message?: string
-          errors?: Record<string, string[]>
-        }
-
-        if (errorData.errors) {
-          Object.entries(errorData.errors).forEach(([field, msgs]) => {
-            const formField = field as keyof UserInviteFormValues
-            if (formField in form.getValues()) {
-              form.setError(formField, {
-                type: 'server',
-                message: msgs[0],
-              })
-            }
-          })
-        }
-
-        toast.error('Gagal Mengirim Undangan', {
-          description:
-            errorData.message ||
-            'Terjadi kesalahan saat mengirim undangan aktivasi akun pegawai.',
-        })
-      } else {
-        toast.error('Kesalahan Jaringan', {
-          description: 'Tidak dapat terhubung ke server. Silakan coba kembali.',
-        })
-      }
+    } catch (error) {
+      const message =
+        isAxiosError(error) && error.response?.data?.message
+          ? error.response.data.message
+          : 'Gagal mengirim undangan aktivasi ke pegawai.'
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
@@ -136,16 +127,16 @@ export function UsersInviteDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(state) => {
-        if (!state) {
+      onOpenChange={(v) => {
+        if (!isSubmitting) {
           form.reset()
+          onOpenChange(v)
         }
-        onOpenChange(state)
       }}
     >
-      <DialogContent className='sm:max-w-lg'>
-        <DialogHeader className='text-start'>
-          <DialogTitle className='flex items-center gap-2 text-lg font-bold'>
+      <DialogContent className='sm:max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden'>
+        <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
+          <DialogTitle className='flex items-center gap-2 text-base font-bold'>
             <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary'>
               <MailPlus className='h-4 w-4' />
             </div>
@@ -156,126 +147,195 @@ export function UsersInviteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form
-            id='user-invite-form'
-            onSubmit={form.handleSubmit(onSubmit)}
-            className='space-y-4 pt-1'
-          >
-            {/* Nama Lengkap Pegawai */}
-            <FormField
-              control={form.control}
-              name='name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-xs font-semibold'>
-                    Nama Lengkap Pegawai <span className='text-destructive'>*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='Contoh: Budi Prasetyo, S.STP'
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className='text-xs' />
-                </FormItem>
-              )}
-            />
-
-            {/* Email Dinas / Kontak */}
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-xs font-semibold'>
-                    Email Dinas / Pegawai <span className='text-destructive'>*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type='email'
-                      placeholder='nama.pegawai@pemda.go.id'
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className='text-xs' />
-                </FormItem>
-              )}
-            />
-
-            {/* Role / Jabatan */}
-            <FormField
-              control={form.control}
-              name='role'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-xs font-semibold'>
-                    Peran & Hak Akses (Role) <span className='text-destructive'>*</span>
-                  </FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isSubmitting || isLoadingRoles}
-                  >
+        <div className='flex-1 overflow-y-auto px-6 py-4 min-h-0'>
+          <Form {...form}>
+            <form
+              id='user-invite-form'
+              onSubmit={form.handleSubmit(onSubmit)}
+              className='space-y-4'
+            >
+              {/* Nama Lengkap Pegawai */}
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs font-semibold'>
+                      Nama Lengkap Pegawai <span className='text-destructive'>*</span>
+                    </FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            isLoadingRoles
-                              ? 'Memuat daftar peran...'
-                              : 'Pilih peran jabatan pegawai'
-                          }
-                        />
-                      </SelectTrigger>
+                      <Input
+                        placeholder='Contoh: Budi Prasetyo, S.STP'
+                        disabled={isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {roles.map((r) => (
-                        <SelectItem key={r.id} value={r.name}>
-                          <div className='flex items-center gap-2'>
-                            <span className='font-medium'>{r.name}</span>
-                            {r.is_system && (
-                              <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
-                                Sistem
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+
+              {/* Email Dinas / Kontak */}
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs font-semibold'>
+                      Email Dinas / Pegawai <span className='text-destructive'>*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type='email'
+                        placeholder='nama.pegawai@pemda.go.id'
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+
+              {/* Instansi / OPD */}
+              <FormField
+                control={form.control}
+                name='opd_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                      <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
+                      Instansi / Perangkat Daerah (OPD)
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting || isLoadingOpds}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              isLoadingOpds
+                                ? 'Memuat daftar OPD...'
+                                : 'Pilih instansi / perangkat daerah'
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className='max-h-64'>
+                        {opds.map((opd) => (
+                          <SelectItem key={opd.id} value={String(opd.id)}>
+                            <div className='flex items-center justify-between gap-2'>
+                              <span className='font-medium'>{opd.nama}</span>
+                              <span className='text-[10px] text-muted-foreground bg-muted px-1 rounded'>
+                                {opd.kategori}
                               </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className='text-xs' />
-                </FormItem>
-              )}
-            />
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
 
-            {/* Catatan Undangan */}
-            <FormField
-              control={form.control}
-              name='notes'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className='text-xs font-semibold text-muted-foreground'>
-                    Catatan Undangan (Opsional)
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      className='resize-none text-xs'
-                      rows={3}
-                      placeholder='Contoh: Selamat bergabung di Dinas Kominfo Kabupaten. Silakan aktifkan akun untuk akses portal.'
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className='text-xs' />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                {/* Jabatan Kedinasan */}
+                <FormField
+                  control={form.control}
+                  name='jabatan'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        Jabatan Kedinasan
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Contoh: Kepala Bidang'
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
 
-        <DialogFooter className='gap-2 pt-2 border-t'>
+                {/* Role / Hak Akses */}
+                <FormField
+                  control={form.control}
+                  name='role'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        Peran & Hak Akses (Role) <span className='text-destructive'>*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isSubmitting || isLoadingRoles}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                isLoadingRoles
+                                  ? 'Memuat peran...'
+                                  : 'Pilih peran akun'
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {roles.map((r) => (
+                            <SelectItem key={r.id} value={r.name}>
+                              <div className='flex items-center gap-2'>
+                                <span className='font-medium'>{r.name}</span>
+                                {r.is_system && (
+                                  <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
+                                    Sistem
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Catatan Undangan */}
+              <FormField
+                control={form.control}
+                name='notes'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs font-semibold text-muted-foreground'>
+                      Catatan Undangan (Opsional)
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className='resize-none text-xs'
+                        rows={2}
+                        placeholder='Contoh: Selamat bergabung di Dinas Kominfo Kabupaten. Silakan aktifkan akun untuk akses portal.'
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        </div>
+
+        <DialogFooter className='gap-2 px-6 py-3 border-t bg-muted/10 shrink-0'>
           <DialogClose asChild>
             <Button variant='outline' size='sm' disabled={isSubmitting}>
               Batal

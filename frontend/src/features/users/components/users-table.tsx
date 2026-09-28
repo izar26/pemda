@@ -12,6 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
+import { opdService } from '@/services/opd-service'
 import { rbacService } from '@/services/rbac-service'
 import { cn } from '@/lib/utils'
 import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
@@ -46,6 +47,13 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     staleTime: 60 * 1000,
   })
 
+  // Fetch dynamic OPDs for toolbar filters
+  const { data: opds = [] } = useQuery({
+    queryKey: ['opds'],
+    queryFn: () => opdService.getOpds(),
+    staleTime: 5 * 60 * 1000,
+  })
+
   // Synced with URL states
   const {
     columnFilters,
@@ -62,6 +70,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
       { columnId: 'name', searchKey: 'name', type: 'string' },
       { columnId: 'status', searchKey: 'status', type: 'array' },
       { columnId: 'role', searchKey: 'role', type: 'array' },
+      { columnId: 'opd', searchKey: 'opd', type: 'array' },
     ],
   })
 
@@ -125,6 +134,14 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
             columnId: 'role',
             title: 'Peran',
             options: roleFilterOptions,
+          },
+          {
+            columnId: 'opd',
+            title: 'Instansi / OPD',
+            options: opds.map((o) => ({
+              label: o.nama,
+              value: o.nama,
+            })),
           },
         ]}
       />

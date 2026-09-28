@@ -19,7 +19,10 @@ class InviteUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
             'role' => ['required', 'string', 'exists:roles,name'],
+            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
+            'jabatan' => ['nullable', 'string', 'max:150'],
             'notes' => ['nullable', 'string', 'max:500'],
+
         ];
     }
 

@@ -26,7 +26,12 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'nip' => $this->nip,
             'phone' => $this->phone,
+            'opd_id' => $this->opd_id,
+            'opd' => $this->opd ? new OpdResource($this->opd) : null,
+            'pangkat_gol' => $this->pangkat_gol,
+            'jabatan' => $this->jabatan,
             'role' => $this->roles->first()?->name ?? $this->role,
+
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getAllPermissions()->pluck('name'),
             'status' => $this->status,

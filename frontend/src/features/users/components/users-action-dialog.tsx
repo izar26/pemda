@@ -5,11 +5,13 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, KeyRound, Loader2, Sparkles, UserPlus, UserCheck } from 'lucide-react'
+import { Building2, Check, Loader2, Sparkles, UserPlus, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { rbacService } from '@/services/rbac-service'
+import { opdService } from '@/services/opd-service'
 import { userService } from '@/services/user-service'
+import { PANGKAT_GOLONGAN_OPTIONS } from '../data/pangkat-golongan'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -39,9 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Badge } from '@/components/ui/badge'
 import type { User } from '../data/schema'
-
 
 const userFormSchema = z
   .object({
@@ -49,10 +49,12 @@ const userFormSchema = z
     email: z.string().email('Format email dinas tidak valid.').max(100),
     nip: z.string().max(30, 'NIP maksimal 30 karakter.').optional(),
     phone: z.string().max(20, 'Nomor telepon maksimal 20 karakter.').optional(),
+    opd_id: z.string().optional(),
+    pangkat_gol: z.string().optional(),
+    jabatan: z.string().max(150, 'Jabatan maksimal 150 karakter.').optional(),
     role: z.string().min(1, 'Peran (Role) wajib dipilih.'),
     status: z.enum(['active', 'inactive', 'suspended', 'pending_activation']),
     password: z.string().optional(),
-
     isEdit: z.boolean(),
   })
   .refine(
@@ -106,6 +108,13 @@ export function UsersActionDialog({
     staleTime: 60 * 1000,
   })
 
+  // Fetch dynamic OPDs for the dropdown
+  const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
+    queryKey: ['opds'],
+    queryFn: () => opdService.getOpds(),
+    staleTime: 5 * 60 * 1000,
+  })
+
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -113,6 +122,9 @@ export function UsersActionDialog({
       email: '',
       nip: '',
       phone: '',
+      opd_id: '',
+      pangkat_gol: '',
+      jabatan: '',
       role: '',
       status: 'active',
       password: '',
@@ -138,7 +150,6 @@ export function UsersActionDialog({
   const validCount = criteria.filter((c) => c.valid).length
   const isAllValid = validCount === criteria.length
 
-
   // Sync form when dialog opens or currentRow changes
   useEffect(() => {
     if (open) {
@@ -148,6 +159,9 @@ export function UsersActionDialog({
           email: currentRow.email,
           nip: currentRow.nip || '',
           phone: currentRow.phone || '',
+          opd_id: currentRow.opd_id ? String(currentRow.opd_id) : '',
+          pangkat_gol: currentRow.pangkat_gol || '',
+          jabatan: currentRow.jabatan || '',
           role: currentRow.role,
           status: currentRow.status,
           password: '',
@@ -159,6 +173,9 @@ export function UsersActionDialog({
           email: '',
           nip: '',
           phone: '',
+          opd_id: '',
+          pangkat_gol: '',
+          jabatan: '',
           role: roles[0]?.name || '',
           status: 'active',
           password: '',
@@ -186,7 +203,6 @@ export function UsersActionDialog({
       pwd += all[Math.floor(Math.random() * all.length)]
     }
 
-    // Shuffle characters
     pwd = pwd.split('').sort(() => 0.5 - Math.random()).join('')
 
     form.setValue('password', pwd, { shouldValidate: true })
@@ -205,6 +221,9 @@ export function UsersActionDialog({
           email: data.email,
           nip: data.nip || undefined,
           phone: data.phone || undefined,
+          opd_id: data.opd_id ? Number(data.opd_id) : undefined,
+          pangkat_gol: data.pangkat_gol || undefined,
+          jabatan: data.jabatan || undefined,
           role: data.role,
           status: data.status,
           password: data.password ? data.password : undefined,
@@ -216,6 +235,9 @@ export function UsersActionDialog({
           email: data.email,
           nip: data.nip || undefined,
           phone: data.phone || undefined,
+          opd_id: data.opd_id ? Number(data.opd_id) : undefined,
+          pangkat_gol: data.pangkat_gol || undefined,
+          jabatan: data.jabatan || undefined,
           role: data.role,
           status: data.status,
           password: data.password!,
@@ -238,7 +260,7 @@ export function UsersActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+      <DialogContent className='sm:max-w-xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
         {/* Pinned Header */}
         <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <div className='flex items-center gap-3'>
@@ -251,8 +273,8 @@ export function UsersActionDialog({
               </DialogTitle>
               <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
                 {isEdit
-                  ? 'Perbarui informasi identitas, jabatan/peran, dan status akun pegawai.'
-                  : 'Daftarkan akun pegawai resmi ke portal PEMDA.'}
+                  ? 'Perbarui identitas, instansi, jabatan, dan hak akses akun pegawai.'
+                  : 'Daftarkan akun pegawai resmi ke sistem portal PEMDA.'}
               </DialogDescription>
             </div>
           </div>
@@ -266,18 +288,41 @@ export function UsersActionDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4'
             >
-                {/* Nama Lengkap */}
+              {/* Nama Lengkap */}
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs font-semibold'>
+                      Nama Lengkap Beserta Gelar <span className='text-destructive'>*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='Contoh: Dr. H. Ahmad Sudrajat, M.Si'
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                {/* Email Dinas */}
                 <FormField
                   control={form.control}
-                  name='name'
+                  name='email'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        Nama Lengkap Beserta Gelar <span className='text-destructive'>*</span>
+                        Email Resmi / Dinas <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder='Contoh: Dr. H. Ahmad Sudrajat, M.Si'
+                          type='email'
+                          placeholder='ahmad.sudrajat@pemda.go.id'
                           disabled={isSubmitting}
                           {...field}
                         />
@@ -287,320 +332,364 @@ export function UsersActionDialog({
                   )}
                 />
 
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  {/* Email Dinas */}
-                  <FormField
-                    control={form.control}
-                    name='email'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-semibold'>
-                          Email Resmi / Dinas <span className='text-destructive'>*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type='email'
-                            placeholder='ahmad.sudrajat@pemda.go.id'
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* NIP */}
-                  <FormField
-                    control={form.control}
-                    name='nip'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-semibold'>
-                          NIP (Nomor Induk Pegawai)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder='198503152010011002'
-                            maxLength={30}
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  {/* No HP / WA */}
-                  <FormField
-                    control={form.control}
-                    name='phone'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-semibold'>No. WhatsApp / HP</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder='081234567890'
-                            maxLength={20}
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Role Dropdown */}
-                  <FormField
-                    control={form.control}
-                    name='role'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-semibold'>
-                          Peran (Role) <span className='text-destructive'>*</span>
-                        </FormLabel>
-                        <Select
-                          disabled={isSubmitting || isLoadingRoles}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className='w-full'>
-                              <SelectValue placeholder='Pilih peran pegawai...' />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {roles.map((r) => (
-                              <SelectItem key={r.id} value={r.name}>
-                                <div className='flex items-center gap-2'>
-                                  <span>{r.name}</span>
-                                  {r.is_system && (
-                                    <span className='text-[10px] text-blue-600 bg-blue-50 dark:bg-blue-950 px-1 py-0.2 rounded'>
-                                      Sistem
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Status Pegawai */}
+                {/* NIP */}
                 <FormField
                   control={form.control}
-                  name='status'
+                  name='nip'
                   render={({ field }) => (
-                    <FormItem className='space-y-2 pt-1'>
-                      <FormLabel className='text-xs font-semibold'>Status Akun Pegawai</FormLabel>
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        NIP (Nomor Induk Pegawai)
+                      </FormLabel>
                       <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className={cn(
-                            'grid gap-2',
-                            field.value === 'pending_activation' ? 'grid-cols-4' : 'grid-cols-3'
-                          )}
-                        >
-                          <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
-                            <FormControl>
-                              <RadioGroupItem value='active' />
-                            </FormControl>
-                            <FormLabel className='font-normal cursor-pointer text-xs'>
-                              Aktif
-                            </FormLabel>
-                          </FormItem>
+                        <Input
+                          placeholder='198503152010011002'
+                          maxLength={30}
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                          {field.value === 'pending_activation' && (
-                            <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-amber-500 [&:has([data-state=checked])]:bg-amber-500/5'>
-                              <FormControl>
-                                <RadioGroupItem value='pending_activation' />
-                              </FormControl>
-                              <FormLabel className='font-normal cursor-pointer text-xs text-amber-700 dark:text-amber-400'>
-                                Menunggu
-                              </FormLabel>
-                            </FormItem>
-                          )}
+              {/* Instansi / OPD */}
+              <FormField
+                control={form.control}
+                name='opd_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                      <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
+                      Instansi / Perangkat Daerah (OPD)
+                    </FormLabel>
+                    <Select
+                      disabled={isSubmitting || isLoadingOpds}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className='w-full'>
+                          <SelectValue
+                            placeholder={
+                              isLoadingOpds
+                                ? 'Memuat daftar OPD...'
+                                : 'Pilih perangkat daerah...'
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className='max-h-60'>
+                        {opds.map((opd) => (
+                          <SelectItem key={opd.id} value={String(opd.id)}>
+                            <div className='flex items-center justify-between gap-2'>
+                              <span>{opd.nama}</span>
+                              <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
+                                {opd.kategori}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
 
-                          <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
-                            <FormControl>
-                              <RadioGroupItem value='inactive' />
-                            </FormControl>
-                            <FormLabel className='font-normal cursor-pointer text-xs'>
-                              Nonaktif
-                            </FormLabel>
-                          </FormItem>
-
-                          <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-destructive [&:has([data-state=checked])]:bg-destructive/5'>
-                            <FormControl>
-                              <RadioGroupItem value='suspended' />
-                            </FormControl>
-                            <FormLabel className='font-normal cursor-pointer text-xs'>
-                              Ditangguhkan
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                {/* Jabatan Kedinasan */}
+                <FormField
+                  control={form.control}
+                  name='jabatan'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        Jabatan Kedinasan
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='Contoh: Kepala Bidang Informatika'
+                          maxLength={150}
+                          disabled={isSubmitting}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage className='text-xs' />
                     </FormItem>
                   )}
                 />
 
-                {/* Password Field */}
-                <div className='pt-2 border-t'>
-                  <div className='flex items-center justify-between pb-1.5'>
-                    <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                      <KeyRound className='h-3.5 w-3.5 text-primary' />
-                      {isEdit ? 'Ubah Kata Sandi (Opsional)' : 'Kata Sandi Awal Akun'}
-                      {!isEdit && <span className='text-destructive'>*</span>}
-                    </FormLabel>
-
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      className='h-6 text-[11px] px-2 gap-1'
-                      onClick={generateSecurePassword}
-                    >
-                      {copiedPassword ? (
-                        <>
-                          <Check className='h-3 w-3 text-emerald-600' />
-                          Tersalin!
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className='h-3 w-3 text-amber-500' />
-                          Generate Acak
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name='password'
-                    render={({ field }) => (
-                      <FormItem>
+                {/* Pangkat / Golongan */}
+                <FormField
+                  control={form.control}
+                  name='pangkat_gol'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        Pangkat / Golongan Ruang
+                      </FormLabel>
+                      <Select
+                        disabled={isSubmitting}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
-                          <PasswordInput
-                            placeholder={
-                              isEdit
-                                ? 'Biarkan kosong jika kata sandi tidak ingin diubah'
-                                : 'Minimal 8 karakter (huruf, angka, simbol)'
-                            }
-                            disabled={isSubmitting}
-                            {...field}
-                          />
+                          <SelectTrigger className='w-full'>
+                            <SelectValue placeholder='Pilih pangkat / golongan...' />
+                          </SelectTrigger>
                         </FormControl>
-                        <p className='text-[11px] text-muted-foreground mt-1'>
-                          {isEdit
-                            ? 'Isi hanya jika ingin menyetel ulang kata sandi pegawai ini.'
-                            : 'Kata sandi harus minimal 8 karakter, berisi huruf besar, huruf kecil, angka, dan simbol.'}
-                        </p>
-                        <FormMessage className='text-xs' />
+                        <SelectContent className='max-h-60'>
+                          {PANGKAT_GOLONGAN_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                        {/* Interactive Strength Meter & Rules */}
-                        {watchedPassword.length > 0 && (
-                          <div className='mt-2.5 space-y-2 rounded-lg border bg-card/60 p-3 shadow-2xs'>
-                            {/* Visual Strength Bar */}
-                            <div className='space-y-1.5'>
-                              <div className='flex items-center justify-between text-xs'>
-                                <span className='text-muted-foreground text-[11px]'>Kekuatan Sandi:</span>
-                                <span
-                                  className={cn('font-semibold text-[11px] transition-colors', {
-                                    'text-muted-foreground': validCount === 0,
-                                    'text-destructive': validCount > 0 && validCount <= 2,
-                                    'text-amber-500': validCount === 3 || validCount === 4,
-                                    'text-emerald-600 dark:text-emerald-400': isAllValid,
-                                  })}
-                                >
-                                  {validCount === 0 && 'Belum Diisi'}
-                                  {validCount > 0 && validCount <= 2 && 'Lemah (Belum Memenuhi Syarat)'}
-                                  {(validCount === 3 || validCount === 4) && 'Sedang'}
-                                  {isAllValid && 'Sangat Kuat (Memenuhi Standar Keamanan)'}
-                                </span>
-                              </div>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                {/* No HP / WA */}
+                <FormField
+                  control={form.control}
+                  name='phone'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>No. WhatsApp / HP</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='081234567890'
+                          maxLength={20}
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
 
-                              {/* Segmented Strength Bar */}
-                              <div className='grid grid-cols-5 gap-1.5 h-1.5'>
-                                {[1, 2, 3, 4, 5].map((level) => (
-                                  <div
-                                    key={level}
-                                    className={cn(
-                                      'h-full rounded-full transition-all duration-300',
-                                      validCount >= level
-                                        ? validCount <= 2
-                                          ? 'bg-destructive'
-                                          : validCount <= 4
-                                            ? 'bg-amber-500'
-                                            : 'bg-emerald-500'
-                                        : 'bg-muted'
-                                    )}
-                                  />
-                                ))}
+                {/* Role Dropdown */}
+                <FormField
+                  control={form.control}
+                  name='role'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        Peran (Role) <span className='text-destructive'>*</span>
+                      </FormLabel>
+                      <Select
+                        disabled={isSubmitting || isLoadingRoles}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className='w-full'>
+                            <SelectValue placeholder='Pilih peran pegawai...' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {roles.map((r) => (
+                            <SelectItem key={r.id} value={r.name}>
+                              <div className='flex items-center gap-2'>
+                                <span>{r.name}</span>
+                                {r.is_system && (
+                                  <span className='text-[10px] text-blue-600 bg-blue-50 dark:bg-blue-950 px-1 py-0.2 rounded'>
+                                    Sistem
+                                  </span>
+                                )}
                               </div>
-                            </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                            {/* Checklist Badges / Pills */}
-                            <div className='pt-0.5'>
-                              <p className='text-[11px] font-medium text-muted-foreground mb-1.5'>
-                                Syarat kata sandi yang aman:
-                              </p>
-                              <div className='flex flex-wrap gap-1.5'>
-                                {criteria.map((item) => (
-                                  <Badge
-                                    key={item.id}
-                                    variant={item.valid ? 'default' : 'outline'}
-                                    className={cn(
-                                      'text-[10px] font-normal transition-all duration-200 py-0.5 px-2 gap-1 select-none',
-                                      item.valid
-                                        ? 'bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950 font-medium'
-                                        : 'text-muted-foreground border-border/80 bg-muted/30'
-                                    )}
-                                  >
-                                    {item.valid ? (
-                                      <Check className='h-3 w-3 shrink-0' />
-                                    ) : (
-                                      <span className='h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0' />
-                                    )}
-                                    {item.label}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
+              {/* Status Pegawai */}
+              <FormField
+                control={form.control}
+                name='status'
+                render={({ field }) => (
+                  <FormItem className='space-y-2 pt-1'>
+                    <FormLabel className='text-xs font-semibold'>Status Akun Pegawai</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className={cn(
+                          'grid gap-2',
+                          field.value === 'pending_activation' ? 'grid-cols-4' : 'grid-cols-3'
                         )}
-                      </FormItem>
-                    )}
-                  />
+                      >
+                        <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
+                          <FormControl>
+                            <RadioGroupItem value='active' />
+                          </FormControl>
+                          <FormLabel className='font-normal cursor-pointer text-xs'>
+                            Aktif
+                          </FormLabel>
+                        </FormItem>
+
+                        {field.value === 'pending_activation' && (
+                          <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-amber-500 [&:has([data-state=checked])]:bg-amber-500/5'>
+                            <FormControl>
+                              <RadioGroupItem value='pending_activation' />
+                            </FormControl>
+                            <FormLabel className='font-normal cursor-pointer text-xs text-amber-700 dark:text-amber-400'>
+                              Menunggu
+                            </FormLabel>
+                          </FormItem>
+                        )}
+
+                        <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
+                          <FormControl>
+                            <RadioGroupItem value='inactive' />
+                          </FormControl>
+                          <FormLabel className='font-normal cursor-pointer text-xs'>
+                            Nonaktif
+                          </FormLabel>
+                        </FormItem>
+
+                        <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-destructive [&:has([data-state=checked])]:bg-destructive/5'>
+                          <FormControl>
+                            <RadioGroupItem value='suspended' />
+                          </FormControl>
+                          <FormLabel className='font-normal cursor-pointer text-xs'>
+                            Ditangguhkan
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
+
+              {/* Password Field */}
+              <div className='pt-2 border-t'>
+                <div className='flex items-center justify-between pb-1.5'>
+                  <FormLabel className='text-xs font-semibold'>
+                    {isEdit ? 'Ubah Kata Sandi (Opsional)' : 'Kata Sandi Awal Akun'}{' '}
+                    {!isEdit && <span className='text-destructive'>*</span>}
+                  </FormLabel>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={generateSecurePassword}
+                    className='text-[11px] h-6 text-primary hover:text-primary gap-1 px-1.5'
+                  >
+                    <Sparkles className='h-3 w-3' />
+                    {copiedPassword ? 'Tersalin!' : 'Acak Kata Sandi Kuat'}
+                  </Button>
                 </div>
 
+                <FormField
+                  control={form.control}
+                  name='password'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <PasswordInput
+                          placeholder={
+                            isEdit
+                              ? 'Biarkan kosong bila tidak ingin mengganti sandi'
+                              : 'Masukkan kata sandi awal pegawai...'
+                          }
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Password Strength Checklist */}
+                {watchedPassword.length > 0 && (
+                  <div className='mt-2.5 p-2.5 rounded-lg border bg-muted/20 text-xs space-y-1.5'>
+                    <div className='flex items-center justify-between font-medium text-[11px] text-muted-foreground mb-1'>
+                      <span>Standar Keamanan Sandi Sandi:</span>
+                      <span
+                        className={cn(
+                          'font-semibold',
+                          isAllValid ? 'text-emerald-600' : 'text-amber-600'
+                        )}
+                      >
+                        {validCount} dari {criteria.length} Terpenuhi
+                      </span>
+                    </div>
+                    <div className='grid grid-cols-2 gap-1.5'>
+                      {criteria.map((c) => (
+                        <div
+                          key={c.id}
+                          className={cn(
+                            'flex items-center gap-1.5 text-[11px] transition-colors',
+                            c.valid
+                              ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                              : 'text-muted-foreground'
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              'h-3.5 w-3.5 rounded-full flex items-center justify-center shrink-0 text-[9px]',
+                              c.valid
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-muted text-muted-foreground'
+                            )}
+                          >
+                            {c.valid ? <Check className='h-2.5 w-2.5' /> : '•'}
+                          </div>
+                          <span>{c.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </form>
           </Form>
         </div>
 
         {/* Pinned Footer */}
-        <DialogFooter className='px-6 py-3.5 border-t bg-muted/20 shrink-0 flex flex-row items-center justify-end gap-2'>
+        <DialogFooter className='px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
           <Button
             type='button'
             variant='outline'
-            disabled={isSubmitting}
+            size='sm'
             onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
           >
             Batal
           </Button>
-          <Button type='submit' form='users-dialog-form' disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {isEdit ? 'Simpan Perubahan' : 'Daftarkan Pegawai'}
+          <Button
+            type='submit'
+            size='sm'
+            form='users-dialog-form'
+            disabled={isSubmitting}
+            className='min-w-[120px]'
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                Menyimpan...
+              </>
+            ) : isEdit ? (
+              'Simpan Perubahan'
+            ) : (
+              'Tambah Pegawai'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

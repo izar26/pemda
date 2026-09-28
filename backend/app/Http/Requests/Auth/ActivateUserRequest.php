@@ -21,7 +21,11 @@ class ActivateUserRequest extends FormRequest
             'name' => ['nullable', 'string', 'max:100'],
             'nip' => ['nullable', 'string', 'max:30', 'unique:users,nip'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'pangkat_gol' => ['nullable', 'string', 'max:60'],
+            'jabatan' => ['nullable', 'string', 'max:150'],
+            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
             'password' => [
+
                 'required',
                 'string',
                 'confirmed',

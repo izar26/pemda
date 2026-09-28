@@ -10,6 +10,7 @@ import type {
   ResetPasswordPayload,
   TwoFactorConfirmResponse,
   TwoFactorSetupResponse,
+  UpdateProfilePayload,
   ValidateActivationTokenResponse,
   VerifyTwoFactorResponse,
 } from '@/types/auth'
@@ -48,6 +49,14 @@ export const authService = {
    */
   async getProfile(): Promise<{ user: AuthUser }> {
     const response = await apiClient.get<{ user: AuthUser }>('/auth/me')
+    return response.data
+  },
+
+  /**
+   * Update current authenticated user profile
+   */
+  async updateProfile(payload: UpdateProfilePayload): Promise<{ message: string; user: AuthUser }> {
+    const response = await apiClient.put<{ message: string; user: AuthUser }>('/auth/profile', payload)
     return response.data
   },
 

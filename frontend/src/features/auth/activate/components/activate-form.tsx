@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, Link } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
+  Building2,
   Check,
   CheckCircle2,
   Copy,
@@ -19,6 +21,8 @@ import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { cn } from '@/lib/utils'
 import { authService } from '@/services/auth-service'
+import { opdService } from '@/services/opd-service'
+import { PANGKAT_GOLONGAN_OPTIONS } from '@/features/users/data/pangkat-golongan'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -30,6 +34,13 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 
 const activateSchema = z
@@ -41,6 +52,9 @@ const activateSchema = z
       .regex(/^[0-9]*$/, 'NIP hanya boleh berisi deretan angka.')
       .optional()
       .or(z.literal('')),
+    opd_id: z.string().optional(),
+    jabatan: z.string().max(150, 'Jabatan maksimal 150 karakter.').optional(),
+    pangkat_gol: z.string().optional(),
     phone: z
       .string()
       .max(20, 'Nomor telepon maksimal 20 karakter.')
@@ -70,6 +84,17 @@ interface ActivateFormProps {
     name: string
     email: string
     role: string
+    nip?: string | null
+    phone?: string | null
+    opd_id?: number | null
+    opd?: {
+      id: number
+      nama: string
+      kode: string
+      kategori: string
+    } | null
+    pangkat_gol?: string | null
+    jabatan?: string | null
   }
 }
 
@@ -78,12 +103,22 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
+  // Fetch dynamic OPDs
+  const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
+    queryKey: ['opds'],
+    queryFn: () => opdService.getOpds(),
+    staleTime: 5 * 60 * 1000,
+  })
+
   const form = useForm<ActivateFormValues>({
     resolver: zodResolver(activateSchema),
     defaultValues: {
       name: initialData.name || '',
-      nip: '',
-      phone: '',
+      nip: initialData.nip || '',
+      opd_id: initialData.opd_id ? String(initialData.opd_id) : '',
+      jabatan: initialData.jabatan || '',
+      pangkat_gol: initialData.pangkat_gol || '',
+      phone: initialData.phone || '',
       password: '',
       password_confirmation: '',
     },
@@ -140,11 +175,10 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
     toast.success('Kata sandi kuat berhasil dibuat dan disalin ke clipboard!')
   }
 
-  // Quick copy password
   function handleCopyPassword() {
     if (!watchedPassword) return
     navigator.clipboard.writeText(watchedPassword)
-    toast.success('Kata sandi disalin ke clipboard.')
+    toast.info('Kata sandi disalin ke clipboard!')
   }
 
   const onSubmit = async (values: ActivateFormValues) => {
@@ -155,6 +189,9 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
         name: values.name.trim(),
         nip: values.nip ? values.nip.trim() : undefined,
         phone: values.phone ? values.phone.trim() : undefined,
+        opd_id: values.opd_id ? Number(values.opd_id) : undefined,
+        jabatan: values.jabatan ? values.jabatan.trim() : undefined,
+        pangkat_gol: values.pangkat_gol || undefined,
         password: values.password,
         password_confirmation: values.password_confirmation,
       })
@@ -264,7 +301,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
           {/* Data Profil Pegawai */}
-          <div className='grid gap-4'>
+          <div className='grid gap-3.5'>
             {/* Nama Lengkap */}
             <FormField
               control={form.control}
@@ -286,24 +323,89 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
               )}
             />
 
-            {/* NIP (Nomor Induk Pegawai) & Nomor WhatsApp (2 kolom di layar sedang) */}
+            {/* NIP (Nomor Induk Pegawai) */}
+            <FormField
+              control={form.control}
+              name='nip'
+              render={({ field }) => (
+                <FormItem className='space-y-1.5'>
+                  <FormLabel className='text-xs font-semibold'>
+                    NIP (Nomor Induk Pegawai)
+                    <span className='text-[10px] text-muted-foreground ml-1 font-normal'>
+                      (Opsional)
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='199001012015011001'
+                      maxLength={30}
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className='text-xs' />
+                </FormItem>
+              )}
+            />
+
+            {/* Instansi / OPD */}
+            <FormField
+              control={form.control}
+              name='opd_id'
+              render={({ field }) => (
+                <FormItem className='space-y-1.5'>
+                  <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                    <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
+                    Instansi / Perangkat Daerah (OPD)
+                  </FormLabel>
+                  <Select
+                    disabled={isLoading || isLoadingOpds}
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            isLoadingOpds
+                              ? 'Memuat daftar OPD...'
+                              : 'Pilih perangkat daerah unit kerja...'
+                          }
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className='max-h-60'>
+                      {opds.map((opd) => (
+                        <SelectItem key={opd.id} value={String(opd.id)}>
+                          <div className='flex items-center justify-between gap-2'>
+                            <span>{opd.nama}</span>
+                            <span className='text-[10px] text-muted-foreground bg-muted px-1 rounded'>
+                              {opd.kategori}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className='text-xs' />
+                </FormItem>
+              )}
+            />
+
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-              {/* NIP */}
+              {/* Jabatan Kedinasan */}
               <FormField
                 control={form.control}
-                name='nip'
+                name='jabatan'
                 render={({ field }) => (
                   <FormItem className='space-y-1.5'>
                     <FormLabel className='text-xs font-semibold'>
-                      NIP / NRP
-                      <span className='text-[10px] text-muted-foreground ml-1 font-normal'>
-                        (Opsional)
-                      </span>
+                      Jabatan Kedinasan
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='199001012015011001'
-                        maxLength={30}
+                        placeholder='Contoh: Analis Kebijakan'
+                        maxLength={150}
                         disabled={isLoading}
                         {...field}
                       />
@@ -313,35 +415,67 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                 )}
               />
 
-              {/* Nomor HP / WhatsApp */}
+              {/* Pangkat / Golongan */}
               <FormField
                 control={form.control}
-                name='phone'
+                name='pangkat_gol'
                 render={({ field }) => (
                   <FormItem className='space-y-1.5'>
                     <FormLabel className='text-xs font-semibold'>
-                      Nomor Kontak / WA
-                      <span className='text-[10px] text-muted-foreground ml-1 font-normal'>
-                        (Opsional)
-                      </span>
+                      Pangkat / Golongan
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        type='tel'
-                        placeholder='081234567890'
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
+                    <Select
+                      disabled={isLoading}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Pilih golongan...' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className='max-h-60'>
+                        {PANGKAT_GOLONGAN_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}
               />
             </div>
+
+            {/* Nomor HP / WhatsApp */}
+            <FormField
+              control={form.control}
+              name='phone'
+              render={({ field }) => (
+                <FormItem className='space-y-1.5'>
+                  <FormLabel className='text-xs font-semibold'>
+                    Nomor Kontak / WhatsApp
+                    <span className='text-[10px] text-muted-foreground ml-1 font-normal'>
+                      (Opsional)
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type='tel'
+                      placeholder='081234567890'
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className='text-xs' />
+                </FormItem>
+              )}
+            />
           </div>
 
           {/* Pemisah Bagian Kata Sandi */}
-          <div className='pt-2 border-t space-y-4'>
+          <div className='pt-3 border-t space-y-4'>
             {/* Kata Sandi Baru */}
             <FormField
               control={form.control}
@@ -390,7 +524,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
               )}
             />
 
-            {/* Interactive Strength Meter & Rules (Identik dengan Reset Password) */}
+            {/* Interactive Strength Meter & Rules */}
             <div className='space-y-2.5 rounded-lg border bg-card/60 p-3.5 shadow-2xs'>
               {/* Visual Strength Bar */}
               <div className='space-y-1.5'>
@@ -449,9 +583,9 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                       )}
                     >
                       {item.valid ? (
-                        <Check className='h-3 w-3 shrink-0' />
+                        <Check className='h-2.5 w-2.5 text-white dark:text-emerald-950 stroke-[3]' />
                       ) : (
-                        <span className='h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0' />
+                        <span className='h-1.5 w-1.5 rounded-full bg-muted-foreground/40' />
                       )}
                       {item.label}
                     </Badge>
@@ -468,24 +602,26 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                 <FormItem className='space-y-1.5'>
                   <div className='flex items-center justify-between'>
                     <FormLabel className='text-xs font-semibold'>
-                      Ulangi Kata Sandi Baru <span className='text-destructive'>*</span>
+                      Konfirmasi Kata Sandi <span className='text-destructive'>*</span>
                     </FormLabel>
                     {hasTypedConfirm && (
                       <span
                         className={cn(
-                          'text-[11px] font-medium flex items-center gap-1',
-                          isMatch ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+                          'flex items-center gap-1 text-[11px] font-medium animate-in fade-in',
+                          isMatch
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-destructive'
                         )}
                       >
                         {isMatch ? (
                           <>
-                            <Check className='h-3 w-3' />
-                            Kata sandi cocok
+                            <Check className='h-3 w-3 stroke-[3]' />
+                            Kata Sandi Cocok
                           </>
                         ) : (
                           <>
-                            <X className='h-3 w-3' />
-                            Belum cocok
+                            <X className='h-3 w-3 stroke-[3]' />
+                            Belum Cocok
                           </>
                         )}
                       </span>
@@ -493,13 +629,17 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                   </div>
                   <FormControl>
                     <PasswordInput
-                      placeholder='Ketik ulang kata sandi baru'
+                      placeholder='Ketik ulang kata sandi baru Anda'
                       disabled={isLoading}
                       autoComplete='new-password'
-                      className={cn({
-                        'border-emerald-500 focus-visible:ring-emerald-500': isMatch,
-                        'border-destructive focus-visible:ring-destructive': isMismatch,
-                      })}
+                      className={cn(
+                        hasTypedConfirm &&
+                          (isMatch
+                            ? 'border-emerald-500 focus-visible:ring-emerald-500'
+                            : isMismatch
+                              ? 'border-destructive focus-visible:ring-destructive'
+                              : '')
+                      )}
                       {...field}
                     />
                   </FormControl>
@@ -507,47 +647,37 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                 </FormItem>
               )}
             />
-
-            {/* Security Advisory */}
-            <div className='flex items-start gap-2 rounded-lg bg-muted/40 p-2.5 text-[11px] text-muted-foreground leading-relaxed'>
-              <Info className='h-4 w-4 text-primary shrink-0 mt-0.5' />
-              <span>
-                Gunakan kata sandi unik yang belum pernah Anda gunakan di platform lain. Jangan
-                berikan kata sandi ini kepada pihak lain demi menjaga kerahasiaan data kedinasan.
-              </span>
-            </div>
           </div>
 
+          {/* Privacy & Governance Notice */}
+          <div className='rounded-lg border bg-muted/40 p-3 text-[11px] text-muted-foreground flex items-start gap-2.5 leading-relaxed'>
+            <Info className='h-4 w-4 shrink-0 text-primary mt-0.5' />
+            <span>
+              Dengan mengaktifkan akun, Anda terikat pada ketentuan keamanan data, kerahasiaan kedinasan, dan tata kelola akun resmi Pemerintah Daerah.
+            </span>
+          </div>
+
+          {/* Tombol Simpan & Aktifkan */}
           <Button
             type='submit'
-            className='w-full mt-2 shadow-sm'
+            className='w-full shadow-md font-semibold'
             size='lg'
-            disabled={isLoading || !isAllValid || !isMatch}
+            disabled={isLoading || !isAllValid || isMismatch}
           >
             {isLoading ? (
               <>
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Mengaktifkan Akun...
+                Mengaktifkan Akun Pegawai...
               </>
             ) : (
               <>
                 <LockKeyhole className='mr-2 h-4 w-4' />
-                Aktifkan Akun Pegawai
+                Aktifkan Akun & Simpan Profil
               </>
             )}
           </Button>
         </form>
       </Form>
-
-      <div className='text-center pt-1 text-xs text-muted-foreground'>
-        Sudah memiliki akun aktif?{' '}
-        <Link
-          to='/sign-in'
-          className='font-semibold text-primary underline underline-offset-4 hover:text-primary/90'
-        >
-          Masuk ke Portal
-        </Link>
-      </div>
     </div>
   )
 }

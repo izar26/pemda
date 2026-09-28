@@ -11,7 +11,9 @@ use App\Http\Requests\Auth\DisableTwoFactorRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\Auth\VerifyTwoFactorRequest;
+use App\Http\Resources\OpdResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\Auth\AuthenticationService;
@@ -286,6 +288,12 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->roles->first()?->name ?? $user->role,
+                'nip' => $user->nip,
+                'phone' => $user->phone,
+                'opd_id' => $user->opd_id,
+                'opd' => $user->opd ? new OpdResource($user->opd) : null,
+                'pangkat_gol' => $user->pangkat_gol,
+                'jabatan' => $user->jabatan,
             ],
         ]);
     }
@@ -303,6 +311,22 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Akun pegawai berhasil diaktifkan. Silakan masuk menggunakan kata sandi yang baru dibuat.',
             'user' => new UserResource($user),
+        ]);
+    }
+
+    /**
+     * Update current authenticated user's own profile.
+     */
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $updated = $this->userService->updateProfile($user, $request->validated());
+
+        return response()->json([
+            'message' => 'Profil pegawai berhasil diperbarui.',
+            'user' => new UserResource($updated),
         ]);
     }
 }

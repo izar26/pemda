@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -30,8 +32,12 @@ class User extends Authenticatable
         'email',
         'nip',
         'phone',
+        'opd_id',
+        'pangkat_gol',
+        'jabatan',
         'role',
         'status',
+
         'password',
         'two_factor_secret',
         'two_factor_recovery_codes',
@@ -83,6 +89,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(LoginLog::class);
     }
+
+    /**
+     * Get the OPD to which the employee belongs.
+     *
+     * @return BelongsTo<Opd, $this>
+     */
+    public function opd(): BelongsTo
+    {
+        return $this->belongsTo(Opd::class, 'opd_id');
+    }
+
 
     public function hasTwoFactorEnabled(): bool
     {

@@ -1,5 +1,5 @@
 import { type ColumnDef } from '@tanstack/react-table'
-import { ShieldAlert, ShieldCheck, User as UserIcon } from 'lucide-react'
+import { Building2, ShieldAlert, ShieldCheck, User as UserIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { statusBadgeMap } from '../data/data'
@@ -26,8 +26,8 @@ export const usersColumns: ColumnDef<User>[] = [
           <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-xs text-primary'>
             {initials || <UserIcon className='h-4 w-4' />}
           </div>
-          <div className='flex flex-col'>
-            <span className='font-semibold text-sm text-foreground leading-tight'>
+          <div className='flex flex-col min-w-0'>
+            <span className='font-semibold text-sm text-foreground leading-tight truncate'>
               {user.name}
             </span>
             <span className='text-xs text-muted-foreground font-mono mt-0.5'>
@@ -40,9 +40,62 @@ export const usersColumns: ColumnDef<User>[] = [
     enableSorting: true,
   },
   {
+    id: 'jabatan_pangkat',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Jabatan & Golongan' />
+    ),
+    cell: ({ row }) => {
+      const user = row.original
+      return (
+        <div className='flex flex-col py-1 text-xs gap-1 max-w-[220px]'>
+          <span className='font-medium text-foreground leading-tight'>
+            {user.jabatan || <span className='text-muted-foreground italic'>Belum diatur</span>}
+          </span>
+          {user.pangkat_gol ? (
+            <Badge variant='secondary' className='w-fit text-[11px] font-normal px-1.5 py-0'>
+              {user.pangkat_gol}
+            </Badge>
+          ) : (
+            <span className='text-[11px] text-muted-foreground'>-</span>
+          )}
+        </div>
+      )
+    },
+    enableSorting: false,
+  },
+  {
+    id: 'opd',
+    accessorFn: (row) => row.opd?.nama || 'Belum Ditugaskan',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Instansi / OPD' />
+    ),
+    cell: ({ row }) => {
+      const opd = row.original.opd
+      return (
+        <div className='flex flex-col py-1 text-xs gap-1 max-w-[240px]'>
+          <div className='flex items-start gap-1.5'>
+            <Building2 className='h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5' />
+            <span className='font-medium text-foreground leading-tight'>
+              {opd ? opd.nama : <span className='text-muted-foreground italic'>Belum Ditugaskan</span>}
+            </span>
+          </div>
+          {opd?.kategori && (
+            <span className='text-[10px] text-muted-foreground uppercase tracking-wider pl-5'>
+              {opd.kategori}
+            </span>
+          )}
+        </div>
+      )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+    enableSorting: true,
+  },
+  {
     accessorKey: 'email',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Email & Kontak' />
+      <DataTableColumnHeader column={column} title='Kontak' />
     ),
     cell: ({ row }) => {
       const user = row.original
@@ -60,17 +113,18 @@ export const usersColumns: ColumnDef<User>[] = [
   {
     accessorKey: 'role',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Peran (Role)' />
+      <DataTableColumnHeader column={column} title='Peran & 2FA' />
     ),
     cell: ({ row }) => {
       const roleName = row.getValue('role') as string
       const isSuper = roleName === 'Superadmin'
+      const is2fa = Boolean(row.original.two_factor_enabled)
 
       return (
-        <div className='flex items-center gap-1.5'>
+        <div className='flex flex-col gap-1.5 py-1'>
           <Badge
             variant='outline'
-            className={`text-xs px-2 py-0.5 font-medium ${
+            className={`w-fit text-xs px-2 py-0.5 font-medium ${
               isSuper
                 ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
                 : 'border-muted-foreground/30 bg-muted/40 text-foreground'
@@ -78,38 +132,19 @@ export const usersColumns: ColumnDef<User>[] = [
           >
             {roleName}
           </Badge>
-        </div>
-      )
-    },
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'two_factor_enabled',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Keamanan (2FA)' />
-    ),
-    cell: ({ row }) => {
-      const is2fa = Boolean(row.getValue('two_factor_enabled'))
-
-      return (
-        <div className='flex items-center gap-1.5'>
-          {is2fa ? (
-            <Badge
-              variant='outline'
-              className='text-[11px] font-normal border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 gap-1'
-            >
-              <ShieldCheck className='h-3 w-3' />
-              2FA Aktif
-            </Badge>
-          ) : (
-            <Badge
-              variant='outline'
-              className='text-[11px] font-normal text-muted-foreground border-dashed gap-1'
-            >
-              <ShieldAlert className='h-3 w-3' />
-              Belum Aktif
-            </Badge>
-          )}
+          <div className='flex items-center gap-1'>
+            {is2fa ? (
+              <span className='inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium'>
+                <ShieldCheck className='h-3 w-3' />
+                2FA Aktif
+              </span>
+            ) : (
+              <span className='inline-flex items-center gap-1 text-[11px] text-muted-foreground'>
+                <ShieldAlert className='h-3 w-3' />
+                2FA Nonaktif
+              </span>
+            )}
+          </div>
         </div>
       )
     },
@@ -134,25 +169,6 @@ export const usersColumns: ColumnDef<User>[] = [
       )
     },
     enableSorting: false,
-  },
-  {
-    accessorKey: 'created_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Terdaftar' />
-    ),
-    cell: ({ row }) => {
-      const createdAt = row.original.created_at
-      if (!createdAt) return <span className='text-xs text-muted-foreground'>-</span>
-
-      const dateStr = new Date(createdAt).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-
-      return <span className='text-xs text-muted-foreground'>{dateStr}</span>
-    },
-    enableSorting: true,
   },
   {
     id: 'actions',

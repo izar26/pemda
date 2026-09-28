@@ -23,6 +23,17 @@ interface ValidatedUserData {
   name: string
   email: string
   role: string
+  nip?: string | null
+  phone?: string | null
+  opd_id?: number | null
+  opd?: {
+    id: number
+    nama: string
+    kode: string
+    kategori: string
+  } | null
+  pangkat_gol?: string | null
+  jabatan?: string | null
 }
 
 export function Activate({ token }: ActivateProps) {

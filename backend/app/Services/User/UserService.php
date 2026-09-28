@@ -26,16 +26,23 @@ class UserService
      */
     public function getUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $query = User::with(['roles', 'roles.permissions']);
+        $query = User::with(['roles', 'roles.permissions', 'opd']);
 
-        // Search by name, email, or nip
+        // Search by name, email, nip, jabatan, or pangkat
         if (!empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
                     ->orWhere('email', 'like', "%{$term}%")
-                    ->orWhere('nip', 'like', "%{$term}%");
+                    ->orWhere('nip', 'like', "%{$term}%")
+                    ->orWhere('jabatan', 'like', "%{$term}%")
+                    ->orWhere('pangkat_gol', 'like', "%{$term}%");
             });
+        }
+
+        // Filter by OPD (Instansi)
+        if (!empty($filters['opd_id'])) {
+            $query->where('opd_id', $filters['opd_id']);
         }
 
         // Filter by role
@@ -55,10 +62,11 @@ class UserService
         $sortBy = $filters['sort_by'] ?? 'created_at';
         $sortDirection = strtolower($filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
-        $allowedSortColumns = ['name', 'email', 'nip', 'status', 'created_at', 'last_login_at'];
+        $allowedSortColumns = ['name', 'email', 'nip', 'jabatan', 'status', 'created_at', 'last_login_at'];
         if (!in_array($sortBy, $allowedSortColumns, true)) {
             $sortBy = 'created_at';
         }
+
 
         $query->orderBy($sortBy, $sortDirection);
 
@@ -86,6 +94,9 @@ class UserService
                 'email' => $data['email'],
                 'nip' => $data['nip'] ?? null,
                 'phone' => $data['phone'] ?? null,
+                'opd_id' => $data['opd_id'] ?? null,
+                'pangkat_gol' => $data['pangkat_gol'] ?? null,
+                'jabatan' => $data['jabatan'] ?? null,
                 'role' => $data['role'],
                 'status' => $data['status'] ?? 'active',
                 'password' => Hash::make($data['password']),
@@ -93,7 +104,7 @@ class UserService
 
             $user->syncRoles([$data['role']]);
 
-            return $user->load(['roles', 'roles.permissions']);
+            return $user->load(['roles', 'roles.permissions', 'opd']);
         });
     }
 
@@ -127,6 +138,9 @@ class UserService
                 'email' => $data['email'],
                 'nip' => $data['nip'] ?? null,
                 'phone' => $data['phone'] ?? null,
+                'opd_id' => array_key_exists('opd_id', $data) ? $data['opd_id'] : $user->opd_id,
+                'pangkat_gol' => array_key_exists('pangkat_gol', $data) ? $data['pangkat_gol'] : $user->pangkat_gol,
+                'jabatan' => array_key_exists('jabatan', $data) ? $data['jabatan'] : $user->jabatan,
                 'role' => $data['role'],
                 'status' => $data['status'],
             ];
@@ -138,9 +152,10 @@ class UserService
             $user->update($updatePayload);
             $user->syncRoles([$data['role']]);
 
-            return $user->load(['roles', 'roles.permissions']);
+            return $user->load(['roles', 'roles.permissions', 'opd']);
         });
     }
+
 
     /**
      * Delete a user with security safeguards.
@@ -203,6 +218,8 @@ class UserService
             $user = User::create([
                 'name' => trim($data['name']),
                 'email' => strtolower(trim($data['email'])),
+                'opd_id' => $data['opd_id'] ?? null,
+                'jabatan' => !empty($data['jabatan']) ? trim($data['jabatan']) : null,
                 'role' => $data['role'],
                 'status' => 'pending_activation',
                 'password' => Hash::make(Str::random(32)),
@@ -237,11 +254,12 @@ class UserService
                     'invited_user_id' => $user->id,
                     'invited_email' => $user->email,
                     'role' => $data['role'],
+                    'opd_id' => $user->opd_id,
                 ]
             );
 
             return [
-                'user' => $user->load(['roles', 'roles.permissions']),
+                'user' => $user->load(['roles', 'roles.permissions', 'opd']),
                 'activation_url' => $activationUrl,
             ];
         });
@@ -288,7 +306,7 @@ class UserService
             );
 
             return [
-                'user' => $user->load(['roles', 'roles.permissions']),
+                'user' => $user->load(['roles', 'roles.permissions', 'opd']),
                 'activation_url' => $activationUrl,
             ];
         });
@@ -325,39 +343,82 @@ class UserService
             ]);
         }
 
-        return $user->load(['roles']);
+        return $user->load(['roles', 'opd']);
     }
 
     /**
-     * Activate user account with password, NIP, and phone.
+     * Activate user account with password, NIP, phone, and profile details.
      *
-     * @param  array{password: string, nip?: string|null, phone?: string|null, name?: string|null}  $data
+     * @param  array{password: string, nip?: string|null, phone?: string|null, name?: string|null, pangkat_gol?: string|null, jabatan?: string|null, opd_id?: int|null}  $data
      */
     public function activateUser(string $token, array $data): User
     {
         $user = $this->validateActivationToken($token);
 
         return DB::transaction(function () use ($user, $data) {
-            $user->update([
+            $updatePayload = [
                 'name' => !empty($data['name']) ? trim($data['name']) : $user->name,
-                'nip' => !empty($data['nip']) ? trim($data['nip']) : null,
-                'phone' => !empty($data['phone']) ? trim($data['phone']) : null,
+                'nip' => !empty($data['nip']) ? trim($data['nip']) : $user->nip,
+                'phone' => !empty($data['phone']) ? trim($data['phone']) : $user->phone,
+                'pangkat_gol' => !empty($data['pangkat_gol']) ? trim($data['pangkat_gol']) : $user->pangkat_gol,
+                'jabatan' => !empty($data['jabatan']) ? trim($data['jabatan']) : $user->jabatan,
                 'password' => Hash::make($data['password']),
                 'status' => 'active',
                 'email_verified_at' => now(),
                 'activation_token' => null,
                 'activation_token_expires_at' => null,
-            ]);
+            ];
+
+            if (!empty($data['opd_id'])) {
+                $updatePayload['opd_id'] = $data['opd_id'];
+            }
+
+            $user->update($updatePayload);
 
             $this->auditLogService->log(
                 action: 'USER_ACTIVATED',
                 module: 'Autentikasi',
-                description: "Pegawai {$user->name} ({$user->email}) berhasil mengaktifkan akun dan membuat kata sandi mandiri.",
+                description: "Pegawai {$user->name} ({$user->email}) berhasil mengaktifkan akun dan melengkapi profil mandiri.",
                 user: $user,
                 context: ['activated_user_id' => $user->id]
             );
 
-            return $user->load(['roles']);
+            return $user->load(['roles', 'opd']);
         });
     }
+
+    /**
+     * Update current authenticated user's own profile.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateProfile(User $user, array $data): User
+    {
+        return DB::transaction(function () use ($user, $data) {
+            $updatePayload = [
+                'name' => trim($data['name']),
+                'nip' => !empty($data['nip']) ? trim($data['nip']) : null,
+                'phone' => !empty($data['phone']) ? trim($data['phone']) : null,
+                'pangkat_gol' => !empty($data['pangkat_gol']) ? trim($data['pangkat_gol']) : null,
+                'jabatan' => !empty($data['jabatan']) ? trim($data['jabatan']) : null,
+            ];
+
+            if (array_key_exists('opd_id', $data) && !empty($data['opd_id'])) {
+                $updatePayload['opd_id'] = $data['opd_id'];
+            }
+
+            $user->update($updatePayload);
+
+            $this->auditLogService->log(
+                action: 'USER_PROFILE_UPDATE',
+                module: 'Profil',
+                description: "Pegawai {$user->name} memperbarui data profil akun kedinasan",
+                user: $user,
+                context: ['user_id' => $user->id]
+            );
+
+            return $user->load(['roles', 'roles.permissions', 'opd']);
+        });
+    }
+
 }

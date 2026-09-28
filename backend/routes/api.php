@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
 use App\Http\Controllers\Api\UserController;
@@ -16,6 +17,10 @@ Route::get('/ping', function () {
         'timestamp' => now()->toIso8601String(),
     ]);
 });
+
+// Master OPD (Perangkat Daerah) - Publicly available for registration/activation & dashboard
+Route::get('/opds', [OpdController::class, 'index']);
+Route::get('/opds/{opd}', [OpdController::class, 'show']);
 
 // Authentication Routes
 Route::prefix('auth')->group(function () {
@@ -34,6 +39,7 @@ Route::prefix('auth')->group(function () {
     // Fully authenticated endpoints (Denies 2fa-pending tokens)
     Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
 

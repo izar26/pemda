@@ -16,13 +16,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Superadmin PEMDA
+        // 1. Seed OPDs (Master Organisasi Perangkat Daerah)
+        $this->call(OpdSeeder::class);
+
+        // 2. Superadmin PEMDA
+        $sekda = \App\Models\Opd::where('kode', 'Sekda')->first();
         User::updateOrCreate(
             ['email' => 'admin@pemda.go.id'],
             [
                 'name' => 'Administrator Utama',
                 'nip' => '198501012010011001',
                 'phone' => '081234567890',
+                'opd_id' => $sekda?->id,
+                'jabatan' => 'Pranata Komputer Ahli Pertama',
+                'pangkat_gol' => 'Penata Muda (III/a)',
                 'role' => 'superadmin',
                 'status' => 'active',
                 'password' => Hash::make('Password@123'),
@@ -33,10 +40,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 2. Seed Roles, Permissions, and assign Superadmin role
+        // 3. Seed Roles, Permissions, and assign Superadmin role
         $this->call(RbacSeeder::class);
 
-        // 3. Seed System Settings & Initial Audit Logs
+        // 4. Seed System Settings & Initial Audit Logs
         $this->call(SystemSettingSeeder::class);
     }
 }
+
