@@ -1,0 +1,363 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\User;
+
+use App\Mail\UserInvitationMail;
+use App\Models\User;
+use App\Services\Audit\AuditLogService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class UserService
+{
+    public function __construct(
+        protected AuditLogService $auditLogService
+    ) {}
+    /**
+     * Get paginated and filtered list of users.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function getUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    {
+        $query = User::with(['roles', 'roles.permissions']);
+
+        // Search by name, email, or nip
+        if (!empty($filters['search'])) {
+            $term = trim((string) $filters['search']);
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('nip', 'like', "%{$term}%");
+            });
+        }
+
+        // Filter by role
+        if (!empty($filters['role'])) {
+            $roleName = (string) $filters['role'];
+            $query->whereHas('roles', function ($q) use ($roleName) {
+                $q->where('name', $roleName);
+            });
+        }
+
+        // Filter by status
+        if (!empty($filters['status'])) {
+            $query->where('status', (string) $filters['status']);
+        }
+
+        // Sorting
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortDirection = strtolower($filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        $allowedSortColumns = ['name', 'email', 'nip', 'status', 'created_at', 'last_login_at'];
+        if (!in_array($sortBy, $allowedSortColumns, true)) {
+            $sortBy = 'created_at';
+        }
+
+        $query->orderBy($sortBy, $sortDirection);
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Get a single user with relations.
+     */
+    public function getUserById(int $id): User
+    {
+        return User::with(['roles', 'roles.permissions'])->findOrFail($id);
+    }
+
+    /**
+     * Create a new user and assign role.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createUser(array $data): User
+    {
+        return DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'nip' => $data['nip'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'role' => $data['role'],
+                'status' => $data['status'] ?? 'active',
+                'password' => Hash::make($data['password']),
+            ]);
+
+            $user->syncRoles([$data['role']]);
+
+            return $user->load(['roles', 'roles.permissions']);
+        });
+    }
+
+    /**
+     * Update an existing user.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateUser(User $user, array $data, User $currentUser): User
+    {
+        // Safeguard: Cannot demote the last Superadmin
+        if ($user->hasRole('Superadmin') && $data['role'] !== 'Superadmin') {
+            $superadminCount = User::role('Superadmin')->count();
+            if ($superadminCount <= 1) {
+                throw ValidationException::withMessages([
+                    'role' => 'Tidak dapat mengubah peran ini. Sistem harus memiliki setidaknya satu Superadmin aktif.',
+                ]);
+            }
+        }
+
+        // Safeguard: Cannot deactivate self
+        if ($user->id === $currentUser->id && isset($data['status']) && $data['status'] !== 'active') {
+            throw ValidationException::withMessages([
+                'status' => 'Anda tidak dapat menonaktifkan akun Anda sendiri demi alasan keamanan.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $data) {
+            $updatePayload = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'nip' => $data['nip'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'role' => $data['role'],
+                'status' => $data['status'],
+            ];
+
+            if (!empty($data['password'])) {
+                $updatePayload['password'] = Hash::make($data['password']);
+            }
+
+            $user->update($updatePayload);
+            $user->syncRoles([$data['role']]);
+
+            return $user->load(['roles', 'roles.permissions']);
+        });
+    }
+
+    /**
+     * Delete a user with security safeguards.
+     */
+    public function deleteUser(User $user, User $currentUser): void
+    {
+        // Safeguard: Cannot delete self
+        if ($user->id === $currentUser->id) {
+            throw ValidationException::withMessages([
+                'user' => 'Anda tidak dapat menghapus akun Anda sendiri.',
+            ]);
+        }
+
+        // Safeguard: Cannot delete the last Superadmin
+        if ($user->hasRole('Superadmin')) {
+            $superadminCount = User::role('Superadmin')->count();
+            if ($superadminCount <= 1) {
+                throw ValidationException::withMessages([
+                    'user' => 'Tidak dapat menghapus satu-satunya akun Superadmin yang ada di sistem.',
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($user) {
+            // Revoke all Sanctum tokens
+            $user->tokens()->delete();
+            $user->delete();
+        });
+    }
+
+    /**
+     * Reset 2FA for a user (e.g. if employee lost device).
+     */
+    public function resetTwoFactor(User $user): void
+    {
+        DB::transaction(function () use ($user) {
+            $user->update([
+                'two_factor_secret' => null,
+                'two_factor_recovery_codes' => null,
+                'two_factor_confirmed_at' => null,
+            ]);
+
+            // Revoke active sessions to ensure account integrity
+            $user->tokens()->delete();
+        });
+    }
+
+    /**
+     * Invite a new user by sending an activation email.
+     *
+     * @param  array{name: string, email: string, role: string, notes?: string|null}  $data
+     */
+    public function inviteUser(array $data, User $admin): array
+    {
+        return DB::transaction(function () use ($data, $admin) {
+            $token = Str::random(64);
+            $expiresAt = now()->addHours(48);
+
+            // Create user in pending_activation status with an unguessable placeholder password
+            $user = User::create([
+                'name' => trim($data['name']),
+                'email' => strtolower(trim($data['email'])),
+                'role' => $data['role'],
+                'status' => 'pending_activation',
+                'password' => Hash::make(Str::random(32)),
+                'activation_token' => $token,
+                'activation_token_expires_at' => $expiresAt,
+                'invitation_sent_at' => now(),
+                'invitation_notes' => !empty($data['notes']) ? trim($data['notes']) : null,
+            ]);
+
+            $user->syncRoles([$data['role']]);
+
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            $activationUrl = rtrim($frontendUrl, '/') . '/activate?token=' . $token;
+
+            // Send notification email
+            try {
+                Mail::to($user->email)->send(
+                    new UserInvitationMail($user, $activationUrl, $user->invitation_notes)
+                );
+            } catch (\Throwable $e) {
+                // If mail driver fails, log and continue in dev
+                report($e);
+            }
+
+            // Record in audit log
+            $this->auditLogService->log(
+                action: 'USER_INVITE',
+                module: 'Pegawai',
+                description: "Mengirim undangan aktivasi akun ke {$user->email} ({$user->name}) sebagai {$data['role']}",
+                user: $admin,
+                context: [
+                    'invited_user_id' => $user->id,
+                    'invited_email' => $user->email,
+                    'role' => $data['role'],
+                ]
+            );
+
+            return [
+                'user' => $user->load(['roles', 'roles.permissions']),
+                'activation_url' => $activationUrl,
+            ];
+        });
+    }
+
+    /**
+     * Resend an activation invitation email.
+     */
+    public function resendInvitation(User $user, User $admin): array
+    {
+        if (!$user->isPendingActivation()) {
+            throw ValidationException::withMessages([
+                'user' => 'Pengguna ini sudah aktif atau tidak dalam status menunggu aktivasi.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $admin) {
+            $token = Str::random(64);
+            $expiresAt = now()->addHours(48);
+
+            $user->update([
+                'activation_token' => $token,
+                'activation_token_expires_at' => $expiresAt,
+                'invitation_sent_at' => now(),
+            ]);
+
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            $activationUrl = rtrim($frontendUrl, '/') . '/activate?token=' . $token;
+
+            try {
+                Mail::to($user->email)->send(
+                    new UserInvitationMail($user, $activationUrl, $user->invitation_notes)
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            $this->auditLogService->log(
+                action: 'USER_INVITE_RESEND',
+                module: 'Pegawai',
+                description: "Mengirim ulang undangan aktivasi akun ke {$user->email} ({$user->name})",
+                user: $admin,
+                context: ['target_user_id' => $user->id]
+            );
+
+            return [
+                'user' => $user->load(['roles', 'roles.permissions']),
+                'activation_url' => $activationUrl,
+            ];
+        });
+    }
+
+    /**
+     * Validate an activation token.
+     */
+    public function validateActivationToken(string $token): User
+    {
+        if (empty($token) || strlen($token) < 32) {
+            throw ValidationException::withMessages([
+                'token' => 'Tautan aktivasi tidak valid atau telah rusak.',
+            ]);
+        }
+
+        $user = User::where('activation_token', $token)->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'token' => 'Tautan aktivasi tidak ditemukan atau sudah pernah digunakan.',
+            ]);
+        }
+
+        if (!$user->isPendingActivation()) {
+            throw ValidationException::withMessages([
+                'token' => 'Akun ini sudah aktif. Silakan langsung masuk ke portal.',
+            ]);
+        }
+
+        if (!$user->hasValidActivationToken()) {
+            throw ValidationException::withMessages([
+                'token' => 'Tautan aktivasi telah kadaluwarsa (melebihi 48 jam). Harap hubungi Administrator untuk mengirim ulang undangan.',
+            ]);
+        }
+
+        return $user->load(['roles']);
+    }
+
+    /**
+     * Activate user account with password, NIP, and phone.
+     *
+     * @param  array{password: string, nip?: string|null, phone?: string|null, name?: string|null}  $data
+     */
+    public function activateUser(string $token, array $data): User
+    {
+        $user = $this->validateActivationToken($token);
+
+        return DB::transaction(function () use ($user, $data) {
+            $user->update([
+                'name' => !empty($data['name']) ? trim($data['name']) : $user->name,
+                'nip' => !empty($data['nip']) ? trim($data['nip']) : null,
+                'phone' => !empty($data['phone']) ? trim($data['phone']) : null,
+                'password' => Hash::make($data['password']),
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'activation_token' => null,
+                'activation_token_expires_at' => null,
+            ]);
+
+            $this->auditLogService->log(
+                action: 'USER_ACTIVATED',
+                module: 'Autentikasi',
+                description: "Pegawai {$user->name} ({$user->email}) berhasil mengaktifkan akun dan membuat kata sandi mandiri.",
+                user: $user,
+                context: ['activated_user_id' => $user->id]
+            );
+
+            return $user->load(['roles']);
+        });
+    }
+}

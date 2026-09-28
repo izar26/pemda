@@ -1,0 +1,17 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Enums;
+
+enum LoginLogStatus: string
+{
+    case SUCCESS = 'SUCCESS';
+    case FAILED_CREDENTIALS = 'FAILED_CREDENTIALS';
+    case FAILED_2FA = 'FAILED_2FA';
+    case ACCOUNT_LOCKED = 'ACCOUNT_LOCKED';
+    case ACCOUNT_INACTIVE = 'ACCOUNT_INACTIVE';
+    case CHALLENGE_2FA = '2FA_CHALLENGE';
+    case PASSWORD_RESET_REQUESTED = 'PASSWORD_RESET_REQUESTED';
+    case PASSWORD_RESET_SUCCESS = 'PASSWORD_RESET_SUCCESS';
+}
