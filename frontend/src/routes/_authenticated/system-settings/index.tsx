@@ -1,0 +1,18 @@
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { SystemSettings } from '@/features/system-settings'
+import { useAuthStore } from '@/stores/auth-store'
+
+export const Route = createFileRoute('/_authenticated/system-settings/')({
+  beforeLoad: () => {
+    const user = useAuthStore.getState().auth.user
+    const permissions = user?.permissions ?? []
+    const isSuperadmin = (user?.roles?.includes('Superadmin') || user?.role === 'Superadmin') ?? false
+    if (!isSuperadmin && !permissions.includes('settings.view')) {
+      throw redirect({
+        to: '/errors/$error',
+        params: { error: 'forbidden' },
+      })
+    }
+  },
+  component: SystemSettings,
+})
