@@ -213,4 +213,43 @@ class MasterDataTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['nama', 'kode']);
     }
+
+    public function test_unauthorized_user_cannot_mutate_master_data(): void
+    {
+        $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
+
+        // POST (create)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/master/kategori-risiko', ['nama' => 'Hacker Risk', 'kode' => 'HR'])
+            ->assertStatus(403);
+
+        // PUT (update)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson('/api/master/kategori-risiko/1', ['nama' => 'Hacker Risk', 'kode' => 'HR'])
+            ->assertStatus(403);
+
+        // PATCH (toggle)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson('/api/master/kategori-risiko/1/toggle')
+            ->assertStatus(403);
+
+        // DELETE
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson('/api/master/kategori-risiko/1')
+            ->assertStatus(403);
+    }
+
+    public function test_cannot_delete_unsur_spip_with_active_sub_unsurs(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        // Unsur 1 has seeded sub-unsurs
+        $unsur = \App\Models\Master\MasterUnsurSpip::whereHas('subUnsurs')->firstOrFail();
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson("/api/master/unsur-spip/{$unsur->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonFragment(['message' => "Tidak dapat menghapus Unsur SPIP ini karena masih memiliki {$unsur->subUnsurs()->count()} Sub-Unsur terkait. Hapus atau pindahkan Sub-Unsur terlebih dahulu."]);
+    }
 }

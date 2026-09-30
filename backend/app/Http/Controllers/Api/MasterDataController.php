@@ -312,6 +312,13 @@ class MasterDataController extends Controller
         $config = $this->getEntityConfig($entity);
         $item = $config['model']::findOrFail($id);
 
+        // Relational safety check: Do not allow deleting an Unsur SPIP if it has child Sub-Unsurs
+        if ($entity === 'unsur-spip' && method_exists($item, 'subUnsurs') && $item->subUnsurs()->count() > 0) {
+            return response()->json([
+                'message' => "Tidak dapat menghapus Unsur SPIP ini karena masih memiliki {$item->subUnsurs()->count()} Sub-Unsur terkait. Hapus atau pindahkan Sub-Unsur terlebih dahulu.",
+            ], 422);
+        }
+
         $name = $item->nama;
 
         return DB::transaction(function () use ($request, $config, $entity, $item, $name, $id) {
