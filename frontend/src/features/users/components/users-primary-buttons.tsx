@@ -10,7 +10,7 @@ export function UsersPrimaryButtons() {
   if (!hasPermission('users.create')) return null
 
   return (
-    <div className='flex items-center gap-2'>
+    <>
       <Button
         variant='outline'
         size='sm'
@@ -25,7 +25,7 @@ export function UsersPrimaryButtons() {
         <UserPlus className='h-4 w-4 mr-1.5' />
         Tambah Pegawai Baru
       </Button>
-    </div>
+    </>
   )
 }
 

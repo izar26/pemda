@@ -114,8 +114,8 @@ export function Roles() {
 
       <Main className='flex flex-1 flex-col gap-3.5'>
         {/* Top Header & Primary Action */}
-        <div className='flex flex-wrap items-center justify-between gap-2.5'>
-          <div>
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+          <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-xl font-bold tracking-tight text-foreground'>
               Matriks Peran & Hak Akses
             </h2>
@@ -124,7 +124,7 @@ export function Roles() {
             </p>
           </div>
 
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 shrink-0'>
             <Button
               variant='outline'
               size='sm'

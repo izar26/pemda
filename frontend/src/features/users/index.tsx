@@ -59,17 +59,17 @@ export function Users() {
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6'>
         {/* Header Title & Actions */}
-        <div className='flex flex-wrap items-center justify-between gap-3'>
-          <div>
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+          <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
               Manajemen Pegawai & Pengguna
             </h2>
-            <p className='text-xs text-muted-foreground mt-0.5'>
+            <p className='text-xs text-muted-foreground'>
               Kelola akun resmi pegawai, penugasan peran jabatan, dan status keamanan autentikasi 2FA.
             </p>
           </div>
 
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 shrink-0'>
             <Button
               variant='outline'
               size='sm'

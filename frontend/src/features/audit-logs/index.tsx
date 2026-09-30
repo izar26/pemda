@@ -53,12 +53,12 @@ export function AuditLogs() {
 
       <Main className='flex flex-1 flex-col gap-4'>
         {/* Header Title */}
-        <div className='flex flex-wrap items-center justify-between gap-3'>
-          <div>
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+          <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-xl font-bold tracking-tight text-foreground'>
               Rekam Jejak & Log Audit Keamanan
             </h2>
-            <p className='text-xs text-muted-foreground mt-0.5'>
+            <p className='text-xs text-muted-foreground'>
               Transparansi riwayat aktivitas pengguna, sesi autentikasi, dan perubahan hak akses sistem.
             </p>
           </div>
@@ -66,7 +66,7 @@ export function AuditLogs() {
           <Button
             variant='outline'
             size='sm'
-            className='h-8 text-xs'
+            className='h-8 text-xs shrink-0'
             onClick={() => refetch()}
             disabled={isRefetching}
           >
