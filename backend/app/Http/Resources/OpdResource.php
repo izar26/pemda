@@ -26,7 +26,11 @@ class OpdResource extends JsonResource
             'kode' => $this->kode,
             'kategori' => $this->kategori,
             'kepala' => $this->kepala,
+            'urutan' => $this->urutan,
             'is_active' => $this->is_active,
+            'users_count' => $this->whenCounted('users', $this->users_count, 0),
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

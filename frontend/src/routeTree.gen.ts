@@ -32,6 +32,7 @@ import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedSystemSettingsIndexRouteImport } from './routes/_authenticated/system-settings/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles/index'
+import { Route as AuthenticatedOpdIndexRouteImport } from './routes/_authenticated/opd/index'
 import { Route as AuthenticatedMasterDataIndexRouteImport } from './routes/_authenticated/master-data/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
@@ -161,6 +162,11 @@ const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
   path: '/roles/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOpdIndexRoute = AuthenticatedOpdIndexRouteImport.update({
+  id: '/opd/',
+  path: '/opd/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMasterDataIndexRoute =
   AuthenticatedMasterDataIndexRouteImport.update({
     id: '/master-data/',
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/master-data/': typeof AuthenticatedMasterDataIndexRoute
+  '/opd/': typeof AuthenticatedOpdIndexRoute
   '/roles/': typeof AuthenticatedRolesIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/system-settings/': typeof AuthenticatedSystemSettingsIndexRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/master-data': typeof AuthenticatedMasterDataIndexRoute
+  '/opd': typeof AuthenticatedOpdIndexRoute
   '/roles': typeof AuthenticatedRolesIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/system-settings': typeof AuthenticatedSystemSettingsIndexRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/master-data/': typeof AuthenticatedMasterDataIndexRoute
+  '/_authenticated/opd/': typeof AuthenticatedOpdIndexRoute
   '/_authenticated/roles/': typeof AuthenticatedRolesIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/system-settings/': typeof AuthenticatedSystemSettingsIndexRoute
@@ -375,6 +384,7 @@ export interface FileRouteTypes {
     | '/chats/'
     | '/help-center/'
     | '/master-data/'
+    | '/opd/'
     | '/roles/'
     | '/settings/'
     | '/system-settings/'
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/chats'
     | '/help-center'
     | '/master-data'
+    | '/opd'
     | '/roles'
     | '/settings'
     | '/system-settings'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chats/'
     | '/_authenticated/help-center/'
     | '/_authenticated/master-data/'
+    | '/_authenticated/opd/'
     | '/_authenticated/roles/'
     | '/_authenticated/settings/'
     | '/_authenticated/system-settings/'
@@ -634,6 +646,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/opd/': {
+      id: '/_authenticated/opd/'
+      path: '/opd'
+      fullPath: '/opd/'
+      preLoaderRoute: typeof AuthenticatedOpdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/master-data/': {
       id: '/_authenticated/master-data/'
       path: '/master-data'
@@ -760,6 +779,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedMasterDataIndexRoute: typeof AuthenticatedMasterDataIndexRoute
+  AuthenticatedOpdIndexRoute: typeof AuthenticatedOpdIndexRoute
   AuthenticatedRolesIndexRoute: typeof AuthenticatedRolesIndexRoute
   AuthenticatedSystemSettingsIndexRoute: typeof AuthenticatedSystemSettingsIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
@@ -775,6 +795,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedMasterDataIndexRoute: AuthenticatedMasterDataIndexRoute,
+  AuthenticatedOpdIndexRoute: AuthenticatedOpdIndexRoute,
   AuthenticatedRolesIndexRoute: AuthenticatedRolesIndexRoute,
   AuthenticatedSystemSettingsIndexRoute: AuthenticatedSystemSettingsIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,

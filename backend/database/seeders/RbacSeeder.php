@@ -42,6 +42,12 @@ class RbacSeeder extends Seeder
                 ['name' => 'settings.view', 'description' => 'Melihat pengaturan sistem portal'],
                 ['name' => 'settings.edit', 'description' => 'Mengubah konfigurasi portal'],
             ],
+            'Perangkat Daerah (OPD)' => [
+                ['name' => 'opd.view', 'description' => 'Melihat direktori dan informasi instansi perangkat daerah (OPD)'],
+                ['name' => 'opd.create', 'description' => 'Menambahkan data instansi perangkat daerah baru'],
+                ['name' => 'opd.edit', 'description' => 'Mengubah data instansi perangkat daerah dan kepala OPD'],
+                ['name' => 'opd.delete', 'description' => 'Menghapus data instansi perangkat daerah'],
+            ],
             'Master Data' => [
                 ['name' => 'master.view', 'description' => 'Melihat data master sistem dan parameter risiko'],
                 ['name' => 'master.create', 'description' => 'Menambahkan entri master data baru'],

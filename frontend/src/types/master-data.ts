@@ -6,7 +6,6 @@ export type MasterEntityKey =
   | 'jenis-fraud'
   | 'kriteria-dampak'
   | 'urusan-pemerintahan'
-  | 'opd'
   | 'sumber-data'
   | 'unsur-spip'
   | 'sub-unsur-spip'
@@ -128,12 +127,6 @@ export const MASTER_ENTITIES: MasterEntityMeta[] = [
   {
     key: 'urusan-pemerintahan',
     label: 'Urusan Pemerintahan',
-    category: 'spip',
-    hasCode: true,
-  },
-  {
-    key: 'opd',
-    label: 'Perangkat Daerah (OPD)',
     category: 'spip',
     hasCode: true,
   },

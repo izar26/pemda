@@ -80,6 +80,30 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
+  'opd.view': {
+    label: 'Lihat Perangkat Daerah',
+    description: 'Melihat direktori instansi OPD, sekretariat, dinas, badan, RSUD, dan kecamatan.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'opd.create': {
+    label: 'Tambah Perangkat Daerah',
+    description: 'Mendaftarkan instansi perangkat daerah baru ke dalam portal.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'opd.edit': {
+    label: 'Edit Perangkat Daerah',
+    description: 'Mengubah nama instansi, kode, kategori, atau nama kepala OPD.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'opd.delete': {
+    label: 'Hapus Perangkat Daerah',
+    description: 'Menghapus instansi perangkat daerah yang tidak memiliki relasi pegawai.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
   'master.view': {
     label: 'Lihat Data Master',
     description: 'Melihat tabel data master parameter risiko, tata kelola, dan SPIP.',

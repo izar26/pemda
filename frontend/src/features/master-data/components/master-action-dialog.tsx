@@ -35,19 +35,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 const formSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi.').max(255, 'Maksimal 255 karakter.'),
   kode: z.string().max(50, 'Kode maksimal 50 karakter.').optional(),
-  kategori: z.string().optional(),
-  kepala: z.string().max(150, 'Nama kepala maksimal 150 karakter.').optional(),
   nomor: z.string().max(10, 'Nomor maksimal 10 karakter.').optional(),
   deskripsi: z.string().optional(),
   urutan: z.number().min(0, 'Urutan minimal 0.'),
@@ -81,8 +72,6 @@ export function MasterActionDialog({
     defaultValues: {
       nama: '',
       kode: '',
-      kategori: 'Dinas',
-      kepala: '',
       nomor: '',
       deskripsi: '',
       urutan: 0,
@@ -100,8 +89,6 @@ export function MasterActionDialog({
         form.reset({
           nama: currentItem.nama || '',
           kode: (itemAny.kode as string) || '',
-          kategori: (itemAny.kategori as string) || 'Dinas',
-          kepala: (itemAny.kepala as string) || '',
           nomor: (itemAny.nomor as string) || '',
           deskripsi: descVal,
           urutan: currentItem.urutan ?? 0,
@@ -111,8 +98,6 @@ export function MasterActionDialog({
         form.reset({
           nama: '',
           kode: '',
-          kategori: 'Dinas',
-          kepala: '',
           nomor: '',
           deskripsi: '',
           urutan: 0,
@@ -147,10 +132,6 @@ export function MasterActionDialog({
         payload[entity.descField] = values.deskripsi.trim()
       }
 
-      if (entity.key === 'opd') {
-        if (values.kategori) payload.kategori = values.kategori.trim()
-        if (values.kepala) payload.kepala = values.kepala.trim()
-      }
 
       const typedPayload = payload as unknown as MasterDataPayload
 
@@ -211,16 +192,11 @@ export function MasterActionDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        {entity.key === 'opd' ? 'Kode Singkatan Instansi' : 'Kode Referensi'}{' '}
-                        <span className='text-destructive'>*</span>
+                        Kode Referensi <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder={
-                            entity.key === 'opd'
-                              ? 'Contoh: Dinkes, Disdik, Setda, KEC-CIANJUR'
-                              : 'Contoh: RP, RS, ROO, atau nomor urut'
-                          }
+                          placeholder='Contoh: RP, RS, ROO, atau nomor urut'
                           maxLength={50}
                           disabled={isSubmitting}
                           {...field}
@@ -277,65 +253,6 @@ export function MasterActionDialog({
                 )}
               />
 
-              {/* OPD Specific Fields: Kategori & Kepala */}
-              {entity.key === 'opd' && (
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  <FormField
-                    control={form.control}
-                    name='kategori'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-semibold'>
-                          Kategori Instansi
-                        </FormLabel>
-                        <Select
-                          disabled={isSubmitting}
-                          onValueChange={field.onChange}
-                          value={field.value || 'Dinas'}
-                        >
-                          <FormControl>
-                            <SelectTrigger className='w-full'>
-                              <SelectValue placeholder='Pilih kategori...' />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value='Dinas'>Dinas</SelectItem>
-                            <SelectItem value='Badan'>Badan</SelectItem>
-                            <SelectItem value='Sekretariat'>Sekretariat</SelectItem>
-                            <SelectItem value='Inspektorat'>Inspektorat</SelectItem>
-                            <SelectItem value='RSUD'>RSUD</SelectItem>
-                            <SelectItem value='Kecamatan'>Kecamatan</SelectItem>
-                            <SelectItem value='Kantor'>Kantor</SelectItem>
-                            <SelectItem value='Lainnya'>Lainnya</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name='kepala'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className='text-xs font-semibold'>
-                          Kepala OPD (Opsional)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder='Contoh: Dr. H. Fulan, M.Si'
-                            maxLength={150}
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className='text-xs' />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
 
               {/* Definisi / Deskripsi */}
               {entity.descField && (

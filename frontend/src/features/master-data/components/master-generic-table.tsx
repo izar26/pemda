@@ -158,37 +158,6 @@ export function MasterGenericTable({ entity }: MasterGenericTableProps) {
       enableSorting: true,
     })
 
-    if (entity.key === 'opd') {
-      cols.push(
-        {
-          accessorKey: 'kategori',
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title='Kategori' />
-          ),
-          cell: ({ row }) => {
-            const kat = row.original.kategori || 'Dinas'
-            return (
-              <Badge variant='outline' className='text-xs font-normal'>
-                {kat}
-              </Badge>
-            )
-          },
-          enableSorting: true,
-        },
-        {
-          accessorKey: 'kepala',
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title='Kepala Perangkat Daerah' />
-          ),
-          cell: ({ row }) => (
-            <span className='text-xs text-muted-foreground'>
-              {row.original.kepala || '-'}
-            </span>
-          ),
-          enableSorting: true,
-        }
-      )
-    }
 
     if (entity.descField) {
       const descKey = entity.descField

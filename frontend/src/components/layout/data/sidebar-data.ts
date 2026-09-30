@@ -12,6 +12,7 @@ import {
   History,
   Sliders,
   Database,
+  Building2,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -48,6 +49,12 @@ export const sidebarData: SidebarData = {
           url: '/roles',
           icon: ShieldCheck,
           requiredPermission: 'roles.view',
+        },
+        {
+          title: 'Perangkat Daerah (OPD)',
+          url: '/opd',
+          icon: Building2,
+          requiredPermission: 'opd.view',
         },
         {
           title: 'Data Master',

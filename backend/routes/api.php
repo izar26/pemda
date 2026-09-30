@@ -19,9 +19,9 @@ Route::get('/ping', function () {
     ]);
 });
 
-// Master OPD (Perangkat Daerah) - Publicly available for registration/activation & dashboard
+// Master OPD (Perangkat Daerah) - Publicly available for dropdowns & registration
 Route::get('/opds', [OpdController::class, 'index']);
-Route::get('/opds/{opd}', [OpdController::class, 'show']);
+Route::get('/opds/{opd}', [OpdController::class, 'show'])->whereNumber('opd');
 
 // Authentication Routes
 Route::prefix('auth')->group(function () {
@@ -71,6 +71,13 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     // System Settings
     Route::get('/system-settings', [SystemSettingController::class, 'index']);
     Route::put('/system-settings', [SystemSettingController::class, 'update']);
+
+    // Perangkat Daerah (OPD) Dedicated CRUD & Stats
+    Route::get('/opds/stats', [OpdController::class, 'stats']);
+    Route::post('/opds', [OpdController::class, 'store']);
+    Route::put('/opds/{opd}', [OpdController::class, 'update']);
+    Route::patch('/opds/{opd}/toggle', [OpdController::class, 'toggleActive']);
+    Route::delete('/opds/{opd}', [OpdController::class, 'destroy']);
 
     // Master Data (Manajemen Risiko & SPIP)
     Route::prefix('master')->group(function () {
