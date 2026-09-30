@@ -45,6 +45,9 @@ class DatabaseSeeder extends Seeder
 
         // 4. Seed System Settings & Initial Audit Logs
         $this->call(SystemSettingSeeder::class);
+
+        // 5. Seed Master Data Manajemen Risiko & SPIP
+        $this->call(MasterDataSeeder::class);
     }
 }
 

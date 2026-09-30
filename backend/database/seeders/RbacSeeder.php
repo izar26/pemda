@@ -42,6 +42,12 @@ class RbacSeeder extends Seeder
                 ['name' => 'settings.view', 'description' => 'Melihat pengaturan sistem portal'],
                 ['name' => 'settings.edit', 'description' => 'Mengubah konfigurasi portal'],
             ],
+            'Master Data' => [
+                ['name' => 'master.view', 'description' => 'Melihat data master sistem dan parameter risiko'],
+                ['name' => 'master.create', 'description' => 'Menambahkan entri master data baru'],
+                ['name' => 'master.edit', 'description' => 'Mengubah entri master data'],
+                ['name' => 'master.delete', 'description' => 'Menonaktifkan atau menghapus entri master data'],
+            ],
         ];
 
         $createdPermissions = [];

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
@@ -70,6 +71,16 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     // System Settings
     Route::get('/system-settings', [SystemSettingController::class, 'index']);
     Route::put('/system-settings', [SystemSettingController::class, 'update']);
+
+    // Master Data (Manajemen Risiko & SPIP)
+    Route::prefix('master')->group(function () {
+        Route::get('/{entity}', [MasterDataController::class, 'index']);
+        Route::get('/{entity}/{id}', [MasterDataController::class, 'show']);
+        Route::post('/{entity}', [MasterDataController::class, 'store']);
+        Route::put('/{entity}/{id}', [MasterDataController::class, 'update']);
+        Route::patch('/{entity}/{id}/toggle', [MasterDataController::class, 'toggleActive']);
+        Route::delete('/{entity}/{id}', [MasterDataController::class, 'destroy']);
+    });
 });
 
 

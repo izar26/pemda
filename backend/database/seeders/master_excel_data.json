@@ -1,0 +1,612 @@
+{
+  "1": {
+    "title": "PEMILIK RISIKO",
+    "headers": [
+      "NO",
+      "PEMILIK RISIKO"
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "PEMILIK RISIKO": "Sekretaris Daerah"
+      },
+      {
+        "NO": 2,
+        "PEMILIK RISIKO": "Asisten Sekretaris Daerah"
+      },
+      {
+        "NO": 3,
+        "PEMILIK RISIKO": "Kepala SKPD"
+      },
+      {
+        "NO": 4,
+        "PEMILIK RISIKO": "Direktur"
+      },
+      {
+        "NO": 5,
+        "PEMILIK RISIKO": "Kepala Bagian"
+      },
+      {
+        "NO": 6,
+        "PEMILIK RISIKO": "Camat"
+      },
+      {
+        "NO": 7,
+        "PEMILIK RISIKO": "Kepala Bidang"
+      },
+      {
+        "NO": 8,
+        "PEMILIK RISIKO": "Kepala Subbagian"
+      },
+      {
+        "NO": 9,
+        "PEMILIK RISIKO": "Kepala Seksi/Subbidang"
+      },
+      {
+        "NO": 10,
+        "PEMILIK RISIKO": "Kepala UPTD"
+      },
+      {
+        "NO": 11,
+        "PEMILIK RISIKO": "Kepala Puskesmas"
+      },
+      {
+        "NO": 12,
+        "PEMILIK RISIKO": "Lurah"
+      },
+      {
+        "NO": 13,
+        "PEMILIK RISIKO": "Kepala Desa"
+      }
+    ]
+  },
+  "2": {
+    "title": "KATEGORI RISIKO",
+    "headers": [
+      "NO",
+      "KATEGORI RISIKO",
+      "KODE",
+      "DEFINISI"
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "KATEGORI RISIKO": "Risiko Pendapatan",
+        "KODE": "RP",
+        "DEFINISI": "Risiko yang disebabkan oleh tidak tercapainya target pendapatan daerah. Pendapatan meliputi Pendapatan Asli Daerah, Pendapatan Transfer dan Pendapatan daerah lainnya."
+      },
+      {
+        "NO": 2,
+        "KATEGORI RISIKO": "Risiko Belanja",
+        "KODE": "RB",
+        "DEFINISI": "Risiko yang disebabkan oleh kegagalan dalam penyerapan belanja daerah, tidak sesuai proyeksi (porsionalitas penyerapan), atau tidak sesuai dengan sasaran penggunaan modal, barang, pegawai, transfer, bantuan sosial dan lain-lain."
+      },
+      {
+        "NO": 3,
+        "KATEGORI RISIKO": "Risiko Pembiayaan",
+        "KODE": "RPb",
+        "DEFINISI": "Risiko yang disebabkan oleh kegagalan dalam pembayaran/pemenuhan pembiayaan baik secara nominal maupun jadwal pembiayaan."
+      },
+      {
+        "NO": 4,
+        "KATEGORI RISIKO": "Risiko Strategis",
+        "KODE": "RS",
+        "DEFINISI": "Risiko yang disebabkan oleh ketidaktepatan organisasi dalam mengambil keputusan strategis, ketidaktepatan dalam memilih strategi dan program, serta kegagalan dalam mengantisipasi perubahan lingkungan organisasi berupa perubahan lingkungan organisasi berupa perubahan sosial, politik dan ekonomi."
+      },
+      {
+        "NO": 5,
+        "KATEGORI RISIKO": "Risiko Fraud",
+        "KODE": "RF",
+        "DEFINISI": "Risiko yang timbul karena kecurangan yang disengaja yang dapat merugikan keuangan negara termasuk dalam penggelapan aset (barang dan setara kas), korupsi (pungutan liar, gratifikasi, suap dan lain-lain) dan manipulasi laporan kinerja dan keuangan."
+      },
+      {
+        "NO": 6,
+        "KATEGORI RISIKO": "Risiko Kepatuhan",
+        "KODE": "RK",
+        "DEFINISI": "Risiko yang timbul akibat organisasi yang tidak mematuhi dan/atau tidak melaksanakan peraturan perundang-undangan dan ketentuan yang berlaku yang timbul karena kurangnya pemahaman terhadap hukum dan aturan lainnya yang berlaku umum."
+      },
+      {
+        "NO": 7,
+        "KATEGORI RISIKO": "Risiko Operasional",
+        "KODE": "RO",
+        "DEFINISI": "Risiko yang disebabkan oleh ketidakcukupan dan/atau tidak berfungsinya proses pelaksanaan kerja internal, kesalahan manusia dan kegagalan sistem, dan/atau adanya kejadian eksternal yang berpengaruh kepada operasional organisasi serta adanya tuntutan hukum dari luar organisasi."
+      },
+      {
+        "NO": 8,
+        "KATEGORI RISIKO": "Risiko Reputasi",
+        "KODE": "RR",
+        "DEFINISI": "Risiko yang disebabkan oleh penurunan tingkat kepercayaan pemangku kepentingan eksternal yang bersumber dari persepsi negatif terhadap organisasi."
+      }
+    ]
+  },
+  "3": {
+    "title": "PENYEBAB RISIKO",
+    "headers": [
+      "NO",
+      "PENYEBAB RISIKO"
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "PENYEBAB RISIKO": "Man"
+      },
+      {
+        "NO": 2,
+        "PENYEBAB RISIKO": "Money"
+      },
+      {
+        "NO": 3,
+        "PENYEBAB RISIKO": "Method"
+      },
+      {
+        "NO": 4,
+        "PENYEBAB RISIKO": "Machine"
+      },
+      {
+        "NO": 5,
+        "PENYEBAB RISIKO": "Material"
+      },
+      {
+        "NO": 6,
+        "PENYEBAB RISIKO": "Eksternal"
+      }
+    ]
+  },
+  "4": {
+    "title": "TINGKAT RISIKO",
+    "headers": [
+      "KODE",
+      "TINGKAT RISIKO"
+    ],
+    "rows": [
+      {
+        "KODE": "RSP",
+        "TINGKAT RISIKO": "Strategis Pemda"
+      },
+      {
+        "KODE": "RSO",
+        "TINGKAT RISIKO": "Strategis OPD"
+      },
+      {
+        "KODE": "ROO",
+        "TINGKAT RISIKO": "Operasional OPD"
+      }
+    ]
+  },
+  "5": {
+    "title": "JENIS FRAUD",
+    "headers": [
+      "NO",
+      "JENIS FRAUD  "
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "JENIS FRAUD  ": "Penyalahgunaan Asset"
+      },
+      {
+        "NO": 2,
+        "JENIS FRAUD  ": "Korupsi (Gratifkasi/Suap, Pungli dll)"
+      },
+      {
+        "NO": 3,
+        "JENIS FRAUD  ": "Manipulasi Laporan Keuangan"
+      },
+      {
+        "NO": 4,
+        "JENIS FRAUD  ": "Manipulasi Laporan lainnya"
+      },
+      {
+        "NO": 5,
+        "JENIS FRAUD  ": "Jenis Fraud Lainnya"
+      }
+    ]
+  },
+  "6": {
+    "title": "KRITERIA DAMPAK",
+    "headers": [
+      "NO",
+      "KRITERIA DAMPAK"
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "KRITERIA DAMPAK": "Kerugian negara"
+      },
+      {
+        "NO": 2,
+        "KRITERIA DAMPAK": "Penurunan reputasi"
+      },
+      {
+        "NO": 3,
+        "KRITERIA DAMPAK": "Penurunan kinerja"
+      },
+      {
+        "NO": 4,
+        "KRITERIA DAMPAK": "Gangguan terhadap layanan organisasi"
+      },
+      {
+        "NO": 5,
+        "KRITERIA DAMPAK": "Tuntutan hukum"
+      }
+    ]
+  },
+  "7": {
+    "title": "URUSAN PEMERINTAHAN",
+    "headers": [
+      "KODE",
+      "URUSAN PEMERINTAH"
+    ],
+    "rows": [
+      {
+        "KODE": 1,
+        "URUSAN PEMERINTAH": "Pendidikan"
+      },
+      {
+        "KODE": 2,
+        "URUSAN PEMERINTAH": "Kesehatan"
+      },
+      {
+        "KODE": 3,
+        "URUSAN PEMERINTAH": "PU dan Tata Ruang"
+      },
+      {
+        "KODE": 4,
+        "URUSAN PEMERINTAH": "Perumahan dan Kawasan Permukiman"
+      },
+      {
+        "KODE": 5,
+        "URUSAN PEMERINTAH": "Ketentraman, Ketertiban Umum, dan Perlindungan Masyarakat"
+      },
+      {
+        "KODE": 6,
+        "URUSAN PEMERINTAH": "Sosial"
+      },
+      {
+        "KODE": 7,
+        "URUSAN PEMERINTAH": "Tenaga Kerja"
+      },
+      {
+        "KODE": 8,
+        "URUSAN PEMERINTAH": "Pemberdayaan Perempuan & Pelindungan Anak"
+      },
+      {
+        "KODE": 9,
+        "URUSAN PEMERINTAH": "Pangan"
+      },
+      {
+        "KODE": 10,
+        "URUSAN PEMERINTAH": "Pertanahan"
+      },
+      {
+        "KODE": 11,
+        "URUSAN PEMERINTAH": "Lingkungan Hidup"
+      },
+      {
+        "KODE": 12,
+        "URUSAN PEMERINTAH": "Administrasi kependudukan dan pencatatan sipil"
+      },
+      {
+        "KODE": 13,
+        "URUSAN PEMERINTAH": "Pemberdayaan masyarakat dan desa"
+      },
+      {
+        "KODE": 14,
+        "URUSAN PEMERINTAH": "Pengendalian penduduk dan keluarga berencana"
+      },
+      {
+        "KODE": 15,
+        "URUSAN PEMERINTAH": "Perhubungan"
+      },
+      {
+        "KODE": 16,
+        "URUSAN PEMERINTAH": "Komunikasi dan informatika"
+      },
+      {
+        "KODE": 17,
+        "URUSAN PEMERINTAH": "KUKM"
+      },
+      {
+        "KODE": 18,
+        "URUSAN PEMERINTAH": "Penanaman Modal"
+      },
+      {
+        "KODE": 19,
+        "URUSAN PEMERINTAH": "Kepemudaan dan olah raga"
+      },
+      {
+        "KODE": 20,
+        "URUSAN PEMERINTAH": "Statistik"
+      },
+      {
+        "KODE": 21,
+        "URUSAN PEMERINTAH": "Persandian"
+      },
+      {
+        "KODE": 22,
+        "URUSAN PEMERINTAH": "Kebudayaan"
+      },
+      {
+        "KODE": 23,
+        "URUSAN PEMERINTAH": "Perpustakaan"
+      },
+      {
+        "KODE": 24,
+        "URUSAN PEMERINTAH": "Kearsipan"
+      },
+      {
+        "KODE": 25,
+        "URUSAN PEMERINTAH": "Kelautan dan perikanan"
+      },
+      {
+        "KODE": 26,
+        "URUSAN PEMERINTAH": "Pariwisata"
+      },
+      {
+        "KODE": 27,
+        "URUSAN PEMERINTAH": "Pertanian"
+      },
+      {
+        "KODE": 28,
+        "URUSAN PEMERINTAH": "Kehutanan/Perkebunan"
+      },
+      {
+        "KODE": 29,
+        "URUSAN PEMERINTAH": "Energi dan sumber daya mineral"
+      },
+      {
+        "KODE": 30,
+        "URUSAN PEMERINTAH": "Perdagangan"
+      },
+      {
+        "KODE": 31,
+        "URUSAN PEMERINTAH": "Perindustrian"
+      },
+      {
+        "KODE": 32,
+        "URUSAN PEMERINTAH": "Transmigrasi"
+      },
+      {
+        "KODE": 33,
+        "URUSAN PEMERINTAH": "Penyusunan Kebijakan dan Koordinasi Administratif"
+      },
+      {
+        "KODE": 34,
+        "URUSAN PEMERINTAH": "Administrasi Kesekretariatan DPRD"
+      },
+      {
+        "KODE": 35,
+        "URUSAN PEMERINTAH": "Pembinaan dan Pengawasan"
+      },
+      {
+        "KODE": 36,
+        "URUSAN PEMERINTAH": "Perencanaan pembangunan, litbang"
+      },
+      {
+        "KODE": 37,
+        "URUSAN PEMERINTAH": "Keuangan dan Pendapatan"
+      },
+      {
+        "KODE": 38,
+        "URUSAN PEMERINTAH": "Kepegawaian dan Pengembangan SDM"
+      },
+      {
+        "KODE": 39,
+        "URUSAN PEMERINTAH": "Bencana"
+      },
+      {
+        "KODE": 40,
+        "URUSAN PEMERINTAH": "Politik"
+      },
+      {
+        "KODE": 41,
+        "URUSAN PEMERINTAH": "Kecamatan"
+      }
+    ]
+  },
+  "8": {
+    "title": "UNSUR SPIP",
+    "headers": [
+      "NO",
+      "UNSUR SPIP",
+      "BAGIAN"
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "UNSUR SPIP": "Lingkungan Pengendalian",
+        "BAGIAN": "- Penegakan Integritas dan Nilai Etika\n- Komitmen terhadap Kompetensi\n- Kepemimpinan yang Kondusif\n- Struktur Organisasi Sesuai Kebutuhan\n- Pendelegasian Wewenang dan Tanggung Jawab yang Tepat\n- Penyusunan dan Penerapan Kebijakan yang Sehat tentang Pembinaan SDM\n- Perwujudan Peran APIP yang Efektif\n- Hubungan Kerja yang Baik dengan Instansi Pemerintah Terkait"
+      },
+      {
+        "NO": 2,
+        "UNSUR SPIP": "Penilaian Risiko",
+        "BAGIAN": "- Identifikasi Risiko\n- Analisis Risiko"
+      },
+      {
+        "NO": 3,
+        "UNSUR SPIP": "Kegiatan Pengendalian",
+        "BAGIAN": "- Reviu Kinerja\n- Pembinaan Sumber Daya Manusia\n- Pengendalian atas Pengelolaan Sistem Informasi\n- Pengendalian Fisik atas Aset\n- Penetapan dan Reviu Indikator\n- Pemisahan Fungsi\n- Otorisasi Transaksi dan Kejadian Penting\n- Pencatatan yang Akurat dan Tepat Waktu\n- Pembatasan Akses atas Sumber Daya dan Catatan\n- Akuntabilitas Pencatatan dan Sumber Daya\n- Dokumentasi yang Baik atas Sistem Pengendalian Intern (SPI) serta Transaksi dan Kejadian Penting"
+      },
+      {
+        "NO": 4,
+        "UNSUR SPIP": "Informasi dan Komunikasi",
+        "BAGIAN": "- Informasi\n- Penyelenggaraan Komunikasi yang Efektif"
+      },
+      {
+        "NO": 5,
+        "UNSUR SPIP": "Pemantauan Pengendalian Intern",
+        "BAGIAN": "- Pemantauan Berkelanjutan\n- Evaluasi Terpisah"
+      }
+    ]
+  },
+  "10": {
+    "title": "ENTITAS",
+    "headers": [
+      "KODE",
+      "ENTITAS"
+    ],
+    "rows": [
+      {
+        "KODE": 1,
+        "ENTITAS": "Pemda"
+      },
+      {
+        "KODE": 2,
+        "ENTITAS": "Sekretariat Daerah"
+      },
+      {
+        "KODE": 3,
+        "ENTITAS": "Sekretariat DPRD"
+      },
+      {
+        "KODE": 4,
+        "ENTITAS": "Inspektorat Daerah"
+      },
+      {
+        "KODE": 5,
+        "ENTITAS": "Dinas Pendidikan"
+      },
+      {
+        "KODE": 6,
+        "ENTITAS": "Dinas Kesehatan"
+      },
+      {
+        "KODE": 7,
+        "ENTITAS": "Dinas Pekerjaan Umum dan Penataan Ruang"
+      },
+      {
+        "KODE": 8,
+        "ENTITAS": "Dinas Perumahan Rakyat dan Kawasan Permukiman"
+      },
+      {
+        "KODE": 9,
+        "ENTITAS": "Satuan Polisi Pamong Praja"
+      },
+      {
+        "KODE": 10,
+        "ENTITAS": "Dinas Sosial"
+      },
+      {
+        "KODE": 11,
+        "ENTITAS": "Dinas Ketenagakerjaan"
+      },
+      {
+        "KODE": 12,
+        "ENTITAS": "Dinas Pemberdayaan Perempuan dan Perlindungan Anak"
+      },
+      {
+        "KODE": 13,
+        "ENTITAS": "Dinas Ketahanan Pangan"
+      },
+      {
+        "KODE": 14,
+        "ENTITAS": "Dinas Lingkungan Hidup"
+      },
+      {
+        "KODE": 15,
+        "ENTITAS": "Dinas Kependudukan dan Pencatatan Sipil"
+      },
+      {
+        "KODE": 16,
+        "ENTITAS": "Dinas Pemberdayaan Masyarakat dan Desa"
+      },
+      {
+        "KODE": 17,
+        "ENTITAS": "Dinas Pengendalian Penduduk dan Keluarga Berencana"
+      },
+      {
+        "KODE": 18,
+        "ENTITAS": "Dinas Perhubungan"
+      },
+      {
+        "KODE": 19,
+        "ENTITAS": "Dinas Komunikasi dan Informatika"
+      },
+      {
+        "KODE": 20,
+        "ENTITAS": "Dinas Perdagangan dan Koperasi Usaha Kecil Menengah"
+      },
+      {
+        "KODE": 21,
+        "ENTITAS": "Dinas Penanaman Modal dan Pelayanan Perizinan Terpadu Satu Pintu"
+      },
+      {
+        "KODE": 22,
+        "ENTITAS": "Dinas Pariwisata"
+      },
+      {
+        "KODE": 23,
+        "ENTITAS": "Dinas Pemuda dan Olah Raga"
+      },
+      {
+        "KODE": 24,
+        "ENTITAS": "Dinas Perindustrian"
+      },
+      {
+        "KODE": 25,
+        "ENTITAS": "Dinas Perpustakaan dan kearsipan"
+      },
+      {
+        "KODE": 26,
+        "ENTITAS": "Dinas Pertanian"
+      },
+      {
+        "KODE": 27,
+        "ENTITAS": "Dinas Perikanan"
+      },
+      {
+        "KODE": 28,
+        "ENTITAS": "Badan Perencanaan Pembangunan Daerah"
+      },
+      {
+        "KODE": 29,
+        "ENTITAS": "Badan Pengelolaan keuangan, Pendapatan an Aset Daerah"
+      },
+      {
+        "KODE": 30,
+        "ENTITAS": "Badan Kepegawaian Daerah"
+      },
+      {
+        "KODE": 31,
+        "ENTITAS": "Badan Penanggulangan Bencana Daerah"
+      },
+      {
+        "KODE": 32,
+        "ENTITAS": "Kantor Kesatuan Bangsa dan Politik"
+      },
+      {
+        "KODE": 33,
+        "ENTITAS": "RSUD"
+      },
+      {
+        "KODE": 34,
+        "ENTITAS": "Kecamatan"
+      }
+    ]
+  },
+  "11": {
+    "title": "SUMBER DATA",
+    "headers": [
+      "NO",
+      "SUMBER DATA"
+    ],
+    "rows": [
+      {
+        "NO": 1,
+        "SUMBER DATA": "RPJMD"
+      },
+      {
+        "NO": 2,
+        "SUMBER DATA": "Renstra SKPD"
+      },
+      {
+        "NO": 3,
+        "SUMBER DATA": "Renja SKPD"
+      },
+      {
+        "NO": 4,
+        "SUMBER DATA": "RKA SKPD"
+      }
+    ]
+  }
+}

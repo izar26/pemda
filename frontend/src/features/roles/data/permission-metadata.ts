@@ -80,6 +80,30 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
+  'master.view': {
+    label: 'Lihat Data Master',
+    description: 'Melihat tabel data master parameter risiko, tata kelola, dan SPIP.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'master.create': {
+    label: 'Tambah Data Master',
+    description: 'Menambahkan entri referensi data master baru ke sistem.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'master.edit': {
+    label: 'Edit Data Master',
+    description: 'Mengubah nama, kode, definisi, atau status aktif data master.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'master.delete': {
+    label: 'Hapus Data Master',
+    description: 'Menghapus atau menonaktifkan entri data master sistem.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
 }
 
 export function getPermissionMetadata(permName: string): PermissionMetadata {

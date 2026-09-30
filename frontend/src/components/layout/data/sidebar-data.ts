@@ -11,6 +11,7 @@ import {
   Landmark,
   History,
   Sliders,
+  Database,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -47,6 +48,12 @@ export const sidebarData: SidebarData = {
           url: '/roles',
           icon: ShieldCheck,
           requiredPermission: 'roles.view',
+        },
+        {
+          title: 'Data Master',
+          url: '/master-data',
+          icon: Database,
+          requiredPermission: 'master.view',
         },
         {
           title: 'Log Audit Keamanan',
