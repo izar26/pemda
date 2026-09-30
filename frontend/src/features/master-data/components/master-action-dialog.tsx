@@ -290,8 +290,10 @@ export function MasterActionDialog({
                       </FormLabel>
                       <Select
                         disabled={isSubmitting || isLoadingOpds}
-                        onValueChange={field.onChange}
-                        value={field.value}
+                        onValueChange={(val) =>
+                          field.onChange(val === 'none' ? '' : val)
+                        }
+                        value={field.value || 'none'}
                       >
                         <FormControl>
                           <SelectTrigger className='w-full'>
@@ -305,7 +307,7 @@ export function MasterActionDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className='max-h-60'>
-                          <SelectItem value=''>-- Tanpa Relasi OPD --</SelectItem>
+                          <SelectItem value='none'>-- Tanpa Relasi OPD --</SelectItem>
                           {opds.map((opd) => (
                             <SelectItem key={opd.id} value={String(opd.id)}>
                               <div className='flex items-center justify-between gap-2'>
