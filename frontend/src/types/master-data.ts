@@ -6,7 +6,7 @@ export type MasterEntityKey =
   | 'jenis-fraud'
   | 'kriteria-dampak'
   | 'urusan-pemerintahan'
-  | 'entitas-penilaian'
+  | 'opd'
   | 'sumber-data'
   | 'unsur-spip'
   | 'sub-unsur-spip'
@@ -25,18 +25,13 @@ export interface MasterDataBaseItem {
   id: number
   nama: string
   kode?: string
+  kategori?: string | null
+  kepala?: string | null
   definisi?: string | null
   deskripsi?: string | null
   nomor?: string | null
   urutan: number
   is_active: boolean
-  opd_id?: number | null
-  opd?: {
-    id: number
-    nama: string
-    kode: string
-    kategori: string
-  } | null
   sub_unsurs?: MasterSubUnsurSpipItem[]
   created_at?: string
   updated_at?: string
@@ -45,12 +40,13 @@ export interface MasterDataBaseItem {
 export interface MasterDataPayload {
   nama: string
   kode?: string
+  kategori?: string
+  kepala?: string
   definisi?: string
   deskripsi?: string
   nomor?: string
   urutan?: number
   is_active?: boolean
-  opd_id?: number | null
   unsur_spip_id?: number
 }
 
@@ -136,8 +132,8 @@ export const MASTER_ENTITIES: MasterEntityMeta[] = [
     hasCode: true,
   },
   {
-    key: 'entitas-penilaian',
-    label: 'Entitas Penilaian',
+    key: 'opd',
+    label: 'Perangkat Daerah (OPD)',
     category: 'spip',
     hasCode: true,
   },

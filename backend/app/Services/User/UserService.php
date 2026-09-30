@@ -407,14 +407,35 @@ class UserService
                 $updatePayload['opd_id'] = $data['opd_id'];
             }
 
-            $user->update($updatePayload);
+            $changes = [];
+            foreach ($updatePayload as $key => $newVal) {
+                $oldVal = $user->getOriginal($key);
+                if ($oldVal != $newVal) {
+                    $changes[$key] = [
+                        'old' => $oldVal,
+                        'new' => $newVal,
+                    ];
+                }
+            }
+
+            User::withoutAuditing(function () use ($user, $updatePayload) {
+                $user->update($updatePayload);
+            });
 
             $this->auditLogService->log(
                 action: 'USER_PROFILE_UPDATE',
                 module: 'Profil',
                 description: "Pegawai {$user->name} memperbarui data profil akun kedinasan",
                 user: $user,
-                context: ['user_id' => $user->id]
+                context: [
+                    'action_type' => 'UPDATE',
+                    'entity_name' => 'Pegawai',
+                    'record_title' => $user->name,
+                    'user_id' => $user->id,
+                    'changes' => $changes,
+                ],
+                auditableType: User::class,
+                auditableId: $user->id
             );
 
             return $user->load(['roles', 'roles.permissions', 'opd']);

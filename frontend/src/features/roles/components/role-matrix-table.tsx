@@ -67,6 +67,7 @@ export function RoleMatrixTable({
     roles.forEach((r) => {
       initialState[r.id] = new Set((r.permissions || []).map((p) => p.name))
     })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMatrixState(initialState)
   }, [roles])
 

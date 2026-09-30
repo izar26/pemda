@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Master\MasterEntitasPenilaian;
 use App\Models\Master\MasterJenisFraud;
 use App\Models\Master\MasterKategoriRisiko;
 use App\Models\Master\MasterKriteriaDampak;
@@ -15,6 +14,7 @@ use App\Models\Master\MasterSubUnsurSpip;
 use App\Models\Master\MasterSumberData;
 use App\Models\Master\MasterTingkatRisiko;
 use App\Models\Master\MasterUnsurSpip;
+use App\Models\Opd;
 use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,12 +72,11 @@ class MasterDataController extends Controller
             'table' => 'master_urusan_pemerintahans',
             'has_code' => true,
         ],
-        'entitas-penilaian' => [
-            'model' => MasterEntitasPenilaian::class,
-            'label' => 'Entitas Penilaian',
-            'table' => 'master_entitas_penilaians',
+        'opd' => [
+            'model' => Opd::class,
+            'label' => 'Perangkat Daerah (OPD)',
+            'table' => 'opds',
             'has_code' => true,
-            'with' => ['opd'],
         ],
         'sumber-data' => [
             'model' => MasterSumberData::class,
@@ -134,16 +133,24 @@ class MasterDataController extends Controller
 
         if ($request->has('search') && !empty($request->query('search'))) {
             $term = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($term, $config) {
+            $query->where(function ($q) use ($term, $config, $entity) {
                 $q->where('nama', 'ilike', "%{$term}%");
                 if (!empty($config['has_code'])) {
                     $q->orWhere('kode', 'ilike', "%{$term}%");
+                }
+                if ($entity === 'opd') {
+                    $q->orWhere('kepala', 'ilike', "%{$term}%")
+                      ->orWhere('kategori', 'ilike', "%{$term}%");
                 }
             });
         }
 
         if ($request->has('is_active') && $request->query('is_active') !== 'all') {
             $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($entity === 'opd' && $request->has('kategori') && !empty($request->query('kategori')) && $request->query('kategori') !== 'all') {
+            $query->where('kategori', $request->query('kategori'));
         }
 
         if ($entity === 'sub-unsur-spip' && $request->has('unsur_spip_id')) {
@@ -205,10 +212,16 @@ class MasterDataController extends Controller
                 description: "Menambahkan entri baru pada {$config['label']}: {$item->nama}",
                 user: $request->user(),
                 context: [
+                    'action_type' => 'CREATE',
                     'entity' => $entity,
+                    'entity_name' => $config['label'],
+                    'record_title' => $item->nama,
                     'item_id' => $item->id,
                     'payload' => $validated,
-                ]
+                    'attributes' => $validated,
+                ],
+                auditableType: get_class($item),
+                auditableId: $item->id,
             );
 
             if (isset($config['with'])) {
@@ -239,6 +252,18 @@ class MasterDataController extends Controller
 
         return DB::transaction(function () use ($request, $config, $entity, $item, $validated) {
             $oldData = $item->toArray();
+
+            $changes = [];
+            foreach ($validated as $key => $newVal) {
+                $oldVal = $item->getOriginal($key);
+                if ($oldVal != $newVal) {
+                    $changes[$key] = [
+                        'old' => $oldVal,
+                        'new' => $newVal,
+                    ];
+                }
+            }
+
             $item->update($validated);
 
             $this->auditLogService->log(
@@ -247,11 +272,17 @@ class MasterDataController extends Controller
                 description: "Memperbarui entri pada {$config['label']}: {$item->nama}",
                 user: $request->user(),
                 context: [
+                    'action_type' => 'UPDATE',
                     'entity' => $entity,
+                    'entity_name' => $config['label'],
+                    'record_title' => $item->nama,
                     'item_id' => $item->id,
                     'old' => $oldData,
                     'new' => $validated,
-                ]
+                    'changes' => $changes,
+                ],
+                auditableType: get_class($item),
+                auditableId: $item->id,
             );
 
             if (isset($config['with'])) {
@@ -277,6 +308,7 @@ class MasterDataController extends Controller
         $config = $this->getEntityConfig($entity);
         $item = $config['model']::findOrFail($id);
 
+        $oldStatus = $item->is_active;
         $item->is_active = !$item->is_active;
         $item->save();
 
@@ -288,10 +320,21 @@ class MasterDataController extends Controller
             description: "Status entri {$config['label']} '{$item->nama}' berhasil {$statusStr}",
             user: $request->user(),
             context: [
+                'action_type' => 'UPDATE',
                 'entity' => $entity,
+                'entity_name' => $config['label'],
+                'record_title' => $item->nama,
                 'item_id' => $item->id,
                 'is_active' => $item->is_active,
-            ]
+                'changes' => [
+                    'is_active' => [
+                        'old' => $oldStatus,
+                        'new' => $item->is_active,
+                    ],
+                ],
+            ],
+            auditableType: get_class($item),
+            auditableId: $item->id,
         );
 
         return response()->json([
@@ -319,9 +362,17 @@ class MasterDataController extends Controller
             ], 422);
         }
 
+        // Relational safety check: Do not allow deleting an OPD if it has assigned users
+        if ($entity === 'opd' && method_exists($item, 'users') && $item->users()->count() > 0) {
+            return response()->json([
+                'message' => "Tidak dapat menghapus Perangkat Daerah (OPD) ini karena masih memiliki {$item->users()->count()} pegawai yang terdaftar. Pindahkan pegawai terlebih dahulu atau nonaktifkan status OPD.",
+            ], 422);
+        }
+
         $name = $item->nama;
 
         return DB::transaction(function () use ($request, $config, $entity, $item, $name, $id) {
+            $snapshot = $item->toArray();
             $item->delete();
 
             $this->auditLogService->log(
@@ -330,10 +381,16 @@ class MasterDataController extends Controller
                 description: "Menghapus entri pada {$config['label']}: {$name}",
                 user: $request->user(),
                 context: [
+                    'action_type' => 'DELETE',
                     'entity' => $entity,
+                    'entity_name' => $config['label'],
+                    'record_title' => $name,
                     'deleted_id' => $id,
                     'deleted_name' => $name,
-                ]
+                    'snapshot' => $snapshot,
+                ],
+                auditableType: get_class($item),
+                auditableId: $id,
             );
 
             return response()->json([
@@ -354,8 +411,8 @@ class MasterDataController extends Controller
         ];
 
         if (!empty($config['has_code'])) {
-            $codeRule = ['required', 'string', 'max:20'];
-            if ($entity === 'kategori-risiko' || $entity === 'tingkat-risiko') {
+            $codeRule = ['required', 'string', 'max:50'];
+            if ($entity === 'kategori-risiko' || $entity === 'tingkat-risiko' || $entity === 'opd') {
                 $codeRule[] = Rule::unique($config['table'], 'kode')->ignore($ignoreId);
             }
             $rules['kode'] = $codeRule;
@@ -365,8 +422,9 @@ class MasterDataController extends Controller
             $rules[$config['desc_field']] = ['nullable', 'string'];
         }
 
-        if ($entity === 'entitas-penilaian') {
-            $rules['opd_id'] = ['nullable', 'integer', 'exists:opds,id'];
+        if ($entity === 'opd') {
+            $rules['kategori'] = ['nullable', 'string', 'max:50'];
+            $rules['kepala'] = ['nullable', 'string', 'max:150'];
         }
 
         if ($entity === 'unsur-spip') {

@@ -30,7 +30,7 @@ class AuditLogController extends Controller
             $perPage = 15;
         }
 
-        $filters = $request->only(['search', 'module', 'action', 'date_from', 'date_to']);
+        $filters = $request->only(['search', 'module', 'action', 'date_from', 'date_to', 'auditable_type', 'auditable_id']);
 
         $logs = $this->auditLogService->listLogs($filters, $perPage);
 

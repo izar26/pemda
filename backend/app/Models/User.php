@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,18 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use Auditable, HasApiTokens, HasFactory, HasRoles, Notifiable;
+
+    /**
+     * Attributes excluded from model update audit logging to reduce noise.
+     *
+     * @var array<string>
+     */
+    protected array $auditExclude = [
+        'failed_login_attempts',
+        'last_login_at',
+        'last_login_ip',
+    ];
 
     /**
      * The guard name for Spatie permissions.

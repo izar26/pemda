@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Opd extends Model
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     protected $table = 'opds';
 
@@ -20,10 +21,12 @@ class Opd extends Model
         'kategori',
         'kepala',
         'is_active',
+        'urutan',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'urutan' => 'integer',
     ];
 
     /**

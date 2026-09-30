@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
   ChevronRight,
@@ -16,26 +16,11 @@ import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { masterDataService } from '@/services/master-data-service'
 import { usePermissions } from '@/hooks/use-permissions'
-import type {
-  MasterDataBaseItem,
-  MasterEntityMeta,
-  MasterSubUnsurSpipItem,
-} from '@/types/master-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { MasterActionDialog } from './master-action-dialog'
+import { useMasterData } from './master-data-provider'
 
 export function MasterSpipTable() {
   const queryClient = useQueryClient()
@@ -44,30 +29,16 @@ export function MasterSpipTable() {
   const canEdit = hasPermission('master.edit')
   const canDelete = hasPermission('master.delete')
 
+  const {
+    setOpen,
+    setCurrentItem,
+    setSelectedEntity,
+    setTargetUnsurId,
+    setDeleteTarget,
+  } = useMasterData()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
-
-  // Dialog state
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [dialogEntity, setDialogEntity] = useState<MasterEntityMeta>({
-    key: 'unsur-spip',
-    label: 'Unsur SPIP',
-    category: 'spip',
-  })
-  const [dialogCurrentItem, setDialogCurrentItem] = useState<
-    MasterDataBaseItem | MasterSubUnsurSpipItem | null
-  >(null)
-  const [targetUnsurId, setTargetUnsurId] = useState<number | undefined>(undefined)
-
-  // Delete state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<{
-    entityKey: 'unsur-spip' | 'sub-unsur-spip'
-    label: string
-    id: number
-    name: string
-  } | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   // Query Unsur SPIP with subUnsurs
   const {
@@ -116,29 +87,6 @@ export function MasterSpipTable() {
     },
   })
 
-  async function handleDelete() {
-    if (!deleteTarget) return
-    setIsDeleting(true)
-    try {
-      const res = await masterDataService.deleteItem(
-        deleteTarget.entityKey,
-        deleteTarget.id
-      )
-      queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
-      toast.success(res.message)
-      setDeleteDialogOpen(false)
-      setDeleteTarget(null)
-    } catch (err) {
-      const msg =
-        isAxiosError(err) && err.response?.data?.message
-          ? err.response.data.message
-          : 'Gagal menghapus data SPIP.'
-      toast.error(msg)
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   // Filter unsurs or their subUnsurs
   const filteredUnsurs = unsurs.filter((unsur) => {
     if (!searchTerm.trim()) return true
@@ -153,7 +101,7 @@ export function MasterSpipTable() {
   })
 
   return (
-    <div className='space-y-4'>
+    <div className='flex flex-1 flex-col gap-4'>
       {/* Toolbar */}
       <div className='flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3'>
         <div className='flex items-center gap-2 flex-1 max-w-sm'>
@@ -172,6 +120,7 @@ export function MasterSpipTable() {
             onClick={() => refetch()}
             disabled={isLoading || isRefetching}
             className='h-9 px-2.5'
+            title='Segarkan data'
           >
             <RefreshCw
               className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`}
@@ -182,16 +131,16 @@ export function MasterSpipTable() {
         {canCreate && (
           <Button
             size='sm'
-            className='h-9 gap-1.5 font-semibold text-xs'
+            className='h-9 gap-1.5 font-medium text-xs'
             onClick={() => {
-              setDialogEntity({
+              setSelectedEntity({
                 key: 'unsur-spip',
                 label: 'Unsur SPIP',
                 category: 'spip',
               })
-              setDialogCurrentItem(null)
+              setCurrentItem(null)
               setTargetUnsurId(undefined)
-              setDialogOpen(true)
+              setOpen('create')
             }}
           >
             <Plus className='h-4 w-4' />
@@ -200,15 +149,17 @@ export function MasterSpipTable() {
         )}
       </div>
 
-      {/* Accordion List */}
+      {/* Accordion Tree Cards */}
       <div className='space-y-3'>
         {isLoading ? (
-          <div className='rounded-xl border bg-card p-10 text-center text-muted-foreground text-xs flex items-center justify-center gap-2'>
-            <Loader2 className='h-4 w-4 animate-spin text-primary' />
-            <span>Memuat struktur Unsur & Sub-Unsur SPIP...</span>
+          <div className='flex flex-col items-center justify-center h-64 gap-2 rounded-lg border bg-card/50'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+            <p className='text-xs text-muted-foreground'>
+              Memuat struktur Unsur & Sub-Unsur SPIP...
+            </p>
           </div>
         ) : filteredUnsurs.length === 0 ? (
-          <div className='rounded-xl border bg-card p-8 text-center text-muted-foreground text-xs'>
+          <div className='rounded-lg border bg-card p-12 text-center text-muted-foreground text-sm'>
             {searchTerm
               ? `Tidak ditemukan unsur SPIP yang cocok dengan "${searchTerm}".`
               : 'Belum ada data Unsur SPIP terdaftar.'}
@@ -221,12 +172,12 @@ export function MasterSpipTable() {
             return (
               <div
                 key={unsur.id}
-                className='rounded-xl border bg-card shadow-2xs overflow-hidden transition-all'
+                className='rounded-md border bg-card shadow-2xs overflow-hidden transition-all'
               >
                 {/* Unsur Header Bar */}
                 <div
                   className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:px-4 gap-3 cursor-pointer select-none transition-colors ${
-                    isExpanded ? 'bg-muted/30 border-b' : 'hover:bg-muted/10'
+                    isExpanded ? 'bg-muted/30 border-b' : 'hover:bg-muted/20'
                   }`}
                   onClick={() => toggleExpand(unsur.id)}
                 >
@@ -278,9 +229,16 @@ export function MasterSpipTable() {
                         disabled={!canEdit || toggleMutation.isPending}
                         className='data-[state=checked]:bg-emerald-600 scale-90'
                       />
-                      <span className='text-[11px] text-muted-foreground font-medium'>
+                      <Badge
+                        variant='outline'
+                        className={`text-[10px] font-medium ${
+                          unsur.is_active
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+                            : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
+                        }`}
+                      >
                         {unsur.is_active ? 'Aktif' : 'Nonaktif'}
-                      </span>
+                      </Badge>
                     </div>
 
                     {canCreate && (
@@ -289,14 +247,14 @@ export function MasterSpipTable() {
                         size='sm'
                         className='h-7 text-[11px] gap-1 px-2 border-primary/20 text-primary hover:bg-primary/10'
                         onClick={() => {
-                          setDialogEntity({
+                          setSelectedEntity({
                             key: 'sub-unsur-spip',
                             label: 'Sub-Unsur SPIP',
                             category: 'spip',
                           })
-                          setDialogCurrentItem(null)
+                          setCurrentItem(null)
                           setTargetUnsurId(unsur.id)
-                          setDialogOpen(true)
+                          setOpen('create')
                         }}
                       >
                         <Plus className='h-3 w-3' />
@@ -310,14 +268,14 @@ export function MasterSpipTable() {
                         size='icon'
                         className='h-7 w-7 text-muted-foreground hover:text-foreground'
                         onClick={() => {
-                          setDialogEntity({
+                          setSelectedEntity({
                             key: 'unsur-spip',
                             label: 'Unsur SPIP',
                             category: 'spip',
                           })
-                          setDialogCurrentItem(unsur)
+                          setCurrentItem(unsur)
                           setTargetUnsurId(undefined)
-                          setDialogOpen(true)
+                          setOpen('edit')
                         }}
                       >
                         <Edit className='h-3.5 w-3.5' />
@@ -330,13 +288,18 @@ export function MasterSpipTable() {
                         size='icon'
                         className='h-7 w-7 text-muted-foreground hover:text-destructive'
                         onClick={() => {
+                          setSelectedEntity({
+                            key: 'unsur-spip',
+                            label: 'Unsur SPIP',
+                            category: 'spip',
+                          })
                           setDeleteTarget({
                             entityKey: 'unsur-spip',
                             label: 'Unsur SPIP',
                             id: unsur.id,
                             name: unsur.nama,
                           })
-                          setDeleteDialogOpen(true)
+                          setOpen('delete')
                         }}
                       >
                         <Trash2 className='h-3.5 w-3.5' />
@@ -354,11 +317,11 @@ export function MasterSpipTable() {
                         Bagian&quot; untuk menambahkan.
                       </div>
                     ) : (
-                      <div className='divide-y rounded-lg border'>
+                      <div className='divide-y rounded-md border overflow-hidden'>
                         {subList.map((sub, idx) => (
                           <div
                             key={sub.id}
-                            className='flex items-center justify-between p-2.5 sm:px-3 text-xs hover:bg-muted/30 transition-colors'
+                            className='flex items-center justify-between p-2.5 sm:px-3 text-xs hover:bg-muted/20 transition-colors'
                           >
                             <div className='flex items-center gap-2.5 min-w-0 pr-2'>
                               <span className='font-mono text-muted-foreground text-[11px] w-5 text-right'>
@@ -382,20 +345,31 @@ export function MasterSpipTable() {
                                 className='data-[state=checked]:bg-emerald-600 scale-75'
                               />
 
+                              <Badge
+                                variant='outline'
+                                className={`text-[9px] font-medium ${
+                                  sub.is_active
+                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+                                    : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
+                                }`}
+                              >
+                                {sub.is_active ? 'Aktif' : 'Nonaktif'}
+                              </Badge>
+
                               {canEdit && (
                                 <Button
                                   variant='ghost'
                                   size='icon'
                                   className='h-6 w-6 text-muted-foreground hover:text-foreground'
                                   onClick={() => {
-                                    setDialogEntity({
+                                    setSelectedEntity({
                                       key: 'sub-unsur-spip',
                                       label: 'Sub-Unsur SPIP',
                                       category: 'spip',
                                     })
-                                    setDialogCurrentItem(sub)
+                                    setCurrentItem(sub)
                                     setTargetUnsurId(unsur.id)
-                                    setDialogOpen(true)
+                                    setOpen('edit')
                                   }}
                                 >
                                   <Edit className='h-3 w-3' />
@@ -408,13 +382,18 @@ export function MasterSpipTable() {
                                   size='icon'
                                   className='h-6 w-6 text-muted-foreground hover:text-destructive'
                                   onClick={() => {
+                                    setSelectedEntity({
+                                      key: 'sub-unsur-spip',
+                                      label: 'Sub-Unsur SPIP',
+                                      category: 'spip',
+                                    })
                                     setDeleteTarget({
                                       entityKey: 'sub-unsur-spip',
                                       label: 'Sub-Unsur SPIP',
                                       id: sub.id,
                                       name: sub.nama,
                                     })
-                                    setDeleteDialogOpen(true)
+                                    setOpen('delete')
                                   }}
                                 >
                                   <Trash2 className='h-3 w-3' />
@@ -432,54 +411,6 @@ export function MasterSpipTable() {
           })
         )}
       </div>
-
-      {/* Action Dialog */}
-      <MasterActionDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        entity={dialogEntity}
-        currentItem={dialogCurrentItem}
-        unsurSpipId={targetUnsurId}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
-        }}
-      />
-
-      {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className='text-base font-bold text-foreground'>
-              Hapus Data {deleteTarget?.label}?
-            </AlertDialogTitle>
-            <AlertDialogDescription className='text-xs text-muted-foreground leading-relaxed'>
-              Apakah Anda yakin ingin menghapus {deleteTarget?.label}{' '}
-              <strong className='text-foreground'>{deleteTarget?.name}</strong>?
-              {deleteTarget?.entityKey === 'unsur-spip' &&
-                ' Menghapus unsur ini juga akan menghapus seluruh sub-unsur di dalamnya.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className='gap-2'>
-            <AlertDialogCancel disabled={isDeleting} className='text-xs'>
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className='bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-semibold'
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
-                  Menghapus...
-                </>
-              ) : (
-                'Ya, Hapus Data'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

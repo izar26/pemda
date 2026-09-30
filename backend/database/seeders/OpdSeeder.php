@@ -89,12 +89,13 @@ class OpdSeeder extends Seeder
             ['nama' => 'Kecamatan Warungkondang', 'kode' => 'KEC-WARUNGKONDANG', 'kategori' => 'Kecamatan'],
         ];
 
-        foreach ($opdData as $item) {
+        foreach ($opdData as $idx => $item) {
             Opd::updateOrCreate(
                 ['kode' => $item['kode']],
                 [
                     'nama' => $item['nama'],
                     'kategori' => $item['kategori'],
+                    'urutan' => $idx + 1,
                     'is_active' => true,
                 ]
             );

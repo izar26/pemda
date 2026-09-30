@@ -16,7 +16,6 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider } from './components/users-provider'
@@ -86,73 +85,47 @@ export function Users() {
           </div>
         </div>
 
-        {/* KPI / Summary Cards */}
-        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-          <Card className='shadow-2xs'>
-            <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Total Pegawai
-              </CardTitle>
-              <UsersIcon className='h-4 w-4 text-primary' />
-            </CardHeader>
-            <CardContent>
-              <div className='text-2xl font-bold'>{totalUsers}</div>
-              <p className='text-[11px] text-muted-foreground mt-0.5'>
-                Akun terdaftar di portal
-              </p>
-            </CardContent>
-          </Card>
+        {/* Compact KPI Stats (matching Audit Log style) */}
+        <div className='grid gap-2.5 grid-cols-2 lg:grid-cols-4'>
+          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
+            <div>
+              <span className='text-[11px] font-medium text-muted-foreground'>Total Pegawai</span>
+              <p className='text-lg font-bold text-foreground leading-tight'>{totalUsers}</p>
+            </div>
+            <div className='rounded-md bg-primary/10 p-2 text-primary'>
+              <UsersIcon className='h-4 w-4' />
+            </div>
+          </div>
 
-          <Card className='shadow-2xs'>
-            <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Pegawai Aktif
-              </CardTitle>
-              <UserCheck className='h-4 w-4 text-emerald-600 dark:text-emerald-400' />
-            </CardHeader>
-            <CardContent>
-              <div className='text-2xl font-bold text-emerald-600 dark:text-emerald-400'>
-                {activeUsers}
-              </div>
-              <p className='text-[11px] text-muted-foreground mt-0.5'>
-                Memiliki hak akses aktif
-              </p>
-            </CardContent>
-          </Card>
+          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
+            <div>
+              <span className='text-[11px] font-medium text-muted-foreground'>Pegawai Aktif</span>
+              <p className='text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight'>{activeUsers}</p>
+            </div>
+            <div className='rounded-md bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400'>
+              <UserCheck className='h-4 w-4' />
+            </div>
+          </div>
 
-          <Card className='shadow-2xs'>
-            <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Terproteksi 2FA
-              </CardTitle>
-              <ShieldCheck className='h-4 w-4 text-blue-600 dark:text-blue-400' />
-            </CardHeader>
-            <CardContent>
-              <div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
-                {twoFactorUsers}
-              </div>
-              <p className='text-[11px] text-muted-foreground mt-0.5'>
-                Google Authenticator aktif
-              </p>
-            </CardContent>
-          </Card>
+          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
+            <div>
+              <span className='text-[11px] font-medium text-muted-foreground'>Terproteksi 2FA</span>
+              <p className='text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight'>{twoFactorUsers}</p>
+            </div>
+            <div className='rounded-md bg-blue-500/10 p-2 text-blue-600 dark:text-blue-400'>
+              <ShieldCheck className='h-4 w-4' />
+            </div>
+          </div>
 
-          <Card className='shadow-2xs'>
-            <CardHeader className='flex flex-row items-center justify-between pb-2'>
-              <CardTitle className='text-xs font-medium text-muted-foreground'>
-                Menunggu Aktivasi
-              </CardTitle>
-              <MailPlus className='h-4 w-4 text-amber-600 dark:text-amber-400' />
-            </CardHeader>
-            <CardContent>
-              <div className='text-2xl font-bold text-amber-600 dark:text-amber-400'>
-                {pendingUsers}
-              </div>
-              <p className='text-[11px] text-muted-foreground mt-0.5'>
-                Undangan belum diaktivasi
-              </p>
-            </CardContent>
-          </Card>
+          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
+            <div>
+              <span className='text-[11px] font-medium text-muted-foreground'>Menunggu Aktivasi</span>
+              <p className='text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight'>{pendingUsers}</p>
+            </div>
+            <div className='rounded-md bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400'>
+              <MailPlus className='h-4 w-4' />
+            </div>
+          </div>
         </div>
 
 

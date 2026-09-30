@@ -33,24 +33,44 @@ class SystemSettingService
     public function updateSettings(array $settings, User $user): Collection
     {
         $updatedKeys = [];
+        $changes = [];
 
         foreach ($settings as $key => $value) {
             $setting = SystemSetting::where('key', $key)->first();
             if ($setting) {
-                $setting->value = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
-                $setting->save();
-                $updatedKeys[] = $setting->label ?? $key;
+                $oldValue = $setting->value;
+                $newFormattedValue = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
+
+                if ($oldValue !== $newFormattedValue) {
+                    $setting->value = $newFormattedValue;
+                    SystemSetting::withoutAuditing(function () use ($setting) {
+                        $setting->save();
+                    });
+                    $label = $setting->label ?? $key;
+                    $updatedKeys[] = $label;
+                    $changes[$label] = [
+                        'old' => $oldValue,
+                        'new' => $newFormattedValue,
+                    ];
+                }
             }
         }
 
-        // Record in audit log
-        $this->auditLogService->log(
-            action: 'SETTINGS_UPDATE',
-            module: 'Pengaturan Sistem',
-            description: "Memperbarui konfigurasi sistem: " . implode(', ', $updatedKeys),
-            user: $user,
-            context: ['updated_settings' => array_keys($settings)]
-        );
+        if (!empty($updatedKeys)) {
+            $this->auditLogService->log(
+                action: 'SETTINGS_UPDATE',
+                module: 'Pengaturan Sistem',
+                description: "Memperbarui konfigurasi sistem: " . implode(', ', $updatedKeys),
+                user: $user,
+                context: [
+                    'action_type' => 'UPDATE',
+                    'entity_name' => 'Pengaturan Sistem',
+                    'record_title' => implode(', ', $updatedKeys),
+                    'updated_settings' => array_keys($settings),
+                    'changes' => $changes,
+                ]
+            );
+        }
 
         return $this->getAllSettings();
     }

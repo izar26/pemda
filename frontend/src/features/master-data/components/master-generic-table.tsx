@@ -1,14 +1,25 @@
 'use client'
 
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import {
-  Building2,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  type VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
   Edit,
   Loader2,
-  Plus,
-  RefreshCw,
-  Search,
+  MoreHorizontal,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,10 +30,17 @@ import type {
   MasterDataBaseItem,
   MasterEntityMeta,
 } from '@/types/master-data'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -32,16 +50,11 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { MasterActionDialog } from './master-action-dialog'
+  DataTableColumnHeader,
+  DataTablePagination,
+  DataTableToolbar,
+} from '@/components/data-table'
+import { useMasterData } from './master-data-provider'
 
 interface MasterGenericTableProps {
   entity: MasterEntityMeta
@@ -50,50 +63,30 @@ interface MasterGenericTableProps {
 export function MasterGenericTable({ entity }: MasterGenericTableProps) {
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
-  const canCreate = hasPermission('master.create')
   const canEdit = hasPermission('master.edit')
   const canDelete = hasPermission('master.delete')
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterActive, setFilterActive] = useState<'all' | 'true' | 'false'>('all')
+  const { setOpen, setCurrentItem, setDeleteTarget, setSelectedEntity } =
+    useMasterData()
 
-  const [actionDialogOpen, setActionDialogOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<MasterDataBaseItem | null>(null)
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [itemToDelete, setItemToDelete] = useState<MasterDataBaseItem | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [rowSelection, setRowSelection] = useState({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [sorting, setSorting] = useState<SortingState>([])
 
   // Query data
   const {
     data: response,
     isLoading,
-    isRefetching,
-    refetch,
   } = useQuery({
-    queryKey: ['master', entity.key, filterActive],
-    queryFn: () =>
-      masterDataService.getItems(entity.key, {
-        is_active: filterActive === 'all' ? undefined : filterActive,
-      }),
+    queryKey: ['master', entity.key],
+    queryFn: () => masterDataService.getItems(entity.key),
   })
 
-  const items = response?.data || []
-
-  // Client-side search filter for instantaneous typing response
-  const filteredItems = items.filter((item) => {
-    if (!searchTerm.trim()) return true
-    const term = searchTerm.toLowerCase()
-    const matchName = item.nama?.toLowerCase().includes(term)
-    const matchCode = item.kode?.toLowerCase().includes(term)
-    const matchDesc =
-      item.definisi?.toLowerCase().includes(term) ||
-      item.deskripsi?.toLowerCase().includes(term)
-    return matchName || matchCode || matchDesc
-  })
+  const items = useMemo(() => response?.data || [], [response?.data])
 
   // Toggle active mutation
-  const toggleMutation = useMutation({
+  const { mutate: toggleActive, isPending: isToggling } = useMutation({
     mutationFn: (id: number) => masterDataService.toggleActive(entity.key, id),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['master', entity.key] })
@@ -108,303 +101,339 @@ export function MasterGenericTable({ entity }: MasterGenericTableProps) {
     },
   })
 
-  async function handleDelete() {
-    if (!itemToDelete) return
-    setIsDeleting(true)
-    try {
-      const res = await masterDataService.deleteItem(entity.key, itemToDelete.id)
-      queryClient.invalidateQueries({ queryKey: ['master', entity.key] })
-      toast.success(res.message)
-      setDeleteDialogOpen(false)
-      setItemToDelete(null)
-    } catch (err) {
-      const msg =
-        isAxiosError(err) && err.response?.data?.message
-          ? err.response.data.message
-          : 'Gagal menghapus data master.'
-      toast.error(msg)
-    } finally {
-      setIsDeleting(false)
+  const columns = useMemo<ColumnDef<MasterDataBaseItem>[]>(() => {
+    const cols: ColumnDef<MasterDataBaseItem>[] = [
+      {
+        id: 'index',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title='No.' className='w-12 text-center' />
+        ),
+        cell: ({ row }) => (
+          <span className='text-xs font-mono text-muted-foreground block text-center'>
+            {row.index + 1}
+          </span>
+        ),
+        enableSorting: false,
+      },
+    ]
+
+    if (entity.hasCode) {
+      cols.push({
+        accessorKey: 'kode',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title='Kode' className='w-24' />
+        ),
+        cell: ({ row }) => {
+          const code = row.getValue('kode') as string | undefined
+          return (
+            <Badge
+              variant='outline'
+              className='font-mono text-xs font-semibold bg-muted/30 border-muted-foreground/20'
+            >
+              {code || '-'}
+            </Badge>
+          )
+        },
+        enableSorting: true,
+      })
     }
-  }
 
-  return (
-    <div className='space-y-4'>
-      {/* Table Toolbar */}
-      <div className='flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3'>
-        <div className='flex items-center gap-2 flex-1 max-w-sm'>
-          <div className='relative w-full'>
-            <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
-            <Input
-              placeholder={`Cari ${entity.label.toLowerCase()}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className='pl-8 h-9 text-xs'
-            />
-          </div>
-
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => refetch()}
-            disabled={isLoading || isRefetching}
-            className='h-9 px-2.5'
-            title='Segarkan data'
-          >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`}
-            />
-          </Button>
-        </div>
-
-        <div className='flex items-center gap-2 justify-end'>
-          <div className='flex items-center gap-1.5 border rounded-lg p-1 bg-muted/20 text-xs'>
-            <button
-              onClick={() => setFilterActive('all')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                filterActive === 'all'
-                  ? 'bg-background text-foreground shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Semua ({items.length})
-            </button>
-            <button
-              onClick={() => setFilterActive('true')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                filterActive === 'true'
-                  ? 'bg-background text-emerald-600 shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Aktif
-            </button>
-            <button
-              onClick={() => setFilterActive('false')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                filterActive === 'false'
-                  ? 'bg-background text-amber-600 shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Nonaktif
-            </button>
-          </div>
-
-          {canCreate && (
-            <Button
-              size='sm'
-              className='h-9 gap-1.5 font-semibold text-xs'
-              onClick={() => {
-                setSelectedItem(null)
-                setActionDialogOpen(true)
-              }}
-            >
-              <Plus className='h-4 w-4' />
-              Tambah Data
-            </Button>
+    cols.push({
+      accessorKey: 'nama',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={`Nama ${entity.label}`} />
+      ),
+      cell: ({ row }) => (
+        <div className='flex flex-col py-1 min-w-[180px]'>
+          <span className='font-semibold text-sm text-foreground leading-tight'>
+            {row.original.nama}
+          </span>
+          {row.original.nomor && (
+            <span className='text-xs text-muted-foreground font-mono mt-0.5'>
+              Nomor: {row.original.nomor}
+            </span>
           )}
         </div>
-      </div>
+      ),
+      enableSorting: true,
+    })
 
-      {/* Main Table Card */}
+    if (entity.key === 'opd') {
+      cols.push(
+        {
+          accessorKey: 'kategori',
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title='Kategori' />
+          ),
+          cell: ({ row }) => {
+            const kat = row.original.kategori || 'Dinas'
+            return (
+              <Badge variant='outline' className='text-xs font-normal'>
+                {kat}
+              </Badge>
+            )
+          },
+          enableSorting: true,
+        },
+        {
+          accessorKey: 'kepala',
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title='Kepala Perangkat Daerah' />
+          ),
+          cell: ({ row }) => (
+            <span className='text-xs text-muted-foreground'>
+              {row.original.kepala || '-'}
+            </span>
+          ),
+          enableSorting: true,
+        }
+      )
+    }
+
+    if (entity.descField) {
+      const descKey = entity.descField
+      cols.push({
+        accessorKey: descKey,
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title={entity.descLabel || 'Definisi / Deskripsi'}
+          />
+        ),
+        cell: ({ row }) => {
+          const desc = row.original[descKey] as string | undefined
+          return (
+            <span className='text-xs text-muted-foreground line-clamp-2 max-w-sm'>
+              {desc || '-'}
+            </span>
+          )
+        },
+        enableSorting: false,
+      })
+    }
+
+    cols.push(
+      {
+        accessorKey: 'is_active',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title='Status'
+            className='w-28 text-center'
+          />
+        ),
+        cell: ({ row }) => {
+          const item = row.original
+          return (
+            <div className='flex items-center justify-center gap-2'>
+              <Switch
+                checked={item.is_active}
+                onCheckedChange={() => toggleActive(item.id)}
+                disabled={!canEdit || isToggling}
+                className='data-[state=checked]:bg-emerald-600'
+              />
+              <Badge
+                variant='outline'
+                className={`text-[11px] font-medium ${
+                  item.is_active
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+                    : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
+                }`}
+              >
+                {item.is_active ? 'Aktif' : 'Nonaktif'}
+              </Badge>
+            </div>
+          )
+        },
+        filterFn: (row, id, value) => {
+          const isActive = row.getValue(id) as boolean
+          const str = isActive ? 'true' : 'false'
+          return value.includes(str)
+        },
+        enableSorting: true,
+      },
+      {
+        id: 'actions',
+        cell: ({ row }) => {
+          const item = row.original
+          return (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+                >
+                  <MoreHorizontal className='h-4 w-4' />
+                  <span className='sr-only'>Buka menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end' className='w-40'>
+                {canEdit && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedEntity(entity)
+                      setCurrentItem(item)
+                      setOpen('edit')
+                    }}
+                  >
+                    <Edit className='mr-2 h-4 w-4' />
+                    Ubah Data
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedEntity(entity)
+                        setDeleteTarget({
+                          entityKey: entity.key,
+                          id: item.id,
+                          name: item.nama,
+                          label: entity.label,
+                        })
+                        setOpen('delete')
+                      }}
+                      className='text-destructive focus:text-destructive'
+                    >
+                      <Trash2 className='mr-2 h-4 w-4' />
+                      Hapus Data
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      }
+    )
+
+    return cols
+  }, [entity, canEdit, canDelete, toggleActive, isToggling, setCurrentItem, setDeleteTarget, setOpen, setSelectedEntity])
+
+  const table = useReactTable({
+    data: items,
+    columns,
+    state: {
+      sorting,
+      rowSelection,
+      columnFilters,
+      columnVisibility,
+    },
+    enableRowSelection: true,
+    onColumnFiltersChange: setColumnFilters,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
+    getPaginationRowModel: getPaginationRowModel(),
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+  })
+
+  return (
+    <div
+      className={cn(
+        'max-sm:has-[div[role="toolbar"]]:mb-16',
+        'flex flex-1 flex-col gap-4'
+      )}
+    >
+      <DataTableToolbar
+        table={table}
+        searchPlaceholder={`Cari data ${entity.label.toLowerCase()}...`}
+        searchKey='nama'
+        filters={[
+          {
+            columnId: 'is_active',
+            title: 'Status',
+            options: [
+              { label: 'Aktif', value: 'true' },
+              { label: 'Nonaktif', value: 'false' },
+            ],
+          },
+        ]}
+      />
+
       <div className='overflow-hidden rounded-md border bg-card shadow-2xs'>
         <Table>
           <TableHeader>
-            <TableRow className='bg-muted/30'>
-              <TableHead className='w-12 text-center text-xs font-bold'>No.</TableHead>
-              {entity.hasCode && (
-                <TableHead className='w-24 text-xs font-bold'>Kode</TableHead>
-              )}
-              <TableHead className='text-xs font-bold'>Nama {entity.label}</TableHead>
-              {entity.key === 'entitas-penilaian' && (
-                <TableHead className='text-xs font-bold'>Relasi OPD</TableHead>
-              )}
-              {entity.descField && (
-                <TableHead className='text-xs font-bold max-w-sm'>
-                  {entity.descLabel || 'Definisi / Deskripsi'}
-                </TableHead>
-              )}
-              <TableHead className='w-28 text-center text-xs font-bold'>Status</TableHead>
-              <TableHead className='w-24 text-right text-xs font-bold pr-4'>Aksi</TableHead>
-            </TableRow>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className='group/row'>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    className={cn(
+                      'bg-muted/30 group-hover/row:bg-muted/50 font-bold text-xs',
+                      header.column.columnDef.meta?.className,
+                      header.column.columnDef.meta?.thClassName
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={columns.length}
                   className='h-32 text-center text-muted-foreground text-sm'
                 >
                   <div className='flex items-center justify-center gap-2'>
                     <Loader2 className='h-4 w-4 animate-spin text-primary' />
-                    <span>Memuat data master...</span>
+                    <span>Memuat data {entity.label}...</span>
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredItems.length === 0 ? (
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className='group/row hover:bg-muted/40 transition-colors'
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'bg-transparent',
+                        cell.column.columnDef.meta?.className,
+                        cell.column.columnDef.meta?.tdClassName
+                      )}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
                 <TableCell
-                  colSpan={6}
-                  className='h-32 text-center text-muted-foreground text-xs'
+                  colSpan={columns.length}
+                  className='h-32 text-center text-muted-foreground text-sm'
                 >
-                  {searchTerm
-                    ? `Tidak ada data ${entity.label.toLowerCase()} yang sesuai dengan "${searchTerm}".`
-                    : `Belum ada data ${entity.label.toLowerCase()}.`}
+                  Tidak ada data {entity.label.toLowerCase()} yang sesuai dengan kriteria.
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredItems.map((item, index) => {
-                const descText =
-                  item.definisi || item.deskripsi || '-'
-
-                return (
-                  <TableRow
-                    key={item.id}
-                    className='hover:bg-muted/40 transition-colors group'
-                  >
-                    <TableCell className='text-center text-xs font-mono text-muted-foreground'>
-                      {index + 1}
-                    </TableCell>
-
-                    {entity.hasCode && (
-                      <TableCell>
-                        <Badge
-                          variant='outline'
-                          className='font-mono text-xs font-bold bg-muted/40'
-                        >
-                          {item.kode || '-'}
-                        </Badge>
-                      </TableCell>
-                    )}
-
-                    <TableCell className='font-medium text-xs text-foreground'>
-                      {item.nama}
-                    </TableCell>
-
-                    {entity.key === 'entitas-penilaian' && (
-                      <TableCell className='text-xs'>
-                        {item.opd ? (
-                          <div className='flex items-center gap-1.5 text-muted-foreground'>
-                            <Building2 className='h-3.5 w-3.5 text-primary shrink-0' />
-                            <span className='truncate max-w-[200px]'>
-                              {item.opd.nama}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className='text-muted-foreground/60 text-[11px] italic'>
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-                    )}
-
-                    {entity.descField && (
-                      <TableCell className='text-xs text-muted-foreground max-w-md leading-relaxed'>
-                        <span className='line-clamp-2'>{descText}</span>
-                      </TableCell>
-                    )}
-
-                    <TableCell className='text-center'>
-                      <div className='flex items-center justify-center gap-2'>
-                        <Switch
-                          checked={item.is_active}
-                          onCheckedChange={() => toggleMutation.mutate(item.id)}
-                          disabled={!canEdit || toggleMutation.isPending}
-                          className='data-[state=checked]:bg-emerald-600'
-                        />
-                        <span className='text-[11px] text-muted-foreground font-medium hidden sm:inline'>
-                          {item.is_active ? 'Aktif' : 'Nonaktif'}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell className='text-right pr-4'>
-                      <div className='flex items-center justify-end gap-1'>
-                        {canEdit && (
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            className='h-7 w-7 text-muted-foreground hover:text-foreground'
-                            onClick={() => {
-                              setSelectedItem(item)
-                              setActionDialogOpen(true)
-                            }}
-                            title='Edit data'
-                          >
-                            <Edit className='h-3.5 w-3.5' />
-                          </Button>
-                        )}
-
-                        {canDelete && (
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            className='h-7 w-7 text-muted-foreground hover:text-destructive'
-                            onClick={() => {
-                              setItemToDelete(item)
-                              setDeleteDialogOpen(true)
-                            }}
-                            title='Hapus data'
-                          >
-                            <Trash2 className='h-3.5 w-3.5' />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Action Dialog */}
-      <MasterActionDialog
-        open={actionDialogOpen}
-        onOpenChange={setActionDialogOpen}
-        entity={entity}
-        currentItem={selectedItem}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['master', entity.key] })
-        }}
-      />
-
-      {/* Delete Confirmation Alert Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className='text-base font-bold text-foreground'>
-              Hapus Data {entity.label}?
-            </AlertDialogTitle>
-            <AlertDialogDescription className='text-xs text-muted-foreground leading-relaxed'>
-              Apakah Anda yakin ingin menghapus entri{' '}
-              <strong className='text-foreground'>{itemToDelete?.nama}</strong>?
-              Tindakan ini akan dicatat di Log Audit Keamanan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className='gap-2'>
-            <AlertDialogCancel disabled={isDeleting} className='text-xs'>
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className='bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-semibold'
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
-                  Menghapus...
-                </>
-              ) : (
-                'Ya, Hapus Data'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DataTablePagination table={table} className='mt-auto' />
     </div>
   )
 }

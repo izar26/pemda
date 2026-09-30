@@ -50,6 +50,7 @@ export function SystemSettings() {
           initial[s.key] = s.value || ''
         }
       })
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(initial)
     }
   }, [settings])

@@ -252,4 +252,38 @@ class MasterDataTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonFragment(['message' => "Tidak dapat menghapus Unsur SPIP ini karena masih memiliki {$unsur->subUnsurs()->count()} Sub-Unsur terkait. Hapus atau pindahkan Sub-Unsur terlebih dahulu."]);
     }
+
+    public function test_authorized_user_can_manage_opd_master_data(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        // List OPDs
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/master/opd');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('entity.key', 'opd')
+            ->assertJsonPath('entity.label', 'Perangkat Daerah (OPD)');
+
+        $this->assertGreaterThanOrEqual(60, count($response->json('data')));
+
+        // Create new OPD
+        $createResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/master/opd', [
+                'kode' => 'KEC-TEST',
+                'nama' => 'Kecamatan Contoh Baru',
+                'kategori' => 'Kecamatan',
+                'kepala' => 'Drs. H. Fulan, M.Si',
+                'urutan' => 99,
+            ]);
+
+        $createResponse->assertStatus(201)
+            ->assertJsonPath('data.kode', 'KEC-TEST')
+            ->assertJsonPath('data.nama', 'Kecamatan Contoh Baru');
+
+        $this->assertDatabaseHas('opds', [
+            'kode' => 'KEC-TEST',
+            'nama' => 'Kecamatan Contoh Baru',
+        ]);
+    }
 }

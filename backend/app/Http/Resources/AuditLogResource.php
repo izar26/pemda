@@ -28,6 +28,8 @@ class AuditLogResource extends JsonResource
             'user_email' => $this->user_email,
             'action' => $this->action,
             'module' => $this->module,
+            'auditable_type' => $this->auditable_type,
+            'auditable_id' => $this->auditable_id,
             'description' => $this->description,
             'ip_address' => $this->ip_address,
             'user_agent' => $this->user_agent,

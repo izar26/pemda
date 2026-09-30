@@ -37,16 +37,17 @@ interface ValidatedUserData {
 }
 
 export function Activate({ token }: ActivateProps) {
-  const [isValidating, setIsValidating] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const hasToken = Boolean(token && token.trim() !== '')
+  const [isValidating, setIsValidating] = useState(hasToken)
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    hasToken ? null : 'Token aktivasi tidak disertakan pada tautan.'
+  )
   const [userData, setUserData] = useState<ValidatedUserData | null>(null)
 
   useEffect(() => {
     let isMounted = true
 
     if (!token || token.trim() === '') {
-      setErrorMessage('Token aktivasi tidak disertakan pada tautan.')
-      setIsValidating(false)
       return
     }
 

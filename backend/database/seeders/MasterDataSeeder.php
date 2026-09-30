@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Master\MasterEntitasPenilaian;
 use App\Models\Master\MasterJenisFraud;
 use App\Models\Master\MasterKategoriRisiko;
 use App\Models\Master\MasterKriteriaDampak;
@@ -152,24 +151,6 @@ class MasterDataSeeder extends Seeder
             }
         }
 
-        // 10. Entitas Penilaian (Sheet 10)
-        if (isset($data['10']['rows'])) {
-            foreach ($data['10']['rows'] as $idx => $row) {
-                $nama = trim((string) $row['ENTITAS']);
-                // Attempt to link with OPD if matching
-                $opd = Opd::where('nama', 'like', "%{$nama}%")->first();
-
-                MasterEntitasPenilaian::updateOrCreate(
-                    ['kode' => (string) $row['KODE']],
-                    [
-                        'nama' => $nama,
-                        'opd_id' => $opd?->id,
-                        'urutan' => (int) ($row['KODE'] ?? $idx + 1),
-                        'is_active' => true,
-                    ]
-                );
-            }
-        }
 
         // 11. Sumber Data (Sheet 11)
         if (isset($data['11']['rows'])) {

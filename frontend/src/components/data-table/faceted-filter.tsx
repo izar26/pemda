@@ -28,15 +28,51 @@ type DataTableFacetedFilterProps<TData, TValue> = {
     value: string
     icon?: React.ComponentType<{ className?: string }>
   }[]
+  values?: string[]
+  onValuesChange?: (values: string[]) => void
 }
 
 export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
   options,
+  values,
+  onValuesChange,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues()
-  const selectedValues = new Set(column?.getFilterValue() as string[])
+
+  const rawColumnValue = column?.getFilterValue()
+  const columnValues = Array.isArray(rawColumnValue)
+    ? (rawColumnValue as string[])
+    : rawColumnValue
+      ? [String(rawColumnValue)]
+      : []
+
+  const selectedValues = new Set(values ?? columnValues)
+
+  const handleSelect = (optionValue: string) => {
+    const nextSet = new Set(selectedValues)
+    if (nextSet.has(optionValue)) {
+      nextSet.delete(optionValue)
+    } else {
+      nextSet.add(optionValue)
+    }
+    const filterValues = Array.from(nextSet)
+
+    if (onValuesChange) {
+      onValuesChange(filterValues)
+    } else if (column) {
+      column.setFilterValue(filterValues.length ? filterValues : undefined)
+    }
+  }
+
+  const handleClear = () => {
+    if (onValuesChange) {
+      onValuesChange([])
+    } else if (column) {
+      column.setFilterValue(undefined)
+    }
+  }
 
   return (
     <Popover>
@@ -90,17 +126,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                 return (
                   <CommandItem
                     key={option.value}
-                    onSelect={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value)
-                      } else {
-                        selectedValues.add(option.value)
-                      }
-                      const filterValues = Array.from(selectedValues)
-                      column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined
-                      )
-                    }}
+                    onSelect={() => handleSelect(option.value)}
                   >
                     <div
                       className={cn(
@@ -130,7 +156,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => column?.setFilterValue(undefined)}
+                    onSelect={handleClear}
                     className='justify-center text-center'
                   >
                     Clear filters

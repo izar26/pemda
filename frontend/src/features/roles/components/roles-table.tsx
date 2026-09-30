@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import type { AuditLog } from '@/types/audit'
+import type { Role } from '@/types/rbac'
 import { cn } from '@/lib/utils'
 import {
   Table,
@@ -23,23 +23,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { auditColumns as columns } from './audit-columns'
-import { moduleFilterOptions } from '../data/data'
-import { useAuditLogs } from './audit-logs-provider'
+import { rolesColumns as columns } from './roles-columns'
 
-interface AuditLogsTableProps {
-  data: AuditLog[]
+interface RolesTableProps {
+  data: Role[]
 }
 
-export function AuditLogsTable({ data }: AuditLogsTableProps) {
-  const { setSelectedLog, setSheetOpen } = useAuditLogs()
-
+export function RolesTable({ data }: RolesTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'created_at', desc: true },
-  ])
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({
     data,
@@ -72,13 +66,16 @@ export function AuditLogsTable({ data }: AuditLogsTableProps) {
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Cari deskripsi aktivitas audit...'
-        searchKey='description'
+        searchPlaceholder='Cari nama peran atau deskripsi...'
+        searchKey='name'
         filters={[
           {
-            columnId: 'module',
-            title: 'Modul',
-            options: moduleFilterOptions,
+            columnId: 'is_system',
+            title: 'Tipe Peran',
+            options: [
+              { label: 'Peran Sistem', value: 'system' },
+              { label: 'Peran Kustom', value: 'custom' },
+            ],
           },
         ]}
       />
@@ -115,11 +112,7 @@ export function AuditLogsTable({ data }: AuditLogsTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row hover:bg-muted/40 transition-colors cursor-pointer'
-                  onClick={() => {
-                    setSelectedLog(row.original)
-                    setSheetOpen(true)
-                  }}
+                  className='group/row hover:bg-muted/40 transition-colors'
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
@@ -129,12 +122,6 @@ export function AuditLogsTable({ data }: AuditLogsTableProps) {
                         cell.column.columnDef.meta?.className,
                         cell.column.columnDef.meta?.tdClassName
                       )}
-                      onClick={(e) => {
-                        // Prevent opening sheet twice if button inside cell clicked
-                        if (cell.column.id === 'actions') {
-                          e.stopPropagation()
-                        }
-                      }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -150,14 +137,13 @@ export function AuditLogsTable({ data }: AuditLogsTableProps) {
                   colSpan={columns.length}
                   className='h-32 text-center text-muted-foreground text-sm'
                 >
-                  Tidak ada catatan log audit yang sesuai dengan kriteria pencarian.
+                  Tidak ada data peran yang sesuai dengan kriteria pencarian.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-
       <DataTablePagination table={table} className='mt-auto' />
     </div>
   )

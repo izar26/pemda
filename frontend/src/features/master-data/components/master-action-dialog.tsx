@@ -4,12 +4,10 @@ import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery } from '@tanstack/react-query'
-import { Building2, Database, Loader2, Save } from 'lucide-react'
+import { Database, Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { masterDataService } from '@/services/master-data-service'
-import { opdService } from '@/services/opd-service'
 import type {
   MasterDataBaseItem,
   MasterDataPayload,
@@ -47,12 +45,13 @@ import {
 
 const formSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi.').max(255, 'Maksimal 255 karakter.'),
-  kode: z.string().max(20, 'Kode maksimal 20 karakter.').optional(),
+  kode: z.string().max(50, 'Kode maksimal 50 karakter.').optional(),
+  kategori: z.string().optional(),
+  kepala: z.string().max(150, 'Nama kepala maksimal 150 karakter.').optional(),
   nomor: z.string().max(10, 'Nomor maksimal 10 karakter.').optional(),
   deskripsi: z.string().optional(),
   urutan: z.number().min(0, 'Urutan minimal 0.'),
   is_active: z.boolean(),
-  opd_id: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -77,24 +76,17 @@ export function MasterActionDialog({
   const isEdit = Boolean(currentItem)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fetch OPDs only if entity is entitas-penilaian
-  const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds'],
-    queryFn: () => opdService.getOpds(),
-    enabled: open && entity.key === 'entitas-penilaian',
-    staleTime: 5 * 60 * 1000,
-  })
-
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       nama: '',
       kode: '',
+      kategori: 'Dinas',
+      kepala: '',
       nomor: '',
       deskripsi: '',
       urutan: 0,
       is_active: true,
-      opd_id: '',
     },
   })
 
@@ -108,21 +100,23 @@ export function MasterActionDialog({
         form.reset({
           nama: currentItem.nama || '',
           kode: (itemAny.kode as string) || '',
+          kategori: (itemAny.kategori as string) || 'Dinas',
+          kepala: (itemAny.kepala as string) || '',
           nomor: (itemAny.nomor as string) || '',
           deskripsi: descVal,
           urutan: currentItem.urutan ?? 0,
           is_active: currentItem.is_active ?? true,
-          opd_id: itemAny.opd_id ? String(itemAny.opd_id) : '',
         })
       } else {
         form.reset({
           nama: '',
           kode: '',
+          kategori: 'Dinas',
+          kepala: '',
           nomor: '',
           deskripsi: '',
           urutan: 0,
           is_active: true,
-          opd_id: '',
         })
       }
     }
@@ -153,8 +147,9 @@ export function MasterActionDialog({
         payload[entity.descField] = values.deskripsi.trim()
       }
 
-      if (entity.key === 'entitas-penilaian') {
-        payload.opd_id = values.opd_id ? Number(values.opd_id) : null
+      if (entity.key === 'opd') {
+        if (values.kategori) payload.kategori = values.kategori.trim()
+        if (values.kepala) payload.kepala = values.kepala.trim()
       }
 
       const typedPayload = payload as unknown as MasterDataPayload
@@ -216,12 +211,17 @@ export function MasterActionDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        Kode Referensi <span className='text-destructive'>*</span>
+                        {entity.key === 'opd' ? 'Kode Singkatan Instansi' : 'Kode Referensi'}{' '}
+                        <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder='Contoh: RP, RS, ROO, atau nomor urut'
-                          maxLength={20}
+                          placeholder={
+                            entity.key === 'opd'
+                              ? 'Contoh: Dinkes, Disdik, Setda, KEC-CIANJUR'
+                              : 'Contoh: RP, RS, ROO, atau nomor urut'
+                          }
+                          maxLength={50}
                           disabled={isSubmitting}
                           {...field}
                         />
@@ -277,53 +277,64 @@ export function MasterActionDialog({
                 )}
               />
 
-              {/* Entitas Penilaian: OPD Mapping */}
-              {entity.key === 'entitas-penilaian' && (
-                <FormField
-                  control={form.control}
-                  name='opd_id'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                        <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
-                        Tautkan ke Perangkat Daerah / OPD (Opsional)
-                      </FormLabel>
-                      <Select
-                        disabled={isSubmitting || isLoadingOpds}
-                        onValueChange={(val) =>
-                          field.onChange(val === 'none' ? '' : val)
-                        }
-                        value={field.value || 'none'}
-                      >
+              {/* OPD Specific Fields: Kategori & Kepala */}
+              {entity.key === 'opd' && (
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                  <FormField
+                    control={form.control}
+                    name='kategori'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-semibold'>
+                          Kategori Instansi
+                        </FormLabel>
+                        <Select
+                          disabled={isSubmitting}
+                          onValueChange={field.onChange}
+                          value={field.value || 'Dinas'}
+                        >
+                          <FormControl>
+                            <SelectTrigger className='w-full'>
+                              <SelectValue placeholder='Pilih kategori...' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value='Dinas'>Dinas</SelectItem>
+                            <SelectItem value='Badan'>Badan</SelectItem>
+                            <SelectItem value='Sekretariat'>Sekretariat</SelectItem>
+                            <SelectItem value='Inspektorat'>Inspektorat</SelectItem>
+                            <SelectItem value='RSUD'>RSUD</SelectItem>
+                            <SelectItem value='Kecamatan'>Kecamatan</SelectItem>
+                            <SelectItem value='Kantor'>Kantor</SelectItem>
+                            <SelectItem value='Lainnya'>Lainnya</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='kepala'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-semibold'>
+                          Kepala OPD (Opsional)
+                        </FormLabel>
                         <FormControl>
-                          <SelectTrigger className='w-full'>
-                            <SelectValue
-                              placeholder={
-                                isLoadingOpds
-                                  ? 'Memuat daftar OPD...'
-                                  : 'Pilih OPD terkait...'
-                              }
-                            />
-                          </SelectTrigger>
+                          <Input
+                            placeholder='Contoh: Dr. H. Fulan, M.Si'
+                            maxLength={150}
+                            disabled={isSubmitting}
+                            {...field}
+                          />
                         </FormControl>
-                        <SelectContent className='max-h-60'>
-                          <SelectItem value='none'>-- Tanpa Relasi OPD --</SelectItem>
-                          {opds.map((opd) => (
-                            <SelectItem key={opd.id} value={String(opd.id)}>
-                              <div className='flex items-center justify-between gap-2'>
-                                <span>{opd.nama}</span>
-                                <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
-                                  {opd.kategori}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               )}
 
               {/* Definisi / Deskripsi */}
