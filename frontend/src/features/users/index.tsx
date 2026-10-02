@@ -16,6 +16,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider } from './components/users-provider'
@@ -47,6 +48,36 @@ export function Users() {
   const pendingUsers = usersList.filter(
     (u) => u.status === 'pending_activation' || u.is_pending_activation
   ).length
+
+  const kpiItems: KpiStatItem[] = [
+    {
+      title: 'Total Pegawai',
+      value: totalUsers,
+      icon: UsersIcon,
+      color: 'bg-primary/10 text-primary',
+    },
+    {
+      title: 'Pegawai Aktif',
+      value: activeUsers,
+      icon: UserCheck,
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      title: 'Terproteksi 2FA',
+      value: twoFactorUsers,
+      icon: ShieldCheck,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      valueColor: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      title: 'Menunggu Aktivasi',
+      value: pendingUsers,
+      icon: MailPlus,
+      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      valueColor: 'text-amber-600 dark:text-amber-400',
+    },
+  ]
 
   return (
     <UsersProvider>
@@ -85,48 +116,8 @@ export function Users() {
           </div>
         </div>
 
-        {/* Compact KPI Stats (matching Audit Log style) */}
-        <div className='grid gap-2.5 grid-cols-2 lg:grid-cols-4'>
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Total Pegawai</span>
-              <p className='text-lg font-bold text-foreground leading-tight'>{totalUsers}</p>
-            </div>
-            <div className='rounded-md bg-primary/10 p-2 text-primary'>
-              <UsersIcon className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Pegawai Aktif</span>
-              <p className='text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight'>{activeUsers}</p>
-            </div>
-            <div className='rounded-md bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400'>
-              <UserCheck className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Terproteksi 2FA</span>
-              <p className='text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight'>{twoFactorUsers}</p>
-            </div>
-            <div className='rounded-md bg-blue-500/10 p-2 text-blue-600 dark:text-blue-400'>
-              <ShieldCheck className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Menunggu Aktivasi</span>
-              <p className='text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight'>{pendingUsers}</p>
-            </div>
-            <div className='rounded-md bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400'>
-              <MailPlus className='h-4 w-4' />
-            </div>
-          </div>
-        </div>
+        {/* Compact KPI Stats with Skeleton loading */}
+        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
 
         {/* Users Table / Loading State */}

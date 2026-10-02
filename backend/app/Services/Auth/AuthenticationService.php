@@ -7,6 +7,7 @@ namespace App\Services\Auth;
 use App\Enums\LoginLogStatus;
 use App\Models\LoginLog;
 use App\Models\User;
+use App\Services\Audit\AuditLogService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,7 +16,8 @@ use Illuminate\Support\Str;
 class AuthenticationService
 {
     public function __construct(
-        protected TwoFactorService $twoFactorService
+        protected TwoFactorService $twoFactorService,
+        protected AuditLogService $auditLogService
     ) {}
 
     /**
@@ -58,7 +60,7 @@ class AuthenticationService
         // 4. Temporary Lockout Check
         if ($user->isLockedOut()) {
             $remaining = now()->diffInSeconds($user->lockout_until);
-            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, 'Account currently locked');
+            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, 'Account currently locked', $user);
 
             throw new HttpResponseException(response()->json([
                 'message' => "Akun Anda terkunci sementara karena beberapa kali kesalahan kata sandi. Silakan coba kembali dalam {$remaining} detik.",
@@ -73,14 +75,14 @@ class AuthenticationService
 
             if ($user->failed_login_attempts >= 5) {
                 $user->update(['lockout_until' => now()->addMinutes(15)]);
-                $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, '5 failed attempts, locked 15m');
+                $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, '5 failed attempts, locked 15m', $user);
 
                 throw new HttpResponseException(response()->json([
                     'message' => 'Akun Anda telah dikunci selama 15 menit karena 5 kali percobaan salah demi alasan keamanan.',
                 ], 423));
             }
 
-            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::FAILED_CREDENTIALS, 'Incorrect password');
+            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::FAILED_CREDENTIALS, 'Incorrect password', $user);
 
             throw new HttpResponseException(response()->json([
                 'message' => 'Kredensial yang Anda masukkan tidak valid.',
@@ -89,7 +91,7 @@ class AuthenticationService
 
         // 6. Account Status Check
         if (!$user->isActive()) {
-            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_INACTIVE, "User status is {$user->status}");
+            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_INACTIVE, "User status is {$user->status}", $user);
 
             throw new HttpResponseException(response()->json([
                 'message' => 'Akun Anda tidak aktif atau sedang ditangguhkan. Silakan hubungi Administrator OPD.',
@@ -111,7 +113,7 @@ class AuthenticationService
                 now()->addMinutes(5)
             )->plainTextToken;
 
-            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::CHALLENGE_2FA, '2FA challenge initiated');
+            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::CHALLENGE_2FA, '2FA challenge initiated', $user);
 
             return [
                 'requires_2fa' => true,
@@ -134,7 +136,7 @@ class AuthenticationService
             now()->addMinutes($expirationMinutes)
         )->plainTextToken;
 
-        $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::SUCCESS, 'Authenticated without 2FA');
+        $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::SUCCESS, 'Authenticated without 2FA', $user);
 
         return [
             'requires_2fa' => false,
@@ -156,7 +158,7 @@ class AuthenticationService
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
-            $this->recordLog($user->id, $user->email, $ip, $userAgent, LoginLogStatus::FAILED_2FA, '2FA rate limit exceeded');
+            $this->recordLog($user->id, $user->email, $ip, $userAgent, LoginLogStatus::FAILED_2FA, '2FA rate limit exceeded', $user);
 
             throw new HttpResponseException(response()->json([
                 'message' => "Terlalu banyak percobaan kode 2FA. Silakan coba {$seconds} detik lagi.",
@@ -168,7 +170,7 @@ class AuthenticationService
 
         if (!$result['valid']) {
             RateLimiter::hit($throttleKey, 60);
-            $this->recordLog($user->id, $user->email, $ip, $userAgent, LoginLogStatus::FAILED_2FA, $result['reason'] ?? 'Invalid code');
+            $this->recordLog($user->id, $user->email, $ip, $userAgent, LoginLogStatus::FAILED_2FA, $result['reason'] ?? 'Invalid code', $user);
 
             throw new HttpResponseException(response()->json([
                 'message' => $result['reason'] ?? 'Kode autentikasi atau kode cadangan tidak valid.',
@@ -201,7 +203,8 @@ class AuthenticationService
             $ip,
             $userAgent,
             LoginLogStatus::SUCCESS,
-            $result['used_backup'] ? 'Authenticated with 2FA Backup Code' : 'Authenticated with Google Authenticator TOTP'
+            $result['used_backup'] ? 'Authenticated with 2FA Backup Code' : 'Authenticated with Google Authenticator TOTP',
+            $user
         );
 
         return [
@@ -214,7 +217,7 @@ class AuthenticationService
     }
 
     /**
-     * Record an audit log entry.
+     * Record an audit log entry to both login_logs and audit_logs.
      */
     protected function recordLog(
         ?int $userId,
@@ -222,7 +225,8 @@ class AuthenticationService
         string $ip,
         ?string $userAgent,
         LoginLogStatus $status,
-        ?string $details
+        ?string $details,
+        ?User $user = null
     ): void {
         LoginLog::create([
             'user_id' => $userId,
@@ -233,5 +237,44 @@ class AuthenticationService
             'details' => $details,
             'created_at' => now(),
         ]);
+
+        $resolvedUser = $user ?? ($userId ? User::find($userId) : null);
+
+        $action = match ($status) {
+            LoginLogStatus::SUCCESS => 'AUTH_LOGIN_SUCCESS',
+            LoginLogStatus::FAILED_CREDENTIALS => 'AUTH_LOGIN_FAILED',
+            LoginLogStatus::ACCOUNT_LOCKED => 'AUTH_ACCOUNT_LOCKED',
+            LoginLogStatus::ACCOUNT_INACTIVE => 'AUTH_LOGIN_BLOCKED',
+            LoginLogStatus::CHALLENGE_2FA => 'AUTH_2FA_CHALLENGE',
+            LoginLogStatus::FAILED_2FA => 'AUTH_2FA_FAILED',
+            default => 'AUTH_' . $status->value,
+        };
+
+        $description = match ($status) {
+            LoginLogStatus::SUCCESS => "Pegawai " . ($resolvedUser?->name ?? $identifier) . " berhasil masuk ke sistem",
+            LoginLogStatus::FAILED_CREDENTIALS => "Percobaan masuk gagal untuk '{$identifier}': Kredensial tidak valid",
+            LoginLogStatus::ACCOUNT_LOCKED => "Akun '{$identifier}' terkunci sementara karena beberapa kali kesalahan kata sandi",
+            LoginLogStatus::ACCOUNT_INACTIVE => "Percobaan masuk ditolak: Akun '{$identifier}' sedang nonaktif/ditangguhkan",
+            LoginLogStatus::CHALLENGE_2FA => "Tantangan 2FA Google Authenticator dimulai untuk " . ($resolvedUser?->name ?? $identifier),
+            LoginLogStatus::FAILED_2FA => "Kode autentikasi 2FA salah untuk " . ($resolvedUser?->name ?? $identifier),
+            default => "Aktivitas autentikasi: {$status->value}",
+        };
+
+        // Don't flood audit_logs with temporary 2FA challenge tokens, but record all successes and failures
+        if ($status !== LoginLogStatus::CHALLENGE_2FA) {
+            $this->auditLogService->log(
+                action: $action,
+                module: 'Autentikasi',
+                description: $description,
+                user: $resolvedUser,
+                context: [
+                    'identifier' => $identifier,
+                    'auth_status' => $status->value,
+                    'details' => $details,
+                    'ip_address' => $ip,
+                    'user_agent' => $userAgent,
+                ]
+            );
+        }
     }
 }

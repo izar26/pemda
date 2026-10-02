@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Building2, Loader2, AlertTriangle } from 'lucide-react'
 import { opdService } from '@/services/opd-service'
 import { OPD_CATEGORIES, type OpdItem } from '@/types/opd'
+import { useOpd } from './opd-provider'
 import {
   Dialog,
   DialogContent,
@@ -442,5 +443,45 @@ export function OpdDeleteDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+export function OpdDialogs({ onSuccess }: { onSuccess: () => void }) {
+  const { open, setOpen, currentRow, setCurrentRow } = useOpd()
+
+  return (
+    <>
+      <OpdActionDialog
+        open={open === 'create' || open === 'edit'}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            setCurrentRow(null)
+          }
+        }}
+        currentRow={open === 'edit' ? currentRow : null}
+        onSuccess={() => {
+          onSuccess()
+          setOpen(null)
+          setCurrentRow(null)
+        }}
+      />
+
+      <OpdDeleteDialog
+        open={open === 'delete'}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            setCurrentRow(null)
+          }
+        }}
+        currentRow={currentRow}
+        onSuccess={() => {
+          onSuccess()
+          setOpen(null)
+          setCurrentRow(null)
+        }}
+      />
+    </>
   )
 }

@@ -9,6 +9,7 @@ use App\Mail\PasswordChangedMail;
 use App\Mail\ResetPasswordMail;
 use App\Models\LoginLog;
 use App\Models\User;
+use App\Services\Audit\AuditLogService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,10 @@ use Illuminate\Validation\ValidationException;
 
 class PasswordResetService
 {
+    public function __construct(
+        protected AuditLogService $auditLogService
+    ) {}
+
     /**
      * Standard dummy hash to mitigate timing attacks when user does not exist.
      */
@@ -107,6 +112,18 @@ class PasswordResetService
             'details' => 'Permintaan tautan atur ulang kata sandi melalui email.',
         ]);
 
+        $this->auditLogService->log(
+            action: 'AUTH_PASSWORD_RESET_REQUESTED',
+            module: 'Autentikasi',
+            description: "Permintaan tautan atur ulang kata sandi dikirimkan ke {$user->email}",
+            user: $user,
+            context: [
+                'email' => $user->email,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent,
+            ]
+        );
+
         return [
             'message' => 'Jika alamat email terdaftar di sistem kami, tautan pengaturan ulang kata sandi telah dikirimkan. Silakan periksa kotak masuk atau folder spam Anda.',
         ];
@@ -184,6 +201,18 @@ class PasswordResetService
             'status' => LoginLogStatus::PASSWORD_RESET_SUCCESS->value,
             'details' => 'Kata sandi berhasil diperbarui via token email. Seluruh sesi aktif dicabut.',
         ]);
+
+        $this->auditLogService->log(
+            action: 'AUTH_PASSWORD_RESET',
+            module: 'Autentikasi',
+            description: "Kata sandi akun pegawai {$user->name} ({$user->email}) berhasil diatur ulang via token email",
+            user: $user,
+            context: [
+                'email' => $user->email,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent,
+            ]
+        );
 
         // 9. Send confirmation email
         Mail::to($user->email)->send(

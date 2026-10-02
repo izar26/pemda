@@ -100,6 +100,7 @@ class UserService
                 'role' => $data['role'],
                 'status' => $data['status'] ?? 'active',
                 'password' => Hash::make($data['password']),
+                'email_verified_at' => ($data['status'] ?? 'active') === 'active' ? now() : null,
             ]);
 
             $user->syncRoles([$data['role']]);
@@ -189,17 +190,34 @@ class UserService
     /**
      * Reset 2FA for a user (e.g. if employee lost device).
      */
-    public function resetTwoFactor(User $user): void
+    public function resetTwoFactor(User $user, ?User $admin = null): void
     {
-        DB::transaction(function () use ($user) {
-            $user->update([
-                'two_factor_secret' => null,
-                'two_factor_recovery_codes' => null,
-                'two_factor_confirmed_at' => null,
-            ]);
+        DB::transaction(function () use ($user, $admin) {
+            User::withoutAuditing(function () use ($user) {
+                $user->update([
+                    'two_factor_secret' => null,
+                    'two_factor_recovery_codes' => null,
+                    'two_factor_confirmed_at' => null,
+                ]);
+            });
 
             // Revoke active sessions to ensure account integrity
             $user->tokens()->delete();
+
+            $adminUser = $admin ?? auth('sanctum')->user() ?? auth()->user();
+            $this->auditLogService->log(
+                action: 'USER_RESET_2FA',
+                module: 'Pegawai',
+                description: "Mereset autentikasi dua faktor (2FA) untuk pegawai {$user->name} ({$user->email})",
+                user: $adminUser,
+                context: [
+                    'target_user_id' => $user->id,
+                    'target_email' => $user->email,
+                    'target_name' => $user->name,
+                ],
+                auditableType: User::class,
+                auditableId: $user->id
+            );
         });
     }
 

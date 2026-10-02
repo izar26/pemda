@@ -18,6 +18,7 @@ import { Search } from '@/components/search'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RoleMatrixTable } from './components/role-matrix-table'
 import { RolesTable } from './components/roles-table'
@@ -85,6 +86,36 @@ function RolesContent() {
   const isLoading = isLoadingRoles || isLoadingPermissions
   const isMatrixFiltered = matrixSearch.trim().length > 0 || matrixRisk !== 'all'
 
+  const kpiItems: KpiStatItem[] = [
+    {
+      title: 'Total Peran',
+      value: totalRoles,
+      icon: KeyRound,
+      color: 'bg-primary/10 text-primary',
+    },
+    {
+      title: 'Peran Sistem',
+      value: systemRoles,
+      icon: ShieldCheck,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      valueColor: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      title: 'Peran Kustom',
+      value: customRoles,
+      icon: ShieldAlert,
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      title: 'Total Hak Akses',
+      value: totalPermissions,
+      icon: Shield,
+      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+      valueColor: 'text-purple-600 dark:text-purple-400',
+    },
+  ]
+
   return (
     <>
       <Header fixed>
@@ -122,48 +153,8 @@ function RolesContent() {
           </div>
         </div>
 
-        {/* Compact KPI Stats (matching Manajemen Pegawai style) */}
-        <div className='grid gap-2.5 grid-cols-2 lg:grid-cols-4'>
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Total Peran</span>
-              <p className='text-lg font-bold text-foreground leading-tight'>{totalRoles}</p>
-            </div>
-            <div className='rounded-md bg-primary/10 p-2 text-primary'>
-              <KeyRound className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Peran Sistem</span>
-              <p className='text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight'>{systemRoles}</p>
-            </div>
-            <div className='rounded-md bg-blue-500/10 p-2 text-blue-600 dark:text-blue-400'>
-              <ShieldCheck className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Peran Kustom</span>
-              <p className='text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight'>{customRoles}</p>
-            </div>
-            <div className='rounded-md bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400'>
-              <ShieldAlert className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>Total Hak Akses</span>
-              <p className='text-lg font-bold text-purple-600 dark:text-purple-400 leading-tight'>{totalPermissions}</p>
-            </div>
-            <div className='rounded-md bg-purple-500/10 p-2 text-purple-600 dark:text-purple-400'>
-              <Shield className='h-4 w-4' />
-            </div>
-          </div>
-        </div>
+        {/* Compact KPI Stats with Skeleton loading */}
+        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
         {/* Tab View Switcher (Daftar Peran vs Matriks Hak Akses) */}
         <Tabs

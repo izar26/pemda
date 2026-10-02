@@ -10,7 +10,7 @@ import type { AuditLog } from '@/types/audit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DataTableColumnHeader } from '@/components/data-table'
-import { actionBadgeMap } from '../data/data'
+import { getActionBadgeConfig } from '../data/data'
 import { useAuditLogs } from './audit-logs-provider'
 
 function AuditActionCell({ log }: { log: AuditLog }) {
@@ -104,7 +104,7 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
       if (module === 'Autentikasi') {
         badgeClass =
           'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
-      } else if (module === 'Pegawai') {
+      } else if (module === 'Pegawai' || module === 'Profil') {
         badgeClass =
           'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
       } else if (module === 'Organisasi (OPD)') {
@@ -139,10 +139,7 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
     ),
     cell: ({ row }) => {
       const action = row.getValue('action') as string
-      const config = actionBadgeMap[action.toUpperCase()] || {
-        label: action,
-        className: 'border-muted-foreground/30 bg-muted/40 text-foreground',
-      }
+      const config = getActionBadgeConfig(action)
 
       return (
         <Badge

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,13 +34,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SearchableSelect } from '@/components/searchable-select'
 import { Badge } from '@/components/ui/badge'
 
 const activateSchema = z
@@ -109,6 +103,26 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
     queryFn: () => opdService.getOpds(),
     staleTime: 5 * 60 * 1000,
   })
+
+  const opdOptions = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: opd.nama,
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori],
+    }))
+  }, [opds])
+
+  const pangkatOptions = useMemo(() => {
+    return PANGKAT_GOLONGAN_OPTIONS.map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      group: opt.golongan,
+      badge: opt.golongan,
+      keywords: [opt.golongan],
+    }))
+  }, [])
 
   const form = useForm<ActivateFormValues>({
     resolver: zodResolver(activateSchema),
@@ -358,35 +372,21 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                     <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
                     Instansi / Perangkat Daerah (OPD)
                   </FormLabel>
-                  <Select
-                    disabled={isLoading || isLoadingOpds}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            isLoadingOpds
-                              ? 'Memuat daftar OPD...'
-                              : 'Pilih perangkat daerah unit kerja...'
-                          }
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className='max-h-60'>
-                      {opds.map((opd) => (
-                        <SelectItem key={opd.id} value={String(opd.id)}>
-                          <div className='flex items-center justify-between gap-2'>
-                            <span>{opd.nama}</span>
-                            <span className='text-[10px] text-muted-foreground bg-muted px-1 rounded'>
-                              {opd.kategori}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableSelect
+                      disabled={isLoading || isLoadingOpds}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={opdOptions}
+                      placeholder={
+                        isLoadingOpds
+                          ? 'Memuat daftar OPD...'
+                          : 'Pilih perangkat daerah unit kerja...'
+                      }
+                      searchPlaceholder='Cari nama atau singkatan OPD (misal: Disdik, Setda, Bappeda)...'
+                      emptyMessage='Tidak ada perangkat daerah yang cocok.'
+                    />
+                  </FormControl>
                   <FormMessage className='text-xs' />
                 </FormItem>
               )}
@@ -424,24 +424,17 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                     <FormLabel className='text-xs font-semibold'>
                       Pangkat / Golongan
                     </FormLabel>
-                    <Select
-                      disabled={isLoading}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Pilih golongan...' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className='max-h-60'>
-                        {PANGKAT_GOLONGAN_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableSelect
+                        disabled={isLoading}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        options={pangkatOptions}
+                        placeholder='Pilih golongan...'
+                        searchPlaceholder='Cari nama pangkat atau ruang (misal: Pembina, III/a, PPPK)...'
+                        emptyMessage='Tidak ada pangkat yang cocok.'
+                      />
+                    </FormControl>
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}

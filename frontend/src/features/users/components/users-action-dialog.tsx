@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -14,6 +14,7 @@ import { userService } from '@/services/user-service'
 import { PANGKAT_GOLONGAN_OPTIONS } from '../data/pangkat-golongan'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { SearchableSelect } from '@/components/searchable-select'
 
 import {
   Dialog,
@@ -114,6 +115,26 @@ export function UsersActionDialog({
     queryFn: () => opdService.getOpds(),
     staleTime: 5 * 60 * 1000,
   })
+
+  const opdOptions = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: opd.nama,
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori],
+    }))
+  }, [opds])
+
+  const pangkatOptions = useMemo(() => {
+    return PANGKAT_GOLONGAN_OPTIONS.map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      group: opt.golongan,
+      badge: opt.golongan,
+      keywords: [opt.golongan],
+    }))
+  }, [])
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -365,35 +386,21 @@ export function UsersActionDialog({
                       <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
                       Instansi / Perangkat Daerah (OPD)
                     </FormLabel>
-                    <Select
-                      disabled={isSubmitting || isLoadingOpds}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className='w-full'>
-                          <SelectValue
-                            placeholder={
-                              isLoadingOpds
-                                ? 'Memuat daftar OPD...'
-                                : 'Pilih perangkat daerah...'
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className='max-h-60'>
-                        {opds.map((opd) => (
-                          <SelectItem key={opd.id} value={String(opd.id)}>
-                            <div className='flex items-center justify-between gap-2'>
-                              <span>{opd.nama}</span>
-                              <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
-                                {opd.kategori}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableSelect
+                        disabled={isSubmitting || isLoadingOpds}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        options={opdOptions}
+                        placeholder={
+                          isLoadingOpds
+                            ? 'Memuat daftar OPD...'
+                            : 'Pilih perangkat daerah...'
+                        }
+                        searchPlaceholder='Cari nama atau singkatan OPD (misal: Disdik, Setda, Bappeda)...'
+                        emptyMessage='Tidak ada perangkat daerah yang cocok.'
+                      />
+                    </FormControl>
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}
@@ -431,24 +438,17 @@ export function UsersActionDialog({
                       <FormLabel className='text-xs font-semibold'>
                         Pangkat / Golongan Ruang
                       </FormLabel>
-                      <Select
-                        disabled={isSubmitting}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className='w-full'>
-                            <SelectValue placeholder='Pilih pangkat / golongan...' />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className='max-h-60'>
-                          {PANGKAT_GOLONGAN_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableSelect
+                          disabled={isSubmitting}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          options={pangkatOptions}
+                          placeholder='Pilih pangkat / golongan...'
+                          searchPlaceholder='Cari nama pangkat atau ruang (misal: Pembina, III/a, PPPK)...'
+                          emptyMessage='Tidak ada pangkat yang cocok.'
+                        />
+                      </FormControl>
                       <FormMessage className='text-xs' />
                     </FormItem>
                   )}
@@ -526,7 +526,7 @@ export function UsersActionDialog({
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className={cn(
                           'grid gap-2',
                           field.value === 'pending_activation' ? 'grid-cols-4' : 'grid-cols-3'

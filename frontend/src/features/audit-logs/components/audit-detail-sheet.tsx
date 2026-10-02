@@ -39,6 +39,13 @@ function formatValue(value: unknown): string {
   if (typeof value === 'boolean') {
     return value ? 'Aktif (true)' : 'Non-aktif (false)'
   }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '— (Kosong)'
+    if (value.every((v) => typeof v === 'string' || typeof v === 'number')) {
+      return value.join(', ')
+    }
+    return JSON.stringify(value, null, 2)
+  }
   if (typeof value === 'object') {
     return JSON.stringify(value, null, 2)
   }

@@ -18,6 +18,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MasterGenericTable } from './components/master-generic-table'
 import { MasterSpipTable } from './components/master-spip-table'
@@ -79,6 +80,35 @@ function MasterDataContent() {
   const displayedEntities =
     mainCategory === 'risiko' ? risikoEntities : spipEntities
 
+  const kpiItems: KpiStatItem[] = [
+    {
+      title: 'Entitas Master',
+      value: `${totalEntities} Tabel`,
+      icon: Database,
+      color: 'bg-primary/10 text-primary',
+    },
+    {
+      title: `Total Parameter (${selectedEntity.label})`,
+      value: totalItems,
+      icon: Layers,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    },
+    {
+      title: 'Parameter Aktif',
+      value: activeItems,
+      icon: CheckCircle2,
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      title: 'Parameter Nonaktif',
+      value: inactiveItems,
+      icon: XCircle,
+      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      valueColor: 'text-amber-600 dark:text-amber-400',
+    },
+  ]
+
   return (
     <>
       <Header fixed>
@@ -116,64 +146,8 @@ function MasterDataContent() {
           </div>
         </div>
 
-        {/* Compact KPI Stats (matching Manajemen Pegawai style) */}
-        <div className='grid gap-2.5 grid-cols-2 lg:grid-cols-4'>
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Entitas Master
-              </span>
-              <p className='text-lg font-bold text-foreground leading-tight'>
-                {totalEntities} Tabel
-              </p>
-            </div>
-            <div className='rounded-md bg-primary/10 p-2 text-primary'>
-              <Database className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Total Parameter ({selectedEntity.label})
-              </span>
-              <p className='text-lg font-bold text-foreground leading-tight'>
-                {totalItems}
-              </p>
-            </div>
-            <div className='rounded-md bg-blue-500/10 p-2 text-blue-600 dark:text-blue-400'>
-              <Layers className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Parameter Aktif
-              </span>
-              <p className='text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight'>
-                {activeItems}
-              </p>
-            </div>
-            <div className='rounded-md bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400'>
-              <CheckCircle2 className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Parameter Nonaktif
-              </span>
-              <p className='text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight'>
-                {inactiveItems}
-              </p>
-            </div>
-            <div className='rounded-md bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400'>
-              <XCircle className='h-4 w-4' />
-            </div>
-          </div>
-        </div>
+        {/* Compact KPI Stats with Skeleton loading */}
+        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
         {/* Category Switcher & Sub-entity Tabs */}
         <div className='space-y-3.5'>

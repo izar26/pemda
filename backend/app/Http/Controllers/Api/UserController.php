@@ -106,7 +106,7 @@ class UserController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mereset 2FA pengguna.');
         }
 
-        $this->userService->resetTwoFactor($user);
+        $this->userService->resetTwoFactor($user, $request->user());
 
         return response()->json([
             'message' => 'Autentikasi dua faktor (2FA) untuk pegawai berhasil direset.',

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,6 +11,7 @@ import { rbacService } from '@/services/rbac-service'
 import { opdService } from '@/services/opd-service'
 import { userService } from '@/services/user-service'
 import { Button } from '@/components/ui/button'
+import { SearchableSelect } from '@/components/searchable-select'
 import {
   Dialog,
   DialogClose,
@@ -81,6 +82,16 @@ export function UsersInviteDialog({
     queryFn: () => opdService.getOpds(),
     enabled: open,
   })
+
+  const opdOptions = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: opd.nama,
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori],
+    }))
+  }, [opds])
 
   const form = useForm<UserInviteFormValues>({
     resolver: zodResolver(formSchema),
@@ -207,35 +218,21 @@ export function UsersInviteDialog({
                       <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
                       Instansi / Perangkat Daerah (OPD)
                     </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isSubmitting || isLoadingOpds}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              isLoadingOpds
-                                ? 'Memuat daftar OPD...'
-                                : 'Pilih instansi / perangkat daerah'
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className='max-h-64'>
-                        {opds.map((opd) => (
-                          <SelectItem key={opd.id} value={String(opd.id)}>
-                            <div className='flex items-center justify-between gap-2'>
-                              <span className='font-medium'>{opd.nama}</span>
-                              <span className='text-[10px] text-muted-foreground bg-muted px-1 rounded'>
-                                {opd.kategori}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableSelect
+                        disabled={isSubmitting || isLoadingOpds}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        options={opdOptions}
+                        placeholder={
+                          isLoadingOpds
+                            ? 'Memuat daftar OPD...'
+                            : 'Pilih instansi / perangkat daerah'
+                        }
+                        searchPlaceholder='Cari nama atau singkatan OPD (misal: Disdik, Setda, Bappeda)...'
+                        emptyMessage='Tidak ada perangkat daerah yang cocok.'
+                      />
+                    </FormControl>
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}

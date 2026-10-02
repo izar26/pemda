@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -23,13 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SearchableSelect } from '@/components/searchable-select'
 import { Badge } from '@/components/ui/badge'
 
 const profileSchema = z.object({
@@ -66,6 +60,26 @@ export function ProfileForm() {
     queryFn: () => opdService.getOpds(),
     staleTime: 5 * 60 * 1000,
   })
+
+  const opdOptions = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: opd.nama,
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori],
+    }))
+  }, [opds])
+
+  const pangkatOptions = useMemo(() => {
+    return PANGKAT_GOLONGAN_OPTIONS.map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      group: opt.golongan,
+      badge: opt.golongan,
+      keywords: [opt.golongan],
+    }))
+  }, [])
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -245,35 +259,21 @@ export function ProfileForm() {
                   <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
                   Instansi / Perangkat Daerah (OPD)
                 </FormLabel>
-                <Select
-                  disabled={isSubmitting || isLoadingOpds}
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className='w-full'>
-                      <SelectValue
-                        placeholder={
-                          isLoadingOpds
-                            ? 'Memuat daftar OPD...'
-                            : 'Pilih perangkat daerah unit kerja...'
-                        }
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent className='max-h-64'>
-                    {opds.map((opd) => (
-                      <SelectItem key={opd.id} value={String(opd.id)}>
-                        <div className='flex items-center justify-between gap-3'>
-                          <span>{opd.nama}</span>
-                          <span className='text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
-                            {opd.kategori}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableSelect
+                    disabled={isSubmitting || isLoadingOpds}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={opdOptions}
+                    placeholder={
+                      isLoadingOpds
+                        ? 'Memuat daftar OPD...'
+                        : 'Pilih perangkat daerah unit kerja...'
+                    }
+                    searchPlaceholder='Cari nama atau singkatan OPD (misal: Disdik, Setda, Bappeda)...'
+                    emptyMessage='Tidak ada perangkat daerah yang cocok.'
+                  />
+                </FormControl>
                 <FormDescription className='text-[11px]'>
                   Pilih unit kerja dinas, badan, sekretariat, atau kecamatan tempat Anda bertugas.
                 </FormDescription>
@@ -317,24 +317,17 @@ export function ProfileForm() {
                   <FormLabel className='text-xs font-semibold'>
                     Pangkat / Golongan Ruang
                   </FormLabel>
-                  <Select
-                    disabled={isSubmitting}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className='w-full'>
-                        <SelectValue placeholder='Pilih pangkat / golongan ruang...' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className='max-h-64'>
-                      {PANGKAT_GOLONGAN_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableSelect
+                      disabled={isSubmitting}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={pangkatOptions}
+                      placeholder='Pilih pangkat / golongan ruang...'
+                      searchPlaceholder='Cari nama pangkat atau ruang (misal: Pembina, III/a, PPPK)...'
+                      emptyMessage='Tidak ada pangkat yang cocok.'
+                    />
+                  </FormControl>
                   <FormDescription className='text-[11px]'>
                     Pangkat dan golongan ruang BKN (PNS, PPPK, atau Non-ASN).
                   </FormDescription>

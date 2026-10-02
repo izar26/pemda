@@ -34,6 +34,7 @@ interface AuditLogsTableProps {
 export function AuditLogsTable({ data }: AuditLogsTableProps) {
   const { setSelectedLog, setSheetOpen } = useAuditLogs()
 
+  const [globalFilter, setGlobalFilter] = useState('')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -49,12 +50,28 @@ export function AuditLogsTable({ data }: AuditLogsTableProps) {
       rowSelection,
       columnFilters,
       columnVisibility,
+      globalFilter,
     },
     enableRowSelection: true,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const search = String(filterValue || '').toLowerCase().trim()
+      if (!search) return true
+      const log = row.original
+      return (
+        Boolean(log.description?.toLowerCase().includes(search)) ||
+        Boolean(log.user_name?.toLowerCase().includes(search)) ||
+        Boolean(log.user_nip?.toLowerCase().includes(search)) ||
+        Boolean(log.user_email?.toLowerCase().includes(search)) ||
+        Boolean(log.ip_address?.toLowerCase().includes(search)) ||
+        Boolean(log.module?.toLowerCase().includes(search)) ||
+        Boolean(log.action?.toLowerCase().includes(search))
+      )
+    },
     getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -72,8 +89,7 @@ export function AuditLogsTable({ data }: AuditLogsTableProps) {
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Cari deskripsi aktivitas audit...'
-        searchKey='description'
+        searchPlaceholder='Cari nama, NIP, deskripsi, modul, atau IP...'
         filters={[
           {
             columnId: 'module',

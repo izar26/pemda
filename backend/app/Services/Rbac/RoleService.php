@@ -6,12 +6,17 @@ namespace App\Services\Rbac;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\Audit\AuditLogService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
 
 class RoleService
 {
+    public function __construct(
+        protected AuditLogService $auditLogService
+    ) {}
+
     /**
      * List all roles with counts and permissions.
      *
@@ -52,6 +57,21 @@ class RoleService
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        if (!empty($permissions)) {
+            $this->auditLogService->log(
+                action: 'ROLE_PERMISSIONS_UPDATED',
+                module: 'Peran & Izin',
+                description: "Menetapkan " . count($permissions) . " izin akses pada peran baru '{$role->name}'",
+                context: [
+                    'role_id' => $role->id,
+                    'role_name' => $role->name,
+                    'assigned_permissions' => $permissions,
+                ],
+                auditableType: Role::class,
+                auditableId: $role->id
+            );
+        }
+
         return $this->getRole($role);
     }
 
@@ -81,6 +101,12 @@ class RoleService
             }
         }
 
+        $oldPermissions = $role->permissions()->pluck('name')->sort()->values()->all();
+        $newPermissions = collect($permissions)->sort()->values()->all();
+
+        $added = array_values(array_diff($newPermissions, $oldPermissions));
+        $removed = array_values(array_diff($oldPermissions, $newPermissions));
+
         $role->update([
             'name' => $cleanName,
             'description' => $description ? trim($description) : null,
@@ -89,6 +115,22 @@ class RoleService
         $role->syncPermissions($permissions);
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        if (!empty($added) || !empty($removed)) {
+            $this->auditLogService->log(
+                action: 'ROLE_PERMISSIONS_UPDATED',
+                module: 'Peran & Izin',
+                description: "Memperbarui izin akses untuk peran '{$role->name}' (" . count($added) . " ditambahkan, " . count($removed) . " dicabut)",
+                context: [
+                    'role_id' => $role->id,
+                    'role_name' => $role->name,
+                    'added_permissions' => $added,
+                    'removed_permissions' => $removed,
+                ],
+                auditableType: Role::class,
+                auditableId: $role->id
+            );
+        }
 
         return $this->getRole($role);
     }

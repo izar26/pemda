@@ -14,6 +14,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Button } from '@/components/ui/button'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { AuditLogsTable } from './components/audit-logs-table'
 import { AuditLogsDialogs } from './components/audit-logs-dialogs'
 import {
@@ -30,7 +31,7 @@ function AuditLogsContent() {
     queryKey: ['audit-logs'],
     queryFn: () =>
       auditService.getLogs({
-        per_page: 100,
+        per_page: 200,
       }),
   })
 
@@ -40,11 +41,45 @@ function AuditLogsContent() {
   const totalLogs = logs.length
   const authLogsCount = logs.filter((l) => l.module === 'Autentikasi').length
   const userLogsCount = logs.filter(
-    (l) => l.module === 'Pegawai' || l.module === 'Peran & Izin'
+    (l) =>
+      l.module === 'Pegawai' ||
+      l.module === 'Profil' ||
+      l.module === 'Organisasi (OPD)' ||
+      l.module === 'Peran & Izin'
   ).length
   const systemLogsCount = logs.filter(
     (l) => l.module === 'Pengaturan Sistem' || l.module === 'Master Data'
   ).length
+
+  const kpiItems: KpiStatItem[] = [
+    {
+      title: 'Total Catatan',
+      value: totalLogs,
+      icon: History,
+      color: 'bg-primary/10 text-primary',
+    },
+    {
+      title: 'Aktivitas Sesi',
+      value: authLogsCount,
+      icon: UserCheck,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      valueColor: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      title: 'Pegawai, OPD & Peran',
+      value: userLogsCount,
+      icon: Shield,
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      title: 'Sistem & Master Data',
+      value: systemLogsCount,
+      icon: Activity,
+      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      valueColor: 'text-amber-600 dark:text-amber-400',
+    },
+  ]
 
   return (
     <>
@@ -82,64 +117,8 @@ function AuditLogsContent() {
           </div>
         </div>
 
-        {/* Compact KPI Stats (matching Manajemen Pegawai style) */}
-        <div className='grid gap-2.5 grid-cols-2 lg:grid-cols-4'>
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Total Catatan
-              </span>
-              <p className='text-lg font-bold text-foreground leading-tight'>
-                {totalLogs}
-              </p>
-            </div>
-            <div className='rounded-md bg-primary/10 p-2 text-primary'>
-              <History className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Aktivitas Sesi
-              </span>
-              <p className='text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight'>
-                {authLogsCount}
-              </p>
-            </div>
-            <div className='rounded-md bg-blue-500/10 p-2 text-blue-600 dark:text-blue-400'>
-              <UserCheck className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Perubahan Pegawai & Peran
-              </span>
-              <p className='text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight'>
-                {userLogsCount}
-              </p>
-            </div>
-            <div className='rounded-md bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400'>
-              <Shield className='h-4 w-4' />
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs'>
-            <div>
-              <span className='text-[11px] font-medium text-muted-foreground'>
-                Sistem & Master Data
-              </span>
-              <p className='text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight'>
-                {systemLogsCount}
-              </p>
-            </div>
-            <div className='rounded-md bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400'>
-              <Activity className='h-4 w-4' />
-            </div>
-          </div>
-        </div>
+        {/* Compact KPI Stats with Skeleton loading */}
+        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
         {/* Audit Logs Table / Loading State */}
         {isLoading ? (

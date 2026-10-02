@@ -26,7 +26,7 @@ class AuditLogController extends Controller
         }
 
         $perPage = (int) $request->input('per_page', 15);
-        if ($perPage < 5 || $perPage > 100) {
+        if ($perPage < 5 || $perPage > 250) {
             $perPage = 15;
         }
 

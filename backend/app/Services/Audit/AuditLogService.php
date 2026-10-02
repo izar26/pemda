@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AuditLogService
@@ -115,12 +116,13 @@ class AuditLogService
 
         if (!empty($filters['search'])) {
             $search = trim($filters['search']);
-            $query->where(function ($q) use ($search) {
-                $q->where('user_name', 'ilike', "%{$search}%")
-                    ->orWhere('user_nip', 'ilike', "%{$search}%")
-                    ->orWhere('user_email', 'ilike', "%{$search}%")
-                    ->orWhere('description', 'ilike', "%{$search}%")
-                    ->orWhere('ip_address', 'ilike', "%{$search}%");
+            $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($search, $likeOperator) {
+                $q->where('user_name', $likeOperator, "%{$search}%")
+                    ->orWhere('user_nip', $likeOperator, "%{$search}%")
+                    ->orWhere('user_email', $likeOperator, "%{$search}%")
+                    ->orWhere('description', $likeOperator, "%{$search}%")
+                    ->orWhere('ip_address', $likeOperator, "%{$search}%");
             });
         }
 

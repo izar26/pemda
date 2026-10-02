@@ -247,4 +247,94 @@ class AuditLogTest extends TestCase
         $this->expectException(\LogicException::class);
         $log->delete();
     }
+
+    public function test_login_success_and_failure_are_recorded_in_audit_logs(): void
+    {
+        // 1. Failed login attempt
+        $this->postJson('/api/auth/login', [
+            'identifier' => 'admin@pemda.go.id',
+            'password' => 'WrongPassword!',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'AUTH_LOGIN_FAILED',
+            'module' => 'Autentikasi',
+        ]);
+
+        // 2. Successful login attempt
+        $this->postJson('/api/auth/login', [
+            'identifier' => 'admin@pemda.go.id',
+            'password' => 'password',
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'AUTH_LOGIN_SUCCESS',
+            'module' => 'Autentikasi',
+            'user_id' => $this->superadmin->id,
+        ]);
+    }
+
+    public function test_logout_is_recorded_in_audit_logs(): void
+    {
+        $token = $this->superadmin->createToken('test-session')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/auth/logout')
+            ->assertStatus(200);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'AUTH_LOGOUT',
+            'module' => 'Autentikasi',
+            'user_id' => $this->superadmin->id,
+        ]);
+    }
+
+    public function test_role_permission_changes_are_recorded_in_audit_logs(): void
+    {
+        $token = $this->superadmin->createToken('test-admin')->plainTextToken;
+
+        $role = Role::create([
+            'name' => 'Auditor Custom',
+            'guard_name' => 'web',
+            'is_system' => false,
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson('/api/roles/' . $role->id, [
+                'name' => 'Auditor Custom',
+                'description' => 'Role auditor yang diperbarui izinnya',
+                'permissions' => ['audit.view', 'users.view'],
+            ])
+            ->assertStatus(200);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'ROLE_PERMISSIONS_UPDATED',
+            'module' => 'Peran & Izin',
+            'auditable_type' => Role::class,
+            'auditable_id' => $role->id,
+        ]);
+    }
+
+    public function test_user_reset_2fa_is_recorded_in_audit_logs(): void
+    {
+        $token = $this->superadmin->createToken('test-admin')->plainTextToken;
+
+        $targetUser = User::factory()->create([
+            'email' => 'target.2fa@pemda.go.id',
+            'status' => 'active',
+            'two_factor_secret' => 'SECRET123',
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson("/api/users/{$targetUser->id}/reset-2fa")
+            ->assertStatus(200);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'USER_RESET_2FA',
+            'module' => 'Pegawai',
+            'auditable_type' => User::class,
+            'auditable_id' => $targetUser->id,
+        ]);
+    }
 }

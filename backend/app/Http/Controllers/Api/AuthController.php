@@ -16,6 +16,7 @@ use App\Http\Requests\Auth\VerifyTwoFactorRequest;
 use App\Http\Resources\OpdResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\Audit\AuditLogService;
 use App\Services\Auth\AuthenticationService;
 use App\Services\Auth\PasswordResetService;
 use App\Services\Auth\TwoFactorService;
@@ -30,7 +31,8 @@ class AuthController extends Controller
         protected AuthenticationService $authService,
         protected TwoFactorService $twoFactorService,
         protected PasswordResetService $passwordResetService,
-        protected UserService $userService
+        protected UserService $userService,
+        protected AuditLogService $auditLogService
     ) {}
 
     /**
@@ -127,6 +129,18 @@ class AuthController extends Controller
             ], 422);
         }
 
+        $this->auditLogService->log(
+            action: 'AUTH_2FA_ENABLED',
+            module: 'Autentikasi',
+            description: "Pegawai {$user->name} berhasil mengaktifkan Autentikasi Dua Faktor (2FA)",
+            user: $user,
+            context: [
+                'email' => $user->email,
+                'ip_address' => $request->ip() ?? '127.0.0.1',
+                'user_agent' => $request->userAgent(),
+            ]
+        );
+
         return response()->json([
             'message' => 'Google Authenticator berhasil diaktifkan untuk akun Anda.',
             'two_factor_enabled' => true,
@@ -149,6 +163,18 @@ class AuthController extends Controller
         }
 
         $this->twoFactorService->disable($user);
+
+        $this->auditLogService->log(
+            action: 'AUTH_2FA_DISABLED',
+            module: 'Autentikasi',
+            description: "Pegawai {$user->name} menonaktifkan Autentikasi Dua Faktor (2FA)",
+            user: $user,
+            context: [
+                'email' => $user->email,
+                'ip_address' => $request->ip() ?? '127.0.0.1',
+                'user_agent' => $request->userAgent(),
+            ]
+        );
 
         return response()->json([
             'message' => 'Google Authenticator berhasil dinonaktifkan.',
@@ -198,6 +224,18 @@ class AuthController extends Controller
             'two_factor_recovery_codes' => $codes,
         ]);
 
+        $this->auditLogService->log(
+            action: 'AUTH_2FA_RECOVERY_REGENERATED',
+            module: 'Autentikasi',
+            description: "Pegawai {$user->name} memperbarui kode cadangan pemulihan (recovery codes) 2FA",
+            user: $user,
+            context: [
+                'email' => $user->email,
+                'ip_address' => $request->ip() ?? '127.0.0.1',
+                'user_agent' => $request->userAgent(),
+            ]
+        );
+
         return response()->json([
             'message' => 'Kode pemulihan darurat baru berhasil dibuat.',
             'recovery_codes' => $codes,
@@ -219,7 +257,23 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()?->delete();
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user) {
+            $this->auditLogService->log(
+                action: 'AUTH_LOGOUT',
+                module: 'Autentikasi',
+                description: "Pegawai {$user->name} keluar dari sesi aktif",
+                user: $user,
+                context: [
+                    'email' => $user->email,
+                    'ip_address' => $request->ip() ?? '127.0.0.1',
+                    'user_agent' => $request->userAgent(),
+                ]
+            );
+            $user->currentAccessToken()?->delete();
+        }
 
         return response()->json([
             'message' => 'Anda telah berhasil keluar dari sistem.',
@@ -231,7 +285,23 @@ class AuthController extends Controller
      */
     public function logoutAll(Request $request): JsonResponse
     {
-        $request->user()->tokens()->delete();
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user) {
+            $this->auditLogService->log(
+                action: 'AUTH_LOGOUT_ALL',
+                module: 'Autentikasi',
+                description: "Pegawai {$user->name} mengakhiri seluruh sesi login aktif di semua perangkat",
+                user: $user,
+                context: [
+                    'email' => $user->email,
+                    'ip_address' => $request->ip() ?? '127.0.0.1',
+                    'user_agent' => $request->userAgent(),
+                ]
+            );
+            $user->tokens()->delete();
+        }
 
         return response()->json([
             'message' => 'Semua sesi aktif di seluruh perangkat telah dihentikan.',
