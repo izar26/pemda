@@ -16,10 +16,14 @@ export const opdService = {
    * Backward compatible with existing users features.
    */
   async getOpds(params?: OpdQueryParams): Promise<Opd[]> {
-    const response = await apiClient.get<{ data: Opd[] }>('/opds', {
-      params: { all: true, ...params },
-    })
-    return response.data.data
+    try {
+      const response = await apiClient.get<{ data: Opd[] }>('/opds', {
+        params: { all: true, ...params },
+      })
+      return Array.isArray(response.data?.data) ? response.data.data : []
+    } catch {
+      return []
+    }
   },
 
   /**
@@ -43,7 +47,7 @@ export const opdService = {
   /**
    * Get single OPD detail by ID.
    */
-  async getOpd(id: number): Promise<OpdItem> {
+  async getOpd(id: string): Promise<OpdItem> {
     const response = await apiClient.get<{ data: OpdItem }>(`/opds/${id}`)
     return response.data.data
   },
@@ -63,7 +67,7 @@ export const opdService = {
    * Update an existing OPD.
    */
   async updateOpd(
-    id: number,
+    id: string,
     payload: OpdPayload
   ): Promise<{ message: string; data: OpdItem }> {
     const response = await apiClient.put<{ message: string; data: OpdItem }>(
@@ -76,7 +80,7 @@ export const opdService = {
   /**
    * Toggle active status of an OPD.
    */
-  async toggleActive(id: number): Promise<{ message: string; data: OpdItem }> {
+  async toggleActive(id: string): Promise<{ message: string; data: OpdItem }> {
     const response = await apiClient.patch<{ message: string; data: OpdItem }>(
       `/opds/${id}/toggle`
     )
@@ -86,7 +90,7 @@ export const opdService = {
   /**
    * Delete an OPD (blocked if employees are assigned).
    */
-  async deleteOpd(id: number): Promise<{ message: string }> {
+  async deleteOpd(id: string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/opds/${id}`)
     return response.data
   },

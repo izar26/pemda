@@ -11,8 +11,8 @@ export type MasterEntityKey =
   | 'sub-unsur-spip'
 
 export interface MasterSubUnsurSpipItem {
-  id: number
-  unsur_spip_id: number
+  id: string
+  unsur_spip_id: string
   nama: string
   urutan: number
   is_active: boolean
@@ -21,7 +21,7 @@ export interface MasterSubUnsurSpipItem {
 }
 
 export interface MasterDataBaseItem {
-  id: number
+  id: string
   nama: string
   kode?: string
   kategori?: string | null
@@ -46,7 +46,7 @@ export interface MasterDataPayload {
   nomor?: string
   urutan?: number
   is_active?: boolean
-  unsur_spip_id?: number
+  unsur_spip_id?: string
 }
 
 export interface MasterDataResponse<T = MasterDataBaseItem> {

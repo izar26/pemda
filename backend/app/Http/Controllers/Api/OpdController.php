@@ -20,8 +20,9 @@ class OpdController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user() ?? auth('sanctum')->user();
         $isAll = $request->boolean('all') || $request->input('paginate') === 'false';
-        $isPublic = is_null($request->user());
+        $isPublic = is_null($user);
 
         // Fast public dropdown for registration, invitations, etc.
         if ($isAll || ($isPublic && !$request->has('per_page') && !$request->has('page'))) {
@@ -49,7 +50,7 @@ class OpdController extends Controller
         }
 
         // Authenticated management table - verify permission
-        if (!$request->user()?->can('opd.view')) {
+        if (!$user?->can('opd.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data perangkat daerah.');
         }
 

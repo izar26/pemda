@@ -18,18 +18,18 @@ interface MasterDataContextType {
   setCurrentItem: React.Dispatch<
     React.SetStateAction<MasterDataBaseItem | MasterSubUnsurSpipItem | null>
   >
-  targetUnsurId?: number
-  setTargetUnsurId: (id: number | undefined) => void
+  targetUnsurId?: string
+  setTargetUnsurId: (id: string | undefined) => void
   deleteTarget: {
     entityKey: string
-    id: number
+    id: string
     name: string
     label: string
   } | null
   setDeleteTarget: (
     target: {
       entityKey: string
-      id: number
+      id: string
       name: string
       label: string
     } | null
@@ -46,10 +46,10 @@ export function MasterDataProvider({ children }: { children: React.ReactNode }) 
   const [currentItem, setCurrentItem] = useState<
     MasterDataBaseItem | MasterSubUnsurSpipItem | null
   >(null)
-  const [targetUnsurId, setTargetUnsurId] = useState<number | undefined>(undefined)
+  const [targetUnsurId, setTargetUnsurId] = useState<string | undefined>(undefined)
   const [deleteTarget, setDeleteTarget] = useState<{
     entityKey: string
-    id: number
+    id: string
     name: string
     label: string
   } | null>(null)

@@ -11,14 +11,18 @@ export const rbacService = {
    * Get all roles
    */
   async getRoles(): Promise<Role[]> {
-    const response = await apiClient.get<{ data: Role[] }>('/roles')
-    return response.data.data
+    try {
+      const response = await apiClient.get<{ data: Role[] }>('/roles')
+      return Array.isArray(response.data?.data) ? response.data.data : []
+    } catch {
+      return []
+    }
   },
 
   /**
    * Get single role details with permissions
    */
-  async getRole(id: number): Promise<Role> {
+  async getRole(id: string): Promise<Role> {
     const response = await apiClient.get<{ data: Role }>(`/roles/${id}`)
     return response.data.data
   },
@@ -40,7 +44,7 @@ export const rbacService = {
    * Update existing role & permissions
    */
   async updateRole(
-    id: number,
+    id: string,
     payload: UpdateRolePayload
   ): Promise<{ message: string; role: Role }> {
     const response = await apiClient.put<{ message: string; role: Role }>(
@@ -53,7 +57,7 @@ export const rbacService = {
   /**
    * Delete custom role
    */
-  async deleteRole(id: number): Promise<{ message: string }> {
+  async deleteRole(id: string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/roles/${id}`)
     return response.data
   },

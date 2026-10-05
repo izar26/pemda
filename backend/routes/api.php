@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogArchiveController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MasterDataController;
@@ -21,7 +22,7 @@ Route::get('/ping', function () {
 
 // Master OPD (Perangkat Daerah) - Publicly available for dropdowns & registration
 Route::get('/opds', [OpdController::class, 'index']);
-Route::get('/opds/{opd}', [OpdController::class, 'show'])->whereNumber('opd');
+Route::get('/opds/{opd}', [OpdController::class, 'show'])->whereUuid('opd');
 
 // Authentication Routes
 Route::prefix('auth')->group(function () {
@@ -65,7 +66,10 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     Route::post('/users/{user}/reset-2fa', [UserController::class, 'resetTwoFactor']);
     Route::apiResource('/users', UserController::class);
 
-    // Audit Logs
+    // Audit Logs & Immutable Archive Vault
+    Route::get('/audit-logs/stats', [AuditLogArchiveController::class, 'stats']);
+    Route::get('/audit-logs/archives', [AuditLogArchiveController::class, 'index']);
+    Route::post('/audit-logs/archive-purge', [AuditLogArchiveController::class, 'purge']);
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 
     // System Settings

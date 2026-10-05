@@ -25,9 +25,9 @@ interface ValidatedUserData {
   role: string
   nip?: string | null
   phone?: string | null
-  opd_id?: number | null
+  opd_id?: string | null
   opd?: {
-    id: number
+    id: string
     nama: string
     kode: string
     kategori: string

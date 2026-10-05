@@ -313,5 +313,130 @@ class RolePermissionTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['role']);
     }
+
+    public function test_non_superadmin_cannot_see_superadmin_role(): void
+    {
+        $roleManager = Role::firstOrCreate(
+            ['name' => 'Role Manager', 'guard_name' => 'web'],
+            ['description' => 'Pengelola Peran', 'is_system' => false]
+        );
+        $roleManager->syncPermissions(['roles.view', 'roles.create', 'roles.edit', 'roles.delete']);
+
+        $user = User::factory()->create(['email' => 'role_manager@pemda.go.id', 'status' => 'active']);
+        $user->assignRole('Role Manager');
+        $token = $user->createToken('test')->plainTextToken;
+
+        $superadminRole = Role::where('name', 'Superadmin')->firstOrFail();
+
+        // 1. List roles: Superadmin role must not be present
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson('/api/roles');
+        $response->assertStatus(200);
+        $roleNames = collect($response->json('data'))->pluck('name')->all();
+        $this->assertNotContains('Superadmin', $roleNames);
+        $this->assertContains('Role Manager', $roleNames);
+
+        // 2. Direct GET on Superadmin role: must return 404
+        $responseShow = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson("/api/roles/{$superadminRole->id}");
+        $responseShow->assertStatus(404);
+
+        // 3. Direct PUT on Superadmin role: must return 404
+        $responsePut = $this->withHeader('Authorization', 'Bearer ' . $token)->putJson("/api/roles/{$superadminRole->id}", [
+            'name' => 'Superadmin',
+            'permissions' => ['users.view'],
+        ]);
+        $responsePut->assertStatus(404);
+
+        // 4. Direct DELETE on Superadmin role: must return 404
+        $responseDelete = $this->withHeader('Authorization', 'Bearer ' . $token)->deleteJson("/api/roles/{$superadminRole->id}");
+        $responseDelete->assertStatus(404);
+
+        // 5. Creating role named 'Superadmin' must fail validation
+        $responseCreate = $this->withHeader('Authorization', 'Bearer ' . $token)->postJson('/api/roles', [
+            'name' => 'Superadmin',
+            'permissions' => ['users.view'],
+        ]);
+        $responseCreate->assertStatus(422)->assertJsonValidationErrors(['name']);
+
+        // 6. Superadmin user CAN still see Superadmin role in list
+        app('auth')->forgetGuards();
+        $superadminToken = $this->superadmin->createToken('test')->plainTextToken;
+        $responseSuper = $this->withHeader('Authorization', 'Bearer ' . $superadminToken)->getJson('/api/roles');
+        $responseSuper->assertStatus(200);
+        $superRoleNames = collect($responseSuper->json('data'))->pluck('name')->all();
+        $this->assertContains('Superadmin', $superRoleNames);
+    }
+
+    public function test_non_superadmin_cannot_update_own_role(): void
+    {
+        $customRole = Role::firstOrCreate(
+            ['name' => 'Operator', 'guard_name' => 'web'],
+            ['description' => 'Operator sistem', 'is_system' => false]
+        );
+        $customRole->syncPermissions(['roles.view', 'roles.edit']);
+
+        $user = User::factory()->create(['email' => 'operator@pemda.go.id', 'status' => 'active']);
+        $user->assignRole('Operator');
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson('/api/roles/' . $customRole->id, [
+                'name' => 'Operator',
+                'description' => 'Mencoba mengedit role sendiri',
+                'permissions' => ['roles.view', 'roles.edit', 'users.view'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['role']);
+    }
+
+    public function test_non_superadmin_cannot_grant_role_management_permissions(): void
+    {
+        $managerRole = Role::firstOrCreate(
+            ['name' => 'Sub Manager', 'guard_name' => 'web'],
+            ['description' => 'Manajer bawahan', 'is_system' => false]
+        );
+        $managerRole->syncPermissions(['roles.view', 'roles.create', 'roles.edit']);
+
+        $user = User::factory()->create(['email' => 'submanager@pemda.go.id', 'status' => 'active']);
+        $user->assignRole('Sub Manager');
+        $token = $user->createToken('test')->plainTextToken;
+
+        // 1. Cannot create role with roles.* permission
+        $responseCreate = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/roles', [
+                'name' => 'Junior Manager',
+                'description' => 'Testing role escalation',
+                'permissions' => ['roles.view', 'users.view'],
+            ]);
+
+        $responseCreate->assertStatus(422)
+            ->assertJsonValidationErrors(['permissions']);
+
+        // 2. Cannot update another role with roles.* permission
+        $targetRole = Role::firstOrCreate(
+            ['name' => 'Target Role', 'guard_name' => 'web'],
+            ['description' => 'Role target', 'is_system' => false]
+        );
+
+        $responseUpdate = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson('/api/roles/' . $targetRole->id, [
+                'name' => 'Target Role',
+                'description' => 'Testing escalation via update',
+                'permissions' => ['roles.edit', 'users.view'],
+            ]);
+
+        $responseUpdate->assertStatus(422)
+            ->assertJsonValidationErrors(['permissions']);
+
+        // 3. CAN update another role with non-role permissions
+        $responseValid = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson('/api/roles/' . $targetRole->id, [
+                'name' => 'Target Role',
+                'description' => 'Valid update',
+                'permissions' => ['users.view'],
+            ]);
+
+        $responseValid->assertStatus(200);
+    }
 }
 

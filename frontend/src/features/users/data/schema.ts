@@ -9,7 +9,7 @@ export const userStatusSchema = z.enum([
 export type UserStatus = z.infer<typeof userStatusSchema>
 
 export const opdSchema = z.object({
-  id: z.number(),
+  id: z.union([z.string(), z.number()]),
   nama: z.string(),
   kode: z.string(),
   kategori: z.string(),
@@ -19,14 +19,14 @@ export const opdSchema = z.object({
 export type Opd = z.infer<typeof opdSchema>
 
 export const userSchema = z.object({
-  id: z.number(),
+  id: z.union([z.string(), z.number()]),
   name: z.string(),
   email: z.string().email(),
   nip: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   pangkat_gol: z.string().nullable().optional(),
   jabatan: z.string().nullable().optional(),
-  opd_id: z.number().nullable().optional(),
+  opd_id: z.union([z.string(), z.number()]).nullable().optional(),
   opd: opdSchema.nullable().optional(),
   role: z.string(),
   roles: z.array(z.string()).optional(),

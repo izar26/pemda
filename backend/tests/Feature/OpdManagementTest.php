@@ -67,8 +67,9 @@ class OpdManagementTest extends TestCase
         Opd::create(['nama' => 'Dinas Kesehatan', 'kode' => 'DINKES', 'kategori' => 'Dinas', 'is_active' => true, 'urutan' => 1]);
         Opd::create(['nama' => 'Badan Keuangan', 'kode' => 'BKD', 'kategori' => 'Badan', 'is_active' => true, 'urutan' => 2]);
 
-        $response = $this->actingAs($this->superadmin)
-            ->getJson('/api/opds?kategori=Dinas&search=Kesehatan');
+        $token = $this->superadmin->createToken('test')->plainTextToken;
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/opds?kategori=Dinas&search=Kesehatan&per_page=100');
 
         $response->assertOk()
             ->assertJsonPath('meta.total', 1)

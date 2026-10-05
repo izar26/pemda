@@ -32,7 +32,7 @@ class AuditLogController extends Controller
 
         $filters = $request->only(['search', 'module', 'action', 'date_from', 'date_to', 'auditable_type', 'auditable_id']);
 
-        $logs = $this->auditLogService->listLogs($filters, $perPage);
+        $logs = $this->auditLogService->listLogs($filters, $perPage, $request->user());
 
         return AuditLogResource::collection($logs);
     }

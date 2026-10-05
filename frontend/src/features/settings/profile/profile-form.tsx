@@ -114,7 +114,7 @@ export function ProfileForm() {
         name: data.name.trim(),
         nip: data.nip ? data.nip.trim() : null,
         phone: data.phone ? data.phone.trim() : null,
-        opd_id: data.opd_id ? Number(data.opd_id) : null,
+        opd_id: data.opd_id ? data.opd_id : null,
         pangkat_gol: data.pangkat_gol || null,
         jabatan: data.jabatan ? data.jabatan.trim() : null,
       })

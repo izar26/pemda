@@ -39,21 +39,26 @@ import { Badge } from '@/components/ui/badge'
 
 const activateSchema = z
   .object({
-    name: z.string().min(2, 'Nama lengkap minimal 2 karakter.').max(100),
+    name: z
+      .string()
+      .min(2, 'Nama lengkap minimal 2 karakter.')
+      .max(100, 'Nama lengkap maksimal 100 karakter.'),
     nip: z
       .string()
+      .min(1, 'NIP wajib diisi.')
       .max(30, 'NIP maksimal 30 karakter.')
-      .regex(/^[0-9]*$/, 'NIP hanya boleh berisi deretan angka.')
-      .optional()
-      .or(z.literal('')),
-    opd_id: z.string().optional(),
-    jabatan: z.string().max(150, 'Jabatan maksimal 150 karakter.').optional(),
-    pangkat_gol: z.string().optional(),
+      .regex(/^[0-9]+$/, 'NIP hanya boleh berisi deretan angka.'),
+    opd_id: z.string().min(1, 'Instansi / Perangkat Daerah (OPD) wajib dipilih.'),
+    jabatan: z
+      .string()
+      .min(1, 'Jabatan kedinasan wajib diisi.')
+      .max(150, 'Jabatan maksimal 150 karakter.'),
+    pangkat_gol: z.string().min(1, 'Pangkat / Golongan wajib dipilih.'),
     phone: z
       .string()
+      .min(1, 'Nomor telepon/WhatsApp wajib diisi.')
       .max(20, 'Nomor telepon maksimal 20 karakter.')
-      .optional()
-      .or(z.literal('')),
+      .regex(/^[0-9+\-\s()]+$/, 'Nomor kontak hanya boleh berisi angka dan format telepon valid.'),
     password: z
       .string()
       .min(8, 'Kata sandi minimal 8 karakter.')
@@ -80,9 +85,9 @@ interface ActivateFormProps {
     role: string
     nip?: string | null
     phone?: string | null
-    opd_id?: number | null
+    opd_id?: string | null
     opd?: {
-      id: number
+      id: string
       nama: string
       kode: string
       kategori: string
@@ -105,7 +110,8 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
   })
 
   const opdOptions = useMemo(() => {
-    return opds.map((opd) => ({
+    const list = Array.isArray(opds) ? opds : []
+    return list.map((opd) => ({
       value: String(opd.id),
       label: opd.nama,
       group: opd.kategori || 'Perangkat Daerah',
@@ -201,11 +207,11 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
       await authService.activateUser({
         token,
         name: values.name.trim(),
-        nip: values.nip ? values.nip.trim() : undefined,
-        phone: values.phone ? values.phone.trim() : undefined,
-        opd_id: values.opd_id ? Number(values.opd_id) : undefined,
-        jabatan: values.jabatan ? values.jabatan.trim() : undefined,
-        pangkat_gol: values.pangkat_gol || undefined,
+        nip: values.nip.trim(),
+        phone: values.phone.trim(),
+        opd_id: values.opd_id,
+        jabatan: values.jabatan.trim(),
+        pangkat_gol: values.pangkat_gol,
         password: values.password,
         password_confirmation: values.password_confirmation,
       })
@@ -344,10 +350,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
               render={({ field }) => (
                 <FormItem className='space-y-1.5'>
                   <FormLabel className='text-xs font-semibold'>
-                    NIP (Nomor Induk Pegawai)
-                    <span className='text-[10px] text-muted-foreground ml-1 font-normal'>
-                      (Opsional)
-                    </span>
+                    NIP (Nomor Induk Pegawai) <span className='text-destructive'>*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -370,7 +373,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                 <FormItem className='space-y-1.5'>
                   <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
                     <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
-                    Instansi / Perangkat Daerah (OPD)
+                    Instansi / Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
                   </FormLabel>
                   <FormControl>
                     <SearchableSelect
@@ -400,7 +403,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                 render={({ field }) => (
                   <FormItem className='space-y-1.5'>
                     <FormLabel className='text-xs font-semibold'>
-                      Jabatan Kedinasan
+                      Jabatan Kedinasan <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -422,7 +425,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
                 render={({ field }) => (
                   <FormItem className='space-y-1.5'>
                     <FormLabel className='text-xs font-semibold'>
-                      Pangkat / Golongan
+                      Pangkat / Golongan <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
                       <SearchableSelect
@@ -448,10 +451,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
               render={({ field }) => (
                 <FormItem className='space-y-1.5'>
                   <FormLabel className='text-xs font-semibold'>
-                    Nomor Kontak / WhatsApp
-                    <span className='text-[10px] text-muted-foreground ml-1 font-normal'>
-                      (Opsional)
-                    </span>
+                    Nomor Kontak / WhatsApp <span className='text-destructive'>*</span>
                   </FormLabel>
                   <FormControl>
                     <Input

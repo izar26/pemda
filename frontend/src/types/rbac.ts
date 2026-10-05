@@ -1,12 +1,12 @@
 export interface Permission {
-  id: number
+  id: string
   name: string
   group: string
   description: string | null
 }
 
 export interface Role {
-  id: number
+  id: string
   name: string
   description: string | null
   is_system: boolean

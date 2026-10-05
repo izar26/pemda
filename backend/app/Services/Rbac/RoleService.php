@@ -6,6 +6,7 @@ namespace App\Services\Rbac;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\User;
 use App\Services\Audit\AuditLogService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
@@ -22,20 +23,32 @@ class RoleService
      *
      * @return Collection<int, Role>
      */
-    public function listRoles(): Collection
+    public function listRoles(?User $currentUser = null): Collection
     {
-        return Role::with(['permissions'])
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        $query = Role::with(['permissions'])
             ->withCount(['users', 'permissions'])
             ->orderBy('is_system', 'desc')
-            ->orderBy('name', 'asc')
-            ->get();
+            ->orderBy('name', 'asc');
+
+        // Ghost filter: non-superadmin users must not see Superadmin role
+        if (!$user?->hasRole('Superadmin')) {
+            $query->where('name', '!=', 'Superadmin');
+        }
+
+        return $query->get();
     }
 
     /**
      * Get single role details.
      */
-    public function getRole(Role $role): Role
+    public function getRole(Role $role, ?User $currentUser = null): Role
     {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        if ($role->name === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+            abort(404, 'Data peran tidak ditemukan.');
+        }
+
         return $role->load(['permissions'])->loadCount(['users', 'permissions']);
     }
 
@@ -44,10 +57,30 @@ class RoleService
      *
      * @param list<string> $permissions
      */
-    public function createRole(string $name, ?string $description, array $permissions): Role
+    public function createRole(string $name, ?string $description, array $permissions, ?User $currentUser = null): Role
     {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        $cleanName = trim($name);
+        if (strtolower($cleanName) === 'superadmin') {
+            throw ValidationException::withMessages([
+                'name' => ['Nama peran tersebut tidak dapat digunakan.'],
+            ]);
+        }
+
+        // Safeguard: Non-superadmin cannot grant roles.* permissions
+        if ($user && !$user->hasRole('Superadmin')) {
+            $hasRolePermissions = collect($permissions)->contains(function ($perm) {
+                return str_starts_with((string) $perm, 'roles.');
+            });
+            if ($hasRolePermissions) {
+                throw ValidationException::withMessages([
+                    'permissions' => ['Hanya Superadmin yang memiliki wewenang untuk memberikan hak akses pengelolaan peran (roles).'],
+                ]);
+            }
+        }
+
         $role = Role::create([
-            'name' => trim($name),
+            'name' => $cleanName,
             'guard_name' => 'web',
             'description' => $description ? trim($description) : null,
             'is_system' => false,
@@ -82,8 +115,32 @@ class RoleService
      *
      * @throws ValidationException
      */
-    public function updateRole(Role $role, string $name, ?string $description, array $permissions): Role
+    public function updateRole(Role $role, string $name, ?string $description, array $permissions, ?User $currentUser = null): Role
     {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        if ($role->name === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+            abort(404, 'Data peran tidak ditemukan.');
+        }
+
+        // Safeguard: Non-superadmin cannot modify their own role permissions (prevent self-privilege escalation)
+        if ($user && !$user->hasRole('Superadmin') && $user->hasRole($role->name)) {
+            throw ValidationException::withMessages([
+                'role' => ['Anda tidak dapat mengubah hak akses pada peran Anda sendiri demi keamanan sistem.'],
+            ]);
+        }
+
+        // Safeguard: Non-superadmin cannot grant roles.* permissions
+        if ($user && !$user->hasRole('Superadmin')) {
+            $hasRolePermissions = collect($permissions)->contains(function ($perm) {
+                return str_starts_with((string) $perm, 'roles.');
+            });
+            if ($hasRolePermissions) {
+                throw ValidationException::withMessages([
+                    'permissions' => ['Hanya Superadmin yang memiliki wewenang untuk memberikan hak akses pengelolaan peran (roles).'],
+                ]);
+            }
+        }
+
         $cleanName = trim($name);
 
         // Safeguard: do not allow renaming or modifying system roles like 'Superadmin'
@@ -140,8 +197,13 @@ class RoleService
      *
      * @throws ValidationException
      */
-    public function deleteRole(Role $role): void
+    public function deleteRole(Role $role, ?User $currentUser = null): void
     {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        if ($role->name === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+            abort(404, 'Data peran tidak ditemukan.');
+        }
+
         if ($role->is_system) {
             throw ValidationException::withMessages([
                 'role' => ['Peran sistem bawaan (' . $role->name . ') tidak dapat dihapus.'],

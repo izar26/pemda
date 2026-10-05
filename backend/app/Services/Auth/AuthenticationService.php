@@ -220,7 +220,7 @@ class AuthenticationService
      * Record an audit log entry to both login_logs and audit_logs.
      */
     protected function recordLog(
-        ?int $userId,
+        string|int|null $userId,
         string $identifier,
         string $ip,
         ?string $userAgent,

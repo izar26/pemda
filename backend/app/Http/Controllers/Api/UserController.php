@@ -36,7 +36,7 @@ class UserController extends Controller
             $perPage = 10;
         }
 
-        $users = $this->userService->getUsers($filters, $perPage);
+        $users = $this->userService->getUsers($filters, $perPage, $request->user());
 
         return UserResource::collection($users);
     }
@@ -46,7 +46,7 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): JsonResponse
     {
-        $user = $this->userService->createUser($request->validated());
+        $user = $this->userService->createUser($request->validated(), $request->user());
 
         return (new UserResource($user))
             ->response()
@@ -56,13 +56,13 @@ class UserController extends Controller
     /**
      * Display the specified user.
      */
-    public function show(Request $request, int $id): UserResource
+    public function show(Request $request, string $id): UserResource
     {
         if (!$request->user()->can('users.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data pengguna.');
         }
 
-        $user = $this->userService->getUserById($id);
+        $user = $this->userService->getUserById($id, $request->user());
 
         return new UserResource($user);
     }

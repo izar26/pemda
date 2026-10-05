@@ -87,7 +87,7 @@ export function MasterGenericTable({ entity }: MasterGenericTableProps) {
 
   // Toggle active mutation
   const { mutate: toggleActive, isPending: isToggling } = useMutation({
-    mutationFn: (id: number) => masterDataService.toggleActive(entity.key, id),
+    mutationFn: (id: string) => masterDataService.toggleActive(entity.key, id),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['master', entity.key] })
       toast.success(res.message)

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Rbac;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRoleRequest extends FormRequest
 {
@@ -16,7 +17,13 @@ class StoreRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:50', 'unique:roles,name'],
+            'name' => [
+                'required',
+                'string',
+                'max:50',
+                'unique:roles,name',
+                Rule::notIn(['Superadmin', 'superadmin', 'SUPERADMIN']),
+            ],
             'description' => ['nullable', 'string', 'max:255'],
             'permissions' => ['present', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],

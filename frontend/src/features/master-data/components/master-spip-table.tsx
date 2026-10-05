@@ -38,7 +38,7 @@ export function MasterSpipTable() {
   } = useMasterData()
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]))
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
 
   // Query Unsur SPIP with subUnsurs
   const {
@@ -53,8 +53,8 @@ export function MasterSpipTable() {
 
   const unsurs = response?.data || []
 
-  function toggleExpand(id: number) {
-    setExpandedIds((prev) => {
+  function toggleExpand(id: string) {
+    setCollapsedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
         next.delete(id)
@@ -72,7 +72,7 @@ export function MasterSpipTable() {
       id,
     }: {
       entityKey: 'unsur-spip' | 'sub-unsur-spip'
-      id: number
+      id: string
     }) => masterDataService.toggleActive(entityKey, id),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
@@ -166,7 +166,7 @@ export function MasterSpipTable() {
           </div>
         ) : (
           filteredUnsurs.map((unsur) => {
-            const isExpanded = expandedIds.has(unsur.id)
+            const isExpanded = !collapsedIds.has(unsur.id)
             const subList = unsur.sub_unsurs || []
 
             return (

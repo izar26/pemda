@@ -1,13 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  KeyRound,
   LayoutGrid,
   Loader2,
   RefreshCw,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
   Table as TableIcon,
 } from 'lucide-react'
 import type { Permission, Role } from '@/types/rbac'
@@ -18,7 +14,6 @@ import { Search } from '@/components/search'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RoleMatrixTable } from './components/role-matrix-table'
 import { RolesTable } from './components/roles-table'
@@ -77,44 +72,8 @@ function RolesContent() {
     queryClient.invalidateQueries({ queryKey: ['users'] })
   }
 
-  // KPI Calculations
-  const totalRoles = roles.length
-  const systemRoles = roles.filter((r) => r.is_system).length
-  const customRoles = roles.filter((r) => !r.is_system).length
-  const totalPermissions = allPermissions.length
-
   const isLoading = isLoadingRoles || isLoadingPermissions
   const isMatrixFiltered = matrixSearch.trim().length > 0 || matrixRisk !== 'all'
-
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Total Peran',
-      value: totalRoles,
-      icon: KeyRound,
-      color: 'bg-primary/10 text-primary',
-    },
-    {
-      title: 'Peran Sistem',
-      value: systemRoles,
-      icon: ShieldCheck,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-      valueColor: 'text-blue-600 dark:text-blue-400',
-    },
-    {
-      title: 'Peran Kustom',
-      value: customRoles,
-      icon: ShieldAlert,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      valueColor: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      title: 'Total Hak Akses',
-      value: totalPermissions,
-      icon: Shield,
-      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-      valueColor: 'text-purple-600 dark:text-purple-400',
-    },
-  ]
 
   return (
     <>
@@ -152,9 +111,6 @@ function RolesContent() {
             <RolesPrimaryButtons />
           </div>
         </div>
-
-        {/* Compact KPI Stats with Skeleton loading */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
         {/* Tab View Switcher (Daftar Peran vs Matriks Hak Akses) */}
         <Tabs
@@ -228,8 +184,17 @@ function RolesContent() {
                   </div>
 
                   <div className='hidden md:flex items-center gap-1.5 text-[11px] text-muted-foreground'>
-                    <span>Ubah switch di tabel, lalu tekan</span>
-                    <span className='font-semibold text-foreground'>Simpan Perubahan</span>
+                    {canEditRole ? (
+                      <>
+                        <span>Ubah switch di tabel, lalu tekan</span>
+                        <span className='font-semibold text-foreground'>Simpan Perubahan</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Tabel referensi matriks hak akses sistem</span>
+                        <span className='font-semibold text-foreground'>(Hanya-Lihat)</span>
+                      </>
+                    )}
                   </div>
                 </div>
 

@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('audit_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('user_name', 100)->nullable();
             $table->string('user_nip', 30)->nullable();
             $table->string('user_email', 100)->nullable();

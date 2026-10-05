@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models\Master;
 
+use App\Models\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MasterSubUnsurSpip extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuid7;
 
     protected $table = 'master_sub_unsur_spips';
 
@@ -22,7 +23,7 @@ class MasterSubUnsurSpip extends Model
     ];
 
     protected $casts = [
-        'unsur_spip_id' => 'integer',
+        'unsur_spip_id' => 'string',
         'is_active' => 'boolean',
         'urutan' => 'integer',
     ];

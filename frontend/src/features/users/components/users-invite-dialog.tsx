@@ -49,10 +49,16 @@ const formSchema = z.object({
     .min(1, 'Email dinas wajib diisi.')
     .email('Format alamat email tidak valid.')
     .max(100, 'Email maksimal 100 karakter.'),
-  opd_id: z.string().optional(),
-  jabatan: z.string().max(150, 'Jabatan maksimal 150 karakter.').optional(),
+  opd_id: z.string().min(1, 'Instansi / Perangkat Daerah (OPD) wajib dipilih.'),
+  jabatan: z
+    .string()
+    .min(1, 'Jabatan kedinasan wajib diisi.')
+    .max(150, 'Jabatan maksimal 150 karakter.'),
   role: z.string().min(1, 'Peran (Role) wajib dipilih.'),
-  notes: z.string().max(500, 'Catatan maksimal 500 karakter.').optional(),
+  notes: z
+    .string()
+    .min(1, 'Catatan undangan wajib diisi.')
+    .max(500, 'Catatan maksimal 500 karakter.'),
 })
 
 type UserInviteFormValues = z.infer<typeof formSchema>
@@ -84,7 +90,8 @@ export function UsersInviteDialog({
   })
 
   const opdOptions = useMemo(() => {
-    return opds.map((opd) => ({
+    const list = Array.isArray(opds) ? opds : []
+    return list.map((opd) => ({
       value: String(opd.id),
       label: opd.nama,
       group: opd.kategori || 'Perangkat Daerah',
@@ -112,9 +119,9 @@ export function UsersInviteDialog({
         name: values.name.trim(),
         email: values.email.trim().toLowerCase(),
         role: values.role,
-        opd_id: values.opd_id ? Number(values.opd_id) : undefined,
-        jabatan: values.jabatan?.trim() || undefined,
-        notes: values.notes?.trim() || undefined,
+        opd_id: values.opd_id,
+        jabatan: values.jabatan.trim(),
+        notes: values.notes.trim(),
       })
 
       await queryClient.invalidateQueries({ queryKey: ['users'] })
@@ -216,7 +223,7 @@ export function UsersInviteDialog({
                   <FormItem>
                     <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
                       <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
-                      Instansi / Perangkat Daerah (OPD)
+                      Instansi / Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
                       <SearchableSelect
@@ -246,7 +253,7 @@ export function UsersInviteDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        Jabatan Kedinasan
+                        Jabatan Kedinasan <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -286,7 +293,7 @@ export function UsersInviteDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {roles.map((r) => (
+                          {(Array.isArray(roles) ? roles : []).map((r) => (
                             <SelectItem key={r.id} value={r.name}>
                               <div className='flex items-center gap-2'>
                                 <span className='font-medium'>{r.name}</span>
@@ -312,8 +319,8 @@ export function UsersInviteDialog({
                 name='notes'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='text-xs font-semibold text-muted-foreground'>
-                      Catatan Undangan (Opsional)
+                    <FormLabel className='text-xs font-semibold'>
+                      Catatan Undangan <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
                       <Textarea

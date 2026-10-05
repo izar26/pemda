@@ -1,5 +1,5 @@
 export interface OpdItem {
-  id: number
+  id: string
   nama: string
   kode: string
   kategori: string

@@ -1,5 +1,5 @@
 export interface SystemSetting {
-  id: number
+  id: string
   key: string
   value: string | null
   typed_value: string | boolean | number | Record<string, unknown>

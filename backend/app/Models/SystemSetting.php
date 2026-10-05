@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuid7;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemSetting extends Model
 {
-    use Auditable, HasFactory;
+    use Auditable, HasFactory, HasUuid7;
 
     protected $fillable = [
         'key',

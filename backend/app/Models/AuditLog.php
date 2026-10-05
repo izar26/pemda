@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class AuditLog extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuid7;
 
     public $timestamps = false;
 
@@ -34,7 +35,7 @@ class AuditLog extends Model
     protected function casts(): array
     {
         return [
-            'auditable_id' => 'integer',
+            'auditable_id' => 'string',
             'context' => 'array',
             'created_at' => 'datetime',
         ];

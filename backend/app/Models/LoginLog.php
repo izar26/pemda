@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LoginLog extends Model
 {
+    use HasUuid7;
+
     public $timestamps = false;
 
     protected $fillable = [

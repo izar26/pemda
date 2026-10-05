@@ -52,7 +52,7 @@ interface MasterActionDialogProps {
   onOpenChange: (open: boolean) => void
   entity: MasterEntityMeta
   currentItem?: MasterDataBaseItem | MasterSubUnsurSpipItem | null
-  unsurSpipId?: number
+  unsurSpipId?: string
   onSuccess: () => void
 }
 

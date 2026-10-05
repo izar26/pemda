@@ -1,24 +1,19 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQueryClient, useIsFetching } from '@tanstack/react-query'
 import {
-  CheckCircle2,
-  Database,
   Layers,
   RefreshCw,
   ShieldAlert,
-  XCircle,
 } from 'lucide-react'
 import { MASTER_ENTITIES, type MasterEntityKey } from '@/types/master-data'
-import { masterDataService } from '@/services/master-data-service'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MasterGenericTable } from './components/master-generic-table'
 import { MasterSpipTable } from './components/master-spip-table'
@@ -30,6 +25,8 @@ import {
 } from './components/master-data-provider'
 
 function MasterDataContent() {
+  const queryClient = useQueryClient()
+  const isFetching = useIsFetching({ queryKey: ['master'] }) > 0
   const { selectedEntity, setSelectedEntity } = useMasterData()
   const [mainCategory, setMainCategory] = useState<'risiko' | 'spip'>('risiko')
 
@@ -42,24 +39,9 @@ function MasterDataContent() {
     []
   )
 
-  // Query data for current entity to calculate KPI stats
-  const {
-    data: response,
-    isLoading,
-    isRefetching,
-    refetch,
-  } = useQuery({
-    queryKey: ['master', selectedEntity.key],
-    queryFn: () => masterDataService.getItems(selectedEntity.key),
-  })
-
-  const currentItems = response?.data || []
-
-  // KPI Calculations
-  const totalItems = currentItems.length
-  const activeItems = currentItems.filter((i) => i.is_active).length
-  const inactiveItems = totalItems - activeItems
-  const totalEntities = MASTER_ENTITIES.length
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['master'] })
+  }
 
   const handleCategoryChange = (val: 'risiko' | 'spip') => {
     setMainCategory(val)
@@ -79,35 +61,6 @@ function MasterDataContent() {
 
   const displayedEntities =
     mainCategory === 'risiko' ? risikoEntities : spipEntities
-
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Entitas Master',
-      value: `${totalEntities} Tabel`,
-      icon: Database,
-      color: 'bg-primary/10 text-primary',
-    },
-    {
-      title: `Total Parameter (${selectedEntity.label})`,
-      value: totalItems,
-      icon: Layers,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    },
-    {
-      title: 'Parameter Aktif',
-      value: activeItems,
-      icon: CheckCircle2,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      valueColor: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      title: 'Parameter Nonaktif',
-      value: inactiveItems,
-      icon: XCircle,
-      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      valueColor: 'text-amber-600 dark:text-amber-400',
-    },
-  ]
 
   return (
     <>
@@ -134,20 +87,17 @@ function MasterDataContent() {
               variant='outline'
               size='sm'
               className='h-9 text-xs'
-              onClick={() => refetch()}
-              disabled={isLoading || isRefetching}
+              onClick={handleRefresh}
+              disabled={isFetching}
             >
               <RefreshCw
-                className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? 'animate-spin' : ''}`}
+                className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`}
               />
               Segarkan
             </Button>
             <MasterDataPrimaryButtons />
           </div>
         </div>
-
-        {/* Compact KPI Stats with Skeleton loading */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
         {/* Category Switcher & Sub-entity Tabs */}
         <div className='space-y-3.5'>

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models\Master;
 
+use App\Models\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MasterUnsurSpip extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuid7;
 
     protected $table = 'master_unsur_spips';
 

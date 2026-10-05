@@ -7,6 +7,7 @@ import {
   User as UserIcon,
 } from 'lucide-react'
 import type { AuditLog } from '@/types/audit'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DataTableColumnHeader } from '@/components/data-table'
@@ -33,6 +34,37 @@ function AuditActionCell({ log }: { log: AuditLog }) {
 }
 
 export const auditColumns: ColumnDef<AuditLog>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <div className='flex items-center justify-center'>
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label='Pilih semua'
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className='flex items-center justify-center'>
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label='Pilih baris'
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    meta: {
+      className: 'w-10 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
+  },
   {
     accessorKey: 'created_at',
     header: ({ column }) => (

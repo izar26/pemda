@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('system_settings', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('key', 100)->unique();
             $table->text('value')->nullable();
             $table->string('group', 50)->default('general')->index(); // general, security, organization

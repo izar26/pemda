@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class InviteUserRequest extends FormRequest
 {
@@ -15,14 +16,22 @@ class InviteUserRequest extends FormRequest
 
     public function rules(): array
     {
+        $roleRule = ['required', 'string'];
+        if (!$this->user()?->hasRole('Superadmin')) {
+            $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
+                $query->where('name', '!=', 'Superadmin');
+            });
+        } else {
+            $roleRule[] = 'exists:roles,name';
+        }
+
         return [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
-            'role' => ['required', 'string', 'exists:roles,name'],
-            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
-            'jabatan' => ['nullable', 'string', 'max:150'],
-            'notes' => ['nullable', 'string', 'max:500'],
-
+            'role' => $roleRule,
+            'opd_id' => ['required', 'string', 'uuid', 'exists:opds,id'],
+            'jabatan' => ['required', 'string', 'max:150'],
+            'notes' => ['required', 'string', 'max:500'],
         ];
     }
 
@@ -36,6 +45,11 @@ class InviteUserRequest extends FormRequest
             'email.unique' => 'Alamat email ini sudah terdaftar di sistem portal.',
             'role.required' => 'Peran (role) wajib dipilih.',
             'role.exists' => 'Peran yang dipilih tidak terdaftar di sistem.',
+            'opd_id.required' => 'Instansi / Perangkat Daerah (OPD) wajib dipilih.',
+            'opd_id.exists' => 'Perangkat Daerah yang dipilih tidak ditemukan dalam sistem.',
+            'jabatan.required' => 'Jabatan kedinasan wajib diisi.',
+            'jabatan.max' => 'Jabatan kedinasan maksimal 150 karakter.',
+            'notes.required' => 'Catatan undangan wajib diisi.',
             'notes.max' => 'Catatan undangan maksimal 500 karakter.',
         ];
     }

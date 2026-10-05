@@ -124,7 +124,7 @@ export function OpdTable({ data }: OpdTableProps) {
                     <TableCell
                       key={cell.id}
                       className={cn(
-                        'text-xs py-2.5',
+                        'py-2.5',
                         cell.column.columnDef.meta?.className,
                         cell.column.columnDef.meta?.tdClassName
                       )}
@@ -154,7 +154,7 @@ export function OpdTable({ data }: OpdTableProps) {
         </Table>
       </div>
 
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} className='mt-auto' />
     </div>
   )
 }

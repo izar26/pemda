@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('opds', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nama', 200);
             $table->string('kode', 50)->nullable()->index();
             $table->string('kategori', 50)->default('Dinas');

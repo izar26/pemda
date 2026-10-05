@@ -4,14 +4,14 @@ import type { User, UserStatus } from '@/features/users/data/schema'
 export interface CreateUserPayload {
   name: string
   email: string
-  nip?: string
-  phone?: string
+  nip: string
+  phone: string
   role: string
   status?: UserStatus
-  pangkat_gol?: string | null
-  jabatan?: string | null
-  opd_id?: number | null
-  password?: string
+  pangkat_gol: string
+  jabatan: string
+  opd_id: string
+  password: string
 }
 
 export interface UpdateUserPayload {
@@ -23,7 +23,7 @@ export interface UpdateUserPayload {
   status: UserStatus
   pangkat_gol?: string | null
   jabatan?: string | null
-  opd_id?: number | null
+  opd_id?: string | null
   password?: string
 }
 
@@ -60,9 +60,9 @@ export interface InviteUserPayload {
   name: string
   email: string
   role: string
-  opd_id?: number | null
-  jabatan?: string | null
-  notes?: string
+  opd_id: string
+  jabatan: string
+  notes: string
 }
 
 export interface InviteUserResponse {
@@ -77,7 +77,7 @@ export const userService = {
     return response.data
   },
 
-  async getUser(id: number): Promise<User> {
+  async getUser(id: string | number): Promise<User> {
     const response = await apiClient.get<{ data: User }>(`/users/${id}`)
     return response.data.data
   },
@@ -87,17 +87,17 @@ export const userService = {
     return response.data.data
   },
 
-  async updateUser(id: number, payload: UpdateUserPayload): Promise<User> {
+  async updateUser(id: string | number, payload: UpdateUserPayload): Promise<User> {
     const response = await apiClient.put<{ data: User }>(`/users/${id}`, payload)
     return response.data.data
   },
 
-  async deleteUser(id: number): Promise<{ message: string }> {
+  async deleteUser(id: string | number): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/users/${id}`)
     return response.data
   },
 
-  async resetTwoFactor(id: number): Promise<{ message: string }> {
+  async resetTwoFactor(id: string | number): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(`/users/${id}/reset-2fa`)
     return response.data
   },
@@ -107,7 +107,7 @@ export const userService = {
     return response.data
   },
 
-  async resendInvitation(id: number): Promise<{ message: string; activation_url?: string }> {
+  async resendInvitation(id: string | number): Promise<{ message: string; activation_url?: string }> {
     const response = await apiClient.post<{ message: string; activation_url?: string }>(
       `/users/${id}/resend-invitation`
     )

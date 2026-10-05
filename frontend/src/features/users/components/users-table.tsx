@@ -102,7 +102,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     ensurePageInRange(table.getPageCount())
   }, [table, ensurePageInRange])
 
-  const roleFilterOptions = roles.map((r) => ({
+  const roleFilterOptions = (Array.isArray(roles) ? roles : []).map((r) => ({
     label: r.name,
     value: r.name,
   }))
@@ -138,7 +138,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
           {
             columnId: 'opd',
             title: 'Instansi / OPD',
-            options: opds.map((o) => ({
+            options: (Array.isArray(opds) ? opds : []).map((o) => ({
               label: o.nama,
               value: o.nama,
             })),

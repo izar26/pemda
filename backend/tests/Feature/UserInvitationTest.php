@@ -151,6 +151,7 @@ class UserInvitationTest extends TestCase
 
         $response = $this->postJson('/api/auth/activate', [
             'token' => $token,
+            'name' => 'Siti Nurhaliza, S.E',
             'nip' => '199505122020012003',
             'phone' => '081298765432',
             'pangkat_gol' => 'Penata Muda (III/a)',
@@ -164,6 +165,7 @@ class UserInvitationTest extends TestCase
 
         $user->refresh();
         $this->assertEquals('active', $user->status);
+        $this->assertEquals('Siti Nurhaliza, S.E', $user->name);
         $this->assertNull($user->activation_token);
         $this->assertEquals('199505122020012003', $user->nip);
         $this->assertEquals('081298765432', $user->phone);
@@ -175,9 +177,49 @@ class UserInvitationTest extends TestCase
         // Replay attack: using same token again should fail
         $responseReplay = $this->postJson('/api/auth/activate', [
             'token' => $token,
+            'name' => 'Siti Nurhaliza, S.E',
+            'nip' => '199505122020012003',
+            'phone' => '081298765432',
+            'pangkat_gol' => 'Penata Muda (III/a)',
+            'jabatan' => 'Bendahara Pengeluaran',
+            'opd_id' => $opd?->id,
             'password' => 'SandiKuatLain@2026',
             'password_confirmation' => 'SandiKuatLain@2026',
         ]);
         $responseReplay->assertStatus(422);
+    }
+
+    public function test_invite_and_activate_validate_all_required_fields(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        // Invite validation
+        $responseInvite = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/users/invite', []);
+
+        $responseInvite->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'name',
+                'email',
+                'role',
+                'opd_id',
+                'jabatan',
+                'notes',
+            ]);
+
+        // Activate validation
+        $responseActivate = $this->postJson('/api/auth/activate', []);
+
+        $responseActivate->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'token',
+                'name',
+                'nip',
+                'phone',
+                'pangkat_gol',
+                'jabatan',
+                'opd_id',
+                'password',
+            ]);
     }
 }

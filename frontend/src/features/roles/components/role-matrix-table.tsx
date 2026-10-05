@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   Check,
@@ -34,6 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface RoleMatrixTableProps {
   roles: Role[]
@@ -57,13 +58,56 @@ export function RoleMatrixTable({
   onSuccess,
   canEditPermissions = true,
 }: RoleMatrixTableProps) {
+  const currentUser = useAuthStore((state) => state.auth.user)
+  const isSuperadmin =
+    currentUser?.role === 'Superadmin' ||
+    currentUser?.roles?.includes('Superadmin')
+
+  // Reorder roles: If not Superadmin, place current user's role at the very beginning (leftmost)
+  const sortedRoles = useMemo(() => {
+    if (isSuperadmin || !currentUser) {
+      return roles
+    }
+
+    const ownRoleName = currentUser.role || currentUser.roles?.[0]
+    const ownRole = roles.find(
+      (r) => r.name === ownRoleName || currentUser.roles?.includes(r.name)
+    )
+
+    if (!ownRole) {
+      return roles
+    }
+
+    const otherRoles = roles.filter((r) => r.id !== ownRole.id)
+    return [ownRole, ...otherRoles]
+  }, [roles, isSuperadmin, currentUser])
+
+  // Helper to determine if a specific role can be edited by current user
+  const isRoleEditable = useCallback(
+    (role: Role): boolean => {
+      if (!canEditPermissions) return false
+      if (role.name === 'Superadmin') return false
+
+      // Pagar Pengaman: Non-superadmin cannot edit their own role (prevent self-escalation)
+      if (!isSuperadmin) {
+        const isOwnRole =
+          role.name === currentUser?.role ||
+          currentUser?.roles?.includes(role.name)
+        if (isOwnRole) return false
+      }
+
+      return true
+    },
+    [canEditPermissions, isSuperadmin, currentUser]
+  )
+
   // matrixState: roleId -> Set of permission names
-  const [matrixState, setMatrixState] = useState<Record<number, Set<string>>>({})
+  const [matrixState, setMatrixState] = useState<Record<string, Set<string>>>({})
   const [isSaving, setIsSaving] = useState(false)
 
   // Sync state from server roles
   useEffect(() => {
-    const initialState: Record<number, Set<string>> = {}
+    const initialState: Record<string, Set<string>> = {}
     roles.forEach((r) => {
       initialState[r.id] = new Set((r.permissions || []).map((p) => p.name))
     })
@@ -71,11 +115,11 @@ export function RoleMatrixTable({
     setMatrixState(initialState)
   }, [roles])
 
-  // Compute dirty roles (roles with unsaved modifications)
+  // Compute dirty roles (roles with unsaved modifications that are actually editable)
   const dirtyRoleIds = useMemo(() => {
-    const dirty = new Set<number>()
-    roles.forEach((r) => {
-      if (r.name === 'Superadmin') return // Superadmin cannot be modified
+    const dirty = new Set<string>()
+    sortedRoles.forEach((r) => {
+      if (!isRoleEditable(r)) return
 
       const currentSet = matrixState[r.id]
       if (!currentSet) return
@@ -95,13 +139,18 @@ export function RoleMatrixTable({
       }
     })
     return dirty
-  }, [roles, matrixState])
+  }, [sortedRoles, matrixState, isRoleEditable])
 
-  // Filter permissions based on searchQuery and riskFilter
+  // Filter permissions based on searchQuery, riskFilter, and delegated admin guardrails
   const filteredGroupedPermissions = useMemo(() => {
     const result: Record<string, Permission[]> = {}
 
     Object.entries(groupedPermissions).forEach(([groupName, perms]) => {
+      // Pagar Pengaman 1: Modul 'Manajemen Peran & Izin' hanya muncul untuk Superadmin atau jika user memiliki canEditPermissions
+      if (groupName === 'Manajemen Peran & Izin' && !isSuperadmin && !canEditPermissions) {
+        return
+      }
+
       const filtered = perms.filter((perm) => {
         const meta = getPermissionMetadata(perm.name)
 
@@ -129,12 +178,12 @@ export function RoleMatrixTable({
     })
 
     return result
-  }, [groupedPermissions, searchQuery, riskFilter])
+  }, [groupedPermissions, searchQuery, riskFilter, isSuperadmin, canEditPermissions])
 
   // Toggle single cell permission
-  function togglePermission(roleId: number, permName: string) {
-    const role = roles.find((r) => r.id === roleId)
-    if (!role || role.name === 'Superadmin') return
+  function togglePermission(roleId: string, permName: string) {
+    const role = sortedRoles.find((r) => r.id === roleId)
+    if (!role || !isRoleEditable(role)) return
 
     setMatrixState((prev) => {
       const currentSet = new Set(prev[roleId] || [])
@@ -151,9 +200,9 @@ export function RoleMatrixTable({
   }
 
   // Bulk action: Toggle all permissions in a module for a specific role
-  function toggleModulePermissions(roleId: number, modulePerms: Permission[]) {
-    const role = roles.find((r) => r.id === roleId)
-    if (!role || role.name === 'Superadmin') return
+  function toggleModulePermissions(roleId: string, modulePerms: Permission[]) {
+    const role = sortedRoles.find((r) => r.id === roleId)
+    if (!role || !isRoleEditable(role)) return
 
     const modulePermNames = modulePerms.map((p) => p.name)
     const currentSet = new Set(matrixState[roleId] || [])
@@ -174,7 +223,10 @@ export function RoleMatrixTable({
   }
 
   // Preset shortcut: Grant all permissions to a role
-  function handleGrantAll(roleId: number) {
+  function handleGrantAll(roleId: string) {
+    const role = sortedRoles.find((r) => r.id === roleId)
+    if (!role || !isRoleEditable(role)) return
+
     const allPermNames = Object.values(groupedPermissions)
       .flat()
       .map((p) => p.name)
@@ -187,7 +239,10 @@ export function RoleMatrixTable({
   }
 
   // Preset shortcut: Set only read-only permissions (.view)
-  function handleSetReadOnly(roleId: number) {
+  function handleSetReadOnly(roleId: string) {
+    const role = sortedRoles.find((r) => r.id === roleId)
+    if (!role || !isRoleEditable(role)) return
+
     const readOnlyPermNames = Object.values(groupedPermissions)
       .flat()
       .filter((p) => p.name.endsWith('.view'))
@@ -201,7 +256,10 @@ export function RoleMatrixTable({
   }
 
   // Preset shortcut: Clear all permissions completely
-  function handleClearAll(roleId: number) {
+  function handleClearAll(roleId: string) {
+    const role = sortedRoles.find((r) => r.id === roleId)
+    if (!role || !isRoleEditable(role)) return
+
     setMatrixState((prev) => ({
       ...prev,
       [roleId]: new Set(),
@@ -211,7 +269,7 @@ export function RoleMatrixTable({
 
   // Reset unsaved changes to server state
   function handleResetChanges() {
-    const resetState: Record<number, Set<string>> = {}
+    const resetState: Record<string, Set<string>> = {}
     roles.forEach((r) => {
       resetState[r.id] = new Set((r.permissions || []).map((p) => p.name))
     })
@@ -226,7 +284,7 @@ export function RoleMatrixTable({
     setIsSaving(true)
     try {
       const promises = Array.from(dirtyRoleIds).map((roleId) => {
-        const role = roles.find((r) => r.id === roleId)!
+        const role = sortedRoles.find((r) => r.id === roleId)!
         const perms = Array.from(matrixState[roleId] || [])
 
         return rbacService.updateRole(role.id, {
@@ -319,9 +377,14 @@ export function RoleMatrixTable({
                   </th>
 
                   {/* Dynamic Columns for each Role */}
-                  {roles.map((role) => {
+                  {sortedRoles.map((role) => {
                     const isSuper = role.name === 'Superadmin'
                     const isSystem = role.is_system
+                    const isOwnRole =
+                      !isSuperadmin &&
+                      (role.name === currentUser?.role ||
+                        currentUser?.roles?.includes(role.name))
+                    const isEditable = isRoleEditable(role)
                     const isDirty = dirtyRoleIds.has(role.id)
                     const activeCount = matrixState[role.id]?.size || 0
                     const totalPermsCount = Object.values(groupedPermissions).flat().length
@@ -330,8 +393,8 @@ export function RoleMatrixTable({
                       <th
                         key={role.id}
                         className={`min-w-[140px] max-w-[170px] py-2 px-2.5 text-center border-r last:border-r-0 transition-colors ${
-                          isDirty ? 'bg-amber-500/5 dark:bg-amber-500/10' : ''
-                        }`}
+                          isOwnRole ? 'bg-primary/5 dark:bg-primary/10' : ''
+                        } ${isDirty ? 'bg-amber-500/5 dark:bg-amber-500/10' : ''}`}
                       >
                         <div className='flex flex-col items-center gap-1'>
                           {/* Role Name & Type Badge */}
@@ -339,12 +402,26 @@ export function RoleMatrixTable({
                             <span className='font-bold text-xs text-foreground truncate max-w-[100px]'>
                               {role.name}
                             </span>
-                            {isSystem ? (
+                            {isSuper ? (
                               <Badge
                                 variant='outline'
                                 className='text-[9px] py-0 px-1 text-blue-600 border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30'
                               >
-                                {isSuper ? 'Penuh' : 'Sistem'}
+                                Penuh
+                              </Badge>
+                            ) : isOwnRole ? (
+                              <Badge
+                                variant='outline'
+                                className='text-[9px] py-0 px-1 font-semibold text-primary border-primary/30 bg-primary/15'
+                              >
+                                Peran Anda
+                              </Badge>
+                            ) : isSystem ? (
+                              <Badge
+                                variant='outline'
+                                className='text-[9px] py-0 px-1 text-blue-600 border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30'
+                              >
+                                Sistem
                               </Badge>
                             ) : (
                               <Badge
@@ -382,7 +459,12 @@ export function RoleMatrixTable({
                                 <Lock className='h-2.5 w-2.5' />
                                 Akses Penuh
                               </div>
-                            ) : (canEditPermissions || onEditRoleInfo || onDeleteRole) ? (
+                            ) : isOwnRole ? (
+                              <div className='flex items-center gap-1 text-[10px] text-primary/80 font-medium'>
+                                <Lock className='h-2.5 w-2.5' />
+                                Akun Anda
+                              </div>
+                            ) : isEditable ? (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
@@ -395,24 +477,20 @@ export function RoleMatrixTable({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align='center' className='w-44 text-xs'>
-                                  {canEditPermissions && (
-                                    <>
-                                      <DropdownMenuItem onClick={() => handleGrantAll(role.id)}>
-                                        <CheckCheck className='mr-2 h-3.5 w-3.5 text-primary' />
-                                        Beri Semua Izin
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleSetReadOnly(role.id)}>
-                                        <ShieldCheck className='mr-2 h-3.5 w-3.5 text-blue-600' />
-                                        Setel Hanya-Lihat
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleClearAll(role.id)}>
-                                        <RotateCcw className='mr-2 h-3.5 w-3.5 text-muted-foreground' />
-                                        Kosongkan Izin
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
+                                  <DropdownMenuItem onClick={() => handleGrantAll(role.id)}>
+                                    <CheckCheck className='mr-2 h-3.5 w-3.5 text-primary' />
+                                    Beri Semua Izin
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleSetReadOnly(role.id)}>
+                                    <ShieldCheck className='mr-2 h-3.5 w-3.5 text-blue-600' />
+                                    Setel Hanya-Lihat
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleClearAll(role.id)}>
+                                    <RotateCcw className='mr-2 h-3.5 w-3.5 text-muted-foreground' />
+                                    Kosongkan Izin
+                                  </DropdownMenuItem>
 
-                                  {(onEditRoleInfo || onDeleteRole) && canEditPermissions && (
+                                  {(onEditRoleInfo || onDeleteRole) && (
                                     <DropdownMenuSeparator />
                                   )}
 
@@ -434,7 +512,30 @@ export function RoleMatrixTable({
                                   )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            ) : null}
+                            ) : onEditRoleInfo ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-0.5'
+                                  >
+                                    Info
+                                    <ChevronDown className='h-2.5 w-2.5' />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align='center' className='w-44 text-xs'>
+                                  <DropdownMenuItem onClick={() => onEditRoleInfo(role)}>
+                                    <Edit className='mr-2 h-3.5 w-3.5' />
+                                    Lihat Detail Peran
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <span className='text-[10px] text-muted-foreground font-mono select-none'>
+                                —
+                              </span>
+                            )}
                           </div>
                         </div>
                       </th>
@@ -446,7 +547,7 @@ export function RoleMatrixTable({
               {/* Table Body: Grouped Permissions by Module */}
               <tbody>
                 {Object.entries(filteredGroupedPermissions).map(([groupName, groupPerms]) => (
-                  <tr key={groupName} className='contents'>
+                  <Fragment key={groupName}>
                     {/* Module Section Header Row spanning across all columns */}
                     <tr className='border-y bg-muted/40'>
                       <td className='sticky left-0 z-20 bg-muted/80 backdrop-blur-md py-1.5 px-3 font-semibold text-xs text-foreground border-r'>
@@ -459,9 +560,11 @@ export function RoleMatrixTable({
                         </div>
                       </td>
 
-                      {/* Bulk action for each role in this module */}
-                      {roles.map((role) => {
+                      {/* Bulk action or summary for each role in this module */}
+                      {sortedRoles.map((role) => {
                         const isSuper = role.name === 'Superadmin'
+                        const isEditable = isRoleEditable(role)
+
                         if (isSuper) {
                           return (
                             <td
@@ -475,7 +578,25 @@ export function RoleMatrixTable({
 
                         const modulePermNames = groupPerms.map((p) => p.name)
                         const rolePerms = matrixState[role.id] || new Set()
-                        const allSelected = modulePermNames.every((n) => rolePerms.has(n))
+                        const activeCountInModule = modulePermNames.filter((n) => rolePerms.has(n)).length
+                        const allSelected = modulePermNames.length > 0 && activeCountInModule === modulePermNames.length
+
+                        if (!isEditable) {
+                          return (
+                            <td
+                              key={`mod-${groupName}-${role.id}`}
+                              className='py-1 px-2 text-center border-r last:border-r-0 bg-muted/20 text-[10px] text-muted-foreground font-mono'
+                            >
+                              {activeCountInModule === 0 ? (
+                                <span className='text-muted-foreground/40'>—</span>
+                              ) : (
+                                <span className='font-medium text-foreground/70'>
+                                  {activeCountInModule}/{modulePermNames.length}
+                                </span>
+                              )}
+                            </td>
+                          )
+                        }
 
                         return (
                           <td
@@ -534,9 +655,14 @@ export function RoleMatrixTable({
                             </div>
                           </td>
 
-                          {/* Role Toggle Cells */}
-                          {roles.map((role) => {
+                          {/* Role Toggle / Checkmark Cells */}
+                          {sortedRoles.map((role) => {
                             const isSuper = role.name === 'Superadmin'
+                            const isEditable = isRoleEditable(role)
+                            const isOwnRole =
+                              !isSuperadmin &&
+                              (role.name === currentUser?.role ||
+                                currentUser?.roles?.includes(role.name))
                             const isChecked = isSuper
                               ? true
                               : matrixState[role.id]?.has(perm.name) || false
@@ -545,14 +671,14 @@ export function RoleMatrixTable({
                             const serverHasPerm = (role.permissions || []).some(
                               (p) => p.name === perm.name
                             )
-                            const isCellDirty = !isSuper && isChecked !== serverHasPerm
+                            const isCellDirty = !isSuper && isEditable && isChecked !== serverHasPerm
 
                             return (
                               <td
                                 key={`${role.id}-${perm.name}`}
                                 className={`py-1.5 px-2 text-center border-r last:border-r-0 transition-colors ${
-                                  isCellDirty ? 'bg-amber-500/10' : ''
-                                }`}
+                                  isOwnRole ? 'bg-primary/2 dark:bg-primary/5' : ''
+                                } ${isCellDirty ? 'bg-amber-500/10' : ''}`}
                               >
                                 <div className='flex items-center justify-center'>
                                   {isSuper ? (
@@ -566,6 +692,27 @@ export function RoleMatrixTable({
                                         <p className='text-xs'>Superadmin selalu memiliki akses penuh.</p>
                                       </TooltipContent>
                                     </Tooltip>
+                                  ) : !isEditable ? (
+                                    isChecked ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className='inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400 p-0.5 rounded'>
+                                            <Check className='h-4 w-4 stroke-[2.5]' />
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className='text-xs'>
+                                            {isOwnRole
+                                              ? 'Izin aktif pada akun Anda'
+                                              : `Izin aktif untuk ${role.name}`}
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      <span className='text-muted-foreground/30 text-xs font-mono select-none leading-none'>
+                                        —
+                                      </span>
+                                    )
                                   ) : (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -575,7 +722,6 @@ export function RoleMatrixTable({
                                             onCheckedChange={() =>
                                               togglePermission(role.id, perm.name)
                                             }
-                                            disabled={!canEditPermissions}
                                             className={`${
                                               isCellDirty ? 'ring-2 ring-amber-500' : ''
                                             }`}
@@ -596,7 +742,7 @@ export function RoleMatrixTable({
                         </tr>
                       )
                     })}
-                  </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

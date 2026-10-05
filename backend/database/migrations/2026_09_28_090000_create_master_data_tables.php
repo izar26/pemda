@@ -15,7 +15,7 @@ return new class extends Migration
     {
         // 1. Pemilik Risiko
         Schema::create('master_pemilik_risikos', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nama', 150);
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('urutan')->default(0);
@@ -24,7 +24,7 @@ return new class extends Migration
 
         // 2. Kategori Risiko
         Schema::create('master_kategori_risikos', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode', 20)->unique();
             $table->string('nama', 150);
             $table->text('definisi')->nullable();
@@ -35,7 +35,7 @@ return new class extends Migration
 
         // 3. Penyebab Risiko (5M + 1E)
         Schema::create('master_penyebab_risikos', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nama', 150);
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('urutan')->default(0);
@@ -44,7 +44,7 @@ return new class extends Migration
 
         // 4. Tingkat Risiko (RSP, RSO, ROO)
         Schema::create('master_tingkat_risikos', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode', 20)->unique();
             $table->string('nama', 150);
             $table->text('deskripsi')->nullable();
@@ -55,7 +55,7 @@ return new class extends Migration
 
         // 5. Jenis Fraud
         Schema::create('master_jenis_frauds', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nama', 150);
             $table->text('deskripsi')->nullable();
             $table->boolean('is_active')->default(true);
@@ -65,7 +65,7 @@ return new class extends Migration
 
         // 6. Kriteria Dampak
         Schema::create('master_kriteria_dampaks', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nama', 150);
             $table->text('deskripsi')->nullable();
             $table->boolean('is_active')->default(true);
@@ -75,7 +75,7 @@ return new class extends Migration
 
         // 7. Urusan Pemerintahan
         Schema::create('master_urusan_pemerintahans', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode', 20);
             $table->string('nama', 200);
             $table->boolean('is_active')->default(true);
@@ -85,10 +85,10 @@ return new class extends Migration
 
         // 8. Entitas Penilaian
         Schema::create('master_entitas_penilaians', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode', 20);
             $table->string('nama', 200);
-            $table->foreignId('opd_id')->nullable()->constrained('opds')->nullOnDelete();
+            $table->foreignUuid('opd_id')->nullable()->constrained('opds')->nullOnDelete();
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('urutan')->default(0);
             $table->timestamps();
@@ -96,7 +96,7 @@ return new class extends Migration
 
         // 9. Sumber Data
         Schema::create('master_sumber_datas', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nama', 150);
             $table->text('deskripsi')->nullable();
             $table->boolean('is_active')->default(true);
@@ -106,7 +106,7 @@ return new class extends Migration
 
         // 10. Unsur SPIP
         Schema::create('master_unsur_spips', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nomor', 10);
             $table->string('nama', 200);
             $table->boolean('is_active')->default(true);
@@ -116,8 +116,8 @@ return new class extends Migration
 
         // 10b. Sub-Unsur SPIP (Bagian dari Unsur)
         Schema::create('master_sub_unsur_spips', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('unsur_spip_id')->constrained('master_unsur_spips')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('unsur_spip_id')->constrained('master_unsur_spips')->cascadeOnDelete();
             $table->string('nama', 255);
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('urutan')->default(0);

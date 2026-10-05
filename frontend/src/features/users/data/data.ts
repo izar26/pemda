@@ -38,8 +38,3 @@ export const callTypes = new Map<UserStatus, string>([
   ['suspended', 'bg-destructive/10 text-destructive border-destructive/20'],
 ])
 
-
-export const roles = [
-  { label: 'Superadmin', value: 'Superadmin' },
-] as const
-

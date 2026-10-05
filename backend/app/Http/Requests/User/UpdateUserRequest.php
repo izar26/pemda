@@ -13,6 +13,11 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        $targetUser = $this->route('user');
+        if ($targetUser instanceof User && $targetUser->hasRole('Superadmin') && !$this->user()?->hasRole('Superadmin')) {
+            abort(404, 'Data pengguna tidak ditemukan.');
+        }
+
         return $this->user()?->can('users.edit') ?? false;
     }
 
@@ -20,6 +25,15 @@ class UpdateUserRequest extends FormRequest
     {
         $targetUser = $this->route('user');
         $userId = $targetUser instanceof User ? $targetUser->id : $targetUser;
+
+        $roleRule = ['required', 'string'];
+        if (!$this->user()?->hasRole('Superadmin')) {
+            $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
+                $query->where('name', '!=', 'Superadmin');
+            });
+        } else {
+            $roleRule[] = 'exists:roles,name';
+        }
 
         return [
             'name' => ['required', 'string', 'max:100'],
@@ -37,10 +51,10 @@ class UpdateUserRequest extends FormRequest
                 Rule::unique('users', 'nip')->ignore($userId),
             ],
             'phone' => ['nullable', 'string', 'max:20'],
-            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
+            'opd_id' => ['nullable', 'string', 'uuid', 'exists:opds,id'],
             'pangkat_gol' => ['nullable', 'string', 'max:60'],
             'jabatan' => ['nullable', 'string', 'max:150'],
-            'role' => ['required', 'string', 'exists:roles,name'],
+            'role' => $roleRule,
             'status' => ['required', 'string', 'in:active,inactive,suspended,pending_activation'],
 
             'password' => [

@@ -37,7 +37,7 @@ function OpdStatusSwitch({ opd }: { opd: OpdItem }) {
   const canEdit = hasPermission('opd.edit')
 
   const toggleMutation = useMutation({
-    mutationFn: (id: number) => opdService.toggleActive(id),
+    mutationFn: (id: string) => opdService.toggleActive(id),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['opds'] })
       queryClient.invalidateQueries({ queryKey: ['opds-stats'] })
@@ -72,6 +72,11 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='No.' className='w-12 text-center' />
     ),
+    meta: {
+      className: 'w-12 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => (
       <div className='text-center text-xs font-mono font-medium text-muted-foreground'>
         {row.getValue('urutan')}
@@ -84,6 +89,9 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Kode' className='w-28' />
     ),
+    meta: {
+      className: 'w-28',
+    },
     cell: ({ row }) => (
       <div className='font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-1 rounded w-fit'>
         {row.getValue('kode')}
@@ -96,23 +104,25 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Nama Perangkat Daerah' />
     ),
+    meta: {
+      className: 'min-w-[280px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const opd = row.original
       return (
-        <div className='flex items-center gap-3 py-1'>
-          <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs'>
+        <div className='flex items-start gap-3 py-1'>
+          <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs mt-0.5'>
             <Building2 className='h-4 w-4' />
           </div>
-          <div className='flex flex-col min-w-0 max-w-md'>
-            <span className='font-semibold text-sm text-foreground leading-tight'>
+          <div className='flex flex-col min-w-0 max-w-xl'>
+            <span className='font-semibold text-sm text-foreground leading-snug whitespace-normal break-words'>
               {opd.nama}
             </span>
-            {opd.kepala && (
-              <span className='text-xs text-muted-foreground line-clamp-1 mt-0.5 flex items-center gap-1'>
-                <User className='h-3 w-3 inline text-muted-foreground/70' />
-                Kepala: {opd.kepala}
-              </span>
-            )}
+            <span className='text-xs text-muted-foreground mt-0.5 flex items-center gap-1 whitespace-normal break-words'>
+              <User className='h-3 w-3 shrink-0 text-muted-foreground/70' />
+              {opd.kepala ? `Kepala: ${opd.kepala}` : 'Kepala belum ditentukan'}
+            </span>
           </div>
         </div>
       )
@@ -129,8 +139,13 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
   {
     accessorKey: 'kategori',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Kategori' className='w-32' />
+      <DataTableColumnHeader column={column} title='Kategori' className='w-28 text-center' />
     ),
+    meta: {
+      className: 'w-28 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const kategori = row.getValue('kategori') as string
       return (
@@ -148,25 +163,15 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: 'kepala',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Kepala Instansi' />
-    ),
-    cell: ({ row }) => {
-      const kepala = row.getValue('kepala') as string | null
-      return (
-        <div className='text-xs text-foreground'>
-          {kepala || <span className='text-muted-foreground italic'>Belum ditentukan</span>}
-        </div>
-      )
-    },
-    enableSorting: true,
-  },
-  {
     accessorKey: 'users_count',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Pegawai' className='w-24 text-center' />
     ),
+    meta: {
+      className: 'w-24 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const count = (row.getValue('users_count') as number) || 0
       return (
@@ -188,6 +193,11 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Status Aktif' className='w-28 text-center' />
     ),
+    meta: {
+      className: 'w-28 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => <OpdStatusSwitch opd={row.original} />,
     filterFn: (row, id, value) => {
       const isActive = row.getValue(id) as boolean
@@ -201,6 +211,8 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
     cell: ({ row }) => <OpdRowActions row={row} />,
     meta: {
       className: 'w-14 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
     },
   },
 ]

@@ -9,7 +9,7 @@ import type {
 export interface MasterQueryParams {
   search?: string
   is_active?: string | boolean
-  unsur_spip_id?: number
+  unsur_spip_id?: string
 }
 
 export const masterDataService = {
@@ -31,7 +31,7 @@ export const masterDataService = {
    */
   async getItem(
     entity: MasterEntityKey,
-    id: number
+    id: string
   ): Promise<{ data: MasterDataBaseItem }> {
     const response = await apiClient.get<{ data: MasterDataBaseItem }>(
       `/master/${entity}/${id}`
@@ -58,7 +58,7 @@ export const masterDataService = {
    */
   async updateItem(
     entity: MasterEntityKey,
-    id: number,
+    id: string,
     payload: MasterDataPayload
   ): Promise<{ message: string; data: MasterDataBaseItem }> {
     const response = await apiClient.put<{
@@ -73,7 +73,7 @@ export const masterDataService = {
    */
   async toggleActive(
     entity: MasterEntityKey,
-    id: number
+    id: string
   ): Promise<{ message: string; data: MasterDataBaseItem }> {
     const response = await apiClient.patch<{
       message: string
@@ -87,7 +87,7 @@ export const masterDataService = {
    */
   async deleteItem(
     entity: MasterEntityKey,
-    id: number
+    id: string
   ): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(
       `/master/${entity}/${id}`

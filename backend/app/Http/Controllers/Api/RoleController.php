@@ -37,7 +37,7 @@ class RoleController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar peran.');
         }
 
-        $roles = $this->roleService->listRoles();
+        $roles = $this->roleService->listRoles($user);
 
         return RoleResource::collection($roles);
     }
@@ -51,7 +51,7 @@ class RoleController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk melihat detail peran.');
         }
 
-        return new RoleResource($this->roleService->getRole($role));
+        return new RoleResource($this->roleService->getRole($role, $request->user()));
     }
 
     /**
@@ -62,7 +62,8 @@ class RoleController extends Controller
         $role = $this->roleService->createRole(
             name: $request->validated('name'),
             description: $request->validated('description'),
-            permissions: $request->validated('permissions')
+            permissions: $request->validated('permissions'),
+            currentUser: $request->user()
         );
 
         return response()->json([
@@ -80,7 +81,8 @@ class RoleController extends Controller
             role: $role,
             name: $request->validated('name'),
             description: $request->validated('description'),
-            permissions: $request->validated('permissions')
+            permissions: $request->validated('permissions'),
+            currentUser: $request->user()
         );
 
         return response()->json([
@@ -98,7 +100,7 @@ class RoleController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus peran.');
         }
 
-        $this->roleService->deleteRole($role);
+        $this->roleService->deleteRole($role, $request->user());
 
         return response()->json([
             'message' => 'Peran berhasil dihapus.',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Rbac;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -11,24 +12,33 @@ class UpdateRoleRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        $role = $this->route('role');
+        if ($role instanceof Role && $role->name === 'Superadmin' && !$this->user()?->hasRole('Superadmin')) {
+            abort(404, 'Data peran tidak ditemukan.');
+        }
+
         return $this->user()?->can('roles.edit') ?? false;
     }
 
     public function rules(): array
     {
         /** @var \App\Models\Role|int|string $role */
-        $roleId = $this->route('role');
-        if (is_object($roleId)) {
-            $roleId = $roleId->id;
+        $role = $this->route('role');
+        $roleId = $role instanceof Role ? $role->id : $role;
+
+        $nameRules = [
+            'required',
+            'string',
+            'max:50',
+            Rule::unique('roles', 'name')->ignore($roleId),
+        ];
+
+        if (!($role instanceof Role && $role->name === 'Superadmin')) {
+            $nameRules[] = Rule::notIn(['Superadmin', 'superadmin', 'SUPERADMIN']);
         }
 
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('roles', 'name')->ignore($roleId),
-            ],
+            'name' => $nameRules,
             'description' => ['nullable', 'string', 'max:255'],
             'permissions' => ['present', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],

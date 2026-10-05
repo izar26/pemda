@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->string('auditable_type', 150)->nullable()->after('module');
-            $table->unsignedBigInteger('auditable_id')->nullable()->after('auditable_type');
+            $table->string('auditable_id', 36)->nullable()->after('auditable_type');
             $table->index(['auditable_type', 'auditable_id'], 'audit_logs_auditable_index');
         });
     }

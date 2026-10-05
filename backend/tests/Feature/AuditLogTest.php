@@ -337,4 +337,63 @@ class AuditLogTest extends TestCase
             'auditable_id' => $targetUser->id,
         ]);
     }
+
+    public function test_non_superadmin_cannot_see_superadmin_logs(): void
+    {
+        $auditorRole = Role::firstOrCreate(
+            ['name' => 'Auditor', 'guard_name' => 'web'],
+            ['is_system' => false]
+        );
+        $auditorRole->syncPermissions(['audit.view']);
+
+        $auditor = User::factory()->create([
+            'name' => 'Petugas Audit',
+            'email' => 'auditor@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $auditor->assignRole('Auditor');
+        $auditorToken = $auditor->createToken('test-auditor')->plainTextToken;
+
+        // 1. Create a log performed by Superadmin
+        AuditLog::create([
+            'user_id' => $this->superadmin->id,
+            'user_name' => $this->superadmin->name,
+            'user_email' => $this->superadmin->email,
+            'action' => 'OPD_CREATE',
+            'module' => 'Perangkat Daerah',
+            'description' => 'Superadmin membuat OPD baru',
+            'created_at' => now(),
+        ]);
+
+        // 2. Create a log performed by regular staff
+        AuditLog::create([
+            'user_id' => $this->staffWithoutPerm->id,
+            'user_name' => $this->staffWithoutPerm->name,
+            'user_email' => $this->staffWithoutPerm->email,
+            'action' => 'OPD_UPDATE',
+            'module' => 'Perangkat Daerah',
+            'description' => 'Staf memperbarui kontak OPD',
+            'created_at' => now(),
+        ]);
+
+        // 3. Auditor requests audit logs
+        $responseAuditor = $this->withHeader('Authorization', 'Bearer ' . $auditorToken)
+            ->getJson('/api/audit-logs');
+
+        $responseAuditor->assertStatus(200);
+        $auditorDescriptions = collect($responseAuditor->json('data'))->pluck('description')->all();
+        $this->assertContains('Staf memperbarui kontak OPD', $auditorDescriptions);
+        $this->assertNotContains('Superadmin membuat OPD baru', $auditorDescriptions);
+
+        // 4. Superadmin requests audit logs
+        app('auth')->forgetGuards();
+        $superadminToken = $this->superadmin->createToken('test-super')->plainTextToken;
+        $responseSuper = $this->withHeader('Authorization', 'Bearer ' . $superadminToken)
+            ->getJson('/api/audit-logs');
+
+        $responseSuper->assertStatus(200);
+        $superDescriptions = collect($responseSuper->json('data'))->pluck('description')->all();
+        $this->assertContains('Superadmin membuat OPD baru', $superDescriptions);
+        $this->assertContains('Staf memperbarui kontak OPD', $superDescriptions);
+    }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Audit;
 
 use App\Models\AuditLog;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -25,7 +26,7 @@ class AuditLogService
         ?User $user = null,
         ?array $context = null,
         ?string $auditableType = null,
-        ?int $auditableId = null
+        int|string|null $auditableId = null
     ): AuditLog {
         $currentUser = $user ?? auth('sanctum')->user() ?? auth()->user();
 
@@ -40,7 +41,7 @@ class AuditLogService
             'action' => $action,
             'module' => $module,
             'auditable_type' => $auditableType,
-            'auditable_id' => $auditableId,
+            'auditable_id' => $auditableId !== null ? (string) $auditableId : null,
             'description' => $description,
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
@@ -93,7 +94,7 @@ class AuditLogService
             user: null, // will automatically resolve current authenticated user
             context: $context,
             auditableType: get_class($model),
-            auditableId: is_numeric($model->getKey()) ? (int) $model->getKey() : null
+            auditableId: $model->getKey() !== null ? (string) $model->getKey() : null
         );
     }
 
@@ -105,14 +106,68 @@ class AuditLogService
      *     module?: string,
      *     action?: string,
      *     auditable_type?: string,
-     *     auditable_id?: int,
+     *     auditable_id?: int|string,
      *     date_from?: string,
      *     date_to?: string
      * }  $filters
      */
-    public function listLogs(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function listLogs(array $filters = [], int $perPage = 15, ?User $currentUser = null): LengthAwarePaginator
     {
-        $query = AuditLog::query()->orderBy('created_at', 'desc');
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        $query = AuditLog::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+
+        // Ghost filter: non-superadmin users must not see Superadmin activity or logs related to Superadmin
+        if (!$user?->hasRole('Superadmin')) {
+            $superadminUserIds = User::whereHas('roles', function ($q) {
+                $q->where('name', 'Superadmin');
+            })->orWhere('role', 'Superadmin')->pluck('id')->all();
+
+            $superadminEmails = User::whereHas('roles', function ($q) {
+                $q->where('name', 'Superadmin');
+            })->orWhere('role', 'Superadmin')->pluck('email')->all();
+
+            $superadminRoleId = Role::where('name', 'Superadmin')->value('id');
+
+            // Exclude logs initiated by a Superadmin
+            if (!empty($superadminUserIds)) {
+                $query->where(function ($q) use ($superadminUserIds) {
+                    $q->whereNotIn('user_id', $superadminUserIds)
+                      ->orWhereNull('user_id');
+                });
+            }
+
+            if (!empty($superadminEmails)) {
+                $query->where(function ($q) use ($superadminEmails) {
+                    $q->whereNotIn('user_email', $superadminEmails)
+                      ->orWhereNull('user_email');
+                });
+            }
+
+            // Exclude logs where auditable target is a Superadmin user
+            if (!empty($superadminUserIds)) {
+                $query->where(function ($q) use ($superadminUserIds) {
+                    $q->whereNull('auditable_type')
+                      ->orWhereNotIn('auditable_type', [User::class, 'App\Models\User'])
+                      ->orWhereNotIn('auditable_id', $superadminUserIds);
+                });
+            }
+
+            // Exclude logs where auditable target is Superadmin role
+            if ($superadminRoleId) {
+                $query->where(function ($q) use ($superadminRoleId) {
+                    $q->whereNull('auditable_type')
+                      ->orWhereNotIn('auditable_type', [Role::class, 'App\Models\Role'])
+                      ->orWhere('auditable_id', '!=', $superadminRoleId);
+                });
+            }
+
+            // Exclude logs whose description or snapshots reveal Superadmin
+            $query->where('description', 'not like', '%Superadmin%')
+                  ->where(function ($q) {
+                      $q->whereNull('user_name')
+                        ->orWhere('user_name', 'not like', '%Superadmin%');
+                  });
+        }
 
         if (!empty($filters['search'])) {
             $search = trim($filters['search']);
@@ -139,7 +194,7 @@ class AuditLogService
         }
 
         if (!empty($filters['auditable_id'])) {
-            $query->where('auditable_id', (int) $filters['auditable_id']);
+            $query->where('auditable_id', (string) $filters['auditable_id']);
         }
 
         if (!empty($filters['date_from'])) {

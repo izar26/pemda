@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models\Master;
 
+use App\Models\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class MasterKriteriaDampak extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuid7;
 
     protected $table = 'master_kriteria_dampaks';
 

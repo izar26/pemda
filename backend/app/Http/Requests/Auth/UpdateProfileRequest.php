@@ -29,7 +29,7 @@ class UpdateProfileRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'pangkat_gol' => ['nullable', 'string', 'max:60'],
             'jabatan' => ['nullable', 'string', 'max:150'],
-            'opd_id' => ['nullable', 'integer', 'exists:opds,id'],
+            'opd_id' => ['nullable', 'string', 'uuid', 'exists:opds,id'],
         ];
     }
 

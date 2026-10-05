@@ -46,25 +46,58 @@ import type { User } from '../data/schema'
 
 const userFormSchema = z
   .object({
-    name: z.string().min(2, 'Nama lengkap minimal 2 karakter.').max(100, 'Maksimal 100 karakter.'),
-    email: z.string().email('Format email dinas tidak valid.').max(100),
-    nip: z.string().max(30, 'NIP maksimal 30 karakter.').optional(),
-    phone: z.string().max(20, 'Nomor telepon maksimal 20 karakter.').optional(),
-    opd_id: z.string().optional(),
-    pangkat_gol: z.string().optional(),
-    jabatan: z.string().max(150, 'Jabatan maksimal 150 karakter.').optional(),
+    name: z
+      .string()
+      .min(1, 'Nama lengkap beserta gelar wajib diisi.')
+      .min(2, 'Nama lengkap minimal 2 karakter.')
+      .max(100, 'Maksimal 100 karakter.'),
+    email: z
+      .string()
+      .min(1, 'Email resmi / dinas wajib diisi.')
+      .email('Format email dinas tidak valid.')
+      .max(100, 'Maksimal 100 karakter.'),
+    nip: z
+      .string()
+      .min(1, 'NIP (Nomor Induk Pegawai) wajib diisi.')
+      .max(30, 'NIP maksimal 30 karakter.'),
+    phone: z
+      .string()
+      .min(1, 'Nomor WhatsApp / HP wajib diisi.')
+      .max(20, 'Nomor telepon maksimal 20 karakter.'),
+    opd_id: z
+      .string()
+      .min(1, 'Instansi / Perangkat Daerah (OPD) wajib dipilih.'),
+    pangkat_gol: z
+      .string()
+      .min(1, 'Pangkat / Golongan Ruang wajib dipilih.'),
+    jabatan: z
+      .string()
+      .min(1, 'Jabatan kedinasan wajib diisi.')
+      .max(150, 'Jabatan maksimal 150 karakter.'),
     role: z.string().min(1, 'Peran (Role) wajib dipilih.'),
-    status: z.enum(['active', 'inactive', 'suspended', 'pending_activation']),
+    status: z.enum(['active', 'inactive', 'suspended', 'pending_activation'], {
+      message: 'Status akun pegawai wajib dipilih.',
+    }),
     password: z.string().optional(),
     isEdit: z.boolean(),
   })
   .refine(
     (data) => {
       if (data.isEdit) return true
+      return Boolean(data.password && data.password.trim().length > 0)
+    },
+    {
+      message: 'Kata sandi awal akun wajib diisi.',
+      path: ['password'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.isEdit && (!data.password || data.password.length === 0)) return true
       return Boolean(data.password && data.password.length >= 8)
     },
     {
-      message: 'Kata sandi minimal 8 karakter untuk akun baru.',
+      message: 'Kata sandi minimal 8 karakter.',
       path: ['password'],
     }
   )
@@ -117,7 +150,7 @@ export function UsersActionDialog({
   })
 
   const opdOptions = useMemo(() => {
-    return opds.map((opd) => ({
+    return (Array.isArray(opds) ? opds : []).map((opd) => ({
       value: String(opd.id),
       label: opd.nama,
       group: opd.kategori || 'Perangkat Daerah',
@@ -197,7 +230,7 @@ export function UsersActionDialog({
           opd_id: '',
           pangkat_gol: '',
           jabatan: '',
-          role: roles[0]?.name || '',
+          role: Array.isArray(roles) && roles[0] ? roles[0].name : '',
           status: 'active',
           password: '',
           isEdit: false,
@@ -238,13 +271,13 @@ export function UsersActionDialog({
     try {
       if (isEdit && currentRow) {
         await userService.updateUser(currentRow.id, {
-          name: data.name,
-          email: data.email,
-          nip: data.nip || undefined,
-          phone: data.phone || undefined,
-          opd_id: data.opd_id ? Number(data.opd_id) : undefined,
-          pangkat_gol: data.pangkat_gol || undefined,
-          jabatan: data.jabatan || undefined,
+          name: data.name.trim(),
+          email: data.email.trim(),
+          nip: data.nip.trim(),
+          phone: data.phone.trim(),
+          opd_id: data.opd_id,
+          pangkat_gol: data.pangkat_gol,
+          jabatan: data.jabatan.trim(),
           role: data.role,
           status: data.status,
           password: data.password ? data.password : undefined,
@@ -252,13 +285,13 @@ export function UsersActionDialog({
         toast.success(`Data pegawai "${data.name}" berhasil diperbarui.`)
       } else {
         await userService.createUser({
-          name: data.name,
-          email: data.email,
-          nip: data.nip || undefined,
-          phone: data.phone || undefined,
-          opd_id: data.opd_id ? Number(data.opd_id) : undefined,
-          pangkat_gol: data.pangkat_gol || undefined,
-          jabatan: data.jabatan || undefined,
+          name: data.name.trim(),
+          email: data.email.trim(),
+          nip: data.nip.trim(),
+          phone: data.phone.trim(),
+          opd_id: data.opd_id,
+          pangkat_gol: data.pangkat_gol,
+          jabatan: data.jabatan.trim(),
           role: data.role,
           status: data.status,
           password: data.password!,
@@ -295,7 +328,7 @@ export function UsersActionDialog({
               <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
                 {isEdit
                   ? 'Perbarui identitas, instansi, jabatan, dan hak akses akun pegawai.'
-                  : 'Daftarkan akun pegawai resmi ke sistem portal PEMDA.'}
+                  : 'Daftarkan akun pegawai resmi ke sistem portal PEMDA. Semua kolom wajib diisi.'}
               </DialogDescription>
             </div>
           </div>
@@ -360,7 +393,7 @@ export function UsersActionDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        NIP (Nomor Induk Pegawai)
+                        NIP (Nomor Induk Pegawai) <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -384,7 +417,7 @@ export function UsersActionDialog({
                   <FormItem>
                     <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
                       <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
-                      Instansi / Perangkat Daerah (OPD)
+                      Instansi / Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
                       <SearchableSelect
@@ -414,7 +447,7 @@ export function UsersActionDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        Jabatan Kedinasan
+                        Jabatan Kedinasan <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -436,7 +469,7 @@ export function UsersActionDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        Pangkat / Golongan Ruang
+                        Pangkat / Golongan Ruang <span className='text-destructive'>*</span>
                       </FormLabel>
                       <FormControl>
                         <SearchableSelect
@@ -462,7 +495,9 @@ export function UsersActionDialog({
                   name='phone'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className='text-xs font-semibold'>No. WhatsApp / HP</FormLabel>
+                      <FormLabel className='text-xs font-semibold'>
+                        No. WhatsApp / HP <span className='text-destructive'>*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder='081234567890'
@@ -496,7 +531,7 @@ export function UsersActionDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {roles.map((r) => (
+                          {(Array.isArray(roles) ? roles : []).map((r) => (
                             <SelectItem key={r.id} value={r.name}>
                               <div className='flex items-center gap-2'>
                                 <span>{r.name}</span>
@@ -522,7 +557,9 @@ export function UsersActionDialog({
                 name='status'
                 render={({ field }) => (
                   <FormItem className='space-y-2 pt-1'>
-                    <FormLabel className='text-xs font-semibold'>Status Akun Pegawai</FormLabel>
+                    <FormLabel className='text-xs font-semibold'>
+                      Status Akun Pegawai <span className='text-destructive'>*</span>
+                    </FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}

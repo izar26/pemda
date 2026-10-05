@@ -36,10 +36,10 @@ return new class extends Migration
         }
 
         Schema::create('master_entitas_penilaians', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('kode', 20);
             $table->string('nama', 200);
-            $table->foreignId('opd_id')->nullable()->constrained('opds')->nullOnDelete();
+            $table->foreignUuid('opd_id')->nullable()->constrained('opds')->nullOnDelete();
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('urutan')->default(0);
             $table->timestamps();

@@ -171,7 +171,7 @@ class MasterDataController extends Controller
     /**
      * Show single record.
      */
-    public function show(Request $request, string $entity, int $id): JsonResponse
+    public function show(Request $request, string $entity, string $id): JsonResponse
     {
         if (!$request->user()->can('master.view')) {
             return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat master data.'], 403);
@@ -238,7 +238,7 @@ class MasterDataController extends Controller
     /**
      * Update existing record.
      */
-    public function update(Request $request, string $entity, int $id): JsonResponse
+    public function update(Request $request, string $entity, string $id): JsonResponse
     {
         if (!$request->user()->can('master.edit')) {
             return response()->json(['message' => 'Anda tidak memiliki hak akses untuk mengubah master data.'], 403);
@@ -299,7 +299,7 @@ class MasterDataController extends Controller
     /**
      * Toggle active status.
      */
-    public function toggleActive(Request $request, string $entity, int $id): JsonResponse
+    public function toggleActive(Request $request, string $entity, string $id): JsonResponse
     {
         if (!$request->user()->can('master.edit')) {
             return response()->json(['message' => 'Anda tidak memiliki hak akses untuk mengubah status master data.'], 403);
@@ -346,7 +346,7 @@ class MasterDataController extends Controller
     /**
      * Delete record.
      */
-    public function destroy(Request $request, string $entity, int $id): JsonResponse
+    public function destroy(Request $request, string $entity, string $id): JsonResponse
     {
         if (!$request->user()->can('master.delete')) {
             return response()->json(['message' => 'Anda tidak memiliki hak akses untuk menghapus master data.'], 403);
@@ -402,7 +402,7 @@ class MasterDataController extends Controller
     /**
      * Build dynamic validation rules based on entity config.
      */
-    protected function buildValidationRules(array $config, string $entity, ?int $ignoreId = null): array
+    protected function buildValidationRules(array $config, string $entity, ?string $ignoreId = null): array
     {
         $rules = [
             'nama' => ['required', 'string', 'max:255'],
@@ -432,7 +432,7 @@ class MasterDataController extends Controller
         }
 
         if ($entity === 'sub-unsur-spip') {
-            $rules['unsur_spip_id'] = ['required', 'integer', 'exists:master_unsur_spips,id'];
+            $rules['unsur_spip_id'] = ['required', 'string', 'uuid', 'exists:master_unsur_spips,id'];
         }
 
         return $rules;

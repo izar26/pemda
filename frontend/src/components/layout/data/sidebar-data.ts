@@ -39,28 +39,28 @@ export const sidebarData: SidebarData = {
           icon: LayoutDashboard,
         },
         {
-          title: 'Manajemen Pegawai',
-          url: '/users',
-          icon: Users,
-          requiredPermission: 'users.view',
-        },
-        {
-          title: 'Peran & Izin',
-          url: '/roles',
-          icon: ShieldCheck,
-          requiredPermission: 'roles.view',
-        },
-        {
           title: 'Perangkat Daerah (OPD)',
           url: '/opd',
           icon: Building2,
           requiredPermission: 'opd.view',
         },
         {
+          title: 'Manajemen Pegawai',
+          url: '/users',
+          icon: Users,
+          requiredPermission: 'users.view',
+        },
+        {
           title: 'Data Master',
           url: '/master-data',
           icon: Database,
           requiredPermission: 'master.view',
+        },
+        {
+          title: 'Peran & Izin',
+          url: '/roles',
+          icon: ShieldCheck,
+          requiredPermission: 'roles.view',
         },
         {
           title: 'Log Audit Keamanan',

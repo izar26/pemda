@@ -24,9 +24,17 @@ class UserService
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function getUsers(array $filters = [], int $perPage = 10, ?User $currentUser = null): LengthAwarePaginator
     {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
         $query = User::with(['roles', 'roles.permissions', 'opd']);
+
+        // Ghost filter: non-superadmin users must not see Superadmin accounts
+        if (!$user?->hasRole('Superadmin')) {
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Superadmin');
+            })->where('role', '!=', 'Superadmin');
+        }
 
         // Search by name, email, nip, jabatan, or pangkat
         if (!empty($filters['search'])) {
@@ -76,9 +84,16 @@ class UserService
     /**
      * Get a single user with relations.
      */
-    public function getUserById(int $id): User
+    public function getUserById(string|int $id, ?User $currentUser = null): User
     {
-        return User::with(['roles', 'roles.permissions'])->findOrFail($id);
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        $targetUser = User::with(['roles', 'roles.permissions', 'opd'])->findOrFail($id);
+
+        if ($targetUser->hasRole('Superadmin') && !$user?->hasRole('Superadmin')) {
+            abort(404, 'Data pengguna tidak ditemukan.');
+        }
+
+        return $targetUser;
     }
 
     /**
@@ -86,8 +101,15 @@ class UserService
      *
      * @param  array<string, mixed>  $data
      */
-    public function createUser(array $data): User
+    public function createUser(array $data, ?User $currentUser = null): User
     {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        if (($data['role'] ?? '') === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+            throw ValidationException::withMessages([
+                'role' => ['Peran yang dipilih tidak valid.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($data) {
             $user = User::create([
                 'name' => $data['name'],
@@ -116,6 +138,18 @@ class UserService
      */
     public function updateUser(User $user, array $data, User $currentUser): User
     {
+        // Ghost safeguard: non-superadmin cannot see or update a Superadmin account
+        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+            abort(404, 'Data pengguna tidak ditemukan.');
+        }
+
+        // Cannot assign Superadmin role if not Superadmin
+        if (($data['role'] ?? '') === 'Superadmin' && !$currentUser->hasRole('Superadmin')) {
+            throw ValidationException::withMessages([
+                'role' => ['Peran yang dipilih tidak valid.'],
+            ]);
+        }
+
         // Safeguard: Cannot demote the last Superadmin
         if ($user->hasRole('Superadmin') && $data['role'] !== 'Superadmin') {
             $superadminCount = User::role('Superadmin')->count();
@@ -163,6 +197,11 @@ class UserService
      */
     public function deleteUser(User $user, User $currentUser): void
     {
+        // Ghost safeguard: non-superadmin cannot see or delete a Superadmin account
+        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+            abort(404, 'Data pengguna tidak ditemukan.');
+        }
+
         // Safeguard: Cannot delete self
         if ($user->id === $currentUser->id) {
             throw ValidationException::withMessages([
@@ -192,7 +231,14 @@ class UserService
      */
     public function resetTwoFactor(User $user, ?User $admin = null): void
     {
-        DB::transaction(function () use ($user, $admin) {
+        $adminUser = $admin ?? auth('sanctum')->user() ?? auth()->user();
+
+        // Ghost safeguard: non-superadmin cannot reset 2FA on a Superadmin account
+        if ($user->hasRole('Superadmin') && !$adminUser?->hasRole('Superadmin')) {
+            abort(404, 'Data pengguna tidak ditemukan.');
+        }
+
+        DB::transaction(function () use ($user, $adminUser) {
             User::withoutAuditing(function () use ($user) {
                 $user->update([
                     'two_factor_secret' => null,
@@ -228,6 +274,12 @@ class UserService
      */
     public function inviteUser(array $data, User $admin): array
     {
+        if (($data['role'] ?? '') === 'Superadmin' && !$admin->hasRole('Superadmin')) {
+            throw ValidationException::withMessages([
+                'role' => ['Peran yang dipilih tidak valid.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($data, $admin) {
             $token = Str::random(64);
             $expiresAt = now()->addHours(48);
@@ -288,6 +340,11 @@ class UserService
      */
     public function resendInvitation(User $user, User $admin): array
     {
+        // Ghost safeguard: non-superadmin cannot see or resend invitation to a Superadmin account
+        if ($user->hasRole('Superadmin') && !$admin->hasRole('Superadmin')) {
+            abort(404, 'Data pengguna tidak ditemukan.');
+        }
+
         if (!$user->isPendingActivation()) {
             throw ValidationException::withMessages([
                 'user' => 'Pengguna ini sudah aktif atau tidak dalam status menunggu aktivasi.',
