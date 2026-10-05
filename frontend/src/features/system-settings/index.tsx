@@ -15,6 +15,7 @@ import { systemSettingService } from '@/services/system-setting-service'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
+import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -90,12 +91,12 @@ export function SystemSettings() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 max-w-5xl mx-auto w-full'>
-        {/* Page Title & Status */}
-        <div className='flex flex-wrap items-center justify-between gap-3 border-b pb-4'>
+        {/* Page Title & Status (Sticky) */}
+        <PageHeader className='flex flex-wrap items-center justify-between gap-3'>
           <div>
             <div className='flex items-center gap-2'>
               <h2 className='text-xl font-bold tracking-tight text-foreground'>
-                Pengaturan Sistem Portal
+                Pengaturan Sistem Aplikasi ManRis
               </h2>
               {!canEdit && (
                 <Badge variant='outline' className='text-amber-600 bg-amber-500/10 border-amber-200 text-xs'>
@@ -119,7 +120,7 @@ export function SystemSettings() {
               {mutation.isPending ? 'Menyimpan...' : 'Simpan Pengaturan'}
             </Button>
           )}
-        </div>
+        </PageHeader>
 
         {/* Form Sections */}
         <form onSubmit={handleSubmit} className='grid gap-5'>
@@ -149,7 +150,7 @@ export function SystemSettings() {
                   onChange={(e) => handleChange('app_name', e.target.value)}
                   disabled={!canEdit}
                   className='h-8 text-xs bg-muted/20'
-                  placeholder='Portal Layanan Terpadu PEMDA'
+                  placeholder='Aplikasi ManRis'
                 />
               </div>
 

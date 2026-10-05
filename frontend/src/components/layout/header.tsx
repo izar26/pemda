@@ -8,39 +8,32 @@ type HeaderProps = React.HTMLAttributes<HTMLElement> & {
   ref?: React.Ref<HTMLElement>
 }
 
-export function Header({ className, fixed, children, ...props }: HeaderProps) {
+export function Header({ className, fixed = true, children, ...props }: HeaderProps) {
   const [offset, setOffset] = useState(0)
 
   useEffect(() => {
     const onScroll = () => {
-      setOffset(document.body.scrollTop || document.documentElement.scrollTop)
+      setOffset(window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0)
     }
 
-    // Add scroll listener to the body
-    document.addEventListener('scroll', onScroll, { passive: true })
+    // Add scroll listener to the window
+    window.addEventListener('scroll', onScroll, { passive: true })
 
     // Clean up the event listener on unmount
-    return () => document.removeEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
     <header
       className={cn(
-        'z-50 h-16',
-        fixed && 'header-fixed peer/header sticky top-0 w-[inherit]',
-        offset > 10 && fixed ? 'shadow' : 'shadow-none',
+        'z-40 h-16 w-full',
+        fixed && 'header-fixed peer/header sticky top-0 bg-background/95 backdrop-blur-md border-b border-border/60 shadow-xs supports-[backdrop-filter]:bg-background/85',
+        offset > 10 && 'shadow-sm',
         className
       )}
       {...props}
     >
-      <div
-        className={cn(
-          'relative flex h-full items-center gap-3 p-4 sm:gap-4',
-          offset > 10 &&
-            fixed &&
-            'after:absolute after:inset-0 after:-z-10 after:bg-background/20 after:backdrop-blur-lg'
-        )}
-      >
+      <div className='relative flex h-full items-center gap-3 px-4 sm:gap-4'>
         <SidebarTrigger variant='outline' className='max-md:scale-125' />
         <Separator orientation='vertical' className='h-6' />
         {children}

@@ -11,12 +11,12 @@ export function SignIn2() {
         <div className='mx-auto flex w-full flex-col justify-center space-y-2 py-8 sm:w-120 sm:p-8'>
           <div className='mb-4 flex items-center justify-center'>
             <Logo className='me-2' />
-            <h1 className='text-xl font-medium'>Portal PEMDA</h1>
+            <h1 className='text-xl font-medium'>Aplikasi ManRis</h1>
           </div>
         </div>
         <div className='mx-auto flex w-full max-w-sm flex-col justify-center space-y-2'>
           <div className='flex flex-col space-y-2 text-start'>
-            <h2 className='text-lg font-semibold tracking-tight'>Masuk ke Portal</h2>
+            <h2 className='text-lg font-semibold tracking-tight'>Masuk ke Aplikasi ManRis</h2>
             <p className='text-sm text-muted-foreground'>
               Masukkan NIP atau Email dan kata sandi Anda untuk mengakses akun kedinasan.
             </p>

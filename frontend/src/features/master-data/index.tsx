@@ -10,6 +10,7 @@ import {
 import { MASTER_ENTITIES, type MasterEntityKey } from '@/types/master-data'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
+import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
@@ -71,8 +72,8 @@ function MasterDataContent() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6'>
-        {/* Header Title & Actions */}
-        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+        {/* Header Title & Actions (Sticky) */}
+        <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
               Manajemen Data Master Sistem
@@ -97,7 +98,7 @@ function MasterDataContent() {
             </Button>
             <MasterDataPrimaryButtons />
           </div>
-        </div>
+        </PageHeader>
 
         {/* Category Switcher & Sub-entity Tabs */}
         <div className='space-y-3.5'>

@@ -24,9 +24,9 @@ export const sidebarData: SidebarData = {
   },
   teams: [
     {
-      name: 'Portal PEMDA',
+      name: 'Aplikasi ManRis',
       logo: Landmark,
-      plan: 'Pemerintah Daerah',
+      plan: 'Manajemen Risiko PEMDA',
     },
   ],
   navGroups: [

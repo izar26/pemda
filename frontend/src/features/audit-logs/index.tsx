@@ -13,6 +13,7 @@ import { auditService } from '@/services/audit-service'
 import { useAuthStore } from '@/stores/auth-store'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
+import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -84,8 +85,8 @@ function AuditLogsContent() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6'>
-        {/* Header Title & Actions */}
-        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+        {/* Header Title & Actions (Sticky) */}
+        <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <div className='flex items-center gap-2'>
               <h2 className='text-2xl font-bold tracking-tight text-foreground'>
@@ -132,7 +133,7 @@ function AuditLogsContent() {
               Segarkan
             </Button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Superadmin Tab Navigation */}
         {isSuperadmin ? (
