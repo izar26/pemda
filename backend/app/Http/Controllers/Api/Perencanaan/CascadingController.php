@@ -9,6 +9,7 @@ use App\Models\Perencanaan\IndikatorSasaran;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\Sasaran;
 use App\Models\Perencanaan\Tujuan;
+use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -376,6 +377,25 @@ class CascadingController extends Controller
                 }
             }
         });
+
+        $srcPeriode = PeriodePenilaian::find($sourceId);
+        $tgtPeriode = PeriodePenilaian::find($targetId);
+        app(AuditLogService::class)->log(
+            action: 'CASCADING_CLONE',
+            module: 'Perencanaan Kinerja',
+            description: "Menduplikasi pohon kinerja dari periode {$srcPeriode?->periode_penilaian} ke {$tgtPeriode?->periode_penilaian} (Total: {$clonedTujuan} Tujuan, {$clonedSasaran} Sasaran, {$clonedIndikator} Indikator)",
+            user: $request->user(),
+            context: [
+                'source_periode_id' => $sourceId,
+                'source_periode' => $srcPeriode?->periode_penilaian,
+                'target_periode_id' => $targetId,
+                'target_periode' => $tgtPeriode?->periode_penilaian,
+                'opd_id' => $opdId,
+                'tujuan_count' => $clonedTujuan,
+                'sasaran_count' => $clonedSasaran,
+                'indikator_count' => $clonedIndikator,
+            ]
+        );
 
         return response()->json([
             'message' => "Berhasil menyalin {$clonedTujuan} Tujuan, {$clonedSasaran} Sasaran, dan {$clonedIndikator} Indikator ke periode target.",

@@ -4,6 +4,7 @@ export const moduleFilterOptions = [
   { label: 'Profil Akun', value: 'Profil' },
   { label: 'Organisasi (OPD)', value: 'Organisasi (OPD)' },
   { label: 'Peran & Izin', value: 'Peran & Izin' },
+  { label: 'Perencanaan Kinerja', value: 'Perencanaan Kinerja' },
   { label: 'Master Data', value: 'Master Data' },
   { label: 'Pengaturan Sistem', value: 'Pengaturan Sistem' },
 ]
@@ -212,6 +213,138 @@ export const actionBadgeMap: Record<
     label: 'Ubah Pengaturan',
     className:
       'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300',
+  },
+
+  // Perencanaan Kinerja Actions
+  PERIODE_PENILAIAN_CREATED: {
+    label: 'Tambah Periode',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  PERIODE_PENILAIAN_UPDATED: {
+    label: 'Ubah Periode',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  PERIODE_PENILAIAN_DELETED: {
+    label: 'Hapus Periode',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  TUJUAN_CREATED: {
+    label: 'Tambah Tujuan',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  TUJUAN_UPDATED: {
+    label: 'Ubah Tujuan',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  TUJUAN_DELETED: {
+    label: 'Hapus Tujuan',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  SASARAN_CREATED: {
+    label: 'Tambah Sasaran',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  SASARAN_UPDATED: {
+    label: 'Ubah Sasaran',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  SASARAN_DELETED: {
+    label: 'Hapus Sasaran',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  INDIKATOR_SASARAN_CREATED: {
+    label: 'Tambah Indikator / IKU',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  INDIKATOR_SASARAN_UPDATED: {
+    label: 'Ubah Indikator / IKU',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  INDIKATOR_SASARAN_DELETED: {
+    label: 'Hapus Indikator / IKU',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  RENSTRA_PROGRAM_CREATED: {
+    label: 'Tambah Program Renstra',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  RENSTRA_PROGRAM_UPDATED: {
+    label: 'Ubah Program Renstra',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  RENSTRA_PROGRAM_DELETED: {
+    label: 'Hapus Program Renstra',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  RENSTRA_KEGIATAN_CREATED: {
+    label: 'Tambah Kegiatan Renstra',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  RENSTRA_KEGIATAN_UPDATED: {
+    label: 'Ubah Kegiatan Renstra',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  RENSTRA_KEGIATAN_DELETED: {
+    label: 'Hapus Kegiatan Renstra',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  RENSTRA_SUB_KEGIATAN_CREATED: {
+    label: 'Tambah Sub-Kegiatan',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  RENSTRA_SUB_KEGIATAN_UPDATED: {
+    label: 'Ubah Sub-Kegiatan',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  RENSTRA_SUB_KEGIATAN_DELETED: {
+    label: 'Hapus Sub-Kegiatan',
+    className:
+      'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+  },
+  KONTEKS_RISIKO_STRATEGIS_CREATED: {
+    label: 'Simpan Konteks Risiko',
+    className:
+      'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300',
+  },
+  KONTEKS_RISIKO_STRATEGIS_UPDATED: {
+    label: 'Ubah Konteks Risiko',
+    className:
+      'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300',
+  },
+  CASCADING_CLONE: {
+    label: 'Duplikasi Pohon Kinerja',
+    className:
+      'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300',
+  },
+  RENSTRA_IMPORT: {
+    label: 'Impor Renstra Excel',
+    className:
+      'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-300',
+  },
+  RENSTRA_EXPORT: {
+    label: 'Ekspor Renstra Excel',
+    className:
+      'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300',
   },
 
   // Generic Fallback Actions

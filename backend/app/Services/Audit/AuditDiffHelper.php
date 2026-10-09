@@ -125,13 +125,22 @@ class AuditDiffHelper
      */
     public static function resolveEntityLabel(Model $model): string
     {
-        $candidates = ['name', 'nama', 'title', 'judul', 'label', 'email', 'code', 'kode'];
+        $candidates = [
+            'name', 'nama', 'title', 'judul', 'label', 'email', 'code', 'kode',
+            'periode_penilaian', 'periode', 'tujuan', 'sasaran', 'indikator',
+            'nama_program', 'nama_kegiatan', 'nama_sub_kegiatan',
+            'pernyataan_konteks', 'isu_strategis',
+        ];
 
         foreach ($candidates as $attribute) {
             $val = $model->getAttribute($attribute);
             if (!empty($val) && is_scalar($val)) {
                 return (string) $val;
             }
+        }
+
+        if ($model instanceof \App\Models\Perencanaan\KonteksRisikoStrategis) {
+            return 'Konteks Risiko OPD #' . ($model->opd_id ?? $model->getKey());
         }
 
         return class_basename($model) . ' #' . $model->getKey();
@@ -147,6 +156,10 @@ class AuditDiffHelper
         }
 
         $className = get_class($model);
+
+        if (Str::startsWith($className, 'App\\Models\\Perencanaan\\')) {
+            return 'Perencanaan Kinerja';
+        }
 
         if (Str::startsWith($className, 'App\\Models\\Master\\')) {
             return 'Master Data';

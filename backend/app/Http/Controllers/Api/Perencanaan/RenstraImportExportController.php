@@ -10,6 +10,7 @@ use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\RenstraKegiatan;
 use App\Models\Perencanaan\RenstraProgram;
 use App\Models\Perencanaan\RenstraSubKegiatan;
+use App\Services\Audit\AuditLogService;
 use App\Services\Export\ExcelExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -143,6 +144,18 @@ class RenstraImportExportController extends Controller
         if ($opdObj) {
             $metadata['Perangkat Daerah (OPD)'] = $opdObj->nama;
         }
+
+        app(AuditLogService::class)->log(
+            action: 'RENSTRA_EXPORT',
+            module: 'Perencanaan Kinerja',
+            description: 'Mengekspor data matriks Renstra SKPD' . ($opdObj ? " ({$opdObj->nama})" : '') . ' ke format Excel',
+            user: $user,
+            context: [
+                'periode_penilaian_id' => $periodeId,
+                'opd_id' => $opdId,
+                'opd_nama' => $opdObj?->nama,
+            ]
+        );
 
         return $exportService->streamExport(
             filename: 'Renstra_SKPD_PEMDA',
@@ -287,6 +300,28 @@ class RenstraImportExportController extends Controller
         });
 
         $reader->close();
+
+        $opdObj = Opd::find($opdId);
+        $periodeObj = PeriodePenilaian::find($periodeId);
+        app(AuditLogService::class)->log(
+            action: 'RENSTRA_IMPORT',
+            module: 'Perencanaan Kinerja',
+            description: "Mengimpor dokumen Excel Renstra SKPD untuk {$opdObj?->nama} (Periode: {$periodeObj?->periode_penilaian}) - Total: {$programCount} Program, {$kegiatanCount} Kegiatan, {$subKegiatanCount} Sub-Kegiatan",
+            user: $user,
+            context: [
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'opd_id' => $opdId,
+                'opd_nama' => $opdObj?->nama,
+                'periode_penilaian_id' => $periodeId,
+                'summary' => [
+                    'program_count' => $programCount,
+                    'kegiatan_count' => $kegiatanCount,
+                    'sub_kegiatan_count' => $subKegiatanCount,
+                    'total_records' => $programCount + $kegiatanCount + $subKegiatanCount,
+                ],
+            ]
+        );
 
         return response()->json([
             'message' => 'Impor data Renstra SKPD berhasil diproses.',
