@@ -8,12 +8,96 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OpdResource;
 use App\Models\Opd;
 use App\Models\User;
+use App\Services\Export\ExcelExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OpdController extends Controller
 {
+    /**
+     * Export OPD data to Excel (.xlsx).
+     */
+    public function export(Request $request, ExcelExportService $exportService): StreamedResponse
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+        if (!$user?->can('opd.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data perangkat daerah.');
+        }
+
+        $query = Opd::query()->withCount('users');
+
+        if ($request->filled('kategori') && $request->input('kategori') !== 'all') {
+            $query->where('kategori', $request->input('kategori'));
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            if ($request->input('status') === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->input('status') === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $term = trim((string) $request->input('search'));
+            if ($term !== '') {
+                $query->where(function ($q) use ($term) {
+                    $q->where('nama', 'like', "%{$term}%")
+                        ->orWhere('kode', 'like', "%{$term}%")
+                        ->orWhere('kepala', 'like', "%{$term}%");
+                });
+            }
+        }
+
+        $query->orderBy('urutan', 'asc')->orderBy('nama', 'asc');
+
+        $headers = [
+            'No',
+            'Kode Instansi',
+            'Nama Perangkat Daerah (OPD)',
+            'Kategori / Jenis',
+            'Kepala / Pimpinan OPD',
+            'Jumlah Pegawai ASN',
+            'Urutan Display',
+            'Status Keaktifan',
+            'Tanggal Dibuat',
+        ];
+
+        $generator = function () use ($query) {
+            $no = 1;
+            foreach ($query->lazy(500) as $opd) {
+                yield [
+                    $no++,
+                    $opd->kode,
+                    $opd->nama,
+                    $opd->kategori,
+                    $opd->kepala ?? '-',
+                    $opd->users_count ?? 0,
+                    $opd->urutan,
+                    $opd->is_active ? 'Aktif' : 'Nonaktif',
+                    $opd->created_at ? $opd->created_at->format('d/m/Y H:i') : '-',
+                ];
+            }
+        };
+
+        $metadata = [];
+        if ($request->filled('search')) {
+            $metadata['Kata Kunci Pencarian'] = $request->input('search');
+        }
+        if ($request->filled('kategori') && $request->input('kategori') !== 'all') {
+            $metadata['Kategori OPD'] = $request->input('kategori');
+        }
+
+        return $exportService->streamExport(
+            filename: 'Data_Perangkat_Daerah_OPD',
+            title: 'LAPORAN REKAPITULASI PERANGKAT DAERAH (OPD)',
+            headers: $headers,
+            rows: $generator(),
+            metadata: $metadata
+        );
+    }
     /**
      * Get list of OPDs.
      * Supports public/dropdown view (all active) or paginated management view with RBAC.

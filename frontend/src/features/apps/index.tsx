@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
+import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
@@ -93,14 +94,14 @@ export function Apps() {
 
       {/* ===== Content ===== */}
       <Main fixed>
-        <div>
+        <PageHeader>
           <h1 className='text-2xl font-bold tracking-tight'>
             App Integrations
           </h1>
-          <p className='text-muted-foreground'>
+          <p className='text-xs text-muted-foreground'>
             Here&apos;s a list of your apps for the integration!
           </p>
-        </div>
+        </PageHeader>
         <div className='my-4 flex items-end justify-between sm:my-0 sm:items-center'>
           <div className='flex flex-col gap-4 sm:my-4 sm:flex-row'>
             <Input

@@ -9,6 +9,7 @@ export interface KpiStatItem {
   color?: string
   valueColor?: string
   sub?: string
+  subtitle?: string
 }
 
 interface KpiStatsCardsProps {
@@ -65,9 +66,9 @@ export function KpiStatsCards({
                 >
                   {item.value}
                 </p>
-                {item.sub && (
-                  <span className='text-[10px] text-muted-foreground truncate'>
-                    {item.sub}
+                {(item.subtitle || item.sub) && (
+                  <span className='text-[10px] text-muted-foreground truncate block mt-0.5'>
+                    {item.subtitle || item.sub}
                   </span>
                 )}
               </div>

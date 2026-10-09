@@ -5,6 +5,10 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
+use App\Http\Controllers\Api\Perencanaan\CascadingController;
+use App\Http\Controllers\Api\Perencanaan\PeriodePenilaianController;
+use App\Http\Controllers\Api\Perencanaan\RenstraController;
+use App\Http\Controllers\Api\Perencanaan\RenstraImportExportController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
 use App\Http\Controllers\Api\UserController;
@@ -56,6 +60,12 @@ Route::prefix('auth')->group(function () {
 
 // Dynamic RBAC & User Management Routes
 Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(function () {
+    // Excel Export Endpoints (High Performance Streaming)
+    Route::get('/users/export', [UserController::class, 'export']);
+    Route::get('/opds/export', [OpdController::class, 'export']);
+    Route::get('/roles/export', [RoleController::class, 'export']);
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
+
     // RBAC
     Route::get('/permissions', [RoleController::class, 'permissions']);
     Route::apiResource('/roles', RoleController::class);
@@ -85,12 +95,57 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
 
     // Master Data (Manajemen Risiko & SPIP)
     Route::prefix('master')->group(function () {
+        Route::get('/{entity}/export', [MasterDataController::class, 'export']);
         Route::get('/{entity}', [MasterDataController::class, 'index']);
         Route::get('/{entity}/{id}', [MasterDataController::class, 'show']);
         Route::post('/{entity}', [MasterDataController::class, 'store']);
         Route::put('/{entity}/{id}', [MasterDataController::class, 'update']);
         Route::patch('/{entity}/{id}/toggle', [MasterDataController::class, 'toggleActive']);
         Route::delete('/{entity}/{id}', [MasterDataController::class, 'destroy']);
+    });
+
+    // Modul Perencanaan & Cascading (Fitur 13, 14-17, Sheet 2B & 2C)
+    Route::prefix('perencanaan')->group(function () {
+        // Fitur 13: Periode Penilaian (Bapperida)
+        Route::get('/periode', [PeriodePenilaianController::class, 'index']);
+        Route::get('/periode/active', [PeriodePenilaianController::class, 'active']);
+        Route::post('/periode', [PeriodePenilaianController::class, 'store']);
+        Route::put('/periode/{periode}', [PeriodePenilaianController::class, 'update']);
+        Route::patch('/periode/{periode}/activate', [PeriodePenilaianController::class, 'activate']);
+        Route::delete('/periode/{periode}', [PeriodePenilaianController::class, 'destroy']);
+
+        // Fitur 14-17: Cascading Makro 3 Tingkat (Tujuan -> Sasaran -> Indikator)
+        Route::get('/cascading', [CascadingController::class, 'index']);
+        Route::post('/cascading/tujuan', [CascadingController::class, 'storeTujuan']);
+        Route::put('/cascading/tujuan/{tujuan}', [CascadingController::class, 'updateTujuan']);
+        Route::delete('/cascading/tujuan/{tujuan}', [CascadingController::class, 'destroyTujuan']);
+
+        Route::post('/cascading/sasaran', [CascadingController::class, 'storeSasaran']);
+        Route::put('/cascading/sasaran/{sasaran}', [CascadingController::class, 'updateSasaran']);
+        Route::delete('/cascading/sasaran/{sasaran}', [CascadingController::class, 'destroySasaran']);
+
+        Route::post('/cascading/indikator', [CascadingController::class, 'storeIndikator']);
+        Route::put('/cascading/indikator/{indikator}', [CascadingController::class, 'updateIndikator']);
+        Route::delete('/cascading/indikator/{indikator}', [CascadingController::class, 'destroyIndikator']);
+
+        // Sheet 2B & 2C: Renstra SKPD Program, Kegiatan, Sub Kegiatan (OPD)
+        Route::get('/renstra/tree', [RenstraController::class, 'tree']);
+        Route::post('/renstra/program', [RenstraController::class, 'storeProgram']);
+        Route::put('/renstra/program/{program}', [RenstraController::class, 'updateProgram']);
+        Route::delete('/renstra/program/{program}', [RenstraController::class, 'destroyProgram']);
+
+        Route::post('/renstra/kegiatan', [RenstraController::class, 'storeKegiatan']);
+        Route::put('/renstra/kegiatan/{kegiatan}', [RenstraController::class, 'updateKegiatan']);
+        Route::delete('/renstra/kegiatan/{kegiatan}', [RenstraController::class, 'destroyKegiatan']);
+
+        Route::post('/renstra/sub-kegiatan', [RenstraController::class, 'storeSubKegiatan']);
+        Route::put('/renstra/sub-kegiatan/{subKegiatan}', [RenstraController::class, 'updateSubKegiatan']);
+        Route::delete('/renstra/sub-kegiatan/{subKegiatan}', [RenstraController::class, 'destroySubKegiatan']);
+
+        // Import & Export Renstra Excel
+        Route::get('/renstra/template', [RenstraImportExportController::class, 'downloadTemplate']);
+        Route::get('/renstra/export', [RenstraImportExportController::class, 'export']);
+        Route::post('/renstra/import', [RenstraImportExportController::class, 'import']);
     });
 });
 

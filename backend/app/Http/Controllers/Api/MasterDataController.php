@@ -19,6 +19,7 @@ use App\Services\Audit\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -134,13 +135,13 @@ class MasterDataController extends Controller
         if ($request->has('search') && !empty($request->query('search'))) {
             $term = trim((string) $request->query('search'));
             $query->where(function ($q) use ($term, $config, $entity) {
-                $q->where('nama', 'ilike', "%{$term}%");
+                $q->where('nama', 'like', "%{$term}%");
                 if (!empty($config['has_code'])) {
-                    $q->orWhere('kode', 'ilike', "%{$term}%");
+                    $q->orWhere('kode', 'like', "%{$term}%");
                 }
                 if ($entity === 'opd') {
-                    $q->orWhere('kepala', 'ilike', "%{$term}%")
-                      ->orWhere('kategori', 'ilike', "%{$term}%");
+                    $q->orWhere('kepala', 'like', "%{$term}%")
+                      ->orWhere('kategori', 'like', "%{$term}%");
                 }
             });
         }
@@ -166,6 +167,119 @@ class MasterDataController extends Controller
             ],
             'data' => $items,
         ]);
+    }
+
+    /**
+     * Export Master Data entity to Excel (.xlsx).
+     */
+    public function export(Request $request, string $entity, \App\Services\Export\ExcelExportService $exportService): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        if (!$request->user()->can('master.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data master.');
+        }
+
+        $config = $this->getEntityConfig($entity);
+        /** @var \Illuminate\Database\Eloquent\Builder $query */
+        $query = $config['model']::query();
+
+        if (isset($config['with'])) {
+            $query->with($config['with']);
+        }
+
+        if ($request->has('search') && !empty($request->query('search'))) {
+            $term = trim((string) $request->query('search'));
+            $query->where(function ($q) use ($term, $config, $entity) {
+                $q->where('nama', 'like', "%{$term}%");
+                if (!empty($config['has_code'])) {
+                    $q->orWhere('kode', 'like', "%{$term}%");
+                }
+                if ($entity === 'opd') {
+                    $q->orWhere('kepala', 'like', "%{$term}%")
+                      ->orWhere('kategori', 'like', "%{$term}%");
+                }
+            });
+        }
+
+        if ($request->has('is_active') && $request->query('is_active') !== 'all') {
+            $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($entity === 'sub-unsur-spip' && $request->has('unsur_spip_id')) {
+            $query->where('unsur_spip_id', $request->query('unsur_spip_id'));
+        }
+
+        $query->orderBy('urutan', 'asc')->orderBy('id', 'asc');
+
+        $headers = ['No'];
+        if (!empty($config['has_code'])) {
+            $headers[] = 'Kode';
+        }
+        if ($entity === 'unsur-spip') {
+            $headers[] = 'Nomor SPIP';
+        }
+        $headers[] = 'Nama ' . $config['label'];
+
+        if (!empty($config['desc_field'])) {
+            $headers[] = 'Deskripsi / Detail';
+        }
+        if ($entity === 'sub-unsur-spip') {
+            $headers[] = 'Unsur Induk SPIP';
+        }
+        if ($entity === 'opd') {
+            $headers[] = 'Kategori';
+            $headers[] = 'Kepala Instansi';
+        }
+        $headers[] = 'Urutan';
+        $headers[] = 'Status Keaktifan';
+        $headers[] = 'Tanggal Dibuat';
+
+        $descField = $config['desc_field'] ?? null;
+        $hasCode = !empty($config['has_code']);
+
+        $generator = function () use ($query, $entity, $hasCode, $descField) {
+            $no = 1;
+            foreach ($query->lazy(500) as $item) {
+                $row = [$no++];
+                if ($hasCode) {
+                    $row[] = $item->kode ?? '-';
+                }
+                if ($entity === 'unsur-spip') {
+                    $row[] = $item->nomor ?? '-';
+                }
+                $row[] = $item->nama ?? '-';
+
+                if ($descField) {
+                    $row[] = $item->{$descField} ?? '-';
+                }
+                if ($entity === 'sub-unsur-spip') {
+                    $row[] = $item->unsur?->nama ?? '-';
+                }
+                if ($entity === 'opd') {
+                    $row[] = $item->kategori ?? '-';
+                    $row[] = $item->kepala ?? '-';
+                }
+                $row[] = $item->urutan ?? 0;
+                $row[] = $item->is_active ? 'Aktif' : 'Nonaktif';
+                $row[] = $item->created_at ? $item->created_at->format('d/m/Y H:i') : '-';
+
+                yield $row;
+            }
+        };
+
+        $metadata = [
+            'Jenis Data Master' => $config['label'],
+        ];
+        if ($request->has('search') && !empty($request->query('search'))) {
+            $metadata['Kata Kunci Pencarian'] = $request->query('search');
+        }
+
+        return $exportService->streamExport(
+            filename: 'Master_Data_' . Str::slug($config['label'], '_'),
+            title: 'LAPORAN MASTER DATA: ' . mb_strtoupper($config['label']),
+            headers: $headers,
+            rows: $generator(),
+            metadata: $metadata
+        );
     }
 
     /**

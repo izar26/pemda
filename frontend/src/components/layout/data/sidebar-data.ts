@@ -13,6 +13,9 @@ import {
   Sliders,
   Database,
   Building2,
+  Calendar,
+  GitFork,
+  Layers,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -61,6 +64,31 @@ export const sidebarData: SidebarData = {
           url: '/roles',
           icon: ShieldCheck,
           requiredPermission: 'roles.view',
+        },
+        {
+          title: 'Perencanaan Kinerja',
+          icon: GitFork,
+          requiredPermission: 'perencanaan.view',
+          items: [
+            {
+              title: 'Periode Penilaian',
+              url: '/perencanaan/periode',
+              icon: Calendar,
+              requiredPermission: 'perencanaan.periode',
+            },
+            {
+              title: 'Cascading Makro',
+              url: '/perencanaan/cascading',
+              icon: GitFork,
+              requiredPermission: 'perencanaan.cascading',
+            },
+            {
+              title: 'Renstra SKPD',
+              url: '/perencanaan/renstra',
+              icon: Layers,
+              requiredPermission: 'perencanaan.renstra',
+            },
+          ],
         },
         {
           title: 'Log Audit Keamanan',

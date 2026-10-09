@@ -18,6 +18,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider } from './components/users-provider'
@@ -100,7 +101,16 @@ export function Users() {
             </p>
           </div>
 
-          <div className='flex items-center gap-2 shrink-0'>
+          <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
+            <ExportExcelButton
+              endpoint='/users/export'
+              params={{
+                search: search?.username || search?.status || '',
+              }}
+              filename='Data_Pegawai_PEMDA.xlsx'
+              label='Ekspor Excel'
+            />
+
             <Button
               variant='outline'
               size='sm'

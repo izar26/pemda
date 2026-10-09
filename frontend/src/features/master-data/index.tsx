@@ -16,6 +16,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { MasterGenericTable } from './components/master-generic-table'
 import { MasterSpipTable } from './components/master-spip-table'
 import { MasterDataPrimaryButtons } from './components/master-data-primary-buttons'
@@ -83,7 +84,13 @@ function MasterDataContent() {
             </p>
           </div>
 
-          <div className='flex items-center gap-2 shrink-0'>
+          <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
+            <ExportExcelButton
+              endpoint={`/master/${selectedEntity.key}/export`}
+              filename={`Master_Data_${selectedEntity.key}.xlsx`}
+              label={`Ekspor ${selectedEntity.label}`}
+            />
+
             <Button
               variant='outline'
               size='sm'

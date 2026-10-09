@@ -20,6 +20,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { AuditLogsTable } from './components/audit-logs-table'
 import { AuditLogsDialogs } from './components/audit-logs-dialogs'
 import { AuditPurgeDialog } from './components/audit-purge-dialog'
@@ -107,7 +108,14 @@ function AuditLogsContent() {
             </p>
           </div>
 
-          <div className='flex items-center gap-2 shrink-0'>
+          <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
+            <ExportExcelButton
+              endpoint='/audit-logs/export'
+              params={{ archive: activeTab === 'archive' }}
+              filename={activeTab === 'archive' ? 'Kubah_Arsip_Log_Audit_PEMDA.xlsx' : 'Log_Audit_Keamanan_PEMDA.xlsx'}
+              label={activeTab === 'archive' ? 'Ekspor Arsip Excel' : 'Ekspor Excel'}
+            />
+
             {isSuperadmin && (
               <Button
                 variant='outline'

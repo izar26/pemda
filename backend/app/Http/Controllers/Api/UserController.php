@@ -10,10 +10,12 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\Export\ExcelExportService;
 use App\Services\User\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -30,7 +32,7 @@ class UserController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data pengguna.');
         }
 
-        $filters = $request->only(['search', 'role', 'status', 'sort_by', 'sort_direction']);
+        $filters = $request->only(['search', 'role', 'status', 'sort_by', 'sort_direction', 'opd_id']);
         $perPage = (int) $request->input('per_page', 10);
         if ($perPage < 1 || $perPage > 100) {
             $perPage = 10;
@@ -39,6 +41,115 @@ class UserController extends Controller
         $users = $this->userService->getUsers($filters, $perPage, $request->user());
 
         return UserResource::collection($users);
+    }
+
+    /**
+     * Export users data to Excel (.xlsx) with high performance streaming.
+     */
+    public function export(Request $request, ExcelExportService $exportService): StreamedResponse
+    {
+        if (!$request->user()->can('users.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data pegawai.');
+        }
+
+        $user = $request->user();
+        $filters = $request->only(['search', 'role', 'status', 'opd_id']);
+
+        $query = User::with(['roles', 'opd']);
+
+        if (!$user->hasRole('Superadmin')) {
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Superadmin');
+            })->where('role', '!=', 'Superadmin');
+        }
+
+        if (!empty($filters['search'])) {
+            $term = trim((string) $filters['search']);
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('nip', 'like', "%{$term}%")
+                    ->orWhere('jabatan', 'like', "%{$term}%")
+                    ->orWhere('pangkat_gol', 'like', "%{$term}%");
+            });
+        }
+
+        if (!empty($filters['opd_id'])) {
+            $query->where('opd_id', $filters['opd_id']);
+        }
+
+        if (!empty($filters['role'])) {
+            $roleName = (string) $filters['role'];
+            $query->whereHas('roles', function ($q) use ($roleName) {
+                $q->where('name', $roleName);
+            });
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', (string) $filters['status']);
+        }
+
+        $query->orderBy('name', 'asc');
+
+        $headers = [
+            'No',
+            'Nama Lengkap Pegawai',
+            'Email Resmi',
+            'NIP',
+            'Jabatan / Posisi',
+            'Golongan / Pangkat',
+            'Perangkat Daerah (OPD)',
+            'Peran (Role)',
+            'Status Akun',
+            'Keamanan 2FA',
+            'Tanggal Terdaftar',
+        ];
+
+        $generator = function () use ($query) {
+            $no = 1;
+            foreach ($query->lazy(500) as $usr) {
+                $statusLabel = match ($usr->status) {
+                    'active' => 'Aktif',
+                    'pending_activation' => 'Menunggu Aktivasi',
+                    'inactive' => 'Nonaktif',
+                    default => ucfirst((string) $usr->status),
+                };
+
+                $twoFactorLabel = $usr->two_factor_enabled ? 'Aktif' : 'Tidak Aktif';
+                $opdNama = $usr->opd?->nama ?? '-';
+                $roleNama = $usr->roles->first()?->name ?? $usr->role ?? '-';
+
+                yield [
+                    $no++,
+                    $usr->name,
+                    $usr->email,
+                    $usr->nip ?? '-',
+                    $usr->jabatan ?? '-',
+                    $usr->pangkat_gol ?? '-',
+                    $opdNama,
+                    $roleNama,
+                    $statusLabel,
+                    $twoFactorLabel,
+                    $usr->created_at ? $usr->created_at->format('d/m/Y H:i') : '-',
+                ];
+            }
+        };
+
+        $metadata = [];
+        if (!empty($filters['search'])) {
+            $metadata['Kata Kunci Pencarian'] = $filters['search'];
+        }
+        if (!empty($filters['status'])) {
+            $metadata['Filter Status'] = $filters['status'];
+        }
+
+        return $exportService->streamExport(
+            filename: 'Data_Pegawai_PEMDA',
+            title: 'LAPORAN DATA MANAJEMEN PEGAWAI & PENGGUNA',
+            headers: $headers,
+            rows: $generator(),
+            metadata: $metadata
+        );
     }
 
     /**

@@ -11,16 +11,67 @@ use App\Http\Resources\PermissionResource;
 use App\Http\Resources\RoleResource;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\Export\ExcelExportService;
 use App\Services\Rbac\RoleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RoleController extends Controller
 {
     public function __construct(
         protected RoleService $roleService
     ) {}
+
+    /**
+     * Export Roles & Permissions matrix data to Excel (.xlsx).
+     */
+    public function export(Request $request, ExcelExportService $exportService): StreamedResponse
+    {
+        $user = $request->user();
+        if (!$user->can('roles.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data peran dan izin.');
+        }
+
+        $roles = $this->roleService->listRoles($user);
+
+        $headers = [
+            'No',
+            'Nama Peran (Role)',
+            'Deskripsi Peran',
+            'Kategori Peran',
+            'Jumlah Hak Akses (Permissions)',
+            'Daftar Hak Akses Sistem',
+            'Jumlah Pegawai Pengguna',
+            'Tanggal Dibuat',
+        ];
+
+        $generator = function () use ($roles) {
+            $no = 1;
+            foreach ($roles as $role) {
+                $permissionNames = $role->permissions->pluck('name')->implode(', ');
+
+                yield [
+                    $no++,
+                    $role->name,
+                    $role->description ?? '-',
+                    $role->is_system ? 'Sistem Bawaan' : 'Kustom OPD',
+                    $role->permissions_count ?? $role->permissions->count(),
+                    $permissionNames !== '' ? $permissionNames : 'Tidak ada izin',
+                    $role->users_count ?? 0,
+                    $role->created_at ? $role->created_at->format('d/m/Y H:i') : '-',
+                ];
+            }
+        };
+
+        return $exportService->streamExport(
+            filename: 'Data_Peran_dan_Hak_Akses_PEMDA',
+            title: 'LAPORAN REKAPITULASI PERAN DAN MATRIKS HAK AKSES SISTEM',
+            headers: $headers,
+            rows: $generator()
+        );
+    }
 
     /**
      * Get all roles.

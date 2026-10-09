@@ -16,6 +16,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { RoleMatrixTable } from './components/role-matrix-table'
 import { RolesTable } from './components/roles-table'
 import { RolesDialogs } from './components/roles-dialogs'
@@ -96,7 +97,12 @@ function RolesContent() {
             </p>
           </div>
 
-          <div className='flex items-center gap-2 shrink-0'>
+          <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
+            <ExportExcelButton
+              endpoint='/roles/export'
+              filename='Data_Peran_dan_Hak_Akses_PEMDA.xlsx'
+              label='Ekspor Excel'
+            />
             <Button
               variant='outline'
               size='sm'

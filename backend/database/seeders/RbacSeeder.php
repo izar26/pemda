@@ -54,6 +54,12 @@ class RbacSeeder extends Seeder
                 ['name' => 'master.edit', 'description' => 'Mengubah entri master data'],
                 ['name' => 'master.delete', 'description' => 'Menonaktifkan atau menghapus entri master data'],
             ],
+            'Perencanaan & Cascading' => [
+                ['name' => 'perencanaan.view', 'description' => 'Melihat periode penilaian, cascading makro, dan Renstra OPD'],
+                ['name' => 'perencanaan.periode', 'description' => 'Mengelola master jadwal dan status periode penilaian (Bapperida)'],
+                ['name' => 'perencanaan.cascading', 'description' => 'Mengelola pohon kinerja Tujuan, Sasaran, dan Indikator Makro (Bapperida)'],
+                ['name' => 'perencanaan.renstra', 'description' => 'Menginput dan memetakan Program, Kegiatan, dan Sub-Kegiatan Renstra (OPD)'],
+            ],
         ];
 
         $createdPermissions = [];
