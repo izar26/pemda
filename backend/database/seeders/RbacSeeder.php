@@ -78,6 +78,10 @@ class RbacSeeder extends Seeder
                 ['name' => 'laporan.view', 'description' => 'Melihat dan mengekspor laporan manajemen risiko (Fitur 31)'],
                 ['name' => 'arsip.view', 'description' => 'Melihat arsip penilaian dan data historis (Fitur 32)'],
             ],
+            'Manajemen Konten' => [
+                ['name' => 'content.view', 'description' => 'Melihat daftar konten publik dan banner portal'],
+                ['name' => 'content.manage', 'description' => 'Mengunggah, mengubah urutan, dan menghapus banner portal'],
+            ],
         ];
 
         $allPermissions = [];

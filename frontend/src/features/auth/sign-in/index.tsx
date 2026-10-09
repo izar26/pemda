@@ -1,9 +1,7 @@
 import { useSearch } from '@tanstack/react-router'
 import { Logo } from '@/assets/logo'
-import { cn } from '@/lib/utils'
-import dashboardDark from './assets/dashboard-dark.png'
-import dashboardLight from './assets/dashboard-light.png'
 import { UserAuthForm } from './components/user-auth-form'
+import { LoginBannerCarousel } from './components/login-banner-carousel'
 
 export function SignIn() {
   const { redirect } = useSearch({ from: '/(auth)/sign-in' })
@@ -45,27 +43,7 @@ export function SignIn() {
         </div>
       </div>
 
-      <div
-        className={cn(
-          'relative h-full overflow-hidden bg-muted max-lg:hidden',
-          '[&>img]:absolute [&>img]:top-[15%] [&>img]:left-20 [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>img]:object-top-left [&>img]:select-none'
-        )}
-      >
-        <img
-          src={dashboardLight}
-          className='dark:hidden'
-          width={1024}
-          height={1151}
-          alt='Portal PEMDA'
-        />
-        <img
-          src={dashboardDark}
-          className='hidden dark:block'
-          width={1024}
-          height={1138}
-          alt='Portal PEMDA'
-        />
-      </div>
+      <LoginBannerCarousel />
     </div>
   )
 }

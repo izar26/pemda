@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AuditLogArchiveController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Content\BannerController;
+use App\Http\Controllers\Api\Content\PublicBannerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExportJobController;
 use App\Http\Controllers\Api\MasterDataController;
@@ -26,6 +28,9 @@ Route::get('/ping', function () {
         'timestamp' => now()->toIso8601String(),
     ]);
 });
+
+// Public Banners (Login Carousel, Public Portals)
+Route::get('/content/banners/public', [PublicBannerController::class, 'index']);
 
 // Master OPD (Perangkat Daerah) - Publicly available for dropdowns & registration
 Route::get('/opds', [OpdController::class, 'index']);
@@ -158,6 +163,13 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::get('/renstra/template', [RenstraImportExportController::class, 'downloadTemplate']);
         Route::get('/renstra/export', [RenstraImportExportController::class, 'export']);
         Route::post('/renstra/import', [RenstraImportExportController::class, 'import']);
+    });
+
+    // Modul Manajemen Konten (CMS & Banners)
+    Route::prefix('content')->group(function () {
+        Route::post('/banners/reorder', [BannerController::class, 'reorder']);
+        Route::patch('/banners/{banner}/toggle-active', [BannerController::class, 'toggleActive']);
+        Route::apiResource('/banners', BannerController::class);
     });
 });
 

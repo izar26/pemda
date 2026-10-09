@@ -20,6 +20,7 @@ import {
   Sparkles,
   ShieldAlert,
   FileSpreadsheet,
+  Images,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -153,6 +154,22 @@ export const sidebarData: SidebarData = {
           icon: History,
           requiredPermission: 'audit.view',
         },
+      ],
+    },
+    {
+      title: 'Manajemen Konten',
+      items: [
+        {
+          title: 'Banner Login & Publik',
+          url: '/content-management/banners',
+          icon: Images,
+          requiredPermission: 'content.view',
+        },
+      ],
+    },
+    {
+      title: 'Pengaturan',
+      items: [
         {
           title: 'Pengaturan Sistem',
           url: '/system-settings',

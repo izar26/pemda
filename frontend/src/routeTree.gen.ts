@@ -50,6 +50,7 @@ import { Route as AuthenticatedPerencanaanPeriodeRouteImport } from './routes/_a
 import { Route as AuthenticatedPerencanaanKonteksStrategisRouteImport } from './routes/_authenticated/perencanaan/konteks-strategis'
 import { Route as AuthenticatedPerencanaanCascadingRouteImport } from './routes/_authenticated/perencanaan/cascading'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedContentManagementBannersIndexRouteImport } from './routes/_authenticated/content-management/banners/index'
 
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
   id: '/clerk',
@@ -269,6 +270,12 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContentManagementBannersIndexRoute =
+  AuthenticatedContentManagementBannersIndexRouteImport.update({
+    id: '/content-management/banners/',
+    path: '/content-management/banners/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/system-settings/': typeof AuthenticatedSystemSettingsIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
+  '/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
 }
 export interface FileRoutesByTo {
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -348,6 +356,7 @@ export interface FileRoutesByTo {
   '/system-settings': typeof AuthenticatedSystemSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/content-management/banners': typeof AuthenticatedContentManagementBannersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -392,6 +401,7 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/': typeof AuthenticatedSystemSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -434,6 +444,7 @@ export interface FileRouteTypes {
     | '/system-settings/'
     | '/tasks/'
     | '/users/'
+    | '/content-management/banners/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/clerk'
@@ -473,6 +484,7 @@ export interface FileRouteTypes {
     | '/system-settings'
     | '/tasks'
     | '/users'
+    | '/content-management/banners'
   id:
     | '__root__'
     | '/_authenticated'
@@ -516,6 +528,7 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/'
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/_authenticated/content-management/banners/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -824,6 +837,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/content-management/banners/': {
+      id: '/_authenticated/content-management/banners/'
+      path: '/content-management/banners'
+      fullPath: '/content-management/banners/'
+      preLoaderRoute: typeof AuthenticatedContentManagementBannersIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -868,6 +888,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSystemSettingsIndexRoute: typeof AuthenticatedSystemSettingsIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
+  AuthenticatedContentManagementBannersIndexRoute: typeof AuthenticatedContentManagementBannersIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -890,6 +911,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSystemSettingsIndexRoute: AuthenticatedSystemSettingsIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+  AuthenticatedContentManagementBannersIndexRoute:
+    AuthenticatedContentManagementBannersIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
