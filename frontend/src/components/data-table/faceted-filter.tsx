@@ -11,7 +11,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from '@/components/ui/command'
 import {
   Popover,
@@ -74,6 +73,8 @@ export function DataTableFacetedFilter<TData, TValue>({
     }
   }
 
+  const filterPlaceholder = title ? `Cari ${title.toLowerCase()}...` : 'Cari...'
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -95,7 +96,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                     variant='secondary'
                     className='rounded-sm px-1 font-normal'
                   >
-                    {selectedValues.size} selected
+                    {selectedValues.size} dipilih
                   </Badge>
                 ) : (
                   options
@@ -115,11 +116,18 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-50 p-0' align='start'>
-        <Command>
-          <CommandInput placeholder={title} />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+      <PopoverContent
+        className='min-w-[220px] max-w-[280px] w-auto p-0 shadow-lg'
+        align='start'
+        collisionPadding={12}
+        sideOffset={6}
+      >
+        <Command className='max-h-[min(380px,var(--radix-popover-content-available-height,380px))] flex flex-col'>
+          <CommandInput placeholder={filterPlaceholder} />
+          <CommandList className='max-h-[220px] overflow-y-auto overscroll-contain p-1'>
+            <CommandEmpty className='py-4 text-center text-xs text-muted-foreground'>
+              Tidak ada opsi ditemukan.
+            </CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
                 const isSelected = selectedValues.has(option.value)
@@ -130,7 +138,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                   >
                     <div
                       className={cn(
-                        'flex size-4 items-center justify-center rounded-sm border border-primary',
+                        'flex size-4 items-center justify-center rounded-sm border border-primary shrink-0',
                         isSelected
                           ? 'bg-primary text-primary-foreground'
                           : 'opacity-50 [&_svg]:invisible'
@@ -139,11 +147,11 @@ export function DataTableFacetedFilter<TData, TValue>({
                       <CheckIcon className={cn('h-4 w-4 text-background')} />
                     </div>
                     {option.icon && (
-                      <option.icon className='size-4 text-muted-foreground' />
+                      <option.icon className='size-4 text-muted-foreground shrink-0' />
                     )}
-                    <span>{option.label}</span>
-                    {facets?.get(option.value) && (
-                      <span className='ms-auto flex h-4 w-4 items-center justify-center font-mono text-xs'>
+                    <span className='truncate'>{option.label}</span>
+                    {facets?.get(option.value) !== undefined && (
+                      <span className='ms-auto flex h-4 min-w-[1.25rem] px-1 items-center justify-center font-mono text-[11px] text-muted-foreground'>
                         {facets.get(option.value)}
                       </span>
                     )}
@@ -151,20 +159,20 @@ export function DataTableFacetedFilter<TData, TValue>({
                 )
               })}
             </CommandGroup>
-            {selectedValues.size > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup>
-                  <CommandItem
-                    onSelect={handleClear}
-                    className='justify-center text-center'
-                  >
-                    Clear filters
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            )}
           </CommandList>
+          {selectedValues.size > 0 && (
+            <div className='border-t border-border/60 p-1 bg-muted/20'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={handleClear}
+                className='w-full h-8 text-xs font-medium justify-center text-muted-foreground hover:text-foreground'
+              >
+                Hapus filter ({selectedValues.size})
+              </Button>
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
