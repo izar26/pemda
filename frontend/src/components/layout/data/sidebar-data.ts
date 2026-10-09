@@ -16,6 +16,10 @@ import {
   Calendar,
   GitFork,
   Layers,
+  Target,
+  Sparkles,
+  ShieldAlert,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -65,6 +69,11 @@ export const sidebarData: SidebarData = {
           icon: ShieldCheck,
           requiredPermission: 'roles.view',
         },
+      ],
+    },
+    {
+      title: 'Perencanaan Kinerja',
+      items: [
         {
           title: 'Perencanaan Kinerja',
           icon: GitFork,
@@ -72,35 +81,78 @@ export const sidebarData: SidebarData = {
           items: [
             {
               title: 'Periode Penilaian',
+              badge: 'Fitur 13',
               url: '/perencanaan/periode',
               icon: Calendar,
               requiredPermission: 'perencanaan.periode',
             },
             {
-              title: 'Cascading Makro',
-              url: '/perencanaan/cascading',
+              title: 'Data Tujuan',
+              badge: 'Fitur 14',
+              url: '/perencanaan/cascading?tab=tujuan',
+              icon: Target,
+              requiredPermission: 'perencanaan.cascading',
+            },
+            {
+              title: 'Data Sasaran',
+              badge: 'Fitur 15',
+              url: '/perencanaan/cascading?tab=sasaran',
               icon: GitFork,
               requiredPermission: 'perencanaan.cascading',
             },
             {
-              title: 'Renstra SKPD',
-              url: '/perencanaan/renstra',
+              title: 'Data IKU',
+              badge: 'Fitur 16',
+              url: '/perencanaan/cascading?tab=iku',
+              icon: Sparkles,
+              requiredPermission: 'perencanaan.cascading',
+            },
+            {
+              title: 'Data Indikator',
+              badge: 'Fitur 17',
+              url: '/perencanaan/cascading?tab=indikator',
               icon: Layers,
-              requiredPermission: 'perencanaan.renstra',
+              requiredPermission: 'perencanaan.cascading',
             },
           ],
         },
+      ],
+    },
+    {
+      title: 'Pengelolaan Risiko (OPD)',
+      items: [
+        {
+          title: 'Pengelolaan Risiko',
+          icon: ShieldAlert,
+          requiredPermission: 'risiko.view',
+          items: [
+            {
+              title: 'Konteks Strategis',
+              badge: 'Sheet 2B',
+              url: '/perencanaan/konteks-strategis',
+              icon: Target,
+              requiredPermission: 'risiko.konteks',
+            },
+            {
+              title: 'Konteks Operasional (Renstra)',
+              badge: 'Sheet 2C',
+              url: '/perencanaan/renstra',
+              icon: FileSpreadsheet,
+              requiredPermission: 'risiko.konteks',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Keamanan & Sistem',
+      items: [
         {
           title: 'Log Audit Keamanan',
           url: '/audit-logs',
           icon: History,
           requiredPermission: 'audit.view',
         },
-      ],
-    },
-    {
-      title: 'Pengaturan',
-      items: [
         {
           title: 'Pengaturan Sistem',
           url: '/system-settings',

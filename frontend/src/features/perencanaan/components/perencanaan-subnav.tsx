@@ -1,10 +1,11 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { Calendar, GitFork, Layers } from 'lucide-react'
+import { Calendar, GitFork, Layers, Target, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function PerencanaanSubnav() {
   const location = useLocation()
   const pathname = location.pathname
+  const currentTab = (location.search as Record<string, any>)?.tab as string | undefined
 
   const navItems = [
     {
@@ -12,25 +13,56 @@ export function PerencanaanSubnav() {
       badge: 'Fitur 13',
       href: '/perencanaan/periode',
       icon: Calendar,
+      isActive: pathname.startsWith('/perencanaan/periode'),
     },
     {
-      title: 'Cascading Makro Bapperida',
-      badge: 'Fitur 14–17',
-      href: '/perencanaan/cascading',
+      title: 'Data Tujuan',
+      badge: 'Fitur 14',
+      href: '/perencanaan/cascading?tab=tujuan',
+      icon: Target,
+      isActive: pathname.startsWith('/perencanaan/cascading') && (!currentTab || currentTab === 'tujuan'),
+    },
+    {
+      title: 'Data Sasaran',
+      badge: 'Fitur 15',
+      href: '/perencanaan/cascading?tab=sasaran',
       icon: GitFork,
+      isActive: pathname.startsWith('/perencanaan/cascading') && currentTab === 'sasaran',
     },
     {
-      title: 'Renstra SKPD (Program & Kegiatan)',
-      badge: 'Sheet 2B & 2C',
+      title: 'Data IKU',
+      badge: 'Fitur 16',
+      href: '/perencanaan/cascading?tab=iku',
+      icon: Sparkles,
+      isActive: pathname.startsWith('/perencanaan/cascading') && currentTab === 'iku',
+    },
+    {
+      title: 'Data Indikator',
+      badge: 'Fitur 17',
+      href: '/perencanaan/cascading?tab=indikator',
+      icon: Layers,
+      isActive: pathname.startsWith('/perencanaan/cascading') && currentTab === 'indikator',
+    },
+    {
+      title: 'Konteks Strategis',
+      badge: 'Sheet 2B',
+      href: '/perencanaan/konteks-strategis',
+      icon: Target,
+      isActive: pathname.startsWith('/perencanaan/konteks-strategis'),
+    },
+    {
+      title: 'Konteks Operasional (Renstra)',
+      badge: 'Sheet 2C',
       href: '/perencanaan/renstra',
       icon: Layers,
+      isActive: pathname.startsWith('/perencanaan/renstra'),
     },
   ]
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-border/60 mb-5">
       {navItems.map((item) => {
-        const isActive = pathname.startsWith(item.href)
+        const isActive = item.isActive
         const Icon = item.icon
         return (
           <Link

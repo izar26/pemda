@@ -47,8 +47,8 @@ export function RenstraImportDialog({
   onSuccess,
 }: RenstraImportDialogProps) {
   const [file, setFile] = useState<File | null>(null)
-  const [selectedOpdId, setSelectedOpdId] = useState<number>(0)
-  const [selectedPeriodeId, setSelectedPeriodeId] = useState<number>(0)
+  const [selectedOpdId, setSelectedOpdId] = useState<string>('')
+  const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>('')
   const [uploading, setUploading] = useState<boolean>(false)
   const [result, setResult] = useState<RenstraImportResult | null>(null)
 
@@ -122,19 +122,25 @@ export function RenstraImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
-        <form onSubmit={handleUpload}>
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-              <DialogTitle>Impor Excel Renstra SKPD (Program / Kegiatan)</DialogTitle>
+      <DialogContent className="sm:max-w-xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl">
+        <DialogHeader className="px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+              <FileSpreadsheet className="h-5 w-5" />
             </div>
-            <DialogDescription>
-              Fitur Impor Berjenjang Hierarki (Indeksasi A, A.1, A.1.1) dari berkas Excel
-            </DialogDescription>
-          </DialogHeader>
+            <div className="min-w-0">
+              <DialogTitle className="text-base font-bold text-foreground">
+                Impor Excel Renstra SKPD (Program / Kegiatan)
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                Fitur Impor Berjenjang Hierarki (Indeksasi A, A.1, A.1.1) dari berkas Excel.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0 min-w-0">
+          <form id="form-renstra-import" onSubmit={handleUpload} className="space-y-4 w-full min-w-0">
             {/* Step 1: Download Template */}
             <div className="flex items-center justify-between p-3 rounded-lg border bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200">
               <div className="space-y-0.5">
@@ -150,19 +156,18 @@ export function RenstraImportDialog({
                 variant="outline"
                 size="sm"
                 onClick={handleDownloadTemplate}
-                className="gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300"
+                className="gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 text-xs"
               >
                 <Download className="h-3.5 w-3.5" /> Template
               </Button>
             </div>
 
-            {/* Context Parameter Selection */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">OPD Target Impor*</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-semibold">OPD Target Impor*</Label>
                 <SearchableSelect
-                  value={selectedOpdId ? String(selectedOpdId) : ''}
-                  onValueChange={(val) => setSelectedOpdId(Number(val))}
+                  value={selectedOpdId}
+                  onValueChange={(val) => setSelectedOpdId(val)}
                   options={opdOptions}
                   placeholder="Pilih Perangkat Daerah..."
                   searchPlaceholder="Cari nama atau singkatan OPD..."
@@ -171,19 +176,21 @@ export function RenstraImportDialog({
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs">Periode Penilaian*</Label>
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs font-semibold">Periode Penilaian*</Label>
                 <Select
-                  value={selectedPeriodeId ? String(selectedPeriodeId) : ''}
-                  onValueChange={(val) => setSelectedPeriodeId(Number(val))}
+                  value={selectedPeriodeId}
+                  onValueChange={(val) => setSelectedPeriodeId(val)}
                 >
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="w-full min-w-0 h-9 text-xs">
                     <SelectValue placeholder="Pilih Periode" />
                   </SelectTrigger>
                   <SelectContent>
                     {periodes.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.tahun_penilaian} ({p.periode_penilaian})
+                      <SelectItem key={p.id} value={String(p.id)} className="text-xs">
+                        <span className="truncate block max-w-[380px]">
+                          {p.tahun_penilaian} ({p.periode_penilaian})
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -192,8 +199,8 @@ export function RenstraImportDialog({
             </div>
 
             {/* File Drop / Selector */}
-            <div className="space-y-1.5">
-              <Label className="text-xs">Pilih Berkas Excel (.xlsx, .xls)*</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs font-semibold">Pilih Berkas Excel (.xlsx, .xls)*</Label>
               <div className="border-2 border-dashed rounded-lg p-4 text-center border-slate-300 dark:border-slate-700 hover:border-emerald-500 transition-colors">
                 <input
                   type="file"
@@ -209,7 +216,7 @@ export function RenstraImportDialog({
                       <span className="font-semibold text-emerald-600">{file.name}</span>
                     ) : (
                       <span>
-                        Klik untuk memilih berkas Excel atau <strong className="text-primary">Drag & Drop</strong>
+                        Klik untuk memilih berkas Excel atau <strong className="text-primary">Drag &amp; Drop</strong>
                       </span>
                     )}
                   </div>
@@ -224,7 +231,7 @@ export function RenstraImportDialog({
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   <span className="text-xs font-semibold">Hasil Pengolahan Impor:</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                     Program: {result.imported.programs}
                   </Badge>
@@ -250,22 +257,30 @@ export function RenstraImportDialog({
                 )}
               </div>
             )}
-          </div>
+          </form>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Tutup
-            </Button>
-            <Button
-              type="submit"
-              disabled={uploading || !file || !selectedOpdId || !selectedPeriodeId}
-              className="bg-emerald-600 hover:bg-emerald-700 gap-1"
-            >
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Memproses Excel...' : 'Mulai Impor Data'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="text-xs h-9"
+          >
+            Tutup
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            form="form-renstra-import"
+            disabled={uploading || !file || !selectedOpdId || !selectedPeriodeId}
+            className="bg-emerald-600 hover:bg-emerald-700 text-xs h-9 min-w-[140px] gap-1.5"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            {uploading ? 'Memproses Excel...' : 'Mulai Impor Data'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

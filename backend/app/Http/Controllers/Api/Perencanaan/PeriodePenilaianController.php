@@ -48,6 +48,35 @@ class PeriodePenilaianController extends Controller
     }
 
     /**
+     * Normalize payload for PeriodePenilaian.
+     */
+    protected function normalizePeriodePayload(Request $request): array
+    {
+        $data = $request->all();
+
+        // Support aliases
+        if (isset($data['periode_penilaian']) && !isset($data['periode'])) {
+            $data['periode'] = $data['periode_penilaian'];
+        }
+        if (isset($data['tahun_penilaian']) && !isset($data['tahun'])) {
+            $data['tahun'] = (int) $data['tahun_penilaian'];
+        }
+        if (isset($data['keterangan']) && !isset($data['catatan'])) {
+            $data['catatan'] = $data['keterangan'];
+        }
+        if (isset($data['status'])) {
+            $data['status'] = match ($data['status']) {
+                'Aktif', 'active' => 'active',
+                'Tidak Aktif', 'inactive' => 'inactive',
+                'Arsip', 'archived' => 'archived',
+                default => 'inactive',
+            };
+        }
+
+        return $data;
+    }
+
+    /**
      * Store a new Periode Penilaian (Bapperida).
      */
     public function store(Request $request): JsonResponse
@@ -55,6 +84,8 @@ class PeriodePenilaianController extends Controller
         if (!$request->user()->can('perencanaan.periode')) {
             abort(403, 'Hanya Bapperida / Admin yang berhak menambahkan periode penilaian.');
         }
+
+        $request->merge($this->normalizePeriodePayload($request));
 
         $validated = $request->validate([
             'periode' => ['required', 'string', 'max:50'],
@@ -88,6 +119,8 @@ class PeriodePenilaianController extends Controller
             abort(403, 'Hanya Bapperida / Admin yang berhak mengubah periode penilaian.');
         }
 
+        $request->merge($this->normalizePeriodePayload($request));
+
         $validated = $request->validate([
             'periode' => ['required', 'string', 'max:50'],
             'tahun' => ['required', 'integer', 'min:2020', 'max:2050'],
@@ -109,6 +142,36 @@ class PeriodePenilaianController extends Controller
                 'data' => $periode,
             ]);
         });
+    }
+
+    /**
+     * Update status of a Periode Penilaian.
+     */
+    public function updateStatus(Request $request, PeriodePenilaian $periode): JsonResponse
+    {
+        if (!$request->user()->can('perencanaan.periode')) {
+            abort(403, 'Hanya Bapperida / Admin yang berhak mengubah status periode penilaian.');
+        }
+
+        $statusInput = $request->input('status', 'active');
+        $statusDb = match ($statusInput) {
+            'Aktif', 'active' => 'active',
+            'Tidak Aktif', 'inactive' => 'inactive',
+            'Arsip', 'archived' => 'archived',
+            default => 'inactive',
+        };
+
+        DB::transaction(function () use ($periode, $statusDb) {
+            if ($statusDb === 'active') {
+                PeriodePenilaian::where('status', 'active')->update(['status' => 'inactive']);
+            }
+            $periode->update(['status' => $statusDb]);
+        });
+
+        return response()->json([
+            'message' => "Status periode berhasil diubah menjadi {$statusInput}.",
+            'data' => $periode->fresh(),
+        ]);
     }
 
     /**

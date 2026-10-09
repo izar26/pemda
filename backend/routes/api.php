@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ExportJobController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\Perencanaan\CascadingController;
+use App\Http\Controllers\Api\Perencanaan\KonteksRisikoController;
 use App\Http\Controllers\Api\Perencanaan\PeriodePenilaianController;
 use App\Http\Controllers\Api\Perencanaan\RenstraController;
 use App\Http\Controllers\Api\Perencanaan\RenstraImportExportController;
@@ -117,10 +118,12 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::post('/periode', [PeriodePenilaianController::class, 'store']);
         Route::put('/periode/{periode}', [PeriodePenilaianController::class, 'update']);
         Route::patch('/periode/{periode}/activate', [PeriodePenilaianController::class, 'activate']);
+        Route::patch('/periode/{periode}/status', [PeriodePenilaianController::class, 'updateStatus']);
         Route::delete('/periode/{periode}', [PeriodePenilaianController::class, 'destroy']);
 
         // Fitur 14-17: Cascading Makro 3 Tingkat (Tujuan -> Sasaran -> Indikator)
         Route::get('/cascading', [CascadingController::class, 'index']);
+        Route::post('/cascading/clone', [CascadingController::class, 'clone']);
         Route::post('/cascading/tujuan', [CascadingController::class, 'storeTujuan']);
         Route::put('/cascading/tujuan/{tujuan}', [CascadingController::class, 'updateTujuan']);
         Route::delete('/cascading/tujuan/{tujuan}', [CascadingController::class, 'destroyTujuan']);
@@ -133,7 +136,11 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::put('/cascading/indikator/{indikator}', [CascadingController::class, 'updateIndikator']);
         Route::delete('/cascading/indikator/{indikator}', [CascadingController::class, 'destroyIndikator']);
 
-        // Sheet 2B & 2C: Renstra SKPD Program, Kegiatan, Sub Kegiatan (OPD)
+        // Sheet 2B: Penetapan Konteks Risiko Strategis OPD (Fitur 26)
+        Route::get('/konteks-strategis', [KonteksRisikoController::class, 'show']);
+        Route::post('/konteks-strategis', [KonteksRisikoController::class, 'store']);
+
+        // Sheet 2C: Renstra SKPD Program, Kegiatan, Sub Kegiatan (OPD)
         Route::get('/renstra/tree', [RenstraController::class, 'tree']);
         Route::post('/renstra/program', [RenstraController::class, 'storeProgram']);
         Route::put('/renstra/program/{program}', [RenstraController::class, 'updateProgram']);

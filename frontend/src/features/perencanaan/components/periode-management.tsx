@@ -7,14 +7,14 @@ import {
   CheckCircle2,
   Clock,
   Archive,
-  Search,
   RefreshCw,
-  AlertCircle,
-  X,
-  Layers,
-  Filter,
+  Search as SearchIcon,
+  Loader2,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -47,7 +54,9 @@ import { Header } from '@/components/layout/header'
 import { PageHeader } from '@/components/layout/page-header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { PerencanaanSubnav } from './perencanaan-subnav'
 import { perencanaanService } from '@/services/perencanaan-service'
 import type { PeriodePenilaian, PeriodeStatus, PeriodePayload } from '@/types/perencanaan'
@@ -57,6 +66,10 @@ export function PeriodeManagement() {
   const [loading, setLoading] = useState<boolean>(true)
   const [search, setSearch] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const pageSize = 10
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
@@ -74,7 +87,7 @@ export function PeriodeManagement() {
   })
 
   // Delete State
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
   const fetchPeriodes = useCallback(async () => {
@@ -141,13 +154,14 @@ export function PeriodeManagement() {
     }
   }
 
-  const handleToggleStatus = async (id: number, newStatus: PeriodeStatus) => {
+  const handleToggleStatus = async (id: string, newStatus: PeriodeStatus) => {
     try {
       await perencanaanService.togglePeriodeStatus(id, newStatus)
-      toast.success(`Status periode diubah menjadi ${newStatus}.`)
+      toast.success(`Status periode berhasil diubah menjadi ${newStatus}.`)
       fetchPeriodes()
-    } catch {
-      toast.error('Gagal mengubah status periode.')
+    } catch (err: unknown) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Gagal mengubah status.'
+      toast.error(errorMsg)
     }
   }
 
@@ -159,46 +173,67 @@ export function PeriodeManagement() {
       toast.success('Periode penilaian berhasil dihapus.')
       setDeleteId(null)
       fetchPeriodes()
-    } catch {
-      toast.error('Periode penilaian tidak dapat dihapus.')
+    } catch (err: unknown) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Gagal menghapus periode.'
+      toast.error(errorMsg)
     } finally {
       setIsDeleting(false)
     }
   }
 
-  // Optimize filter calculation with useMemo to prevent unnecessary lag
   const filteredPeriodes = useMemo(() => {
     return periodes.filter((p) => {
-      const searchLower = search.toLowerCase()
+      const s = search.toLowerCase()
       const matchesSearch =
-        p.periode_penilaian.toLowerCase().includes(searchLower) ||
-        String(p.tahun_penilaian).includes(searchLower) ||
-        (p.keterangan && p.keterangan.toLowerCase().includes(searchLower))
-      const matchesStatus = statusFilter === 'all' || p.status === statusFilter
+        p.periode_penilaian.toLowerCase().includes(s) ||
+        String(p.tahun_penilaian).includes(s) ||
+        (p.keterangan && p.keterangan.toLowerCase().includes(s))
+      const matchesStatus =
+        statusFilter === 'all' ||
+        p.status === statusFilter ||
+        (statusFilter === 'Aktif' && p.status === 'active') ||
+        (statusFilter === 'Tidak Aktif' && p.status === 'inactive') ||
+        (statusFilter === 'Arsip' && p.status === 'archived')
       return matchesSearch && matchesStatus
     })
   }, [periodes, search, statusFilter])
 
-  const activePeriode = useMemo(() => periodes.find((p) => p.status === 'Aktif'), [periodes])
+  const activePeriode = useMemo(
+    () => periodes.find((p) => p.status === 'Aktif' || p.status === 'active'),
+    [periodes]
+  )
+
+  const inactiveCount = useMemo(
+    () => periodes.filter((p) => p.status === 'Tidak Aktif' || p.status === 'inactive').length,
+    [periodes]
+  )
+
+  const archivedCount = useMemo(
+    () => periodes.filter((p) => p.status === 'Arsip' || p.status === 'archived').length,
+    [periodes]
+  )
 
   const getStatusBadge = (status: PeriodeStatus) => {
     switch (status) {
       case 'Aktif':
+      case 'active':
         return (
           <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25 border-emerald-300 dark:border-emerald-800 font-medium gap-1 px-2.5 py-0.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Aktif Global
+            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /> Aktif Global
           </Badge>
         )
       case 'Tidak Aktif':
+      case 'inactive':
         return (
           <Badge variant="outline" className="text-amber-700 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 gap-1 px-2.5 py-0.5">
-            <Clock className="h-3.5 w-3.5 text-amber-600" /> Tidak Aktif
+            <Clock className="h-3 w-3 text-amber-600" /> Tidak Aktif
           </Badge>
         )
       case 'Arsip':
+      case 'archived':
         return (
           <Badge variant="secondary" className="text-muted-foreground gap-1 px-2.5 py-0.5">
-            <Archive className="h-3.5 w-3.5" /> Tersimpan (Arsip)
+            <Archive className="h-3 w-3" /> Tersimpan (Arsip)
           </Badge>
         )
       default:
@@ -206,267 +241,305 @@ export function PeriodeManagement() {
     }
   }
 
+  // KPI STATS CARDS: Konsisten dengan Manajemen Pegawai
+  const kpiItems: KpiStatItem[] = [
+    {
+      title: 'Periode Aktif Global',
+      value: activePeriode ? activePeriode.periode_penilaian : 'Belum Ada',
+      icon: CheckCircle2,
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-600 dark:text-emerald-400',
+      subtitle: activePeriode ? `Tahun ${activePeriode.tahun_penilaian}` : 'Aktifkan 1 periode',
+    },
+    {
+      title: 'Total Siklus Terdaftar',
+      value: periodes.length,
+      icon: Calendar,
+      color: 'bg-primary/10 text-primary',
+      subtitle: 'Siklus RPJMD / Renstra',
+    },
+    {
+      title: 'Siklus Nonaktif',
+      value: inactiveCount,
+      icon: Clock,
+      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      valueColor: 'text-amber-600 dark:text-amber-400',
+      subtitle: 'Menunggu Pengaktifan',
+    },
+    {
+      title: 'Arsip Historis',
+      value: archivedCount,
+      icon: Archive,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      valueColor: 'text-blue-600 dark:text-blue-400',
+      subtitle: 'Tersimpan Permanen',
+    },
+  ]
+
+  // Pagination Helper
+  const paginatedItems = filteredPeriodes.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+
+  const totalPages = Math.ceil(filteredPeriodes.length / pageSize) || 1
+
   return (
     <>
       <Header fixed>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold tracking-tight">Perencanaan & Cascading</h1>
-          <span className="text-muted-foreground">/</span>
-          <span className="text-sm font-medium text-muted-foreground">Periode Penilaian</span>
-        </div>
-        <div className="ml-auto flex items-center space-x-2">
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
+        <Search className="me-auto" />
+        <ThemeSwitch />
+        <ProfileDropdown />
       </Header>
 
-      <Main>
+      <Main className="flex flex-1 flex-col gap-5 sm:gap-6">
         <PerencanaanSubnav />
-        <div className="mb-6 space-y-6">
-          {/* Sticky Page Header Title & Action Bar */}
-          <PageHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
-                  Fitur No. 13
-                </Badge>
-                <h2 className="text-2xl font-bold tracking-tight">Form Penentuan Periode Penilaian</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Master data siklus 5 tahunan & jadwal aktif penilaian risiko lingkungan Pemda (Role Bapperida)
-              </p>
+
+        {/* Page Header (Sticky, Konsisten dengan Users) */}
+        <PageHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-0.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-mono">
+                Fitur 13
+              </Badge>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                Form Penentuan Periode Penilaian
+              </h2>
             </div>
-            <Button onClick={handleOpenCreate} className="gap-2 shadow-sm transition-transform active:scale-95">
-              <Plus className="h-4 w-4" /> Periode Penilaian Baru
-            </Button>
-          </PageHeader>
-
-          {/* Key Metric Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="relative overflow-hidden border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-all duration-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Periode Penilaian Aktif
-                </CardTitle>
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-950/50 rounded-full text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {activePeriode ? `${activePeriode.tahun_penilaian}` : 'Belum Set'}
-                </div>
-                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                  <Badge variant="secondary" className="font-mono text-[11px] px-1.5 py-0">
-                    {activePeriode ? activePeriode.periode_penilaian : 'N/A'}
-                  </Badge>
-                  <span>
-                    {activePeriode
-                      ? `${activePeriode.tanggal_mulai} s.d. ${activePeriode.tanggal_berakhir}`
-                      : 'Aktifkan 1 periode'}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-all duration-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Total Siklus Terdaftar
-                </CardTitle>
-                <div className="p-2 bg-blue-100 dark:bg-blue-950/50 rounded-full text-blue-600">
-                  <Layers className="h-4 w-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {periodes.length} <span className="text-sm font-normal text-muted-foreground">Periode</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Siklus Perencanaan 5 Tahunan RPJMD / Renstra
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-all duration-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Aturan Validasi Sistem
-                </CardTitle>
-                <div className="p-2 bg-amber-100 dark:bg-amber-950/50 rounded-full text-amber-600">
-                  <AlertCircle className="h-4 w-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm font-bold text-amber-800 dark:text-amber-400">
-                  Strict Single Active Period
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Hanya 1 periode &amp; tahun bertanda &quot;Aktif&quot; yang dijadikan rujukan input risiko.
-                </p>
-              </CardContent>
-            </Card>
+            <p className="text-xs text-muted-foreground">
+              Master data siklus 5 tahunan &amp; jadwal aktif penilaian risiko lingkungan Pemda (Wewenang Bapperida).
+            </p>
           </div>
 
-          {/* Filter & Table Card */}
-          <Card className="shadow-sm border">
-            <CardHeader className="py-4 border-b bg-slate-50/50 dark:bg-slate-900/50">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-base font-semibold">Tabel Data Periode Penilaian</CardTitle>
-                  <CardDescription className="text-xs">
-                    Kelola siklus 5 tahunan, rentang tanggal kalender, dan kontrol status aktif
-                  </CardDescription>
-                </div>
+          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 text-xs"
+              onClick={fetchPeriodes}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Segarkan
+            </Button>
+            <Button size="sm" className="h-9 text-xs gap-1.5" onClick={handleOpenCreate}>
+              <Plus className="h-4 w-4" />
+              Periode Penilaian Baru
+            </Button>
+          </div>
+        </PageHeader>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative w-full sm:w-[240px]">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Cari rentang / tahun..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-8 h-9 text-xs"
-                    />
-                    {search && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSearch('')}
-                        className="absolute right-1 top-1 h-7 w-7 text-muted-foreground"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
+        {/* Compact KPI Stats Cards: Konsisten dengan Manajemen Pegawai */}
+        <KpiStatsCards items={kpiItems} isLoading={loading} />
 
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-9 w-[140px] text-xs">
-                      <Filter className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Semua Status</SelectItem>
-                      <SelectItem value="Aktif">Aktif</SelectItem>
-                      <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-                      <SelectItem value="Arsip">Arsip</SelectItem>
-                    </SelectContent>
-                  </Select>
+        {/* Toolbar Filter */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-1 items-center gap-2 flex-wrap">
+            <div className="relative w-full sm:w-72">
+              <SearchIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Cari rentang periode atau tahun..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="h-8 text-xs pl-8"
+              />
+            </div>
 
-                  <Button variant="outline" size="sm" onClick={fetchPeriodes} className="h-9 gap-1 text-xs">
-                    <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val)
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="h-8 text-xs w-full sm:w-[160px]">
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Semua Status</SelectItem>
+                <SelectItem value="Aktif" className="text-xs">Aktif Global</SelectItem>
+                <SelectItem value="Tidak Aktif" className="text-xs">Tidak Aktif</SelectItem>
+                <SelectItem value="Arsip" className="text-xs">Arsip</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {(search || statusFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch('')
+                  setStatusFilter('all')
+                }}
+                className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Reset Filter
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Loading State: Konsisten dengan Users Table */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-2 rounded-lg border bg-card/50">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Memuat data periode penilaian...</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-md border bg-card shadow-2xs">
+            <Table>
+              <TableHeader>
+                <TableRow className="group/row bg-muted/30">
+                  <TableHead className="w-16 font-bold text-xs">ID</TableHead>
+                  <TableHead className="font-bold text-xs">Periode Penilaian (5 Thn)</TableHead>
+                  <TableHead className="w-32 font-bold text-xs text-center">Tahun Penilaian</TableHead>
+                  <TableHead className="w-48 font-bold text-xs">Rentang Jadwal</TableHead>
+                  <TableHead className="w-36 font-bold text-xs text-center">Status</TableHead>
+                  <TableHead className="font-bold text-xs">Keterangan</TableHead>
+                  <TableHead className="w-16 font-bold text-xs text-end">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPeriodes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground text-sm">
+                      Tidak ada periode penilaian yang sesuai dengan kriteria pencarian.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedItems.map((p) => (
+                    <TableRow key={p.id} className="group/row hover:bg-muted/40 transition-colors">
+                      <TableCell className="font-mono text-xs font-semibold text-muted-foreground">
+                        #{p.id}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex items-center gap-2.5 py-1">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-xs text-primary">
+                            <Calendar className="h-4 w-4" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-xs text-foreground leading-tight truncate">
+                              Periode {p.periode_penilaian}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                              Siklus Penilaian Pemda
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-center font-mono font-semibold">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {p.tahun_penilaian}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">
+                        {p.tanggal_mulai} <span className="text-foreground">s.d.</span> {p.tanggal_berakhir}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {getStatusBadge(p.status)}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                        {p.keterangan || '-'}
+                      </TableCell>
+                      <TableCell className="text-end">
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="flex h-8 w-8 p-0 data-[state=open]:bg-muted">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44 text-xs">
+                            {p.status !== 'Aktif' && p.status !== 'active' && (
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(p.id, 'Aktif')}
+                                className="text-emerald-600 focus:text-emerald-700"
+                              >
+                                <ShieldCheck className="h-3.5 w-3.5 mr-2" />
+                                Set Aktif Global
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => handleOpenEdit(p)}>
+                              <Pencil className="h-3.5 w-3.5 mr-2 text-amber-600" />
+                              Edit Periode
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeleteId(p.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-2" />
+                              Hapus Periode
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+
+            {filteredPeriodes.length > pageSize && (
+              <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20 text-xs">
+                <span className="text-muted-foreground">
+                  Menampilkan {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredPeriodes.length)} dari {filteredPeriodes.length} data
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Sebelumnya
+                  </Button>
+                  <span className="px-2 font-mono text-muted-foreground">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  >
+                    Berikutnya <ChevronRight className="h-3.5 w-3.5 ml-1" />
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
-                  <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-                  <span className="text-xs font-medium">Memuat data periode penilaian...</span>
-                </div>
-              ) : filteredPeriodes.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground space-y-2">
-                  <Calendar className="mx-auto h-10 w-10 text-muted-foreground/30" />
-                  <p className="font-semibold text-sm">Tidak Ada Periode Penilaian</p>
-                  <p className="text-xs text-muted-foreground">
-                    Coba sesuaikan kata kunci pencarian atau buat periode baru.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader className="bg-slate-100/70 dark:bg-slate-800/60">
-                      <TableRow>
-                        <TableHead className="w-[70px] text-xs font-semibold">ID</TableHead>
-                        <TableHead className="text-xs font-semibold">PERIODE PENILAIAN</TableHead>
-                        <TableHead className="text-xs font-semibold">TAHUN PENILAIAN</TableHead>
-                        <TableHead className="text-xs font-semibold">TANGGAL MULAI</TableHead>
-                        <TableHead className="text-xs font-semibold">TANGGAL BERAKHIR</TableHead>
-                        <TableHead className="text-xs font-semibold">STATUS</TableHead>
-                        <TableHead className="text-xs font-semibold">KETERANGAN</TableHead>
-                        <TableHead className="text-right text-xs font-semibold w-[140px]">AKSI</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPeriodes.map((p) => (
-                        <TableRow key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                          <TableCell className="font-mono text-xs font-medium text-muted-foreground">
-                            #{p.id}
-                          </TableCell>
-                          <TableCell className="font-bold text-sm">
-                            <Badge variant="outline" className="font-mono font-bold bg-slate-50 dark:bg-slate-900">
-                              {p.periode_penilaian}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-semibold text-sm">{p.tahun_penilaian}</TableCell>
-                          <TableCell className="text-xs font-mono">{p.tanggal_mulai}</TableCell>
-                          <TableCell className="text-xs font-mono">{p.tanggal_berakhir}</TableCell>
-                          <TableCell>{getStatusBadge(p.status)}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate">
-                            {p.keterangan || '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end items-center gap-1">
-                              {p.status !== 'Aktif' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleToggleStatus(p.id, 'Aktif')}
-                                  title="Set sebagai Periode Aktif Global"
-                                  className="h-7 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2"
-                                >
-                                  Aktifkan
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                                onClick={() => handleOpenEdit(p)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                onClick={() => setDeleteId(p.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </div>
+        )}
       </Main>
 
       {/* Form Dialog */}
+      {/* Dialog Form Tambah / Edit Periode */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="h-5 w-5 text-primary" />
-                {editingItem ? 'Edit Periode Penilaian' : 'Tambah Periode Penilaian Baru'}
-              </DialogTitle>
-              <DialogDescription>
-                Tentukan rentang siklus 5 tahunan dan tahun spesifik penilaian risiko Pemda.
-              </DialogDescription>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-base font-bold text-foreground">
+                  {editingItem ? 'Edit Periode Penilaian' : 'Tambah Periode Penilaian Baru'}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Tentukan rentang siklus 5 tahunan dan tahun spesifik penilaian risiko Pemda.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+          <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0 min-w-0">
+            <form id="form-periode" onSubmit={handleSubmit} className="space-y-4 w-full min-w-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5 min-w-0">
                   <Label htmlFor="periode_penilaian" className="text-xs font-semibold">
                     Periode Penilaian (5 Thn)*
                   </Label>
@@ -477,11 +550,11 @@ export function PeriodeManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, periode_penilaian: e.target.value })
                     }
-                    className="text-xs font-medium"
+                    className="text-xs h-9 font-medium"
                     required
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <Label htmlFor="tahun_penilaian" className="text-xs font-semibold">
                     Tahun Penilaian*
                   </Label>
@@ -493,14 +566,14 @@ export function PeriodeManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, tahun_penilaian: Number(e.target.value) })
                     }
-                    className="text-xs font-medium"
+                    className="text-xs h-9 font-medium"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5 min-w-0">
                   <Label htmlFor="tanggal_mulai" className="text-xs font-semibold">
                     Tanggal Mulai*
                   </Label>
@@ -511,11 +584,11 @@ export function PeriodeManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, tanggal_mulai: e.target.value })
                     }
-                    className="text-xs"
+                    className="text-xs h-9"
                     required
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <Label htmlFor="tanggal_berakhir" className="text-xs font-semibold">
                     Tanggal Berakhir*
                   </Label>
@@ -526,13 +599,13 @@ export function PeriodeManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, tanggal_berakhir: e.target.value })
                     }
-                    className="text-xs"
+                    className="text-xs h-9"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <Label htmlFor="status" className="text-xs font-semibold">
                   Status Periode Penilaian*
                 </Label>
@@ -540,13 +613,13 @@ export function PeriodeManagement() {
                   value={formData.status}
                   onValueChange={(val: PeriodeStatus) => setFormData({ ...formData, status: val })}
                 >
-                  <SelectTrigger id="status" className="text-xs">
+                  <SelectTrigger id="status" className="w-full min-w-0 text-xs h-9">
                     <SelectValue placeholder="Pilih Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Aktif">Aktif (Global Penilaian Pemda)</SelectItem>
-                    <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-                    <SelectItem value="Arsip">Arsip (Arsip Historis)</SelectItem>
+                    <SelectItem value="Aktif" className="text-xs">Aktif (Global Penilaian Pemda)</SelectItem>
+                    <SelectItem value="Tidak Aktif" className="text-xs">Tidak Aktif</SelectItem>
+                    <SelectItem value="Arsip" className="text-xs">Arsip (Arsip Historis)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground italic">
@@ -554,7 +627,7 @@ export function PeriodeManagement() {
                 </p>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <Label htmlFor="keterangan" className="text-xs font-semibold">
                   Keterangan Tambahan
                 </Label>
@@ -563,47 +636,82 @@ export function PeriodeManagement() {
                   placeholder="Catatan mengenai penetapan siklus..."
                   value={formData.keterangan || ''}
                   onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
-                  className="text-xs"
+                  className="text-xs h-9"
                 />
               </div>
-            </div>
+            </form>
+          </div>
 
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} className="text-xs">
-                Batal
-              </Button>
-              <Button type="submit" disabled={submitting} className="text-xs gap-1">
-                {submitting ? (
-                  <>
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Menyimpan...
-                  </>
-                ) : editingItem ? (
-                  'Simpan Perubahan'
-                ) : (
-                  'Buat Periode'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+          <DialogFooter className="px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              size="sm"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={submitting}
+              className="text-xs h-9"
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              form="form-periode"
+              disabled={submitting}
+              className="text-xs h-9 min-w-[120px] gap-1"
+            >
+              {submitting ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Menyimpan...
+                </>
+              ) : editingItem ? (
+                'Simpan Perubahan'
+              ) : (
+                'Buat Periode'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="text-rose-600 flex items-center gap-2">
-              <Trash2 className="h-5 w-5" /> Konfirmasi Hapus Periode
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Apakah Anda yakin ingin menghapus data Periode Penilaian ini? Semua data sasaran dan program yang terhubung pada periode ini akan terdampak.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-base font-bold text-rose-600">
+                  Konfirmasi Hapus Periode
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Tindakan ini permanen dan tidak dapat dibatalkan.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteId(null)} className="text-xs">
+          <div className="px-6 py-4 text-xs text-muted-foreground leading-relaxed">
+            Apakah Anda yakin ingin menghapus data Periode Penilaian ini? Semua data sasaran dan program yang terhubung pada periode ini akan terdampak.
+          </div>
+          <DialogFooter className="px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteId(null)}
+              disabled={isDeleting}
+              className="text-xs h-9"
+            >
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="text-xs">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="text-xs h-9 min-w-[120px]"
+            >
               {isDeleting ? 'Menghapus...' : 'Hapus Periode'}
             </Button>
           </DialogFooter>

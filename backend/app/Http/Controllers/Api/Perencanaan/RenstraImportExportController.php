@@ -163,6 +163,10 @@ class RenstraImportExportController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mengimpor data Renstra SKPD.');
         }
 
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'],
             'opd_id' => ['required', 'uuid', 'exists:opds,id'],

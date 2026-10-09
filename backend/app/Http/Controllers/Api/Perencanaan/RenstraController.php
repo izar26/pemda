@@ -25,7 +25,7 @@ class RenstraController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data Renstra SKPD.');
         }
 
-        $periodeId = $request->input('periode_penilaian_id');
+        $periodeId = $request->input('periode_penilaian_id') ?? $request->input('periode_id');
         if (!$periodeId) {
             $activePeriode = PeriodePenilaian::where('status', 'active')->first();
             $periodeId = $activePeriode?->id;
@@ -63,7 +63,7 @@ class RenstraController extends Controller
             });
         }
 
-        $programs = $query->orderBy('kode', 'asc')->orderBy('urutan', 'asc')->get();
+        $programs = $query->orderBy('urutan', 'asc')->orderBy('id', 'asc')->get();
 
         return response()->json([
             'data' => $programs,
@@ -78,9 +78,14 @@ class RenstraController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menginput Program Renstra.');
         }
 
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
         $opdId = $request->input('opd_id');
         if (!$user->hasRole('Superadmin') && $user->opd_id) {
             $opdId = $user->opd_id;
+            $request->merge(['opd_id' => $opdId]);
         }
 
         $validated = $request->validate([
@@ -93,10 +98,6 @@ class RenstraController extends Controller
             'satuan' => ['nullable', 'string', 'max:50'],
             'urutan' => ['nullable', 'integer'],
         ]);
-
-        if ($opdId) {
-            $validated['opd_id'] = $opdId;
-        }
 
         $validated['urutan'] = $validated['urutan'] ?? ((int) RenstraProgram::where('opd_id', $validated['opd_id'])->max('urutan')) + 1;
 
@@ -121,15 +122,15 @@ class RenstraController extends Controller
         }
 
         $validated = $request->validate([
-            'kode' => ['required', 'string', 'max:50'],
-            'nama' => ['required', 'string', 'max:255'],
+            'kode' => ['sometimes', 'required', 'string', 'max:50'],
+            'nama' => ['sometimes', 'required', 'string', 'max:255'],
             'indikator' => ['nullable', 'string'],
             'target' => ['nullable', 'string', 'max:100'],
             'satuan' => ['nullable', 'string', 'max:50'],
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $program->update($validated);
+        $program->update(array_filter($validated, fn($val) => $val !== null));
         $program->load(['opd', 'kegiatans.subKegiatans']);
 
         return response()->json([
@@ -164,9 +165,30 @@ class RenstraController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menginput Kegiatan Renstra.');
         }
 
+        // Support alias program_id -> renstra_program_id
+        if ($request->has('program_id') && !$request->has('renstra_program_id')) {
+            $request->merge(['renstra_program_id' => $request->input('program_id')]);
+        }
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
+        $programId = $request->input('renstra_program_id');
+        $parentProgram = RenstraProgram::find($programId);
+
+        if ($parentProgram) {
+            if (!$request->filled('periode_penilaian_id')) {
+                $request->merge(['periode_penilaian_id' => $parentProgram->periode_penilaian_id]);
+            }
+            if (!$request->filled('opd_id')) {
+                $request->merge(['opd_id' => $parentProgram->opd_id]);
+            }
+        }
+
         $opdId = $request->input('opd_id');
         if (!$user->hasRole('Superadmin') && $user->opd_id) {
             $opdId = $user->opd_id;
+            $request->merge(['opd_id' => $opdId]);
         }
 
         $validated = $request->validate([
@@ -180,10 +202,6 @@ class RenstraController extends Controller
             'satuan' => ['nullable', 'string', 'max:50'],
             'urutan' => ['nullable', 'integer'],
         ]);
-
-        if ($opdId) {
-            $validated['opd_id'] = $opdId;
-        }
 
         $validated['urutan'] = $validated['urutan'] ?? ((int) RenstraKegiatan::where('renstra_program_id', $validated['renstra_program_id'])->max('urutan')) + 1;
 
@@ -208,15 +226,15 @@ class RenstraController extends Controller
         }
 
         $validated = $request->validate([
-            'kode' => ['required', 'string', 'max:50'],
-            'nama' => ['required', 'string', 'max:255'],
+            'kode' => ['sometimes', 'required', 'string', 'max:50'],
+            'nama' => ['sometimes', 'required', 'string', 'max:255'],
             'indikator' => ['nullable', 'string'],
             'target' => ['nullable', 'string', 'max:100'],
             'satuan' => ['nullable', 'string', 'max:50'],
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $kegiatan->update($validated);
+        $kegiatan->update(array_filter($validated, fn($val) => $val !== null));
         $kegiatan->load('subKegiatans');
 
         return response()->json([
@@ -251,9 +269,30 @@ class RenstraController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menginput Sub-Kegiatan Renstra.');
         }
 
+        // Support alias kegiatan_id -> renstra_kegiatan_id
+        if ($request->has('kegiatan_id') && !$request->has('renstra_kegiatan_id')) {
+            $request->merge(['renstra_kegiatan_id' => $request->input('kegiatan_id')]);
+        }
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
+        $kegiatanId = $request->input('renstra_kegiatan_id');
+        $parentKegiatan = RenstraKegiatan::find($kegiatanId);
+
+        if ($parentKegiatan) {
+            if (!$request->filled('periode_penilaian_id')) {
+                $request->merge(['periode_penilaian_id' => $parentKegiatan->periode_penilaian_id]);
+            }
+            if (!$request->filled('opd_id')) {
+                $request->merge(['opd_id' => $parentKegiatan->opd_id]);
+            }
+        }
+
         $opdId = $request->input('opd_id');
         if (!$user->hasRole('Superadmin') && $user->opd_id) {
             $opdId = $user->opd_id;
+            $request->merge(['opd_id' => $opdId]);
         }
 
         $validated = $request->validate([
@@ -268,10 +307,6 @@ class RenstraController extends Controller
             'sipd_id' => ['nullable', 'string', 'max:100'],
             'urutan' => ['nullable', 'integer'],
         ]);
-
-        if ($opdId) {
-            $validated['opd_id'] = $opdId;
-        }
 
         $validated['urutan'] = $validated['urutan'] ?? ((int) RenstraSubKegiatan::where('renstra_kegiatan_id', $validated['renstra_kegiatan_id'])->max('urutan')) + 1;
 
@@ -295,8 +330,8 @@ class RenstraController extends Controller
         }
 
         $validated = $request->validate([
-            'kode' => ['required', 'string', 'max:50'],
-            'nama' => ['required', 'string', 'max:255'],
+            'kode' => ['sometimes', 'required', 'string', 'max:50'],
+            'nama' => ['sometimes', 'required', 'string', 'max:255'],
             'indikator' => ['nullable', 'string'],
             'target' => ['nullable', 'string', 'max:100'],
             'satuan' => ['nullable', 'string', 'max:50'],
@@ -304,7 +339,7 @@ class RenstraController extends Controller
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $subKegiatan->update($validated);
+        $subKegiatan->update(array_filter($validated, fn($val) => $val !== null));
 
         return response()->json([
             'message' => 'Sub-Kegiatan Renstra berhasil diperbarui.',

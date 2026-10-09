@@ -25,7 +25,7 @@ class CascadingController extends Controller
         }
 
         $opdId = $request->input('opd_id');
-        $periodeId = $request->input('periode_penilaian_id');
+        $periodeId = $request->input('periode_penilaian_id') ?? $request->input('periode_id');
 
         if (!$periodeId) {
             $activePeriode = PeriodePenilaian::where('status', 'active')->first();
@@ -70,6 +70,18 @@ class CascadingController extends Controller
             abort(403, 'Hanya Bapperida / Admin yang berhak menambahkan Tujuan Kinerja.');
         }
 
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
+        $opdId = $request->input('opd_id');
+        $periodeId = $request->input('periode_penilaian_id');
+
+        if (!$request->filled('nomor')) {
+            $count = Tujuan::where('opd_id', $opdId)->where('periode_penilaian_id', $periodeId)->count();
+            $request->merge(['nomor' => 'T.' . ($count + 1)]);
+        }
+
         $validated = $request->validate([
             'periode_penilaian_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
             'opd_id' => ['required', 'uuid', 'exists:opds,id'],
@@ -96,13 +108,13 @@ class CascadingController extends Controller
         }
 
         $validated = $request->validate([
-            'opd_id' => ['required', 'uuid', 'exists:opds,id'],
-            'nomor' => ['required', 'string', 'max:20'],
+            'opd_id' => ['nullable', 'uuid', 'exists:opds,id'],
+            'nomor' => ['nullable', 'string', 'max:20'],
             'tujuan' => ['required', 'string'],
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $tujuan->update($validated);
+        $tujuan->update(array_filter($validated, fn($val) => $val !== null));
         $tujuan->load(['opd', 'sasarans.indikators']);
 
         return response()->json([
@@ -131,6 +143,23 @@ class CascadingController extends Controller
             abort(403, 'Hanya Bapperida / Admin yang berhak menambahkan Sasaran Kinerja.');
         }
 
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
+        $tujuanId = $request->input('tujuan_id');
+        $parentTujuan = Tujuan::find($tujuanId);
+
+        if ($parentTujuan && !$request->filled('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $parentTujuan->periode_penilaian_id]);
+        }
+
+        if (!$request->filled('nomor')) {
+            $prefix = $parentTujuan?->nomor ? str_replace('T.', 'S.', $parentTujuan->nomor) : 'S.1';
+            $count = Sasaran::where('tujuan_id', $tujuanId)->count();
+            $request->merge(['nomor' => $prefix . '.' . ($count + 1)]);
+        }
+
         $validated = $request->validate([
             'tujuan_id' => ['required', 'uuid', 'exists:tujuans,id'],
             'periode_penilaian_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
@@ -157,12 +186,12 @@ class CascadingController extends Controller
         }
 
         $validated = $request->validate([
-            'nomor' => ['required', 'string', 'max:20'],
+            'nomor' => ['nullable', 'string', 'max:20'],
             'sasaran' => ['required', 'string'],
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $sasaran->update($validated);
+        $sasaran->update(array_filter($validated, fn($val) => $val !== null));
         $sasaran->load('indikators');
 
         return response()->json([
@@ -189,6 +218,27 @@ class CascadingController extends Controller
     {
         if (!$request->user()->can('perencanaan.cascading')) {
             abort(403, 'Hanya Bapperida / Admin yang berhak menambahkan Indikator Sasaran.');
+        }
+
+        if ($request->has('periode_id') && !$request->has('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $request->input('periode_id')]);
+        }
+
+        $sasaranId = $request->input('sasaran_id');
+        $parentSasaran = Sasaran::find($sasaranId);
+
+        if ($parentSasaran && !$request->filled('periode_penilaian_id')) {
+            $request->merge(['periode_penilaian_id' => $parentSasaran->periode_penilaian_id]);
+        }
+
+        // Normalize jenis (IKU / Utama -> 'utama', Biasa / Pendukung -> 'pendukung')
+        $jenisInput = strtolower(trim((string) $request->input('jenis', 'utama')));
+        $request->merge(['jenis' => in_array($jenisInput, ['pendukung', 'biasa'], true) ? 'pendukung' : 'utama']);
+
+        if (!$request->filled('nomor')) {
+            $prefix = $parentSasaran?->nomor ? str_replace('S.', 'I.', $parentSasaran->nomor) : 'I.1.1';
+            $count = IndikatorSasaran::where('sasaran_id', $sasaranId)->count();
+            $request->merge(['nomor' => $prefix . '.' . ($count + 1)]);
         }
 
         $validated = $request->validate([
@@ -218,16 +268,21 @@ class CascadingController extends Controller
             abort(403, 'Hanya Bapperida / Admin yang berhak mengubah Indikator Sasaran.');
         }
 
+        if ($request->has('jenis')) {
+            $jenisInput = strtolower(trim((string) $request->input('jenis')));
+            $request->merge(['jenis' => in_array($jenisInput, ['pendukung', 'biasa'], true) ? 'pendukung' : 'utama']);
+        }
+
         $validated = $request->validate([
-            'nomor' => ['required', 'string', 'max:20'],
+            'nomor' => ['nullable', 'string', 'max:20'],
             'indikator' => ['required', 'string'],
-            'jenis' => ['required', 'string', 'in:utama,pendukung'],
+            'jenis' => ['nullable', 'string', 'in:utama,pendukung'],
             'satuan' => ['nullable', 'string', 'max:50'],
             'target' => ['nullable', 'string', 'max:100'],
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $indikator->update($validated);
+        $indikator->update(array_filter($validated, fn($val) => $val !== null));
 
         return response()->json([
             'message' => 'Indikator kinerja sasaran berhasil diperbarui.',
@@ -247,4 +302,89 @@ class CascadingController extends Controller
             'message' => 'Indikator kinerja sasaran berhasil dihapus.',
         ]);
     }
+
+    /**
+     * Copy / Clone cascading data from previous period (Fitur No 14, 15, 16, 17 Sheet 2).
+     */
+    public function clone(Request $request): JsonResponse
+    {
+        if (!$request->user()->can('perencanaan.cascading')) {
+            abort(403, 'Hanya Bapperida / Admin yang berhak menyalin data Cascading.');
+        }
+
+        $validated = $request->validate([
+            'source_periode_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
+            'target_periode_id' => ['required', 'uuid', 'exists:periode_penilaians,id', 'different:source_periode_id'],
+            'opd_id' => ['nullable', 'string'],
+        ]);
+
+        $sourceId = $validated['source_periode_id'];
+        $targetId = $validated['target_periode_id'];
+        $opdId = $validated['opd_id'] ?? null;
+
+        $query = Tujuan::with(['sasarans.indikators'])->where('periode_penilaian_id', $sourceId);
+        if ($opdId && $opdId !== 'all') {
+            $query->where('opd_id', $opdId);
+        }
+        $sourceTujuans = $query->get();
+
+        if ($sourceTujuans->isEmpty()) {
+            return response()->json([
+                'message' => 'Tidak ditemukan data cascading pada periode sumber yang dipilih.',
+                'cloned_count' => 0,
+            ], 422);
+        }
+
+        $clonedTujuan = 0;
+        $clonedSasaran = 0;
+        $clonedIndikator = 0;
+
+        DB::transaction(function () use ($sourceTujuans, $targetId, &$clonedTujuan, &$clonedSasaran, &$clonedIndikator) {
+            foreach ($sourceTujuans as $srcTujuan) {
+                $newTujuan = Tujuan::create([
+                    'periode_penilaian_id' => $targetId,
+                    'opd_id' => $srcTujuan->opd_id,
+                    'nomor' => $srcTujuan->nomor,
+                    'tujuan' => $srcTujuan->tujuan,
+                    'urutan' => $srcTujuan->urutan,
+                ]);
+                $clonedTujuan++;
+
+                foreach ($srcTujuan->sasarans as $srcSasaran) {
+                    $newSasaran = Sasaran::create([
+                        'tujuan_id' => $newTujuan->id,
+                        'periode_penilaian_id' => $targetId,
+                        'nomor' => $srcSasaran->nomor,
+                        'sasaran' => $srcSasaran->sasaran,
+                        'urutan' => $srcSasaran->urutan,
+                    ]);
+                    $clonedSasaran++;
+
+                    foreach ($srcSasaran->indikators as $srcIndikator) {
+                        IndikatorSasaran::create([
+                            'sasaran_id' => $newSasaran->id,
+                            'periode_penilaian_id' => $targetId,
+                            'nomor' => $srcIndikator->nomor,
+                            'indikator' => $srcIndikator->indikator,
+                            'jenis' => $srcIndikator->jenis,
+                            'satuan' => $srcIndikator->satuan,
+                            'target' => $srcIndikator->target,
+                            'urutan' => $srcIndikator->urutan,
+                        ]);
+                        $clonedIndikator++;
+                    }
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => "Berhasil menyalin {$clonedTujuan} Tujuan, {$clonedSasaran} Sasaran, dan {$clonedIndikator} Indikator ke periode target.",
+            'data' => [
+                'tujuans_count' => $clonedTujuan,
+                'sasarans_count' => $clonedSasaran,
+                'indikators_count' => $clonedIndikator,
+            ],
+        ]);
+    }
 }
+

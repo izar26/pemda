@@ -9,35 +9,34 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class RenstraProgram extends Model
+class KonteksRisikoStrategis extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $table = 'renstra_programs';
+    protected $table = 'konteks_risiko_strategis';
 
     protected $fillable = [
         'periode_penilaian_id',
         'opd_id',
-        'kode',
-        'nama',
-        'indikator',
-        'target',
-        'satuan',
-        'urutan',
+        'sumber_data',
+        'tujuan_id',
+        'sasaran_ids',
+        'iku_ids',
+        'informasi_lain',
+        'kepala_opd_nama',
+        'kepala_opd_nip',
+        'tanggal_penetapan',
+        'status',
     ];
 
-    protected $appends = [
-        'opd_nama',
+    protected $casts = [
+        'sasaran_ids' => 'array',
+        'iku_ids' => 'array',
+        'tanggal_penetapan' => 'date',
     ];
 
-    public function getOpdNamaAttribute(): string
-    {
-        return $this->opd?->nama ?? $this->opd?->singkatan ?? 'OPD';
-    }
-
-    public function periode(): BelongsTo
+    public function periodePenilaian(): BelongsTo
     {
         return $this->belongsTo(PeriodePenilaian::class, 'periode_penilaian_id');
     }
@@ -47,8 +46,8 @@ class RenstraProgram extends Model
         return $this->belongsTo(Opd::class, 'opd_id');
     }
 
-    public function kegiatans(): HasMany
+    public function tujuan(): BelongsTo
     {
-        return $this->hasMany(RenstraKegiatan::class, 'renstra_program_id')->orderBy('urutan', 'asc');
+        return $this->belongsTo(Tujuan::class, 'tujuan_id');
     }
 }

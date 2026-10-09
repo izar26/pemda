@@ -47,6 +47,7 @@ import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_a
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedPerencanaanRenstraRouteImport } from './routes/_authenticated/perencanaan/renstra'
 import { Route as AuthenticatedPerencanaanPeriodeRouteImport } from './routes/_authenticated/perencanaan/periode'
+import { Route as AuthenticatedPerencanaanKonteksStrategisRouteImport } from './routes/_authenticated/perencanaan/konteks-strategis'
 import { Route as AuthenticatedPerencanaanCascadingRouteImport } from './routes/_authenticated/perencanaan/cascading'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 
@@ -250,6 +251,12 @@ const AuthenticatedPerencanaanPeriodeRoute =
     path: '/perencanaan/periode',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPerencanaanKonteksStrategisRoute =
+  AuthenticatedPerencanaanKonteksStrategisRouteImport.update({
+    id: '/perencanaan/konteks-strategis',
+    path: '/perencanaan/konteks-strategis',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerencanaanCascadingRoute =
   AuthenticatedPerencanaanCascadingRouteImport.update({
     id: '/perencanaan/cascading',
@@ -281,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/503': typeof errors503Route
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/perencanaan/cascading': typeof AuthenticatedPerencanaanCascadingRoute
+  '/perencanaan/konteks-strategis': typeof AuthenticatedPerencanaanKonteksStrategisRoute
   '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeRoute
   '/perencanaan/renstra': typeof AuthenticatedPerencanaanRenstraRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -319,6 +327,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/perencanaan/cascading': typeof AuthenticatedPerencanaanCascadingRoute
+  '/perencanaan/konteks-strategis': typeof AuthenticatedPerencanaanKonteksStrategisRoute
   '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeRoute
   '/perencanaan/renstra': typeof AuthenticatedPerencanaanRenstraRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -362,6 +371,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/perencanaan/cascading': typeof AuthenticatedPerencanaanCascadingRoute
+  '/_authenticated/perencanaan/konteks-strategis': typeof AuthenticatedPerencanaanKonteksStrategisRoute
   '/_authenticated/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeRoute
   '/_authenticated/perencanaan/renstra': typeof AuthenticatedPerencanaanRenstraRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -403,6 +413,7 @@ export interface FileRouteTypes {
     | '/503'
     | '/errors/$error'
     | '/perencanaan/cascading'
+    | '/perencanaan/konteks-strategis'
     | '/perencanaan/periode'
     | '/perencanaan/renstra'
     | '/settings/account'
@@ -441,6 +452,7 @@ export interface FileRouteTypes {
     | '/'
     | '/errors/$error'
     | '/perencanaan/cascading'
+    | '/perencanaan/konteks-strategis'
     | '/perencanaan/periode'
     | '/perencanaan/renstra'
     | '/settings/account'
@@ -483,6 +495,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/errors/$error'
     | '/_authenticated/perencanaan/cascading'
+    | '/_authenticated/perencanaan/konteks-strategis'
     | '/_authenticated/perencanaan/periode'
     | '/_authenticated/perencanaan/renstra'
     | '/_authenticated/settings/account'
@@ -790,6 +803,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerencanaanPeriodeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perencanaan/konteks-strategis': {
+      id: '/_authenticated/perencanaan/konteks-strategis'
+      path: '/perencanaan/konteks-strategis'
+      fullPath: '/perencanaan/konteks-strategis'
+      preLoaderRoute: typeof AuthenticatedPerencanaanKonteksStrategisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perencanaan/cascading': {
       id: '/_authenticated/perencanaan/cascading'
       path: '/perencanaan/cascading'
@@ -835,6 +855,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedPerencanaanCascadingRoute: typeof AuthenticatedPerencanaanCascadingRoute
+  AuthenticatedPerencanaanKonteksStrategisRoute: typeof AuthenticatedPerencanaanKonteksStrategisRoute
   AuthenticatedPerencanaanPeriodeRoute: typeof AuthenticatedPerencanaanPeriodeRoute
   AuthenticatedPerencanaanRenstraRoute: typeof AuthenticatedPerencanaanRenstraRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
@@ -855,6 +876,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedPerencanaanCascadingRoute:
     AuthenticatedPerencanaanCascadingRoute,
+  AuthenticatedPerencanaanKonteksStrategisRoute:
+    AuthenticatedPerencanaanKonteksStrategisRoute,
   AuthenticatedPerencanaanPeriodeRoute: AuthenticatedPerencanaanPeriodeRoute,
   AuthenticatedPerencanaanRenstraRoute: AuthenticatedPerencanaanRenstraRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,

@@ -25,6 +25,15 @@ class Tujuan extends Model
         'urutan',
     ];
 
+    protected $appends = [
+        'opd_nama',
+    ];
+
+    public function getOpdNamaAttribute(): string
+    {
+        return $this->opd?->nama ?? $this->opd?->singkatan ?? 'OPD';
+    }
+
     public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodePenilaian::class, 'periode_penilaian_id');

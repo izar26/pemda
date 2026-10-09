@@ -26,9 +26,30 @@ class PeriodePenilaian extends Model
 
     protected $casts = [
         'tahun' => 'integer',
-        'tanggal_mulai' => 'date',
-        'tanggal_berakhir' => 'date',
+        'tanggal_mulai' => 'date:Y-m-d',
+        'tanggal_berakhir' => 'date:Y-m-d',
     ];
+
+    protected $appends = [
+        'periode_penilaian',
+        'tahun_penilaian',
+        'keterangan',
+    ];
+
+    public function getPeriodePenilaianAttribute(): string
+    {
+        return $this->periode ?? '';
+    }
+
+    public function getTahunPenilaianAttribute(): int
+    {
+        return (int) ($this->tahun ?? 0);
+    }
+
+    public function getKeteranganAttribute(): ?string
+    {
+        return $this->catatan;
+    }
 
     public function tujuans(): HasMany
     {

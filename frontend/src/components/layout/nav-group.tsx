@@ -39,11 +39,30 @@ export function NavGroup({ title, items }: NavGroupProps) {
   const href = useLocation({ select: (location) => location.href })
   const { hasPermission } = usePermissions()
 
-  // Filter items based on requiredPermission
-  const visibleItems = items.filter((item) => {
-    if (!item.requiredPermission) return true
-    return hasPermission(item.requiredPermission)
-  })
+  // Filter items and sub-items based on requiredPermission
+  const visibleItems = items
+    .map((item) => {
+      if (item.items) {
+        const permittedSubItems = item.items.filter((sub) => {
+          if (!sub.requiredPermission) return true
+          return hasPermission(sub.requiredPermission)
+        })
+        return {
+          ...item,
+          items: permittedSubItems,
+        }
+      }
+      return item
+    })
+    .filter((item) => {
+      if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
+        return false
+      }
+      if (item.items && item.items.length === 0 && !item.url) {
+        return false
+      }
+      return true
+    })
 
   // Don't render the group at all if no items are visible
   if (visibleItems.length === 0) return null
@@ -186,13 +205,24 @@ function SidebarMenuCollapsedDropdown({
   )
 }
 
-function checkIsActive(href: string, item: NavItem, mainNav = false) {
+function checkIsActive(href: string, item: NavItem, mainNav = false): boolean {
+  const [hrefPath, hrefQuery] = href.split('?')
+  const [itemPath, itemQuery] = (item.url || '').split('?')
+
+  if (itemQuery) {
+    if (hrefQuery) {
+      return href === item.url || hrefQuery === itemQuery
+    }
+    // Default to first tab (tab=tujuan) if on the base cascading path
+    return hrefPath === itemPath && itemQuery === 'tab=tujuan'
+  }
+
   return (
-    href === item.url || // /endpint?search=param
-    href.split('?')[0] === item.url || // endpoint
-    !!item?.items?.filter((i) => i.url === href).length || // if child nav is active
+    href === item.url ||
+    hrefPath === item.url ||
+    !!item?.items?.some((i) => checkIsActive(href, i)) ||
     (mainNav &&
-      href.split('/')[1] !== '' &&
-      href.split('/')[1] === item?.url?.split('/')[1])
+      hrefPath.split('/')[1] !== '' &&
+      hrefPath.split('/')[1] === (item.url || '').split('/')[1])
   )
 }
