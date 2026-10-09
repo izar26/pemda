@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowRight,
   ArrowLeft,
@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/searchable-select'
 import { perencanaanService } from '@/services/perencanaan-service'
 import type { RenstraProgram, PeriodePenilaian } from '@/types/perencanaan'
 import type { Opd } from '@/features/users/data/schema'
@@ -99,6 +100,25 @@ export function RenstraSequentialWizard({
   const getOpdName = (opd: Opd) => {
     return opd.nama || (opd as unknown as { nama_opd: string }).nama_opd || 'OPD'
   }
+
+  const opdOptions: SearchableSelectOption[] = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: getOpdName(opd),
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori].filter(Boolean) as string[],
+    }))
+  }, [opds])
+
+  const programOptions: SearchableSelectOption[] = useMemo(() => {
+    return existingPrograms.map((p) => ({
+      value: String(p.id),
+      label: `[${p.kode}] ${p.nama}`,
+      badge: p.kode,
+      keywords: [p.kode, p.nama],
+    }))
+  }, [existingPrograms])
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -226,18 +246,16 @@ export function RenstraSequentialWizard({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-[11px]">OPD yang Dinilai*</Label>
-                  <Select value={String(selectedOpdId)} onValueChange={(v) => setSelectedOpdId(Number(v))}>
-                    <SelectTrigger className="h-8 text-xs bg-white dark:bg-slate-900">
-                      <SelectValue placeholder="Pilih OPD" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {opds.map((opd) => (
-                        <SelectItem key={opd.id} value={String(opd.id)}>
-                          {getOpdName(opd)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={selectedOpdId ? String(selectedOpdId) : ''}
+                    onValueChange={(v) => setSelectedOpdId(Number(v))}
+                    options={opdOptions}
+                    placeholder="Pilih OPD"
+                    searchPlaceholder="Cari nama atau singkatan OPD..."
+                    emptyMessage="Tidak ada OPD yang cocok."
+                    allowClear={false}
+                    className="h-8 text-xs bg-white dark:bg-slate-900"
+                  />
                 </div>
                 <div>
                   <Label className="text-[11px]">Tahun & Periode*</Label>
@@ -336,21 +354,15 @@ export function RenstraSequentialWizard({
               ) : (
                 <div className="space-y-2">
                   <Label className="text-xs">Pilih Program Induk</Label>
-                  <Select
+                  <SearchableSelect
                     value={selectedProgramId ? String(selectedProgramId) : ''}
                     onValueChange={(v) => setSelectedProgramId(Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih Program Renstra..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {existingPrograms.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          [{p.kode}] {p.nama}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={programOptions}
+                    placeholder="Pilih Program Renstra..."
+                    searchPlaceholder="Cari kode atau nama program..."
+                    emptyMessage="Tidak ada program yang cocok."
+                    className="h-9 text-xs"
+                  />
                 </div>
               )}
             </div>

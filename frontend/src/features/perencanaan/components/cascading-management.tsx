@@ -44,6 +44,7 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { PerencanaanSubnav } from './perencanaan-subnav'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { opdService } from '@/services/opd-service'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/searchable-select'
 import type { CascadingTreeItem, PeriodePenilaian } from '@/types/perencanaan'
 import type { Opd } from '@/features/users/data/schema'
 
@@ -149,6 +150,35 @@ export function CascadingManagement() {
   const getOpdName = (opd: Opd) => {
     return opd.nama || (opd as unknown as { nama_opd: string }).nama_opd || 'OPD'
   }
+
+  const opdFilterOptions: SearchableSelectOption[] = useMemo(() => {
+    const list: SearchableSelectOption[] = [
+      {
+        value: 'all',
+        label: 'Semua Perangkat Daerah (Keseluruhan)',
+      },
+    ]
+    opds.forEach((opd) => {
+      list.push({
+        value: String(opd.id),
+        label: getOpdName(opd),
+        group: opd.kategori || 'Perangkat Daerah',
+        badge: opd.kategori,
+        keywords: [opd.kode, opd.kategori].filter(Boolean) as string[],
+      })
+    })
+    return list
+  }, [opds])
+
+  const opdDialogOptions: SearchableSelectOption[] = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: getOpdName(opd),
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori].filter(Boolean) as string[],
+    }))
+  }, [opds])
 
   const toggleExpandTujuan = (id: number) => {
     setExpandedTujuans((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -388,24 +418,18 @@ export function CascadingManagement() {
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-emerald-600" /> Filter Perangkat Daerah (OPD)*
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={selectedOpdId ? String(selectedOpdId) : 'all'}
                     onValueChange={(val) =>
-                      handleFilterChange(selectedPeriodeId, val === 'all' ? undefined : Number(val))
+                      handleFilterChange(selectedPeriodeId, val === 'all' || !val ? undefined : Number(val))
                     }
-                  >
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Semua OPD" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Semua Perangkat Daerah (Keseluruhan)</SelectItem>
-                      {opds.map((opd) => (
-                        <SelectItem key={opd.id} value={String(opd.id)}>
-                          {getOpdName(opd)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={opdFilterOptions}
+                    placeholder="Semua OPD"
+                    searchPlaceholder="Cari nama atau singkatan OPD..."
+                    emptyMessage="Tidak ada OPD yang cocok."
+                    allowClear={false}
+                    className="h-9 text-xs"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
@@ -669,21 +693,15 @@ export function CascadingManagement() {
               {!editingTujuan && (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Perangkat Daerah (OPD)*</Label>
-                  <Select
-                    value={String(tujuanInput.opd_id)}
+                  <SearchableSelect
+                    value={tujuanInput.opd_id ? String(tujuanInput.opd_id) : ''}
                     onValueChange={(val) => setTujuanInput({ ...tujuanInput, opd_id: Number(val) })}
-                  >
-                    <SelectTrigger className="text-xs">
-                      <SelectValue placeholder="Pilih OPD" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {opds.map((opd) => (
-                        <SelectItem key={opd.id} value={String(opd.id)}>
-                          {getOpdName(opd)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={opdDialogOptions}
+                    placeholder="Pilih OPD"
+                    searchPlaceholder="Cari nama atau singkatan OPD..."
+                    emptyMessage="Tidak ada OPD yang cocok."
+                    className="h-9 text-xs"
+                  />
                 </div>
               )}
               <div className="space-y-1.5">

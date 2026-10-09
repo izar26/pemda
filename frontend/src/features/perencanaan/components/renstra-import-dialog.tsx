@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   FileSpreadsheet,
   Download,
@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/searchable-select'
 import { perencanaanService } from '@/services/perencanaan-service'
 import type { PeriodePenilaian, RenstraImportResult } from '@/types/perencanaan'
 import type { Opd } from '@/features/users/data/schema'
@@ -54,6 +55,16 @@ export function RenstraImportDialog({
   const getOpdName = (opd: Opd) => {
     return opd.nama || (opd as unknown as { nama_opd: string }).nama_opd || 'OPD'
   }
+
+  const opdOptions: SearchableSelectOption[] = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: getOpdName(opd),
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori].filter(Boolean) as string[],
+    }))
+  }, [opds])
 
   const handleDownloadTemplate = async () => {
     try {
@@ -149,21 +160,15 @@ export function RenstraImportDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">OPD Target Impor*</Label>
-                <Select
+                <SearchableSelect
                   value={selectedOpdId ? String(selectedOpdId) : ''}
                   onValueChange={(val) => setSelectedOpdId(Number(val))}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Pilih Perangkat Daerah" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {opds.map((opd) => (
-                      <SelectItem key={opd.id} value={String(opd.id)}>
-                        {getOpdName(opd)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={opdOptions}
+                  placeholder="Pilih Perangkat Daerah..."
+                  searchPlaceholder="Cari nama atau singkatan OPD..."
+                  emptyMessage="Tidak ada OPD yang cocok."
+                  className="h-9 text-xs"
+                />
               </div>
 
               <div className="space-y-1.5">

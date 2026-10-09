@@ -53,6 +53,7 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { PerencanaanSubnav } from './perencanaan-subnav'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { opdService } from '@/services/opd-service'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/searchable-select'
 import { RenstraSequentialWizard } from './renstra-sequential-wizard'
 import { RenstraImportDialog } from './renstra-import-dialog'
 import type {
@@ -152,6 +153,16 @@ export function RenstraManagement() {
   const getOpdName = (opd: Opd) => {
     return opd.nama || (opd as unknown as { nama_opd: string }).nama_opd || 'OPD'
   }
+
+  const opdOptions: SearchableSelectOption[] = useMemo(() => {
+    return opds.map((opd) => ({
+      value: String(opd.id),
+      label: getOpdName(opd),
+      group: opd.kategori || 'Perangkat Daerah',
+      badge: opd.kategori,
+      keywords: [opd.kode, opd.kategori].filter(Boolean) as string[],
+    }))
+  }, [opds])
 
   const handleFilterChange = (periodeId?: number, opdId?: number, qSearch?: string) => {
     setSelectedPeriodeId(periodeId)
@@ -431,21 +442,16 @@ export function RenstraManagement() {
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-emerald-600" /> OPD yang Dinilai*
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={selectedOpdId ? String(selectedOpdId) : ''}
                     onValueChange={(val) => handleFilterChange(selectedPeriodeId, Number(val), search)}
-                  >
-                    <SelectTrigger className="text-xs h-9">
-                      <SelectValue placeholder="Pilih OPD" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {opds.map((opd) => (
-                        <SelectItem key={opd.id} value={String(opd.id)}>
-                          {getOpdName(opd)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={opdOptions}
+                    placeholder="Pilih OPD yang dinilai..."
+                    searchPlaceholder="Cari nama atau singkatan OPD..."
+                    emptyMessage="Tidak ada OPD yang cocok."
+                    allowClear={false}
+                    className="h-9 text-xs"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
