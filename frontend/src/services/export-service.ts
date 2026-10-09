@@ -49,6 +49,10 @@ export async function downloadExcelReport(
     const response = await apiClient.get(endpoint, {
       params,
       responseType: 'blob',
+      headers: {
+        Accept:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json, */*',
+      },
       signal: activeSignal,
     })
 
@@ -90,6 +94,10 @@ export async function downloadExcelReport(
           filename = decodeURIComponent(standardMatch[1].trim())
         }
       }
+    }
+
+    if (!filename.toLowerCase().endsWith('.xlsx')) {
+      filename += '.xlsx'
     }
 
     // Trigger instant browser download from memory blob
@@ -146,10 +154,17 @@ async function pollAndDownloadAsyncJob(
         // Job finished! Download the generated file from disk
         const downloadRes = await apiClient.get(`/exports/download/${jobId}`, {
           responseType: 'blob',
+          headers: {
+            Accept:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*',
+          },
           signal,
         })
 
-        const finalFilename = jobData.filename || fallbackFilename
+        let finalFilename = jobData.filename || fallbackFilename
+        if (!finalFilename.toLowerCase().endsWith('.xlsx')) {
+          finalFilename += '.xlsx'
+        }
         triggerBlobDownload(downloadRes.data, finalFilename)
 
         toast.success(

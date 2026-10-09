@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   type ColumnFiltersState,
   type SortingState,
@@ -76,7 +76,7 @@ export function AuditLogsTable({
   const isSuperadmin =
     (user?.roles?.includes('Superadmin') || user?.role === 'Superadmin') ?? false
 
-  const { setSelectedLog, setSheetOpen } = useAuditLogs()
+  const { setSelectedLog, setSheetOpen, setTableFilters } = useAuditLogs()
 
   // Table states
   const [globalFilter, setGlobalFilter] = useState('')
@@ -92,6 +92,27 @@ export function AuditLogsTable({
     preset: 'all',
   })
   const [filterArchiveDialogOpen, setFilterArchiveDialogOpen] = useState(false)
+
+  // Sync active table filters to context for export
+  useEffect(() => {
+    const filters: Record<string, unknown> = {}
+    if (globalFilter.trim()) filters.search = globalFilter.trim()
+    const moduleFilter = columnFilters.find((f) => f.id === 'module')
+    if (moduleFilter?.value && Array.isArray(moduleFilter.value) && moduleFilter.value.length > 0) {
+      filters.module = moduleFilter.value[0]
+    }
+    const actionFilter = columnFilters.find((f) => f.id === 'action')
+    if (actionFilter?.value && Array.isArray(actionFilter.value) && actionFilter.value.length > 0) {
+      filters.action = actionFilter.value[0]
+    }
+    if (dateFilter.range?.from) {
+      filters.date_from = dateFilter.range.from.toISOString().slice(0, 10)
+    }
+    if (dateFilter.range?.to) {
+      filters.date_to = dateFilter.range.to.toISOString().slice(0, 10)
+    }
+    setTableFilters(filters)
+  }, [globalFilter, columnFilters, dateFilter, setTableFilters])
 
   // Filter dataset by date range first
   const filteredByDate = useMemo(() => {

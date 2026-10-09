@@ -131,6 +131,7 @@ class AuditLogController extends Controller
 
             Cache::put("export_job_{$jobId}", [
                 'status' => 'processing',
+                'user_id' => $user->id,
                 'progress' => 0,
                 'total_rows' => $totalCount,
                 'created_at' => now()->toIso8601String(),

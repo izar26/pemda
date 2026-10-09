@@ -24,9 +24,10 @@ import { ExportExcelButton } from '@/components/export-excel-button'
 import { AuditLogsTable } from './components/audit-logs-table'
 import { AuditLogsDialogs } from './components/audit-logs-dialogs'
 import { AuditPurgeDialog } from './components/audit-purge-dialog'
-import { AuditLogsProvider } from './components/audit-logs-provider'
+import { AuditLogsProvider, useAuditLogs } from './components/audit-logs-provider'
 
 function AuditLogsContent() {
+  const { tableFilters } = useAuditLogs()
   const user = useAuthStore((s) => s.auth.user)
   const isSuperadmin =
     (user?.roles?.includes('Superadmin') || user?.role === 'Superadmin') ?? false
@@ -112,6 +113,7 @@ function AuditLogsContent() {
             <ExportExcelButton
               endpoint='/audit-logs/export'
               fixedParams={{ archive: activeTab === 'archive' }}
+              params={tableFilters}
               filename={activeTab === 'archive' ? 'Kubah_Arsip_Log_Audit_PEMDA.xlsx' : 'Log_Audit_Keamanan_PEMDA.xlsx'}
               label={activeTab === 'archive' ? 'Ekspor Arsip Excel' : 'Ekspor Excel'}
             />

@@ -19,12 +19,13 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { ExportExcelButton } from '@/components/export-excel-button'
-import { OpdProvider } from './components/opd-provider'
+import { OpdProvider, useOpd } from './components/opd-provider'
 import { OpdPrimaryButtons } from './components/opd-primary-buttons'
 import { OpdTable } from './components/opd-table'
 import { OpdDialogs } from './components/opd-dialogs'
 
-export function OpdManagement() {
+function OpdContent() {
+  const { tableFilters } = useOpd()
   // Fetch paginated OPD data for table
   const {
     data: opdResponse,
@@ -98,7 +99,7 @@ export function OpdManagement() {
   ]
 
   return (
-    <OpdProvider>
+    <>
       <Header fixed>
         <Search className='me-auto' />
         <ThemeSwitch />
@@ -120,6 +121,7 @@ export function OpdManagement() {
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
             <ExportExcelButton
               endpoint='/opds/export'
+              params={tableFilters}
               filename='Data_Perangkat_Daerah_OPD.xlsx'
               label='Ekspor Excel'
             />
@@ -155,6 +157,14 @@ export function OpdManagement() {
         {/* Dialogs */}
         <OpdDialogs onSuccess={handleRefresh} />
       </Main>
+    </>
+  )
+}
+
+export function OpdManagement() {
+  return (
+    <OpdProvider>
+      <OpdContent />
     </OpdProvider>
   )
 }

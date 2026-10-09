@@ -46,6 +46,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
         try {
             Cache::put("export_job_{$this->jobId}", [
                 'status' => 'processing',
+                'user_id' => $this->userId,
                 'progress' => 10,
                 'started_at' => now()->toIso8601String(),
             ], now()->addHours(4));
@@ -155,6 +156,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
 
             Cache::put("export_job_{$this->jobId}", [
                 'status' => 'completed',
+                'user_id' => $this->userId,
                 'progress' => 100,
                 'filename' => $fullDownloadName,
                 'total_rows' => $rowCount,

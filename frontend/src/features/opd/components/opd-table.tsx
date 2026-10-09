@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   type ColumnFiltersState,
   type SortingState,
@@ -26,18 +26,38 @@ import {
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
 import { opdColumns as columns } from './opd-columns'
 import { opdCategoryFilterOptions, opdStatusFilterOptions } from '../data/data'
+import { useOpd } from './opd-provider'
 
 interface OpdTableProps {
   data: OpdItem[]
 }
 
 export function OpdTable({ data }: OpdTableProps) {
+  const { setTableFilters } = useOpd()
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'urutan', desc: false },
   ])
+
+  // Sync active filters to OpdProvider for export
+  useEffect(() => {
+    const filters: Record<string, unknown> = {}
+    const namaFilter = columnFilters.find((f) => f.id === 'nama')
+    if (namaFilter?.value && typeof namaFilter.value === 'string' && namaFilter.value.trim()) {
+      filters.search = namaFilter.value.trim()
+    }
+    const kategoriFilter = columnFilters.find((f) => f.id === 'kategori')
+    if (kategoriFilter?.value && Array.isArray(kategoriFilter.value) && kategoriFilter.value.length > 0) {
+      filters.kategori = kategoriFilter.value[0]
+    }
+    const statusFilter = columnFilters.find((f) => f.id === 'is_active')
+    if (statusFilter?.value && Array.isArray(statusFilter.value) && statusFilter.value.length > 0) {
+      filters.status = statusFilter.value[0] ? 'active' : 'inactive'
+    }
+    setTableFilters(filters)
+  }, [columnFilters, setTableFilters])
 
   const table = useReactTable({
     data,

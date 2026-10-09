@@ -41,10 +41,13 @@ export function ExportExcelButton({
 }: ExportExcelButtonProps) {
   const [isExporting, setIsExporting] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const isMountedRef = useRef(true)
 
   // Automatically cancel in-flight HTTP stream if component unmounts (e.g. user switches route)
   useEffect(() => {
+    isMountedRef.current = true
     return () => {
+      isMountedRef.current = false
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
         abortControllerRef.current = null
@@ -71,7 +74,9 @@ export function ExportExcelButton({
       })
     } finally {
       abortControllerRef.current = null
-      setIsExporting(false)
+      if (isMountedRef.current) {
+        setIsExporting(false)
+      }
     }
   }
 

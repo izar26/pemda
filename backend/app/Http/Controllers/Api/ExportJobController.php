@@ -16,7 +16,7 @@ class ExportJobController extends Controller
     /**
      * Check status of an asynchronous background export job.
      */
-    public function status(string $jobId): JsonResponse
+    public function status(Request $request, string $jobId): JsonResponse
     {
         $jobData = Cache::get("export_job_{$jobId}");
 
@@ -25,6 +25,15 @@ class ExportJobController extends Controller
                 'status' => 'not_found',
                 'message' => 'Tugas ekspor tidak ditemukan atau telah kedaluwarsa.',
             ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Authorization check: only the initiating user or Superadmin may inspect the job
+        $user = $request->user();
+        if ($user && isset($jobData['user_id']) && $jobData['user_id'] !== $user->id && !$user->hasRole('Superadmin')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki wewenang untuk memeriksa tugas ekspor ini.',
+            ], Response::HTTP_FORBIDDEN);
         }
 
         return response()->json($jobData);
@@ -44,6 +53,15 @@ class ExportJobController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        // Authorization check: only the initiating user or Superadmin may download the file
+        $user = $request->user();
+        if ($user && isset($jobData['user_id']) && $jobData['user_id'] !== $user->id && !$user->hasRole('Superadmin')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki hak akses untuk mengunduh berkas ekspor ini.',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $filePath = storage_path("app/exports/{$jobId}.xlsx");
 
         if (!file_exists($filePath)) {
@@ -57,7 +75,6 @@ class ExportJobController extends Controller
 
         return response()->download($filePath, $downloadFilename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => sprintf('attachment; filename="%s"; filename*=UTF-8\'\'%s', $downloadFilename, rawurlencode($downloadFilename)),
             'Cache-Control' => 'no-cache, must-revalidate',
         ]);
     }

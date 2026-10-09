@@ -9,6 +9,8 @@ interface OpdContextType {
   setOpen: (str: OpdDialogType | null) => void
   currentRow: OpdItem | null
   setCurrentRow: React.Dispatch<React.SetStateAction<OpdItem | null>>
+  tableFilters: Record<string, unknown>
+  setTableFilters: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
 }
 
 const OpdContext = React.createContext<OpdContextType | null>(null)
@@ -16,6 +18,7 @@ const OpdContext = React.createContext<OpdContextType | null>(null)
 export function OpdProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<OpdDialogType>(null)
   const [currentRow, setCurrentRow] = useState<OpdItem | null>(null)
+  const [tableFilters, setTableFilters] = useState<Record<string, unknown>>({})
 
   return (
     <OpdContext.Provider
@@ -24,6 +27,8 @@ export function OpdProvider({ children }: { children: React.ReactNode }) {
         setOpen,
         currentRow,
         setCurrentRow,
+        tableFilters,
+        setTableFilters,
       }}
     >
       {children}

@@ -6,6 +6,8 @@ interface AuditLogsContextType {
   setSelectedLog: React.Dispatch<React.SetStateAction<AuditLog | null>>
   sheetOpen: boolean
   setSheetOpen: (open: boolean) => void
+  tableFilters: Record<string, unknown>
+  setTableFilters: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
 }
 
 const AuditLogsContext = React.createContext<AuditLogsContextType | null>(null)
@@ -13,6 +15,7 @@ const AuditLogsContext = React.createContext<AuditLogsContextType | null>(null)
 export function AuditLogsProvider({ children }: { children: React.ReactNode }) {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [tableFilters, setTableFilters] = useState<Record<string, unknown>>({})
 
   return (
     <AuditLogsContext.Provider
@@ -21,6 +24,8 @@ export function AuditLogsProvider({ children }: { children: React.ReactNode }) {
         setSelectedLog,
         sheetOpen,
         setSheetOpen,
+        tableFilters,
+        setTableFilters,
       }}
     >
       {children}
