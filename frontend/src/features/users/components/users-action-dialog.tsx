@@ -145,7 +145,7 @@ export function UsersActionDialog({
 
   // Fetch dynamic OPDs for the dropdown (only when dialog is opened)
   const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds'],
+    queryKey: ['opds', 'list'],
     queryFn: () => opdService.getOpds(),
     enabled: open,
     staleTime: 5 * 60 * 1000,

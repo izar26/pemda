@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Building2,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Users as UsersIcon,
 } from 'lucide-react'
+import type { OpdItem } from '@/types/opd'
 import { opdService } from '@/services/opd-service'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -25,6 +26,7 @@ import { OpdTable } from './components/opd-table'
 import { OpdDialogs } from './components/opd-dialogs'
 
 function OpdContent() {
+  const queryClient = useQueryClient()
   const { tableFilters } = useOpd()
   // Fetch paginated OPD data for table
   const {
@@ -33,7 +35,7 @@ function OpdContent() {
     isRefetching: isRefetchingTable,
     refetch: refetchTable,
   } = useQuery({
-    queryKey: ['opds'],
+    queryKey: ['opds', 'management'],
     queryFn: () => opdService.getPaginatedOpds({ per_page: 100 }),
     staleTime: 60 * 1000,
   })
@@ -45,7 +47,7 @@ function OpdContent() {
     isRefetching: isRefetchingStats,
     refetch: refetchStats,
   } = useQuery({
-    queryKey: ['opds-stats'],
+    queryKey: ['opds', 'stats'],
     queryFn: () => opdService.getStats(),
     staleTime: 2 * 60 * 1000,
   })
@@ -54,11 +56,16 @@ function OpdContent() {
   const isRefetching = isRefetchingTable || isRefetchingStats
 
   function handleRefresh() {
+    queryClient.invalidateQueries({ queryKey: ['opds'] })
     refetchTable()
     refetchStats()
   }
 
-  const opdsList = opdResponse?.data || []
+  const opdsList: OpdItem[] = Array.isArray(opdResponse)
+    ? (opdResponse as unknown as OpdItem[])
+    : Array.isArray(opdResponse?.data)
+      ? opdResponse.data
+      : []
 
   // 4 Standard Compact KPI Stats
   const totalInstansi = stats?.total ?? opdsList.length

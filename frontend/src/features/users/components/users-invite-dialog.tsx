@@ -84,7 +84,7 @@ export function UsersInviteDialog({
 
   // Fetch dynamic OPDs
   const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds'],
+    queryKey: ['opds', 'list'],
     queryFn: () => opdService.getOpds(),
     enabled: open,
   })

@@ -49,7 +49,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
 
   // Fetch dynamic OPDs for toolbar filters
   const { data: opds = [] } = useQuery({
-    queryKey: ['opds'],
+    queryKey: ['opds', 'list'],
     queryFn: () => opdService.getOpds(),
     staleTime: 5 * 60 * 1000,
   })

@@ -104,7 +104,7 @@ export function ActivateForm({ token, initialData }: ActivateFormProps) {
 
   // Fetch dynamic OPDs
   const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds'],
+    queryKey: ['opds', 'list'],
     queryFn: () => opdService.getOpds(),
     staleTime: 5 * 60 * 1000,
   })
