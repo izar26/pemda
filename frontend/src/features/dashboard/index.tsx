@@ -39,12 +39,14 @@ export function Dashboard() {
   const { data: opdStats, isLoading: isLoadingOpd, isRefetching, refetch } = useQuery({
     queryKey: ['dashboard-opd-stats'],
     queryFn: () => opdService.getStats(),
+    staleTime: 60 * 1000,
   })
 
   // Fetch users count
   const { data: usersData } = useQuery({
     queryKey: ['dashboard-users-count'],
     queryFn: () => userService.getUsers({ per_page: 1 }),
+    staleTime: 60 * 1000,
   })
 
   function handleRefresh() {
@@ -129,7 +131,7 @@ export function Dashboard() {
 
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
             <ExportExcelButton
-              endpoint='/opds/export'
+              endpoint='/dashboard/export'
               filename='Laporan_Ringkasan_Eksekutif_PEMDA.xlsx'
               label='Ekspor Laporan'
             />

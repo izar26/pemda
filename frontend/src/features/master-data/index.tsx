@@ -29,7 +29,7 @@ import {
 function MasterDataContent() {
   const queryClient = useQueryClient()
   const isFetching = useIsFetching({ queryKey: ['master'] }) > 0
-  const { selectedEntity, setSelectedEntity } = useMasterData()
+  const { selectedEntity, setSelectedEntity, targetUnsurId } = useMasterData()
   const [mainCategory, setMainCategory] = useState<'risiko' | 'spip'>('risiko')
 
   const risikoEntities = useMemo(
@@ -87,6 +87,11 @@ function MasterDataContent() {
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
             <ExportExcelButton
               endpoint={`/master/${selectedEntity.key}/export`}
+              params={
+                selectedEntity.key === 'sub-unsur-spip' && targetUnsurId
+                  ? { unsur_spip_id: targetUnsurId }
+                  : {}
+              }
               filename={`Master_Data_${selectedEntity.key}.xlsx`}
               label={`Ekspor ${selectedEntity.label}`}
             />

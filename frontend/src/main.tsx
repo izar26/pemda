@@ -33,8 +33,9 @@ const queryClient = new QueryClient({
           [401, 403].includes(error.response?.status ?? 0)
         )
       },
-      refetchOnWindowFocus: import.meta.env.PROD,
-      staleTime: 10 * 1000, // 10s
+      refetchOnWindowFocus: false,
+      staleTime: 60 * 1000, // 1 minute fresh cache
+      gcTime: 10 * 60 * 1000, // 10 minutes in memory
     },
     mutations: {
       onError: (error) => {

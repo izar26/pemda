@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AuditLogArchiveController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ExportJobController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\Perencanaan\CascadingController;
@@ -60,11 +62,14 @@ Route::prefix('auth')->group(function () {
 
 // Dynamic RBAC & User Management Routes
 Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(function () {
-    // Excel Export Endpoints (High Performance Streaming)
+    // Excel Export Endpoints (High Performance Streaming & Async Job Downloads)
+    Route::get('/dashboard/export', [DashboardController::class, 'export']);
     Route::get('/users/export', [UserController::class, 'export']);
     Route::get('/opds/export', [OpdController::class, 'export']);
     Route::get('/roles/export', [RoleController::class, 'export']);
     Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
+    Route::get('/exports/status/{jobId}', [ExportJobController::class, 'status']);
+    Route::get('/exports/download/{jobId}', [ExportJobController::class, 'download']);
 
     // RBAC
     Route::get('/permissions', [RoleController::class, 'permissions']);

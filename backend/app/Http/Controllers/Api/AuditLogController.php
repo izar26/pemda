@@ -6,12 +6,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AuditLogResource;
+use App\Jobs\ProcessAuditLogExportJob;
 use App\Models\AuditLog;
 use App\Models\AuditLogArchive;
 use App\Services\Export\ExcelExportService;
 use App\Services\Audit\AuditLogService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditLogController extends Controller
@@ -23,7 +27,7 @@ class AuditLogController extends Controller
     /**
      * Export Audit Logs data to Excel (.xlsx).
      */
-    public function export(Request $request, ExcelExportService $exportService): StreamedResponse
+    public function export(Request $request, ExcelExportService $exportService): StreamedResponse|JsonResponse
     {
         $user = $request->user();
         if (!$user->can('audit.view')) {
@@ -116,6 +120,37 @@ class AuditLogController extends Controller
 
         $filename = $isArchive ? 'Arsip_Log_Audit_Permanen_PEMDA' : 'Log_Audit_Keamanan_PEMDA';
         $title = $isArchive ? 'LAPORAN KUBAH ARSIP PERMANEN LOG AUDIT KEAMANAN (WORM)' : 'LAPORAN REKAPITULASI LOG AUDIT KEAMANAN SISTEM';
+
+        $totalCount = (clone $query)->count();
+        $isForceDirect = $request->boolean('direct');
+        $isAsyncRequested = $request->boolean('async');
+
+        // Hybrid threshold: if dataset exceeds 2,500 records or async requested, delegate to queue worker
+        if (($totalCount > 2500 || $isAsyncRequested) && !$isForceDirect) {
+            $jobId = (string) Str::uuid();
+
+            Cache::put("export_job_{$jobId}", [
+                'status' => 'processing',
+                'progress' => 0,
+                'total_rows' => $totalCount,
+                'created_at' => now()->toIso8601String(),
+            ], now()->addHours(2));
+
+            ProcessAuditLogExportJob::dispatch(
+                jobId: $jobId,
+                userId: $user->id,
+                filters: $request->only(['search', 'module', 'action', 'date_from', 'date_to']),
+                isArchive: $isArchive,
+                filename: $filename
+            );
+
+            return response()->json([
+                'status' => 'queued',
+                'job_id' => $jobId,
+                'total_rows' => $totalCount,
+                'message' => "Dataset log audit berukuran besar ({$totalCount} rekam data). Ekspor diproses melalui antrean worker latar belakang.",
+            ], 202);
+        }
 
         return $exportService->streamExport(
             filename: $filename,

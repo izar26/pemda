@@ -34,6 +34,7 @@ export function OpdManagement() {
   } = useQuery({
     queryKey: ['opds'],
     queryFn: () => opdService.getPaginatedOpds({ per_page: 100 }),
+    staleTime: 60 * 1000,
   })
 
   // Fetch OPD statistics
@@ -45,6 +46,7 @@ export function OpdManagement() {
   } = useQuery({
     queryKey: ['opds-stats'],
     queryFn: () => opdService.getStats(),
+    staleTime: 2 * 60 * 1000,
   })
 
   const isLoading = isLoadingTable || isLoadingStats

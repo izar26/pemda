@@ -135,17 +135,19 @@ export function UsersActionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [copiedPassword, setCopiedPassword] = useState(false)
 
-  // Fetch dynamic roles for the dropdown
+  // Fetch dynamic roles for the dropdown (only when dialog is opened)
   const { data: roles = [], isLoading: isLoadingRoles } = useQuery({
     queryKey: ['roles'],
     queryFn: rbacService.getRoles,
-    staleTime: 60 * 1000,
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
   })
 
-  // Fetch dynamic OPDs for the dropdown
+  // Fetch dynamic OPDs for the dropdown (only when dialog is opened)
   const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
     queryKey: ['opds'],
     queryFn: () => opdService.getOpds(),
+    enabled: open,
     staleTime: 5 * 60 * 1000,
   })
 

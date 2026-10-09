@@ -5,7 +5,6 @@ import {
   Pencil,
   Trash2,
   FileSpreadsheet,
-  Download,
   Upload,
   Building2,
   Calendar,
@@ -20,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import {
   Table,
   TableBody,
@@ -69,7 +69,6 @@ export function RenstraManagement() {
   const [selectedOpdId, setSelectedOpdId] = useState<number | undefined>(undefined)
   const [search, setSearch] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
-  const [exporting, setExporting] = useState<boolean>(false)
 
   // Expandable rows state
   const [expandedPrograms, setExpandedPrograms] = useState<Record<number, boolean>>({})
@@ -167,30 +166,6 @@ export function RenstraManagement() {
 
   const toggleExpandKegiatan = (id: number) => {
     setExpandedKegiatans((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  const handleExport = async () => {
-    setExporting(true)
-    try {
-      const blob = await perencanaanService.exportRenstra({
-        periode_id: selectedPeriodeId,
-        opd_id: selectedOpdId,
-        search,
-      })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `Export_Renstra_SKPD_${new Date().toISOString().slice(0, 10)}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
-      toast.success('File Excel Renstra berhasil diunduh.')
-    } catch {
-      toast.error('Terjadi kesalahan saat mengunduh Excel.')
-    } finally {
-      setExporting(false)
-    }
   }
 
   // Handle Quick Add Item
@@ -396,15 +371,16 @@ export function RenstraManagement() {
               >
                 <Upload className="h-4 w-4" /> Impor Excel
               </Button>
-              <Button
-                onClick={handleExport}
-                disabled={exporting}
-                variant="outline"
-                className="gap-1.5 border-slate-300"
-              >
-                <Download className="h-4 w-4" />
-                {exporting ? 'Mengunduh...' : 'Ekspor Excel'}
-              </Button>
+              <ExportExcelButton
+                endpoint="/perencanaan/renstra/export"
+                fixedParams={{
+                  periode_penilaian_id: selectedPeriodeId,
+                  opd_id: selectedOpdId,
+                }}
+                params={{ search }}
+                filename={`Export_Renstra_SKPD_${new Date().toISOString().slice(0, 10)}.xlsx`}
+                label="Ekspor Excel"
+              />
             </div>
           </PageHeader>
 

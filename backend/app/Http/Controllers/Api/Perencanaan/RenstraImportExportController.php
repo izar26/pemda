@@ -84,8 +84,6 @@ class RenstraImportExportController extends Controller
             $query->where('opd_id', $opdId);
         }
 
-        $programs = $query->orderBy('kode', 'asc')->get();
-
         $headers = [
             'No',
             'OPD / Perangkat Daerah',
@@ -97,9 +95,9 @@ class RenstraImportExportController extends Controller
             'Satuan',
         ];
 
-        $generator = function () use ($programs) {
+        $generator = function () use ($query) {
             $no = 1;
-            foreach ($programs as $prog) {
+            foreach ($query->orderBy('kode', 'asc')->lazy(100) as $prog) {
                 $opdNama = $prog->opd?->nama ?? '-';
                 yield [
                     $no++,

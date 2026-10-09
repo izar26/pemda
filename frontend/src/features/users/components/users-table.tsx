@@ -44,7 +44,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
     queryFn: rbacService.getRoles,
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   })
 
   // Fetch dynamic OPDs for toolbar filters

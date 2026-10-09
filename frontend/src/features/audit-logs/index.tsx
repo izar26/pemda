@@ -111,7 +111,7 @@ function AuditLogsContent() {
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
             <ExportExcelButton
               endpoint='/audit-logs/export'
-              params={{ archive: activeTab === 'archive' }}
+              fixedParams={{ archive: activeTab === 'archive' }}
               filename={activeTab === 'archive' ? 'Kubah_Arsip_Log_Audit_PEMDA.xlsx' : 'Log_Audit_Keamanan_PEMDA.xlsx'}
               label={activeTab === 'archive' ? 'Ekspor Arsip Excel' : 'Ekspor Excel'}
             />

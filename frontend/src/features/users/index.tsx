@@ -39,6 +39,7 @@ export function Users() {
   } = useQuery({
     queryKey: ['users'],
     queryFn: () => userService.getUsers({ per_page: 100 }),
+    staleTime: 30 * 1000,
   })
 
   const usersList = usersResponse?.data || []
@@ -105,7 +106,9 @@ export function Users() {
             <ExportExcelButton
               endpoint='/users/export'
               params={{
-                search: search?.username || search?.status || '',
+                ...(search?.username || search?.name ? { search: search?.username || search?.name } : {}),
+                ...(Array.isArray(search?.status) && search.status.length > 0 ? { status: search.status[0] } : {}),
+                ...(Array.isArray(search?.role) && search.role.length > 0 ? { role: search.role[0] } : {}),
               }}
               filename='Data_Pegawai_PEMDA.xlsx'
               label='Ekspor Excel'

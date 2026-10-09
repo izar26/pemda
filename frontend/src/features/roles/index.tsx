@@ -54,6 +54,7 @@ function RolesContent() {
   } = useQuery<Role[]>({
     queryKey: ['roles'],
     queryFn: () => rbacService.getRoles(),
+    staleTime: 5 * 60 * 1000,
   })
 
   // 2. Fetch master permissions grouped
@@ -62,6 +63,7 @@ function RolesContent() {
   >({
     queryKey: ['permissions'],
     queryFn: () => rbacService.getGroupedPermissions(),
+    staleTime: 10 * 60 * 1000,
   })
 
   const allPermissions = useMemo(() => {
