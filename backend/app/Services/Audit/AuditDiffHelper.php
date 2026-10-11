@@ -139,18 +139,6 @@ class AuditDiffHelper
             }
         }
 
-        if ($model instanceof \App\Models\Perencanaan\PeriodePerencanaan) {
-            return $model->nama ?? "Siklus {$model->tahun_mulai}-{$model->tahun_selesai}";
-        }
-
-        if ($model instanceof \App\Models\Perencanaan\PeriodePenilaian) {
-            return "Tahun {$model->tahun} (Siklus {$model->periode})";
-        }
-
-        if ($model instanceof \App\Models\Perencanaan\KonteksRisikoStrategis) {
-            return 'Konteks Risiko OPD #' . ($model->opd_id ?? $model->getKey());
-        }
-
         return class_basename($model) . ' #' . $model->getKey();
     }
 

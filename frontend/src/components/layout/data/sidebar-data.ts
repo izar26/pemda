@@ -13,13 +13,6 @@ import {
   Sliders,
   Database,
   Building2,
-  Calendar,
-  GitFork,
-  Layers,
-  Target,
-  Sparkles,
-  ShieldAlert,
-  FileSpreadsheet,
   Images,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
@@ -69,72 +62,6 @@ export const sidebarData: SidebarData = {
           url: '/roles',
           icon: ShieldCheck,
           requiredPermission: 'roles.view',
-        },
-      ],
-    },
-    {
-      title: 'Perencanaan Kinerja',
-      items: [
-        {
-          title: 'Perencanaan Kinerja',
-          icon: GitFork,
-          requiredPermission: 'perencanaan.view',
-          items: [
-            {
-              title: 'Periode Penilaian',
-              url: '/perencanaan/periode',
-              icon: Calendar,
-              requiredPermission: 'perencanaan.periode',
-            },
-            {
-              title: 'Data Tujuan',
-              url: '/perencanaan/cascading?tab=tujuan',
-              icon: Target,
-              requiredPermission: 'perencanaan.cascading',
-            },
-            {
-              title: 'Data Sasaran',
-              url: '/perencanaan/cascading?tab=sasaran',
-              icon: GitFork,
-              requiredPermission: 'perencanaan.cascading',
-            },
-            {
-              title: 'Data IKU',
-              url: '/perencanaan/cascading?tab=iku',
-              icon: Sparkles,
-              requiredPermission: 'perencanaan.cascading',
-            },
-            {
-              title: 'Data Indikator',
-              url: '/perencanaan/cascading?tab=indikator',
-              icon: Layers,
-              requiredPermission: 'perencanaan.cascading',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Pengelolaan Risiko (OPD)',
-      items: [
-        {
-          title: 'Pengelolaan Risiko',
-          icon: ShieldAlert,
-          requiredPermission: 'risiko.view',
-          items: [
-            {
-              title: 'Konteks Strategis',
-              url: '/perencanaan/konteks-strategis',
-              icon: Target,
-              requiredPermission: 'risiko.konteks',
-            },
-            {
-              title: 'Konteks Operasional (Renstra)',
-              url: '/perencanaan/renstra',
-              icon: FileSpreadsheet,
-              requiredPermission: 'risiko.konteks',
-            },
-          ],
         },
       ],
     },

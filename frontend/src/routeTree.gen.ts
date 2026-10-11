@@ -45,10 +45,6 @@ import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes
 import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_authenticated/settings/display'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
-import { Route as AuthenticatedPerencanaanRenstraRouteImport } from './routes/_authenticated/perencanaan/renstra'
-import { Route as AuthenticatedPerencanaanPeriodeRouteImport } from './routes/_authenticated/perencanaan/periode'
-import { Route as AuthenticatedPerencanaanKonteksStrategisRouteImport } from './routes/_authenticated/perencanaan/konteks-strategis'
-import { Route as AuthenticatedPerencanaanCascadingRouteImport } from './routes/_authenticated/perencanaan/cascading'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AuthenticatedContentManagementBannersIndexRouteImport } from './routes/_authenticated/content-management/banners/index'
 
@@ -240,30 +236,6 @@ const AuthenticatedSettingsAccountRoute =
     path: '/account',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
-const AuthenticatedPerencanaanRenstraRoute =
-  AuthenticatedPerencanaanRenstraRouteImport.update({
-    id: '/perencanaan/renstra',
-    path: '/perencanaan/renstra',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerencanaanPeriodeRoute =
-  AuthenticatedPerencanaanPeriodeRouteImport.update({
-    id: '/perencanaan/periode',
-    path: '/perencanaan/periode',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerencanaanKonteksStrategisRoute =
-  AuthenticatedPerencanaanKonteksStrategisRouteImport.update({
-    id: '/perencanaan/konteks-strategis',
-    path: '/perencanaan/konteks-strategis',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerencanaanCascadingRoute =
-  AuthenticatedPerencanaanCascadingRouteImport.update({
-    id: '/perencanaan/cascading',
-    path: '/perencanaan/cascading',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedErrorsErrorRoute =
   AuthenticatedErrorsErrorRouteImport.update({
     id: '/errors/$error',
@@ -294,10 +266,6 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
-  '/perencanaan/cascading': typeof AuthenticatedPerencanaanCascadingRoute
-  '/perencanaan/konteks-strategis': typeof AuthenticatedPerencanaanKonteksStrategisRoute
-  '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeRoute
-  '/perencanaan/renstra': typeof AuthenticatedPerencanaanRenstraRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
@@ -334,10 +302,6 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
-  '/perencanaan/cascading': typeof AuthenticatedPerencanaanCascadingRoute
-  '/perencanaan/konteks-strategis': typeof AuthenticatedPerencanaanKonteksStrategisRoute
-  '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeRoute
-  '/perencanaan/renstra': typeof AuthenticatedPerencanaanRenstraRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
@@ -379,10 +343,6 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
-  '/_authenticated/perencanaan/cascading': typeof AuthenticatedPerencanaanCascadingRoute
-  '/_authenticated/perencanaan/konteks-strategis': typeof AuthenticatedPerencanaanKonteksStrategisRoute
-  '/_authenticated/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeRoute
-  '/_authenticated/perencanaan/renstra': typeof AuthenticatedPerencanaanRenstraRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayRoute
@@ -422,10 +382,6 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/errors/$error'
-    | '/perencanaan/cascading'
-    | '/perencanaan/konteks-strategis'
-    | '/perencanaan/periode'
-    | '/perencanaan/renstra'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
@@ -462,10 +418,6 @@ export interface FileRouteTypes {
     | '/503'
     | '/'
     | '/errors/$error'
-    | '/perencanaan/cascading'
-    | '/perencanaan/konteks-strategis'
-    | '/perencanaan/periode'
-    | '/perencanaan/renstra'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
@@ -506,10 +458,6 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_authenticated/'
     | '/_authenticated/errors/$error'
-    | '/_authenticated/perencanaan/cascading'
-    | '/_authenticated/perencanaan/konteks-strategis'
-    | '/_authenticated/perencanaan/periode'
-    | '/_authenticated/perencanaan/renstra'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/display'
@@ -802,34 +750,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAccountRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
-    '/_authenticated/perencanaan/renstra': {
-      id: '/_authenticated/perencanaan/renstra'
-      path: '/perencanaan/renstra'
-      fullPath: '/perencanaan/renstra'
-      preLoaderRoute: typeof AuthenticatedPerencanaanRenstraRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/perencanaan/periode': {
-      id: '/_authenticated/perencanaan/periode'
-      path: '/perencanaan/periode'
-      fullPath: '/perencanaan/periode'
-      preLoaderRoute: typeof AuthenticatedPerencanaanPeriodeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/perencanaan/konteks-strategis': {
-      id: '/_authenticated/perencanaan/konteks-strategis'
-      path: '/perencanaan/konteks-strategis'
-      fullPath: '/perencanaan/konteks-strategis'
-      preLoaderRoute: typeof AuthenticatedPerencanaanKonteksStrategisRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/perencanaan/cascading': {
-      id: '/_authenticated/perencanaan/cascading'
-      path: '/perencanaan/cascading'
-      fullPath: '/perencanaan/cascading'
-      preLoaderRoute: typeof AuthenticatedPerencanaanCascadingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/errors/$error': {
       id: '/_authenticated/errors/$error'
       path: '/errors/$error'
@@ -874,10 +794,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
-  AuthenticatedPerencanaanCascadingRoute: typeof AuthenticatedPerencanaanCascadingRoute
-  AuthenticatedPerencanaanKonteksStrategisRoute: typeof AuthenticatedPerencanaanKonteksStrategisRoute
-  AuthenticatedPerencanaanPeriodeRoute: typeof AuthenticatedPerencanaanPeriodeRoute
-  AuthenticatedPerencanaanRenstraRoute: typeof AuthenticatedPerencanaanRenstraRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedAuditLogsIndexRoute: typeof AuthenticatedAuditLogsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
@@ -895,12 +811,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
-  AuthenticatedPerencanaanCascadingRoute:
-    AuthenticatedPerencanaanCascadingRoute,
-  AuthenticatedPerencanaanKonteksStrategisRoute:
-    AuthenticatedPerencanaanKonteksStrategisRoute,
-  AuthenticatedPerencanaanPeriodeRoute: AuthenticatedPerencanaanPeriodeRoute,
-  AuthenticatedPerencanaanRenstraRoute: AuthenticatedPerencanaanRenstraRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedAuditLogsIndexRoute: AuthenticatedAuditLogsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
