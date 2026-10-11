@@ -1,6 +1,7 @@
 import apiClient from '@/lib/api-client'
 import type {
   PeriodePenilaian,
+  PeriodePerencanaan,
   PeriodePayload,
   CascadingTreeItem,
   RenstraProgram,
@@ -14,11 +15,36 @@ import type {
 
 export const perencanaanService = {
   // ==========================================
-  // FITUR 13: PERIODE PENILAIAN
+  // FITUR 13: PERIODE PENILAIAN & SIKLUS PERENCANAAN
   // ==========================================
+  async getPeriodeOverview(): Promise<{
+    data: PeriodePerencanaan[]
+    flat: PeriodePenilaian[]
+    active: PeriodePenilaian | null
+    can_manage: boolean
+  }> {
+    const response = await apiClient.get<{
+      data: PeriodePerencanaan[]
+      flat: PeriodePenilaian[]
+      active: PeriodePenilaian | null
+      can_manage: boolean
+    }>('/perencanaan/periode')
+    return {
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      flat: Array.isArray(response.data?.flat) ? response.data.flat : [],
+      active: response.data?.active || null,
+      can_manage: Boolean(response.data?.can_manage),
+    }
+  },
+
+  async getCyclesList(): Promise<PeriodePerencanaan[]> {
+    const res = await this.getPeriodeOverview()
+    return res.data
+  },
+
   async getPeriodeList(): Promise<PeriodePenilaian[]> {
-    const response = await apiClient.get<{ data: PeriodePenilaian[] }>('/perencanaan/periode')
-    return Array.isArray(response.data?.data) ? response.data.data : []
+    const res = await this.getPeriodeOverview()
+    return res.flat.length > 0 ? res.flat : ((res.data as unknown) as PeriodePenilaian[])
   },
 
   async getPeriodeActive(): Promise<PeriodePenilaian | null> {
@@ -30,8 +56,8 @@ export const perencanaanService = {
     }
   },
 
-  async createPeriode(payload: PeriodePayload): Promise<{ message: string; data: PeriodePenilaian }> {
-    const response = await apiClient.post<{ message: string; data: PeriodePenilaian }>(
+  async createPeriode(payload: PeriodePayload): Promise<{ message: string; data: PeriodePerencanaan }> {
+    const response = await apiClient.post<{ message: string; data: PeriodePerencanaan }>(
       '/perencanaan/periode',
       payload
     )
@@ -41,10 +67,20 @@ export const perencanaanService = {
   async updatePeriode(
     id: string | number,
     payload: PeriodePayload
-  ): Promise<{ message: string; data: PeriodePenilaian }> {
-    const response = await apiClient.put<{ message: string; data: PeriodePenilaian }>(
+  ): Promise<{ message: string; data: PeriodePerencanaan }> {
+    const response = await apiClient.put<{ message: string; data: PeriodePerencanaan }>(
       `/perencanaan/periode/${id}`,
       payload
+    )
+    return response.data
+  },
+
+  async activateYear(
+    periodeId: string | number,
+    tahunId: string | number
+  ): Promise<{ message: string; data: { active_year: PeriodePenilaian; cycle: PeriodePerencanaan } }> {
+    const response = await apiClient.patch<{ message: string; data: { active_year: PeriodePenilaian; cycle: PeriodePerencanaan } }>(
+      `/perencanaan/periode/${periodeId}/activate-year/${tahunId}`
     )
     return response.data
   },
@@ -52,8 +88,8 @@ export const perencanaanService = {
   async togglePeriodeStatus(
     id: string | number,
     status: 'Aktif' | 'Tidak Aktif' | 'Arsip' | 'active' | 'inactive' | 'archived'
-  ): Promise<{ message: string; data: PeriodePenilaian }> {
-    const response = await apiClient.patch<{ message: string; data: PeriodePenilaian }>(
+  ): Promise<{ message: string; data: any }> {
+    const response = await apiClient.patch<{ message: string; data: any }>(
       `/perencanaan/periode/${id}/status`,
       { status }
     )

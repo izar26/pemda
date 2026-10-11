@@ -276,14 +276,14 @@ class CascadingController extends Controller
 
         $validated = $request->validate([
             'nomor' => ['nullable', 'string', 'max:20'],
-            'indikator' => ['required', 'string'],
+            'indikator' => ['sometimes', 'required', 'string'],
             'jenis' => ['nullable', 'string', 'in:utama,pendukung'],
             'satuan' => ['nullable', 'string', 'max:50'],
             'target' => ['nullable', 'string', 'max:100'],
             'urutan' => ['nullable', 'integer'],
         ]);
 
-        $indikator->update(array_filter($validated, fn($val) => $val !== null));
+        $indikator->update($validated);
 
         return response()->json([
             'message' => 'Indikator kinerja sasaran berhasil diperbarui.',

@@ -122,6 +122,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::get('/periode/active', [PeriodePenilaianController::class, 'active']);
         Route::post('/periode', [PeriodePenilaianController::class, 'store']);
         Route::put('/periode/{periode}', [PeriodePenilaianController::class, 'update']);
+        Route::patch('/periode/{periode}/activate-year/{tahunId}', [PeriodePenilaianController::class, 'activateYear']);
         Route::patch('/periode/{periode}/activate', [PeriodePenilaianController::class, 'activate']);
         Route::patch('/periode/{periode}/status', [PeriodePenilaianController::class, 'updateStatus']);
         Route::delete('/periode/{periode}', [PeriodePenilaianController::class, 'destroy']);

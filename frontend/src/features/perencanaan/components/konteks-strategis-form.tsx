@@ -364,7 +364,7 @@ export function KonteksStrategisForm() {
                   </SelectContent>
                 </Select>
                 <span className="text-[11px] text-muted-foreground">
-                  Diambil dari Periode Penilaian aktif Bapperida (Fitur No 13).
+                  Diambil dari Periode Penilaian aktif Bapperida.
                 </span>
               </div>
 
@@ -474,7 +474,7 @@ export function KonteksStrategisForm() {
 
                 {availableTujuans.length === 0 ? (
                   <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-                    Belum ada Tujuan Kinerja yang diatur oleh Bapperida untuk OPD ini pada periode terpilih. Silakan minta admin Bapperida untuk menginput Data Tujuan (Fitur 14).
+                    Belum ada Tujuan Kinerja yang diatur oleh Bapperida untuk OPD ini pada periode terpilih. Silakan minta admin Bapperida untuk menginput Data Tujuan.
                   </div>
                 ) : (
                   <Select value={selectedTujuanId} onValueChange={handleTujuanChange}>
@@ -496,7 +496,7 @@ export function KonteksStrategisForm() {
                   </Select>
                 )}
                 <span className="text-[11px] text-muted-foreground block">
-                  Diambil dari tujuan strategis yang diatur Bapperida (Sheet 2 / Fitur 14).
+                  Diambil dari tujuan strategis yang diatur Bapperida.
                 </span>
               </div>
 
@@ -665,7 +665,7 @@ export function KonteksStrategisForm() {
                     </div>
                   </div>
                   <span className="text-[10px] text-muted-foreground block pt-1">
-                    Diambil dari pengaturan Data Pegawai (Fitur 12) jabatan Kepala OPD.
+                    Diambil dari pengaturan Data Pegawai jabatan Kepala OPD.
                   </span>
                 </div>
               </div>

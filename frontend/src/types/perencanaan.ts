@@ -1,24 +1,56 @@
 export type PeriodeStatus = 'Aktif' | 'Tidak Aktif' | 'Arsip' | 'active' | 'inactive' | 'archived'
 
+export interface PeriodePerencanaan {
+  id: string
+  nama: string
+  tahun_mulai: number
+  tahun_selesai: number
+  durasi_tahun: number
+  status: PeriodeStatus
+  keterangan?: string | null
+  rentang_tahun?: string
+  tahun_aktif?: number | null
+  tahun_penilaians?: PeriodePenilaian[]
+  created_at?: string
+  updated_at?: string
+}
+
 export interface PeriodePenilaian {
   id: string
+  periode_perencanaan_id?: string
+  periode?: string
   periode_penilaian: string
+  tahun?: number
   tahun_penilaian: number
   tanggal_mulai: string
   tanggal_berakhir: string
   status: PeriodeStatus
+  catatan?: string | null
   keterangan?: string | null
+  periode_perencanaan?: PeriodePerencanaan
   created_at?: string
   updated_at?: string
 }
 
 export interface PeriodePayload {
-  periode_penilaian: string
-  tahun_penilaian: number
-  tanggal_mulai: string
-  tanggal_berakhir: string
+  periode_penilaian?: string
+  tahun_penilaian?: number
+  nama?: string
+  tahun_mulai?: number
+  tahun_selesai?: number
+  durasi_tahun?: number
+  tahun_aktif?: number
+  tanggal_mulai?: string
+  tanggal_berakhir?: string
   status: PeriodeStatus
   keterangan?: string | null
+}
+
+export interface PeriodeListResponse {
+  data: PeriodePerencanaan[]
+  flat: PeriodePenilaian[]
+  active: PeriodePenilaian | null
+  can_manage: boolean
 }
 
 export interface IndikatorSasaran {

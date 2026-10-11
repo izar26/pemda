@@ -140,7 +140,7 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Kritis',
   },
 
-  // Perencanaan Kinerja Bapperida (Fitur 13-17)
+  // Perencanaan Kinerja Bapperida
   'perencanaan.view': {
     label: 'Lihat Perencanaan Kinerja',
     description: 'Melihat jadwal periode penilaian, sasaran makro, dan Renstra daerah.',
@@ -148,13 +148,13 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Aman',
   },
   'perencanaan.periode': {
-    label: 'Kelola Periode Penilaian (Fitur 13)',
+    label: 'Kelola Periode Penilaian',
     description: 'Menetapkan siklus periode 5 tahunan, tahun penilaian aktif, dan masa berlaku.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
   'perencanaan.cascading': {
-    label: 'Kelola Cascading Kinerja (Fitur 14-17)',
+    label: 'Kelola Cascading Kinerja',
     description: 'Mengelola pohon kinerja Tujuan, Sasaran, IKU, dan Indikator Makro Pemda.',
     risk: 'critical',
     badgeLabel: 'Kritis',
@@ -166,7 +166,7 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Menengah',
   },
 
-  // Pengelolaan Data Risiko OPD (Fitur 26-30, 33)
+  // Pengelolaan Data Risiko OPD
   'risiko.view': {
     label: 'Lihat Data Risiko OPD',
     description: 'Melihat formulir dan registrasi data risiko pada perangkat daerah.',
@@ -186,59 +186,59 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Kritis',
   },
   'risiko.rtp': {
-    label: 'Rencana Tindak Pengendalian / RTP (Fitur 27)',
+    label: 'Rencana Tindak Pengendalian / RTP',
     description: 'Menyusun rencana tindakan pengendalian dan perlakuan atas risiko.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'risiko.kejadian': {
-    label: 'Pencatatan Kejadian Risiko (Fitur 28)',
+    label: 'Pencatatan Kejadian Risiko',
     description: 'Mendokumentasikan insiden / keterjadian risiko riil di unit kerja.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'risiko.pengendalian': {
-    label: 'Pemantauan Pengendalian (Fitur 29)',
+    label: 'Pemantauan Pengendalian',
     description: 'Memantau efektivitas kegiatan pengendalian yang telah berjalan.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
   'risiko.fraud': {
-    label: 'Penilaian Risiko Kecurangan (Fitur 30)',
+    label: 'Penilaian Risiko Kecurangan',
     description: 'Mengidentifikasi potensi fraud/kecurangan pada program perangkat daerah.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'risiko.import': {
-    label: 'Import Data Risiko Excel (Fitur 33)',
+    label: 'Import Data Risiko Excel',
     description: 'Mengunggah massal data rencana program dan risiko melalui format spreadsheet.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
 
-  // Pengawasan & Audit APIP (Fitur 18-25)
+  // Pengawasan & Audit APIP
   'pengawasan.view': {
-    label: 'Pengawasan, Survei & SPIP (Fitur 18-22)',
+    label: 'Pengawasan, Survei & SPIP',
     description: 'Mengakses instrumen survei, monev, data wilayah, dan form SPIP (1b, 1c, 2a, 3a).',
     risk: 'low',
     badgeLabel: 'Aman',
   },
   'audit_spip.view': {
-    label: 'Audit & Riviu Risiko (Fitur 23-25)',
+    label: 'Audit & Riviu Risiko',
     description: 'Melakukan audit risiko, menyusun rekomendasi perbaikan, dan memantau tindak lanjut.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
 
-  // Laporan & Arsip (Fitur 31 & 32)
+  // Laporan & Arsip
   'laporan.view': {
-    label: 'Laporan & Ekspor Risiko (Fitur 31)',
+    label: 'Laporan & Ekspor Risiko',
     description: 'Mencetak dan mengekspor dokumen resmi laporan manajemen risiko.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
   'arsip.view': {
-    label: 'Arsip Penilaian Risiko (Fitur 32)',
+    label: 'Arsip Penilaian Risiko',
     description: 'Melihat berkas arsip dan catatan historis penilaian periode lampau.',
     risk: 'low',
     badgeLabel: 'Aman',

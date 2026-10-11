@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   GitFork,
   Plus,
@@ -17,6 +17,7 @@ import {
   Loader2,
   MoreHorizontal,
   ChevronLeft,
+  Check,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -69,6 +70,176 @@ import { opdService } from '@/services/opd-service'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/searchable-select'
 import type { Opd } from '@/features/users/data/schema'
 import type { CascadingTreeItem, PeriodePenilaian } from '@/types/perencanaan'
+
+interface CascadingIndikatorRowProps {
+  ind: {
+    id: string
+    nomor?: string
+    indikator: string
+    jenis?: string | null
+    target?: string | null
+    satuan?: string | null
+  }
+  onUpdate: (
+    ind: { id: string; indikator: string; jenis?: string | null },
+    target: string,
+    satuan: string
+  ) => Promise<void>
+  onEdit: () => void
+  onDelete: () => void
+}
+
+function CascadingIndikatorRow({
+  ind,
+  onUpdate,
+  onEdit,
+  onDelete,
+}: CascadingIndikatorRowProps) {
+  const [target, setTarget] = useState<string>(ind.target ?? '')
+  const [satuan, setSatuan] = useState<string>(ind.satuan ?? '')
+  const [isSaving, setIsSaving] = useState<boolean>(false)
+  const [isSaved, setIsSaved] = useState<boolean>(false)
+  const lastTarget = useRef<string>(ind.target ?? '')
+  const lastSatuan = useRef<string>(ind.satuan ?? '')
+
+  const handleSave = async (currentTarget: string, currentSatuan: string) => {
+    const trimmedTarget = currentTarget.trim()
+    const trimmedSatuan = currentSatuan.trim()
+
+    if (
+      trimmedTarget === lastTarget.current.trim() &&
+      trimmedSatuan === lastSatuan.current.trim()
+    ) {
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      await onUpdate(ind, trimmedTarget, trimmedSatuan)
+      lastTarget.current = trimmedTarget
+      lastSatuan.current = trimmedSatuan
+      setIsSaved(true)
+      setTimeout(() => setIsSaved(false), 2000)
+    } catch {
+      setTarget(lastTarget.current)
+      setSatuan(lastSatuan.current)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2 rounded-md bg-card border shadow-2xs hover:border-primary/40 transition-colors">
+      {/* Bagian Kiri: Nomor, Nama Indikator, dan Badge Klasifikasi */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <Badge
+          variant="outline"
+          className="text-[10px] font-mono shrink-0"
+        >
+          {ind.nomor || 'L3'}
+        </Badge>
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <span className="text-xs font-medium text-foreground leading-snug">
+            {ind.indikator}
+          </span>
+          {ind.jenis && (
+            <Badge
+              variant={
+                ind.jenis.toLowerCase() === 'utama' || ind.jenis.toLowerCase() === 'iku'
+                  ? 'default'
+                  : 'secondary'
+              }
+              className="text-[9px] py-0 px-1.5 h-4 shrink-0 font-mono"
+            >
+              {ind.jenis.toUpperCase()}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Bagian Kanan: Form Input Target, Form Input Satuan, Status Icon, dan Tombol Aksi */}
+      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+        {/* Form Target */}
+        <div className="flex items-center gap-1 bg-muted/40 rounded border border-border/70 px-1.5 py-0.5 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+          <span className="text-[10px] font-medium text-muted-foreground shrink-0 select-none">
+            Target:
+          </span>
+          <input
+            type="text"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            onBlur={() => handleSave(target, satuan)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              if (e.key === 'Escape') {
+                setTarget(lastTarget.current)
+                ;(e.target as HTMLInputElement).blur()
+              }
+            }}
+            placeholder="0"
+            title="Klik atau arahkan kursor untuk mengisi target"
+            className="w-14 sm:w-16 bg-transparent text-xs text-foreground font-mono focus:outline-none placeholder:text-muted-foreground/40 text-right"
+          />
+        </div>
+
+        {/* Form Satuan */}
+        <div className="flex items-center gap-1 bg-muted/40 rounded border border-border/70 px-1.5 py-0.5 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+          <span className="text-[10px] font-medium text-muted-foreground shrink-0 select-none">
+            Satuan:
+          </span>
+          <input
+            type="text"
+            value={satuan}
+            onChange={(e) => setSatuan(e.target.value)}
+            onBlur={() => handleSave(target, satuan)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              if (e.key === 'Escape') {
+                setSatuan(lastSatuan.current)
+                ;(e.target as HTMLInputElement).blur()
+              }
+            }}
+            placeholder="%"
+            title="Klik atau arahkan kursor untuk mengisi satuan"
+            className="w-14 sm:w-18 bg-transparent text-xs text-foreground focus:outline-none placeholder:text-muted-foreground/40"
+          />
+        </div>
+
+        {/* Status Simpan Otomatis */}
+        <div className="w-4 flex items-center justify-center">
+          {isSaving && (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {!isSaving && isSaved && (
+            <Check className="h-3.5 w-3.5 text-emerald-600 animate-in fade-in" />
+          )}
+        </div>
+
+        {/* Tombol Edit (Dialog Modal) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+          title="Edit Indikator"
+          onClick={onEdit}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+
+        {/* Tombol Hapus */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+          title="Hapus Indikator"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 export function CascadingManagement() {
   const [cascadingData, setCascadingData] = useState<CascadingTreeItem[]>([])
@@ -414,6 +585,38 @@ export function CascadingManagement() {
     }
   }
 
+  const handleUpdateIndikatorInline = async (
+    ind: { id: string; indikator: string; jenis?: string | null },
+    newTarget: string,
+    newSatuan: string
+  ) => {
+    try {
+      await perencanaanService.updateIndikator(ind.id, {
+        indikator: ind.indikator,
+        jenis: ind.jenis || undefined,
+        target: newTarget,
+        satuan: newSatuan,
+      })
+      setCascadingData((prev) =>
+        prev.map((t) => ({
+          ...t,
+          sasarans: t.sasarans.map((s) => ({
+            ...s,
+            indikators: s.indikators.map((i) =>
+              String(i.id) === String(ind.id)
+                ? { ...i, target: newTarget, satuan: newSatuan }
+                : i
+            ),
+          })),
+        }))
+      )
+      toast.success('Target & satuan berhasil diperbarui.')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Gagal memperbarui target/satuan.')
+      throw err
+    }
+  }
+
   // --- DERIVED FLAT DATA LISTS SESUAI DOKUMEN (FITUR 14, 15, 16, 17) ---
 
   // 1. Data Tujuan (Fitur 14)
@@ -625,14 +828,14 @@ export function CascadingManagement() {
   // KPI STATS CARDS (Konsisten 100% dengan Menu Manajemen Pegawai)
   const kpiItems: KpiStatItem[] = [
     {
-      title: 'Total Tujuan (Fitur 14)',
+      title: 'Total Tujuan',
       value: flatTujuans.length,
       icon: Target,
       color: 'bg-primary/10 text-primary',
       subtitle: `${opds.length} Perangkat Daerah`,
     },
     {
-      title: 'Total Sasaran (Fitur 15)',
+      title: 'Total Sasaran',
       value: flatSasarans.length,
       icon: GitFork,
       color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
@@ -640,7 +843,7 @@ export function CascadingManagement() {
       subtitle: 'Menginduk ke Tujuan',
     },
     {
-      title: 'Data IKU (Fitur 16)',
+      title: 'Data IKU',
       value: flatIkus.length,
       icon: Sparkles,
       color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
@@ -648,7 +851,7 @@ export function CascadingManagement() {
       subtitle: 'Prioritas Form 2B OPD',
     },
     {
-      title: 'Data Indikator (Fitur 17)',
+      title: 'Data Indikator',
       value: flatIndikators.length,
       icon: Layers,
       color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
@@ -716,17 +919,6 @@ export function CascadingManagement() {
         <PageHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5 min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-mono">
-                {activeTab === 'tujuan'
-                  ? 'Fitur 14'
-                  : activeTab === 'sasaran'
-                  ? 'Fitur 15'
-                  : activeTab === 'iku'
-                  ? 'Fitur 16'
-                  : activeTab === 'indikator'
-                  ? 'Fitur 17'
-                  : 'Fitur 14–17'}
-              </Badge>
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 {activeTab === 'tujuan'
                   ? 'Data Tujuan Strategis (Level 1)'
@@ -748,7 +940,7 @@ export function CascadingManagement() {
                 ? 'Indikator prioritas daerah yang ditarik otomatis ke Form 2B Penetapan Konteks Risiko OPD.'
                 : activeTab === 'indikator'
                 ? 'Indikator kinerja operasional/pendukung yang menginduk ke Sasaran Makro selain IKU.'
-                : 'Hierarki terpadu 3 tingkat makro Bapperida: Tujuan (14) → Sasaran (15) → IKU (16) & Indikator (17).'}
+                : 'Hierarki terpadu 3 tingkat makro Bapperida: Tujuan → Sasaran → IKU & Indikator.'}
             </p>
           </div>
 
@@ -1505,74 +1697,29 @@ export function CascadingManagement() {
                                       </div>
                                     ) : (
                                       sasaranItem.indikators.map((ind) => (
-                                        <div
-                                          key={ind.id}
-                                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-md bg-card border shadow-2xs hover:border-primary/40 transition-colors"
-                                        >
-                                          <div className="flex items-start gap-2">
-                                            <Badge
-                                              variant="outline"
-                                              className="text-[10px] font-mono shrink-0 mt-0.5"
-                                            >
-                                              {ind.nomor || 'L3'}
-                                            </Badge>
-                                            <div>
-                                              <p className="text-xs font-medium text-foreground">
-                                                {ind.indikator}
-                                              </p>
-                                              <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                                {ind.jenis && (
-                                                  <Badge
-                                                    variant={ind.jenis.toLowerCase() === 'utama' || ind.jenis.toLowerCase() === 'iku' ? 'default' : 'secondary'}
-                                                    className="text-[9px] py-0 px-1.5 h-3.5"
-                                                  >
-                                                    {ind.jenis.toUpperCase()}
-                                                  </Badge>
-                                                )}
-                                                {(ind.target || ind.satuan) && (
-                                                  <span className="text-[10px] font-mono text-muted-foreground">
-                                                    Target: <strong className="text-foreground">{ind.target ?? '-'}</strong> {ind.satuan ?? ''}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          <div className="flex items-center gap-1 self-end sm:self-auto shrink-0">
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 text-blue-600"
-                                              onClick={() => {
-                                                setEditingIndikator({
-                                                  id: String(ind.id),
-                                                  indikator: ind.indikator,
-                                                  jenis: ind.jenis,
-                                                  target: ind.target,
-                                                  satuan: ind.satuan,
-                                                })
-                                                setIndikatorInput({
-                                                  sasaran_id: String(sasaranItem.id),
-                                                  indikator: ind.indikator,
-                                                  jenis: ind.jenis || 'Utama',
-                                                  target: ind.target || '',
-                                                  satuan: ind.satuan || '',
-                                                })
-                                                setIndikatorDialogOpen(true)
-                                              }}
-                                            >
-                                              <Pencil className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 text-rose-600"
-                                              onClick={() => handleDeleteIndikator(ind.id)}
-                                            >
-                                              <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        </div>
+                                        <CascadingIndikatorRow
+                                          key={`${ind.id}-${ind.target ?? ''}-${ind.satuan ?? ''}`}
+                                          ind={ind}
+                                          onUpdate={handleUpdateIndikatorInline}
+                                          onEdit={() => {
+                                            setEditingIndikator({
+                                              id: String(ind.id),
+                                              indikator: ind.indikator,
+                                              jenis: ind.jenis,
+                                              target: ind.target,
+                                              satuan: ind.satuan,
+                                            })
+                                            setIndikatorInput({
+                                              sasaran_id: String(sasaranItem.id),
+                                              indikator: ind.indikator,
+                                              jenis: ind.jenis || 'Utama',
+                                              target: ind.target || '',
+                                              satuan: ind.satuan || '',
+                                            })
+                                            setIndikatorDialogOpen(true)
+                                          }}
+                                          onDelete={() => handleDeleteIndikator(ind.id)}
+                                        />
                                       ))
                                     )}
                                   </div>
@@ -1830,7 +1977,7 @@ export function CascadingManagement() {
                   </Select>
                 </div>
                 <div className="space-y-1.5 min-w-0">
-                  <Label className="text-xs font-semibold">Target</Label>
+                  <Label className="text-xs font-semibold">Target (Opsional)</Label>
                   <Input
                     placeholder="88.5"
                     value={indikatorInput.target}
@@ -1839,7 +1986,7 @@ export function CascadingManagement() {
                   />
                 </div>
                 <div className="space-y-1.5 min-w-0">
-                  <Label className="text-xs font-semibold">Satuan</Label>
+                  <Label className="text-xs font-semibold">Satuan (Opsional)</Label>
                   <Input
                     placeholder="%"
                     value={indikatorInput.satuan}

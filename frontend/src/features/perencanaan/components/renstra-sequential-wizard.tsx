@@ -209,7 +209,7 @@ export function RenstraSequentialWizard({
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-base font-bold text-foreground">
-                Form Sequential Wizard (Fitur 2C)
+                Form Sequential Wizard
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                 Pengisian bertahap berjenjang: Program (A) &rarr; Kegiatan (A.1) &rarr; Sub Kegiatan (A.1.1)

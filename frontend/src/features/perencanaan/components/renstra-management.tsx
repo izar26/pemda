@@ -456,9 +456,6 @@ export function RenstraManagement() {
           <PageHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
-                  Sheet 2B & 2C Permendagri
-                </Badge>
                 <h2 className="text-2xl font-bold tracking-tight">Rencana Strategis Perangkat Daerah (Renstra SKPD)</h2>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">

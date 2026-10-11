@@ -57,10 +57,10 @@ export function KpiStatsCards({
               <span className='text-[11px] font-medium text-muted-foreground truncate block'>
                 {item.title}
               </span>
-              <div className='flex items-baseline gap-1.5 mt-0.5'>
+              <div className='flex flex-col mt-0.5 min-w-0'>
                 <p
                   className={cn(
-                    'text-lg font-bold leading-tight',
+                    'text-lg font-bold leading-tight truncate',
                     item.valueColor || 'text-foreground'
                   )}
                 >

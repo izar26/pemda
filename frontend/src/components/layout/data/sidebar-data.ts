@@ -82,35 +82,30 @@ export const sidebarData: SidebarData = {
           items: [
             {
               title: 'Periode Penilaian',
-              badge: 'Fitur 13',
               url: '/perencanaan/periode',
               icon: Calendar,
               requiredPermission: 'perencanaan.periode',
             },
             {
               title: 'Data Tujuan',
-              badge: 'Fitur 14',
               url: '/perencanaan/cascading?tab=tujuan',
               icon: Target,
               requiredPermission: 'perencanaan.cascading',
             },
             {
               title: 'Data Sasaran',
-              badge: 'Fitur 15',
               url: '/perencanaan/cascading?tab=sasaran',
               icon: GitFork,
               requiredPermission: 'perencanaan.cascading',
             },
             {
               title: 'Data IKU',
-              badge: 'Fitur 16',
               url: '/perencanaan/cascading?tab=iku',
               icon: Sparkles,
               requiredPermission: 'perencanaan.cascading',
             },
             {
               title: 'Data Indikator',
-              badge: 'Fitur 17',
               url: '/perencanaan/cascading?tab=indikator',
               icon: Layers,
               requiredPermission: 'perencanaan.cascading',
@@ -129,14 +124,12 @@ export const sidebarData: SidebarData = {
           items: [
             {
               title: 'Konteks Strategis',
-              badge: 'Sheet 2B',
               url: '/perencanaan/konteks-strategis',
               icon: Target,
               requiredPermission: 'risiko.konteks',
             },
             {
               title: 'Konteks Operasional (Renstra)',
-              badge: 'Sheet 2C',
               url: '/perencanaan/renstra',
               icon: FileSpreadsheet,
               requiredPermission: 'risiko.konteks',

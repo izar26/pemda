@@ -133,7 +133,7 @@ export function RenstraImportDialog({
                 Impor Excel Renstra SKPD (Program / Kegiatan)
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Fitur Impor Berjenjang Hierarki (Indeksasi A, A.1, A.1.1) dari berkas Excel.
+                Impor Berjenjang Hierarki (Indeksasi A, A.1, A.1.1) dari berkas Excel.
               </DialogDescription>
             </div>
           </div>

@@ -16,7 +16,10 @@ class PeriodePenilaian extends Model
 
     protected $table = 'periode_penilaians';
 
+    public string $auditModule = 'Perencanaan Kinerja';
+
     protected $fillable = [
+        'periode_perencanaan_id',
         'periode',
         'tahun',
         'tanggal_mulai',
@@ -50,6 +53,11 @@ class PeriodePenilaian extends Model
     public function getKeteranganAttribute(): ?string
     {
         return $this->catatan;
+    }
+
+    public function periodePerencanaan()
+    {
+        return $this->belongsTo(PeriodePerencanaan::class, 'periode_perencanaan_id');
     }
 
     public function tujuans(): HasMany
