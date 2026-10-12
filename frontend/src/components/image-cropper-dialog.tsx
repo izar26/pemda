@@ -52,6 +52,7 @@ export function ImageCropperDialog({
       onCropComplete(croppedFile, previewUrl)
       onOpenChange(false)
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to crop image:', error)
     } finally {
       setIsProcessing(false)

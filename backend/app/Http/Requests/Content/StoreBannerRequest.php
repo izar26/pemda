@@ -13,7 +13,7 @@ class StoreBannerRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('content.manage') ?? false;
+        return $this->user()?->can('content.create') || $this->user()?->can('content.manage') ?? false;
     }
 
     /**

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
-import { Building2, Loader2, AlertTriangle } from 'lucide-react'
+import { Building2, Loader2, AlertTriangle, Trash2 } from 'lucide-react'
 import { opdService } from '@/services/opd-service'
 import { OPD_CATEGORIES, type OpdItem } from '@/types/opd'
 import { useOpd } from './opd-provider'
@@ -16,16 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   Form,
   FormControl,
@@ -144,7 +135,7 @@ export function OpdActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-lg flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+      <DialogContent className='sm:max-w-lg max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
         <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <div className='flex items-center gap-3'>
             <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary'>
@@ -163,7 +154,7 @@ export function OpdActionDialog({
           </div>
         </DialogHeader>
 
-        <div className='px-6 py-4 overflow-y-auto max-h-[70vh]'>
+        <div className='flex-1 overflow-y-auto px-6 py-4 min-h-0'>
           <Form {...form}>
             <form
               id='opd-action-form'
@@ -328,7 +319,7 @@ export function OpdActionDialog({
           </Form>
         </div>
 
-        <DialogFooter className='px-6 py-3 border-t bg-muted/10 shrink-0 gap-2 sm:gap-0'>
+        <DialogFooter className='px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
           <Button
             type='button'
             variant='outline'
@@ -343,10 +334,18 @@ export function OpdActionDialog({
             form='opd-action-form'
             size='sm'
             disabled={isSubmitting}
-            className='gap-2'
+            className='min-w-[120px]'
           >
-            {isSubmitting && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
-            {isEdit ? 'Simpan Perubahan' : 'Tambah Instansi'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                Menyimpan...
+              </>
+            ) : isEdit ? (
+              'Simpan Perubahan'
+            ) : (
+              'Tambah Instansi'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -374,7 +373,7 @@ export function OpdDeleteDialog({
   const hasUsers = (currentRow.users_count ?? 0) > 0
 
   async function handleDelete() {
-    if (!currentRow) return
+    if (!currentRow || hasUsers) return
     setIsDeleting(true)
     try {
       await opdService.deleteOpd(currentRow.id)
@@ -392,96 +391,108 @@ export function OpdDeleteDialog({
     }
   }
 
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className='sm:max-w-md'>
-        <AlertDialogHeader className='text-start'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive'>
-              <AlertTriangle className='h-5 w-5' />
-            </div>
-            <div>
-              <AlertDialogTitle className='text-base font-bold text-foreground'>
-                Hapus Perangkat Daerah
-              </AlertDialogTitle>
-              <AlertDialogDescription className='text-xs text-muted-foreground mt-0.5'>
-                Tindakan ini tidak dapat dibatalkan.
-              </AlertDialogDescription>
-            </div>
-          </div>
-        </AlertDialogHeader>
+  const title = (
+    <div className='flex items-center gap-2 text-destructive'>
+      <AlertTriangle className='h-5 w-5' />
+      <span>Hapus Perangkat Daerah</span>
+    </div>
+  )
 
-        <div className='py-2 text-sm text-muted-foreground'>
-          <p>
-            Apakah Anda yakin ingin menghapus instansi{' '}
-            <strong className='text-foreground'>{currentRow.nama}</strong> ({currentRow.kode})?
-          </p>
+  const descContent = (
+    <div className='space-y-2 text-xs'>
+      <p>
+        Apakah Anda yakin ingin menghapus instansi{' '}
+        <strong className='text-foreground'>{currentRow.nama}</strong> ({currentRow.kode})?
+      </p>
 
-          {hasUsers && (
-            <div className='mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2'>
-              <AlertTriangle className='h-4 w-4 shrink-0 mt-0.5' />
-              <span>
-                <strong>Perhatian:</strong> Masih terdapat <strong>{currentRow.users_count} pegawai</strong> yang ditugaskan di instansi ini. Sistem akan menolak penghapusan untuk melindungi integritas data pegawai.
-              </span>
-            </div>
-          )}
+      {hasUsers ? (
+        <div className='p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed flex items-start gap-2'>
+          <AlertTriangle className='h-4 w-4 shrink-0 mt-0.5' />
+          <span>
+            <strong>Perhatian:</strong> Masih terdapat <strong>{currentRow.users_count} pegawai</strong> yang ditugaskan di instansi ini. Sistem menolak penghapusan untuk melindungi integritas data pegawai.
+          </span>
         </div>
+      ) : (
+        <div className='rounded-md border border-amber-500/20 bg-amber-500/10 p-2.5 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed'>
+          Tindakan ini tidak dapat dibatalkan. Seluruh data konfigurasi instansi akan dihapus dari sistem secara permanen.
+        </div>
+      )}
+    </div>
+  )
 
-        <AlertDialogFooter className='gap-2 sm:gap-0'>
-          <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault()
-              handleDelete()
-            }}
-            disabled={isDeleting}
-            className='bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2'
-          >
-            {isDeleting && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
-            Hapus Instansi
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      desc={descContent}
+      destructive
+      showConfirmBtn={!hasUsers}
+      confirmText={
+        <span className='flex items-center gap-1.5'>
+          <Trash2 className='h-4 w-4' />
+          Hapus Instansi
+        </span>
+      }
+      cancelBtnText={hasUsers ? 'Tutup' : 'Batal'}
+      isLoading={isDeleting}
+      handleConfirm={handleDelete}
+      className='sm:max-w-md'
+    />
   )
 }
 
 export function OpdDialogs({ onSuccess }: { onSuccess: () => void }) {
   const { open, setOpen, currentRow, setCurrentRow } = useOpd()
 
+  const handleClose = () => {
+    setOpen(null)
+    setTimeout(() => setCurrentRow(null), 300)
+  }
+
   return (
     <>
       <OpdActionDialog
-        open={open === 'create' || open === 'edit'}
+        key='opd-add'
+        open={open === 'create'}
         onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setOpen(null)
-            setCurrentRow(null)
-          }
+          if (!isOpen) handleClose()
         }}
-        currentRow={open === 'edit' ? currentRow : null}
         onSuccess={() => {
           onSuccess()
-          setOpen(null)
-          setCurrentRow(null)
+          handleClose()
         }}
       />
 
-      <OpdDeleteDialog
-        open={open === 'delete'}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setOpen(null)
-            setCurrentRow(null)
-          }
-        }}
-        currentRow={currentRow}
-        onSuccess={() => {
-          onSuccess()
-          setOpen(null)
-          setCurrentRow(null)
-        }}
-      />
+      {currentRow && (
+        <>
+          <OpdActionDialog
+            key={`opd-edit-${currentRow.id}`}
+            open={open === 'edit'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) handleClose()
+            }}
+            currentRow={currentRow}
+            onSuccess={() => {
+              onSuccess()
+              handleClose()
+            }}
+          />
+
+          <OpdDeleteDialog
+            key={`opd-delete-${currentRow.id}`}
+            open={open === 'delete'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) handleClose()
+            }}
+            currentRow={currentRow}
+            onSuccess={() => {
+              onSuccess()
+              handleClose()
+            }}
+          />
+        </>
+      )}
     </>
   )
 }

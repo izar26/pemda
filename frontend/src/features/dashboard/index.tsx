@@ -11,9 +11,9 @@ import {
   CheckCircle2,
   Calendar,
 } from 'lucide-react'
+import { usePermissions } from '@/hooks/use-permissions'
 import { useAuthStore } from '@/stores/auth-store'
-import { opdService } from '@/services/opd-service'
-import { userService } from '@/services/user-service'
+import { dashboardService } from '@/services/dashboard-service'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
@@ -33,19 +33,14 @@ import { RecentActivityFeed } from './components/recent-activity-feed'
 export function Dashboard() {
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.auth.user)
+  const { hasPermission } = usePermissions()
+  const canExport = hasPermission('dashboard.export') || hasPermission('dashboard.view')
   const [activeTab, setActiveTab] = useState<'overview' | 'matrix' | 'opd'>('overview')
 
-  // Fetch real OPD stats for live counters
-  const { data: opdStats, isLoading: isLoadingOpd, isRefetching, refetch } = useQuery({
-    queryKey: ['dashboard-opd-stats'],
-    queryFn: () => opdService.getStats(),
-    staleTime: 60 * 1000,
-  })
-
-  // Fetch users count
-  const { data: usersData } = useQuery({
-    queryKey: ['dashboard-users-count'],
-    queryFn: () => userService.getUsers({ per_page: 1 }),
+  // Fetch real Dashboard stats (authorized via dashboard.view)
+  const { data: dashStats, isLoading: isLoadingStats, isRefetching, refetch } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: () => dashboardService.getStats(),
     staleTime: 60 * 1000,
   })
 
@@ -54,9 +49,9 @@ export function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ['dashboard-audit-logs'] })
   }
 
-  const totalInstansi = opdStats?.total ?? 40
-  const activeInstansi = opdStats?.active ?? 38
-  const totalPegawai = usersData?.meta?.total ?? opdStats?.total_pegawai ?? 124
+  const totalInstansi = dashStats?.total_instansi ?? 40
+  const activeInstansi = dashStats?.active_instansi ?? 38
+  const totalPegawai = dashStats?.total_pegawai ?? 124
 
   // Executive KPI Stat Cards
   const kpiItems: KpiStatItem[] = [
@@ -130,17 +125,19 @@ export function Dashboard() {
           </div>
 
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
-            <ExportExcelButton
-              endpoint='/dashboard/export'
-              filename='Laporan_Ringkasan_Eksekutif_PEMDA.xlsx'
-              label='Ekspor Laporan'
-            />
+            {canExport && (
+              <ExportExcelButton
+                endpoint='/dashboard/export'
+                filename='Laporan_Ringkasan_Eksekutif_PEMDA.xlsx'
+                label='Ekspor Laporan'
+              />
+            )}
             <Button
               variant='outline'
               size='sm'
               className='h-9 text-xs'
               onClick={handleRefresh}
-              disabled={isLoadingOpd || isRefetching}
+              disabled={isLoadingStats || isRefetching}
             >
               <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? 'animate-spin' : ''}`} />
               Segarkan
@@ -176,7 +173,7 @@ export function Dashboard() {
         </div>
 
         {/* Executive KPI Stat Cards */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoadingOpd} />
+        <KpiStatsCards items={kpiItems} isLoading={isLoadingStats} />
 
         {/* Tab Navigation Dashboard */}
         <Tabs

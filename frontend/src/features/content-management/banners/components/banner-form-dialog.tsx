@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { isAxiosError } from 'axios'
 import {
   Dialog,
   DialogContent,
@@ -53,6 +54,7 @@ export function BannerFormDialog({
   // Reset or initialize on open
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (banner) {
         setTitle(banner.title || '')
         setDescription(banner.description || '')
@@ -127,9 +129,12 @@ export function BannerFormDialog({
 
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Gagal menyimpan banner'
-      toast.error(msg)
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response?.data?.message) {
+        toast.error(error.response.data.message)
+      } else {
+        toast.error('Gagal menyimpan banner')
+      }
     } finally {
       setIsSubmitting(false)
     }

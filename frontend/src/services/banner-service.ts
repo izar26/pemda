@@ -15,8 +15,8 @@ export const bannerService = {
   /**
    * Fetch banners for admin panel with pagination & filters
    */
-  async getBanners(filters?: BannerFilters): Promise<{ data: Banner[]; meta?: any }> {
-    const response = await apiClient.get<{ data: Banner[]; meta?: any }>('/content/banners', {
+  async getBanners(filters?: BannerFilters): Promise<{ data: Banner[]; meta?: Record<string, unknown> }> {
+    const response = await apiClient.get<{ data: Banner[]; meta?: Record<string, unknown> }>('/content/banners', {
       params: filters,
     })
     return response.data

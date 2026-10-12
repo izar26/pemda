@@ -30,7 +30,7 @@ class AuditLogController extends Controller
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse|JsonResponse
     {
         $user = $request->user();
-        if (!$user->can('audit.view')) {
+        if (!$user->can('audit.export') && !$user->can('audit.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor log audit keamanan.');
         }
 

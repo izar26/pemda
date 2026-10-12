@@ -8,7 +8,47 @@ export interface PermissionMetadata {
 }
 
 export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
-  // Pengguna & Kepegawaian (Fitur 9 & 12)
+  // 1. Dashboard (Fitur 1 & 6)
+  'dashboard.view': {
+    label: 'Lihat Dashboard',
+    description: 'Melihat ringkasan eksekutif, metrik kinerja, dan statistik portal.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'dashboard.export': {
+    label: 'Ekspor Dashboard',
+    description: 'Mengekspor laporan ringkasan eksekutif tata kelola ke Excel.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+
+  // 2. Perangkat Daerah / OPD (Fitur 11)
+  'opd.view': {
+    label: 'Lihat Perangkat Daerah',
+    description: 'Melihat direktori instansi dinas, badan, sekretariat, dan kecamatan.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'opd.create': {
+    label: 'Tambah Perangkat Daerah',
+    description: 'Mendaftarkan instansi perangkat daerah baru ke dalam sistem.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'opd.edit': {
+    label: 'Edit Perangkat Daerah',
+    description: 'Mengubah nama instansi, kode, kategori, atau nama kepala dinas.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'opd.delete': {
+    label: 'Hapus Perangkat Daerah',
+    description: 'Menghapus data instansi perangkat daerah dari sistem.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+
+  // 3. Manajemen Pegawai (Fitur 9 & 12)
   'users.view': {
     label: 'Lihat Pegawai',
     description: 'Melihat daftar ASN/pegawai, NIP, email dinas, dan status akun.',
@@ -17,107 +57,33 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
   },
   'users.create': {
     label: 'Tambah Pegawai',
-    description: 'Membuat akun dinas baru dan menetapkan kredensial awal.',
+    description: 'Membuat akun dinas baru dan mengirimkan undangan aktivasi.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'users.edit': {
     label: 'Edit Pegawai',
-    description: 'Mengubah profil, nomor kontak, jabatan, dan status pegawai.',
+    description: 'Mengubah profil, nomor kontak, jabatan kedinasan, dan status pegawai.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'users.delete': {
     label: 'Hapus Pegawai',
-    description: 'Mencabut akun pegawai dan menghapus akses portal secara permanen.',
+    description: 'Menghapus akun pegawai dan mencabut akses portal secara permanen.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
   'users.reset_2fa': {
     label: 'Reset 2FA',
-    description: 'Mereset kunci 2FA pegawai yang kehilangan perangkat autentikasi.',
+    description: 'Mereset autentikasi 2 faktor pegawai yang kehilangan perangkat.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
 
-  // Peran & Izin (Fitur 8)
-  'roles.view': {
-    label: 'Lihat Peran & Izin',
-    description: 'Melihat konfigurasi peran kedinasan dan pemetaan hak akses.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-  'roles.create': {
-    label: 'Tambah Peran',
-    description: 'Menambahkan jabatan fungsional baru ke dalam skema kewenangan.',
-    risk: 'medium',
-    badgeLabel: 'Menengah',
-  },
-  'roles.edit': {
-    label: 'Edit Matriks Hak Akses',
-    description: 'Mengubah centang kewenangan operasional pada peran terdaftar.',
-    risk: 'critical',
-    badgeLabel: 'Kritis',
-  },
-  'roles.delete': {
-    label: 'Hapus Peran',
-    description: 'Menghapus peran kustom yang sudah tidak dipakai oleh pegawai.',
-    risk: 'critical',
-    badgeLabel: 'Kritis',
-  },
-
-  // Log Audit & Keamanan (Fitur 5)
-  'audit.view': {
-    label: 'Lihat Log Audit',
-    description: 'Memantau riwayat login, aktivitas perubahan data, dan log keamanan.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-
-  // Pengaturan Sistem (Fitur 7)
-  'settings.view': {
-    label: 'Lihat Pengaturan',
-    description: 'Melihat parameter sistem, profil instansi, dan kebijakan portal.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-  'settings.edit': {
-    label: 'Ubah Pengaturan',
-    description: 'Mengubah konfigurasi keamanan sistem dan parameter dinas.',
-    risk: 'critical',
-    badgeLabel: 'Kritis',
-  },
-
-  // Perangkat Daerah / OPD (Fitur 11)
-  'opd.view': {
-    label: 'Lihat Perangkat Daerah',
-    description: 'Melihat direktori instansi OPD, sekretariat, dinas, badan, dan kecamatan.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-  'opd.create': {
-    label: 'Tambah Perangkat Daerah',
-    description: 'Mendaftarkan instansi perangkat daerah baru ke dalam portal.',
-    risk: 'medium',
-    badgeLabel: 'Menengah',
-  },
-  'opd.edit': {
-    label: 'Edit Perangkat Daerah',
-    description: 'Mengubah nama instansi, kode, kategori, atau nama kepala OPD.',
-    risk: 'medium',
-    badgeLabel: 'Menengah',
-  },
-  'opd.delete': {
-    label: 'Hapus Perangkat Daerah',
-    description: 'Menghapus instansi perangkat daerah yang tidak memiliki relasi pegawai.',
-    risk: 'critical',
-    badgeLabel: 'Kritis',
-  },
-
-  // Master Data (Fitur 10)
+  // 4. Data Master (Fitur 10)
   'master.view': {
     label: 'Lihat Data Master',
-    description: 'Melihat tabel data master parameter risiko, tata kelola, dan SPIP.',
+    description: 'Melihat tabel referensi master parameter risiko dan tata kelola.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
@@ -135,113 +101,281 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
   },
   'master.delete': {
     label: 'Hapus Data Master',
-    description: 'Menghapus atau menonaktifkan entri data master sistem.',
+    description: 'Menghapus atau menonaktifkan entri referensi data master.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
 
-  // Perencanaan Kinerja Bapperida
-  'perencanaan.view': {
-    label: 'Lihat Perencanaan Kinerja',
-    description: 'Melihat jadwal periode penilaian, sasaran makro, dan Renstra daerah.',
+  // 5. Peran & Izin (Fitur 8)
+  'roles.view': {
+    label: 'Lihat Peran & Izin',
+    description: 'Melihat konfigurasi peran kedinasan dan pemetaan hak akses.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
-  'perencanaan.periode': {
-    label: 'Kelola Periode Penilaian',
-    description: 'Menetapkan siklus periode 5 tahunan, tahun penilaian aktif, dan masa berlaku.',
+  'roles.create': {
+    label: 'Tambah Peran',
+    description: 'Menambahkan peran fungsional baru ke dalam skema kewenangan.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'roles.edit': {
+    label: 'Edit Matriks Hak Akses',
+    description: 'Mengubah centang kewenangan operasional pada peran terdaftar.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
-  'perencanaan.cascading': {
-    label: 'Kelola Cascading Kinerja',
-    description: 'Mengelola pohon kinerja Tujuan, Sasaran, IKU, dan Indikator Makro Pemda.',
+  'roles.delete': {
+    label: 'Hapus Peran',
+    description: 'Menghapus peran kustom yang sudah tidak dipakai oleh pegawai.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
-  'perencanaan.renstra': {
-    label: 'Selaraskan Renstra SKPD',
-    description: 'Menyelaraskan pohon program, kegiatan, dan sub kegiatan antar-OPD.',
+
+  // 6. Periode Penilaian (Fitur 13)
+  'periode.view': {
+    label: 'Lihat Periode Penilaian',
+    description: 'Melihat siklus periode penilaian 5 tahunan RPJMD dan tahun aktif.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'periode.create': {
+    label: 'Tambah Periode Penilaian',
+    description: 'Menambahkan siklus periode penilaian RPJMD baru.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'periode.edit': {
+    label: 'Edit Periode & Tahun Aktif',
+    description: 'Mengubah periode penilaian serta mengganti tahun penilaian aktif.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+  'periode.delete': {
+    label: 'Hapus Periode Penilaian',
+    description: 'Menghapus periode penilaian yang belum memiliki riwayat penilaian.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+
+  // 7. Tujuan Renstra OPD (Fitur 14)
+  'tujuan.view': {
+    label: 'Lihat Tujuan Renstra OPD',
+    description: 'Melihat daftar tujuan strategis Renstra seluruh perangkat daerah.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'tujuan.create': {
+    label: 'Tambah Tujuan Renstra',
+    description: 'Menambahkan rumusan tujuan strategis Renstra pada perangkat daerah.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'tujuan.edit': {
+    label: 'Edit Tujuan Renstra',
+    description: 'Mengubah narasi pernyataan dan kode tujuan strategis Renstra.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'tujuan.delete': {
+    label: 'Hapus Tujuan Renstra',
+    description: 'Menghapus tujuan strategis yang belum terhubung dengan sasaran.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+  'tujuan.copy': {
+    label: 'Salin Tujuan dari Periode Lain',
+    description: 'Menyalin massal tujuan strategis dari periode penilaian sebelumnya.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
 
-  // Pengelolaan Data Risiko OPD
-  'risiko.view': {
-    label: 'Lihat Data Risiko OPD',
-    description: 'Melihat formulir dan registrasi data risiko pada perangkat daerah.',
+  // 8. Sasaran Renstra OPD (Fitur 15)
+  'sasaran.view': {
+    label: 'Lihat Sasaran Renstra OPD',
+    description: 'Melihat daftar sasaran strategis Renstra dan cascading tujuan.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
-  'risiko.konteks': {
-    label: 'Kelola Konteks Risiko (Form 2B & 2C)',
-    description: 'Menetapkan Konteks Risiko Strategis (Form 2B) & Konteks Operasional (Form 2C).',
+  'sasaran.create': {
+    label: 'Tambah Sasaran Renstra',
+    description: 'Menambahkan rumusan sasaran strategis Renstra yang terkait tujuan.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'sasaran.edit': {
+    label: 'Edit Sasaran Renstra',
+    description: 'Mengubah narasi pernyataan, kode sasaran, atau penugasan tujuan.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'sasaran.delete': {
+    label: 'Hapus Sasaran Renstra',
+    description: 'Menghapus sasaran strategis yang belum terhubung dengan indikator.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
-  'risiko.penilaian': {
-    label: 'Penilaian Risiko Form 3-10 & RCA',
-    description: 'Melakukan identifikasi, analisis kemungkinan & dampak, serta evaluasi risiko OPD.',
-    risk: 'critical',
-    badgeLabel: 'Kritis',
-  },
-  'risiko.rtp': {
-    label: 'Rencana Tindak Pengendalian / RTP',
-    description: 'Menyusun rencana tindakan pengendalian dan perlakuan atas risiko.',
-    risk: 'medium',
-    badgeLabel: 'Menengah',
-  },
-  'risiko.kejadian': {
-    label: 'Pencatatan Kejadian Risiko',
-    description: 'Mendokumentasikan insiden / keterjadian risiko riil di unit kerja.',
-    risk: 'medium',
-    badgeLabel: 'Menengah',
-  },
-  'risiko.pengendalian': {
-    label: 'Pemantauan Pengendalian',
-    description: 'Memantau efektivitas kegiatan pengendalian yang telah berjalan.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-  'risiko.fraud': {
-    label: 'Penilaian Risiko Kecurangan',
-    description: 'Mengidentifikasi potensi fraud/kecurangan pada program perangkat daerah.',
-    risk: 'medium',
-    badgeLabel: 'Menengah',
-  },
-  'risiko.import': {
-    label: 'Import Data Risiko Excel',
-    description: 'Mengunggah massal data rencana program dan risiko melalui format spreadsheet.',
+  'sasaran.copy': {
+    label: 'Salin Sasaran dari Periode Lain',
+    description: 'Menyalin massal sasaran strategis dari periode penilaian sebelumnya.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
 
-  // Pengawasan & Audit APIP
-  'pengawasan.view': {
-    label: 'Pengawasan, Survei & SPIP',
-    description: 'Mengakses instrumen survei, monev, data wilayah, dan form SPIP (1b, 1c, 2a, 3a).',
+  // 9. Indikator & IKU Renstra OPD (Fitur 16 & 17)
+  'iku.view': {
+    label: 'Lihat IKU & Indikator Renstra',
+    description: 'Melihat daftar IKU dan indikator sasaran Renstra seluruh perangkat daerah.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
-  'audit_spip.view': {
-    label: 'Audit & Riviu Risiko',
-    description: 'Melakukan audit risiko, menyusun rekomendasi perbaikan, dan memantau tindak lanjut.',
+  'iku.create': {
+    label: 'Tambah IKU & Indikator',
+    description: 'Menambahkan rumusan IKU atau indikator sasaran Renstra baru.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'iku.edit': {
+    label: 'Edit IKU & Indikator',
+    description: 'Mengubah rumusan indikator atau IKU Renstra perangkat daerah.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'iku.delete': {
+    label: 'Hapus IKU & Indikator',
+    description: 'Menghapus rumusan indikator atau IKU dari pohon cascading kinerja.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+  'iku.copy': {
+    label: 'Salin IKU dari Periode Lain',
+    description: 'Menyalin massal IKU dan indikator Renstra dari periode penilaian sebelumnya.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
 
-  // Laporan & Arsip
-  'laporan.view': {
-    label: 'Laporan & Ekspor Risiko',
-    description: 'Mencetak dan mengekspor dokumen resmi laporan manajemen risiko.',
+  // 10. Konteks Risiko Strategis OPD (Fitur 26 - Form 2B)
+  'konteks_risiko.view': {
+    label: 'Lihat Konteks Risiko Strategis',
+    description: 'Melihat penetapan konteks risiko strategis perangkat daerah (Form 2B).',
     risk: 'low',
     badgeLabel: 'Aman',
   },
-  'arsip.view': {
-    label: 'Arsip Penilaian Risiko',
-    description: 'Melihat berkas arsip dan catatan historis penilaian periode lampau.',
+  'konteks_risiko.create': {
+    label: 'Tetapkan Konteks Risiko Strategis',
+    description: 'Menetapkan ruang lingkup tujuan, sasaran, dan IKU risiko strategis OPD baru.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'konteks_risiko.edit': {
+    label: 'Edit Konteks Risiko Strategis',
+    description: 'Mengubah pilihan sasaran, IKU, sumber data, atau catatan konteks risiko OPD.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'konteks_risiko.delete': {
+    label: 'Hapus Konteks Risiko Strategis',
+    description: 'Menghapus penetapan konteks risiko strategis OPD tahun berjalan.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+  'konteks_risiko.export': {
+    label: 'Ekspor / Cetak Form 2B',
+    description: 'Mengekspor atau mengunduh formulir penetapan konteks risiko strategis ke format Excel.',
     risk: 'low',
     badgeLabel: 'Aman',
+  },
+
+  // 11. Konteks Risiko Operasional OPD (Fitur 26 - Form 2C)
+  'konteks_operasional.view': {
+    label: 'Lihat Konteks Risiko Operasional',
+    description: 'Melihat penetapan konteks risiko operasional OPD tingkat Program, Kegiatan, dan Sub-Kegiatan (Form 2C).',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'konteks_operasional.create': {
+    label: 'Tetapkan Konteks Risiko Operasional',
+    description: 'Menetapkan ruang lingkup program, kegiatan, sub-kegiatan, dan target risiko operasional OPD baru.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'konteks_operasional.edit': {
+    label: 'Edit Konteks Risiko Operasional',
+    description: 'Mengubah rincian program, kegiatan, sub-kegiatan, target, atau status penetapan risiko operasional.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'konteks_operasional.delete': {
+    label: 'Hapus Konteks Risiko Operasional',
+    description: 'Menghapus penetapan konteks risiko operasional OPD tahun berjalan.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+  'konteks_operasional.export': {
+    label: 'Ekspor / Cetak Form 2C',
+    description: 'Mengekspor atau mengunduh formulir penetapan konteks risiko operasional ke format Excel.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+
+  // 12. Log Audit Keamanan (Fitur 5)
+  'audit.view': {
+    label: 'Lihat Log Audit',
+    description: 'Memantau rekaman jejak audit, aktivitas pengguna, dan log keamanan.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'audit.export': {
+    label: 'Ekspor Log Audit',
+    description: 'Mengekspor rekaman jejak audit aktivitas ke berkas Excel.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'audit.purge': {
+    label: 'Bersihkan Arsip Log',
+    description: 'Membersihkan rekaman log audit yang telah melampaui masa retensi.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+
+  // 9. Banner Login & Publik (CMS)
+  'content.view': {
+    label: 'Lihat Banner Portal',
+    description: 'Melihat galeri banner informasi login dan pengumuman publik.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'content.create': {
+    label: 'Tambah Banner Portal',
+    description: 'Mengunggah banner baru untuk halaman masuk atau portal publik.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'content.edit': {
+    label: 'Edit Banner Portal',
+    description: 'Mengubah status tayang dan mengatur urutan prioritas banner.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'content.delete': {
+    label: 'Hapus Banner Portal',
+    description: 'Menghapus gambar dan materi publikasi banner dari sistem.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+
+  // 10. Pengaturan Sistem (Fitur 7)
+  'settings.view': {
+    label: 'Lihat Pengaturan Sistem',
+    description: 'Melihat konfigurasi parameter sistem, profil instansi, dan modul.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'settings.edit': {
+    label: 'Ubah Pengaturan Sistem',
+    description: 'Mengubah konfigurasi keamanan sistem, batas sesi, dan parameter dinas.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
   },
 }
 

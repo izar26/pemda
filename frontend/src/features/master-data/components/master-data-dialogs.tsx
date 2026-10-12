@@ -56,47 +56,66 @@ export function MasterDataDialogs() {
     }
   }
 
+  const handleClose = () => {
+    setOpen(null)
+    setTimeout(() => {
+      setCurrentItem(null)
+      setTargetUnsurId(undefined)
+      setDeleteTarget(null)
+    }, 300)
+  }
+
   return (
     <>
       <MasterActionDialog
-        open={open === 'create' || open === 'edit'}
+        key={`master-add-${selectedEntity.key}`}
+        open={open === 'create'}
         onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setOpen(null)
-            setCurrentItem(null)
-            setTargetUnsurId(undefined)
-          }
+          if (!isOpen) handleClose()
         }}
         entity={selectedEntity}
-        currentItem={open === 'edit' ? currentItem : null}
+        currentItem={null}
         unsurSpipId={targetUnsurId}
         onSuccess={() => {
           handleSuccess()
-          setOpen(null)
-          setCurrentItem(null)
-          setTargetUnsurId(undefined)
+          handleClose()
         }}
       />
 
-      <ConfirmDialog
-        open={open === 'delete' && Boolean(deleteTarget)}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setOpen(null)
-            setDeleteTarget(null)
+      {currentItem && (
+        <MasterActionDialog
+          key={`master-edit-${selectedEntity.key}-${currentItem.id}`}
+          open={open === 'edit'}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) handleClose()
+          }}
+          entity={selectedEntity}
+          currentItem={currentItem}
+          unsurSpipId={targetUnsurId}
+          onSuccess={() => {
+            handleSuccess()
+            handleClose()
+          }}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          key={`master-delete-${deleteTarget.id}`}
+          open={open === 'delete'}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) handleClose()
+          }}
+          handleConfirm={handleDeleteConfirm}
+          isLoading={isDeleting}
+          destructive
+          title={
+            <div className='flex items-center gap-2 text-destructive'>
+              <AlertTriangle className='h-5 w-5' />
+              <span>Hapus Data Master</span>
+            </div>
           }
-        }}
-        handleConfirm={handleDeleteConfirm}
-        isLoading={isDeleting}
-        destructive
-        title={
-          <div className='flex items-center gap-2 text-destructive'>
-            <AlertTriangle className='h-5 w-5' />
-            <span>Hapus Data Master</span>
-          </div>
-        }
-        desc={
-          deleteTarget ? (
+          desc={
             <div className='space-y-2 text-xs'>
               <p>
                 Apakah Anda yakin ingin menghapus data{' '}
@@ -107,18 +126,16 @@ export function MasterDataDialogs() {
                 Tindakan ini tidak dapat dibatalkan jika data sudah digunakan di modul Manajemen Risiko atau SPIP.
               </p>
             </div>
-          ) : (
-            ''
-          )
-        }
-        confirmText={
-          <>
-            <Trash2 className='mr-1.5 h-3.5 w-3.5' />
-            Hapus Permanen
-          </>
-        }
-        cancelBtnText='Batal'
-      />
+          }
+          confirmText={
+            <>
+              <Trash2 className='mr-1.5 h-3.5 w-3.5' />
+              Hapus Permanen
+            </>
+          }
+          cancelBtnText='Batal'
+        />
+      )}
     </>
   )
 }

@@ -1,0 +1,1137 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Seeders;
+
+use App\Models\Master\MasterSumberData;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
+use App\Models\Risiko\KonteksOperasional;
+use App\Models\Risiko\KonteksOperasionalIndikator;
+use App\Models\Risiko\KonteksOperasionalItem;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
+class KonteksOperasionalSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $dputr = Opd::where('kode', 'DPUTR')->orWhere('nama', 'like', '%Pekerjaan Umum%')->first();
+        if (!$dputr) {
+            return;
+        }
+
+        $activePeriode = PeriodePenilaian::where('status', 'aktif')->first()
+            ?? PeriodePenilaian::orderBy('tahun_penilaian', 'desc')->first();
+        if (!$activePeriode) {
+            return;
+        }
+
+        $sumberData = MasterSumberData::where('nama', 'like', '%Renstra%')->first();
+        $adminUser = User::where('email', 'admin@pemda.go.id')->first();
+
+        DB::transaction(function () use ($dputr, $activePeriode, $sumberData, $adminUser) {
+            $konteks = KonteksOperasional::updateOrCreate(
+                [
+                    'periode_penilaian_id' => $activePeriode->id,
+                    'opd_id' => $dputr->id,
+                ],
+                [
+                    'sumber_data_id' => $sumberData?->id,
+                    'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+                    'informasi_lain' => '-',
+                    'nama_kepala' => 'ERI RIHANDIAR, S.T., M.T.',
+                    'nip_kepala' => '19680801 199703 1 005',
+                    'jabatan_kepala' => 'Kepala Dinas Pekerjaan Umum dan Tata Ruang',
+                    'tanggal_penetapan' => '2027-01-15',
+                    'status' => 'final',
+                    'created_by' => $adminUser?->id,
+                    'updated_by' => $adminUser?->id,
+                ]
+            );
+
+            // Clean up old items before seeding
+            $konteks->items()->delete();
+
+            $itemsData = json_decode(<<<'JSON'
+            [
+            {
+                        "jenis": "program",
+                        "kode": "A",
+                        "nama": "Program Penunjang Urusan Pemerintahan Daerah Kabupaten/Kota",
+                        "parent_kode": null,
+                        "indikators": [
+                                    {
+                                                "indikator": "Indeks Reformasi Birokrasi Perangkat Daerah",
+                                                "target": "80.20"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.1",
+                        "nama": "Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Nilai SAKIP Satuan Kerja Perangkat Daerah (poin)",
+                                                "target": "72.55"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.2",
+                        "nama": "Administrasi Keuangan Perangkat Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Realisasi APBD Satuan Kerja Perangkat Daerah (%)",
+                                                "target": "95.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.3",
+                        "nama": "Administrasi Barang Milik Daerah pada Perangkat Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Barang Milik Daerah Yang Tertib Administrasi (%)",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.4",
+                        "nama": "Administrasi Kepegawaian Perangkat Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Nilai Indeks Profesionalitas ASN Satuan Kerja Perangkat Daerah (Nilai)",
+                                                "target": "77.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.5",
+                        "nama": "Administrasi Umum Perangkat Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Nilai Survey Kepuasan Masyarakat (SKM) Satuan Kerja Perangkat Daerah (Nilai)",
+                                                "target": "83.35"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.6",
+                        "nama": "Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Kebutuhan Barang Milik Daerah Yang Terpenuhi (%)",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.7",
+                        "nama": "Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Kebutuhan Layanan Jasa Operasional Kantor Yang Terpenuhi (%)",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "A.8",
+                        "nama": "Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah",
+                        "parent_kode": "A",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Barang Milik Daerah Dalam Kondisi Baik (%)",
+                                                "target": "31.20"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "program",
+                        "kode": "B",
+                        "nama": "Program Pengelolaan Sumber Daya Air (SDA)",
+                        "parent_kode": null,
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Pengelolaan Infrastruktur SDA",
+                                                "target": "52.54"
+                                    },
+                                    {
+                                                "indikator": "Persentase Pengelolaan Infrastruktur Irigasi",
+                                                "target": "58.04"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "B.1",
+                        "nama": "Pengelolaan SDA dan Bangunan Pengaman Pantai pada Wilayah Sungai (WS) dalam 1 (Satu) Daerah Kabupaten/Kota",
+                        "parent_kode": "B",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah infrastruktur bangunan SDA yang terbangun/ terpelihara",
+                                                "target": "93.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.1",
+                        "nama": "Peningkatan Bangunan Perkuatan Tebing (km)",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Bangunan Perkuatan Tebing yang Ditingkatkan",
+                                                "target": "0.67"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.2",
+                        "nama": "Pembangunan Tanggul Sungai",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Tanggul Sungai yang Dibangun (km)",
+                                                "target": "0.20"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.3",
+                        "nama": "Penyusunan Rencana Teknis dan Dokumen Lingkungan Hidup untuk Konstruksi Pengendali Banjir, Lahar, dan Pengaman Pantai",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Rencana Teknis dan Dokumen Lingkungan Hidup untuk Konstruksi Pengendali Banjir, Lahar, dan Pengaman Pantai yang Disusun",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.4",
+                        "nama": "Pembangunan Embung dan Penampung Air Lainnya",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Embung dan Penampung Air Lainnya yang Dibangun",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.5",
+                        "nama": "Penyusunan Rencana Teknis dan Dokumen Lingkungan Hidup untuk Konstruksi Air Tanah dan Air Baku",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Rencana Teknis dan Dokumen Lingkungan Hidup untuk Konstruksi Air Tanah dan Air Baku yang Disusun",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.6",
+                        "nama": "Penyusunan Rencana Teknis dan Dokumen Lingkungan Hidup untuk Konstruksi Bendungan, Embung, dan Bangunan Penampung Air Lainnya",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Rencana Teknis dan Dokumen Lingkungan Hidup untuk Konstruksi Bendungan, Danau dan Bangunan Penampung Air Lainnya yang Disusun",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.1.7",
+                        "nama": "Rehabilitasi Embung",
+                        "parent_kode": "B.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Embung yang Direhabilitasi",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "B.2",
+                        "nama": "Kegiatan Pengembangan dan Pengelolaan Sistem Irigasi Primer dan Sekunder pada Daerah Irigasi yang Luasnya di Bawah 1000 Ha dalam 1 (Satu) Daerah Kabupaten/Kota",
+                        "parent_kode": "B",
+                        "indikators": [
+                                    {
+                                                "indikator": "Nilai prasarana fisik pada Daerah Irigasi Kewenangan Kabupaten",
+                                                "target": "26.12"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.1",
+                        "nama": "Peningkatan Jaringan Irigasi Permukaan",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jaringan Irigasi Permukaan yang Ditingkatkan (km)",
+                                                "target": "2.50"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.2",
+                        "nama": "Rehabilitasi Jaringan Irigasi Permukaan",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jaringan Irigasi Permukaan yang Direhabilitasi (km)",
+                                                "target": "7.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.3",
+                        "nama": "Operasi dan Pemeliharaan Jaringan Irigasi Permukaan",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jaringan Irigasi Permukaan yang Dioperasikan dan Dipelihara (km)",
+                                                "target": "10.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.4",
+                        "nama": "Penguatan Kapasitas Kelembagaan Pengelola Irigasi Kewenangan Kabupaten/Kota",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Lembaga Pengelola Irigasi\nKewenangan Kabupaten/Kota yang\nDiperkuat Kapasitasnya",
+                                                "target": "40.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.5",
+                        "nama": "Operasional Kelembagaan Pengelola Irigasi",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Lembaga Pengelola Irigasi yang Beroperasi",
+                                                "target": "7.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.6",
+                        "nama": "Peningkatan Bendung Irigasi",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Bendung Irigasi yang Ditingkatkan (unit)",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.7",
+                        "nama": "Penyusunan Dukungan Teknis Bidang Irigasi dan Rawa",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dukungan Teknis Bidang Irigasi dan Rawa yang Disusun (dokumen)",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "B.2.8",
+                        "nama": "Rehabilitasi Bendung Irigasi",
+                        "parent_kode": "B.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Bendung Irigasi yang Terehabilitasi (unit)",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "program",
+                        "kode": "C",
+                        "nama": "Program Pengelolaan dan Pengembangan Sistem Drainase",
+                        "parent_kode": null,
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Cakupan Terbatas Sistem Drainase Perkotaan Dalam Kondisi Baik",
+                                                "target": "50.02"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "C.1",
+                        "nama": "Kegiatan Pengelolaan dan Pengembangan Sistem Drainase yang Terhubung Langsung dengan Sungai dalam Daerah Kabupaten/Kota",
+                        "parent_kode": "C",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase Pengelolaan Sistem Drainase Perkotaan",
+                                                "target": "36.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "C.1.1",
+                        "nama": "Peningkatan Sistem Drainase Perkotaan",
+                        "parent_kode": "C.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Sistem Drainase Lingkungan yang Ditingkatkan",
+                                                "target": "0.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "C.1.2",
+                        "nama": "Rehabilitasi Sistem Drainase Perkotaan",
+                        "parent_kode": "C.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Sistem Drainase Perkotaan yang direhabilitasi",
+                                                "target": "2.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "C.1.3",
+                        "nama": "Pembangunan Sistem Drainase Perkotaan",
+                        "parent_kode": "C.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Sistem Drainase Perkotaan yang Dibangun",
+                                                "target": "0.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "C.1.4",
+                        "nama": "Penyusunan Rencana, Kebijakan, Strategi dan Teknis Sistem Drainase Perkotaan",
+                        "parent_kode": "C.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Rencana, Kebijakan, Strategi dan Teknis Sistem Drainase Perkotaan yang disusun",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "program",
+                        "kode": "D",
+                        "nama": "Program Penyelenggaraan Jalan",
+                        "parent_kode": null,
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase panjang jalan Kabupaten berkualifikasi baik",
+                                                "target": "64.41"
+                                    },
+                                    {
+                                                "indikator": "Persentase jumlah jembatan berkualifikasi baik dan sedang",
+                                                "target": "76.68"
+                                    },
+                                    {
+                                                "indikator": "Persentase rekomendasi hasil survey kondisi jalan dan jembatan yang diterapkan dalam dokumen perencanaan",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "D.1",
+                        "nama": "Kegiatan Penyelenggaraan Jalan Kabupaten/ Kota",
+                        "parent_kode": "D",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase panjang jalan yang meningkat kemantapannya",
+                                                "target": "5.25"
+                                    },
+                                    {
+                                                "indikator": "Persentase panjang jalan yang terpelihara kemantapannya",
+                                                "target": "29.73"
+                                    },
+                                    {
+                                                "indikator": "Persentase jumlah jembatan yang meningkat nilai kondisinya",
+                                                "target": "2.16"
+                                    },
+                                    {
+                                                "indikator": "Persentase jumlah jembatan yang terpelihara nilai kondisinya",
+                                                "target": "19.95"
+                                    },
+                                    {
+                                                "indikator": "Persentase dokumen bahan kebijakan teknis kebinamargaan",
+                                                "target": "59.18"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.1",
+                        "nama": "Pengelolaan Leger Jalan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Leger Jalan yang Dikelola",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.2",
+                        "nama": "Penyusunan Rencana, Kebijakan, Strategi dan Teknis Pengembangan Jaringan Jalan serta Perencanaan\nTeknis Penyelenggaraan Jalan dan Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Rencana, Kebijakan, Strategi dan Teknis Pengembangan Jaringan Jalan serta Perencanaan Teknis Penyelenggaraan Jalan dan Jembatan yang Disusun",
+                                                "target": "2.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.3",
+                        "nama": "Survey Kondisi Jalan/Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan/Jembatan yang Disurvey Kondisinya",
+                                                "target": "1335.22"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.4",
+                        "nama": "Pelebaran Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jembatan yang dilebarkan",
+                                                "target": "15.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.5",
+                        "nama": "Pelebaran Jalan Menambah Lajur",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang dilebarkan Menambah Lajur",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.6",
+                        "nama": "Pemeliharaan Rutin Jalan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang dipelihara secara rutin",
+                                                "target": "375.91"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.7",
+                        "nama": "Pembangunan Jalan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang dibangun sampai Perkerasan",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.8",
+                        "nama": "Rehabilitasi Jalan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang Direhabilitasi",
+                                                "target": "16.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.9",
+                        "nama": "Pemeliharaan Berkala Jalan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang Dipelihara Secara Berkala",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.10",
+                        "nama": "Penggantian Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jembatan yang dilakukan Penggantian",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.11",
+                        "nama": "Rehabilitasi Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jembatan yang Direhabilitasi",
+                                                "target": "170.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.12",
+                        "nama": "Rekonstruksi Jalan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang Direkonstruksi",
+                                                "target": "14.50"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.13",
+                        "nama": "Pemeliharaan Berkala Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jembatan yang Dipelihara secara Berkala",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.14",
+                        "nama": "Pemeliharaan Rutin Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Jembatan yang dipelihara secara rutin",
+                                                "target": "123.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.15",
+                        "nama": "Pelebaran Jalan Menuju Standar",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jalan yang Dilebarkan Menuju Standar",
+                                                "target": "51.77"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "D.1.16",
+                        "nama": "Pembangunan Jembatan",
+                        "parent_kode": "D.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Panjang Jembatan yang dibangun",
+                                                "target": "120.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "program",
+                        "kode": "E",
+                        "nama": "Program Pengembangan Jasa Konstruksi",
+                        "parent_kode": null,
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase tenaga kerja konstruksi kualifikasi  terampil",
+                                                "target": "28.35"
+                                    },
+                                    {
+                                                "indikator": "Persentase pekerjaan jasa konstruksi yang diawasi tertib penyelenggaraannya",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "E.1",
+                        "nama": "Kegiatan Penyelenggaraan Pelatihan Tenaga Terampil Konstruksi",
+                        "parent_kode": "E",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase SDM konstruksi yang mengikuti pelatihan",
+                                                "target": "58.76"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "E.1.1",
+                        "nama": "Fasilitasi Sertifikasi Tenaga Kerja Konstruksi Kualifikasi Jabatan Operator dan Teknisi atau Analis",
+                        "parent_kode": "E.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Tenaga Kerja Konstruksi Kualifikasi Jabatan Operator dan Teknisi atau Analis yang Difasilitasi Sertifikasi",
+                                                "target": "50.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "E.1.2",
+                        "nama": "Pembinaan dan Peningkatan Kapasitas Kelembagaan Jasa Konstruksi",
+                        "parent_kode": "E.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Lembaga Jasa Konstruksi yang Dibina dan Ditingkatkan Kapasitasnya",
+                                                "target": "10.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "E.1.3",
+                        "nama": "Pelatihan Tenaga Kerja Konstruksi Kualifikasi Jabatan Operator, Teknisi atau Analis",
+                        "parent_kode": "E.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Tenaga Kerja Konstruksi Kualifikasi Jabatan Operator, Teknisi atau Analis yang Dilatih",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "E.2",
+                        "nama": "Kegiatan Pengawasan Tertib Usaha, Tertib Penyelenggaraan dan Tertib Pemanfaatan Jasa Konstruksi",
+                        "parent_kode": "E",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase peningkatan pengawasan tertib penyelenggaran jasa konstruksi",
+                                                "target": "11.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "E.2.1",
+                        "nama": "Pengawasan dan Evaluasi Tertib Penyelenggaraan Jasa Konstruksi Kabupaten/Kota",
+                        "parent_kode": "E.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Paket Pekerjaan Jasa Konstruksi Kabupaten/Kota yang Diawasi dan Dievaluasi Tertib Penyelenggaraan",
+                                                "target": "21.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "program",
+                        "kode": "F",
+                        "nama": "Program Penyelenggaraan Penataan Ruang",
+                        "parent_kode": null,
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase dokumen tata ruang yang memiliki legalitas",
+                                                "target": "22.22"
+                                    },
+                                    {
+                                                "indikator": "Persentase kawasan perkotaan yang telah memiliki materi teknis rencana tata ruang sesuai ketentuan",
+                                                "target": "57.14"
+                                    },
+                                    {
+                                                "indikator": "Nilai Survey Kepuasan Masyarakat terhadap pelayanan pemanfaatan ruang",
+                                                "target": "85.00"
+                                    },
+                                    {
+                                                "indikator": "Persentase tindak lanjut kasus pelanggaran pemanfaatan ruang sesuai kewenangan",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "F.1",
+                        "nama": "Kegiatan Penetapan Rencana Tata Ruang Wilayah (RTRW) dan Rencana Rinci Tata Ruang (RRTR) Kabupaten/Kota",
+                        "parent_kode": "F",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah peraturan terkait penataan ruang yang ditetapkan",
+                                                "target": "2.00"
+                                    },
+                                    {
+                                                "indikator": "Persentase perda/perbup terkait penataan ruang yang terinformasikan kepada masyarakat",
+                                                "target": "100.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.1.1",
+                        "nama": "Penetapan Kebijakan dalam rangka Pelaksanaan Penataan Ruang",
+                        "parent_kode": "F.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Kebijakan Perda/Perkada selain RTRW Kabupaten/Kota",
+                                                "target": "0.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.1.2",
+                        "nama": "Pelaksanaan Persetujuan Substansi RDTR Kabupaten/Kota",
+                        "parent_kode": "F.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah dokumen administrasi\npersetujuan substansi RDTR Kabupaten/Kota",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.1.3",
+                        "nama": "Penyebarluasan Informasi Penataan Ruang",
+                        "parent_kode": "F.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah publikasi informasi penataan ruang",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.1.4",
+                        "nama": "Penetapan RDTR Kabupaten/Kota",
+                        "parent_kode": "F.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Perkada RDTR\nKabupaten/Kota",
+                                                "target": "2.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.1.5",
+                        "nama": "Sosialisasi Kebijakan dan Peraturan Perundang-Undangan Bidang Penataan Ruang",
+                        "parent_kode": "F.1",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah laporan sosialisasi kebijakan dan peraturan perundang-undangan\nbidang penataan ruang.",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "F.2",
+                        "nama": "Kegiatan Koordinasi dan Sinkronisasi Perencanaan Tata Ruang Daerah Kabupaten/Kota",
+                        "parent_kode": "F",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase dokumen RTR yang tersusun",
+                                                "target": "25.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.2.1",
+                        "nama": "Penyusunan Peta Dasar",
+                        "parent_kode": "F.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah data SHP Peta Dasar",
+                                                "target": "4.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.2.2",
+                        "nama": "Penyusunan RDTR Kabupaten/Kota",
+                        "parent_kode": "F.2",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah materi teknis dan ranperkada RDTR Kabupaten/Kota",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "F.3",
+                        "nama": "Kegiatan Koordinasi dan Sinkronisasi Pemanfaatan Ruang Daerah Kabupaten/Kota",
+                        "parent_kode": "F",
+                        "indikators": [
+                                    {
+                                                "indikator": "Persentase permohonan rekomendasi/informasi terkait pemanfaatan ruang yang terlayani",
+                                                "target": "100.00"
+                                    },
+                                    {
+                                                "indikator": "Persentase dokumen SPPR yang disusun",
+                                                "target": "42.86"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.3.1",
+                        "nama": "Koordinasi Penyelenggaraan Penataan Ruang",
+                        "parent_kode": "F.3",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen koordinasi penyelenggaraan penataan ruang",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.3.2",
+                        "nama": "Pelaksanaan Persetujuan Kesesuaian Kegiatan Pemanfaatan Ruang",
+                        "parent_kode": "F.3",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah layanan Persetujuan KKPR sesuai dengan ketentuan waktu yang berlaku",
+                                                "target": "60.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.3.3",
+                        "nama": "Pelaksanaan Sinkronisasi Program Pemanfaatan Ruang",
+                        "parent_kode": "F.3",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah dokumen sinkronisasi program pemanfaatan ruang",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.3.4",
+                        "nama": "Sistem informasi dan komunikasi penataan ruang",
+                        "parent_kode": "F.3",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah sistem informasi dan komunikasi penataan ruang",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "kegiatan",
+                        "kode": "F.4",
+                        "nama": "Kegiatan Koordinasi dan Sinkronisasi Pengendalian Pemanfaatan Ruang Daerah Kabupaten/Kota",
+                        "parent_kode": "F",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah temuan indikasi pelanggaran pemanfaatan ruang yang ditindaklanjuti",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.4.1",
+                        "nama": "Koordinasi Pelaksanaan Penataan Ruang",
+                        "parent_kode": "F.4",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Dokumen Koordinasi Pelaksanaan Penataan Ruang",
+                                                "target": "2.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.4.2",
+                        "nama": "Pengenaan Sanksi Administratif terhadap pelanggaran pemanfaatan ruang dalam RTR",
+                        "parent_kode": "F.4",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Kasus yang dikenakan sanksi administratif",
+                                                "target": "3.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.4.3",
+                        "nama": "Penilaian Pelaksanaan Kesesuaian Kegiatan Pemanfaatan Ruang dan/atau pernyataan mandiri pelaku UMK",
+                        "parent_kode": "F.4",
+                        "indikators": [
+                                    {
+                                                "indikator": "Dokumen tekstual dan spasial hasil Penilaian Pelaksanaan Kesesuaian Kegiatan Pemanfaatan Ruang",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.4.4",
+                        "nama": "Operasionalisasi Tugas dan Fungsi Forum Penataan Ruang",
+                        "parent_kode": "F.4",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah Laporan Pelaksanaan Tugas dan Fungsi Forum Penataan Ruang",
+                                                "target": "1.00"
+                                    }
+                        ]
+            },
+            {
+                        "jenis": "sub_kegiatan",
+                        "kode": "F.4.5",
+                        "nama": "Pemberian insentif dan/atau disinsentif non fiskal",
+                        "parent_kode": "F.4",
+                        "indikators": [
+                                    {
+                                                "indikator": "Jumlah berita acara pemberian insentif dan/atau disinsentif non fiskal",
+                                                "target": "1.00"
+                                    }
+                        ]
+            }
+            ]
+JSON, true);
+
+            $codeMap = [];
+
+            // 1. Seed Programs
+            $uProg = 1;
+            foreach ($itemsData as $item) {
+                if ($item['jenis'] === 'program') {
+                    $created = KonteksOperasionalItem::create([
+                        'konteks_operasional_id' => $konteks->id,
+                        'parent_id' => null,
+                        'jenis' => 'program',
+                        'kode' => $item['kode'],
+                        'nama' => $item['nama'],
+                        'urutan' => $uProg++,
+                    ]);
+                    $codeMap[$item['kode']] = $created->id;
+
+                    $this->seedIndikators($created->id, $item['indikators']);
+                }
+            }
+
+            // 2. Seed Kegiatans
+            $uKeg = 1;
+            foreach ($itemsData as $item) {
+                if ($item['jenis'] === 'kegiatan') {
+                    $parentId = $item['parent_kode'] && isset($codeMap[$item['parent_kode']]) ? $codeMap[$item['parent_kode']] : null;
+                    $created = KonteksOperasionalItem::create([
+                        'konteks_operasional_id' => $konteks->id,
+                        'parent_id' => $parentId,
+                        'jenis' => 'kegiatan',
+                        'kode' => $item['kode'],
+                        'nama' => $item['nama'],
+                        'urutan' => $uKeg++,
+                    ]);
+                    $codeMap[$item['kode']] = $created->id;
+
+                    $this->seedIndikators($created->id, $item['indikators']);
+                }
+            }
+
+            // 3. Seed Sub-Kegiatans
+            $uSub = 1;
+            foreach ($itemsData as $item) {
+                if ($item['jenis'] === 'sub_kegiatan') {
+                    $parentId = $item['parent_kode'] && isset($codeMap[$item['parent_kode']]) ? $codeMap[$item['parent_kode']] : null;
+                    $created = KonteksOperasionalItem::create([
+                        'konteks_operasional_id' => $konteks->id,
+                        'parent_id' => $parentId,
+                        'jenis' => 'sub_kegiatan',
+                        'kode' => $item['kode'],
+                        'nama' => $item['nama'],
+                        'urutan' => $uSub++,
+                    ]);
+
+                    $this->seedIndikators($created->id, $item['indikators']);
+                }
+            }
+        });
+    }
+
+    private function seedIndikators(string $itemId, array $indikators): void
+    {
+        $u = 1;
+        foreach ($indikators as $ind) {
+            KonteksOperasionalIndikator::create([
+                'item_id' => $itemId,
+                'indikator' => $ind['indikator'],
+                'target' => (string) $ind['target'],
+                'urutan' => $u++,
+            ]);
+        }
+    }
+}

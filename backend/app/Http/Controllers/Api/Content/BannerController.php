@@ -91,7 +91,7 @@ class BannerController extends Controller
      */
     public function toggleActive(Request $request, Banner $banner): JsonResponse
     {
-        if (!$request->user()->can('content.manage')) {
+        if (!$request->user()->can('content.edit') && !$request->user()->can('content.manage')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah status banner.');
         }
 
@@ -120,7 +120,7 @@ class BannerController extends Controller
      */
     public function destroy(Request $request, Banner $banner): JsonResponse
     {
-        if (!$request->user()->can('content.manage')) {
+        if (!$request->user()->can('content.delete') && !$request->user()->can('content.manage')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus banner.');
         }
 

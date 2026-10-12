@@ -32,7 +32,7 @@ export function LoginBannerCarousel() {
   useEffect(() => {
     if (!emblaApi) return
     emblaApi.on('select', onSelect)
-    onSelect()
+    queueMicrotask(onSelect)
   }, [emblaApi, onSelect])
 
   const scrollPrev = useCallback(() => {

@@ -20,27 +20,12 @@ class RbacSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Define Master Permissions grouped by module matching Fitur dan Hak Akses Aplikasi.xlsx
+        // 1. Define Master Permissions strictly per active menu in application (100% clean)
+        // Group name matches the navigation menu structure
         $permissionGroups = [
-            'Manajemen Pengguna' => [
-                ['name' => 'users.view', 'description' => 'Melihat daftar dan profil pegawai (Fitur 9 & 12)'],
-                ['name' => 'users.create', 'description' => 'Membuat akun pegawai baru (Fitur 9)'],
-                ['name' => 'users.edit', 'description' => 'Mengubah data dan status pegawai (Fitur 9 & 12)'],
-                ['name' => 'users.delete', 'description' => 'Menghapus atau menonaktifkan akun pegawai (Fitur 9)'],
-                ['name' => 'users.reset_2fa', 'description' => 'Mereset Google Authenticator akun pegawai'],
-            ],
-            'Manajemen Peran & Izin' => [
-                ['name' => 'roles.view', 'description' => 'Melihat daftar peran dan hak akses (Fitur 8)'],
-                ['name' => 'roles.create', 'description' => 'Membuat peran/role baru (Fitur 8)'],
-                ['name' => 'roles.edit', 'description' => 'Mengubah matriks izin pada peran (Fitur 8)'],
-                ['name' => 'roles.delete', 'description' => 'Menghapus peran kustom (Fitur 8)'],
-            ],
-            'Keamanan & Log Audit' => [
-                ['name' => 'audit.view', 'description' => 'Melihat log aktivitas dan audit keamanan (Fitur 5)'],
-            ],
-            'Pengaturan Sistem' => [
-                ['name' => 'settings.view', 'description' => 'Melihat pengaturan sistem dan modul (Fitur 7)'],
-                ['name' => 'settings.edit', 'description' => 'Mengubah pengaturan konfigurasi aplikasi (Fitur 7)'],
+            'Dashboard' => [
+                ['name' => 'dashboard.view', 'description' => 'Melihat ringkasan eksekutif dan statistik dashboard (Fitur 1 & 6)'],
+                ['name' => 'dashboard.export', 'description' => 'Mengekspor laporan ringkasan dashboard ke Excel (Fitur 31)'],
             ],
             'Perangkat Daerah (OPD)' => [
                 ['name' => 'opd.view', 'description' => 'Melihat direktori instansi perangkat daerah (Fitur 11)'],
@@ -48,39 +33,80 @@ class RbacSeeder extends Seeder
                 ['name' => 'opd.edit', 'description' => 'Mengubah data perangkat daerah dan kepala dinas (Fitur 11)'],
                 ['name' => 'opd.delete', 'description' => 'Menghapus data instansi perangkat daerah (Fitur 11)'],
             ],
-            'Master Data' => [
-                ['name' => 'master.view', 'description' => 'Melihat referensi data master dan parameter risiko (Fitur 10)'],
-                ['name' => 'master.create', 'description' => 'Menambahkan entri referensi master data baru (Fitur 10)'],
-                ['name' => 'master.edit', 'description' => 'Mengubah entri master data (Fitur 10)'],
-                ['name' => 'master.delete', 'description' => 'Menonaktifkan atau menghapus entri master data (Fitur 10)'],
+            'Manajemen Pegawai' => [
+                ['name' => 'users.view', 'description' => 'Melihat daftar dan profil pegawai ASN (Fitur 9 & 12)'],
+                ['name' => 'users.create', 'description' => 'Membuat akun pegawai baru dan mengirim undangan (Fitur 9)'],
+                ['name' => 'users.edit', 'description' => 'Mengubah data, jabatan, dan status pegawai (Fitur 9 & 12)'],
+                ['name' => 'users.delete', 'description' => 'Menghapus akun pegawai dari sistem (Fitur 9)'],
+                ['name' => 'users.reset_2fa', 'description' => 'Mereset Google Authenticator akun pegawai (Fitur Khusus)'],
             ],
-            'Perencanaan Kinerja (Bapperida)' => [
-                ['name' => 'perencanaan.view', 'description' => 'Melihat periode penilaian dan cascading kinerja'],
-                ['name' => 'perencanaan.periode', 'description' => 'Mengelola periode penilaian 5 tahunan dan tahun aktif'],
-                ['name' => 'perencanaan.cascading', 'description' => 'Mengelola pohon Tujuan, Sasaran, IKU, dan Indikator'],
-                ['name' => 'perencanaan.renstra', 'description' => 'Melihat dan menyelaraskan Renstra SKPD'],
+            'Data Master' => [
+                ['name' => 'master.view', 'description' => 'Melihat referensi data master dan parameter sistem (Fitur 10)'],
+                ['name' => 'master.create', 'description' => 'Menambahkan entri referensi data master baru (Fitur 10)'],
+                ['name' => 'master.edit', 'description' => 'Mengubah entri referensi data master (Fitur 10)'],
+                ['name' => 'master.delete', 'description' => 'Menghapus entri referensi data master (Fitur 10)'],
             ],
-            'Pengelolaan Risiko (OPD)' => [
-                ['name' => 'risiko.view', 'description' => 'Melihat registrasi dan formulir risiko OPD'],
-                ['name' => 'risiko.konteks', 'description' => 'Mengelola Konteks Risiko Strategis (Form 2B) & Operasional (Form 2C)'],
-                ['name' => 'risiko.penilaian', 'description' => 'Mengelola Identifikasi & Analisis Risiko Form 3-10 dan RCA'],
-                ['name' => 'risiko.rtp', 'description' => 'Mengelola Rencana Tindak Pengendalian / RTP'],
-                ['name' => 'risiko.kejadian', 'description' => 'Mencatat dan memantau Kejadian Risiko'],
-                ['name' => 'risiko.pengendalian', 'description' => 'Memantau pelaksanaan kegiatan pengendalian risiko'],
-                ['name' => 'risiko.fraud', 'description' => 'Mengelola penilaian risiko kecurangan / fraud'],
-                ['name' => 'risiko.import', 'description' => 'Mengimpor data pengelolaan risiko via Excel'],
+            'Peran & Izin' => [
+                ['name' => 'roles.view', 'description' => 'Melihat daftar peran dan matriks hak akses (Fitur 8)'],
+                ['name' => 'roles.create', 'description' => 'Membuat peran (role) baru (Fitur 8)'],
+                ['name' => 'roles.edit', 'description' => 'Mengubah konfigurasi matriks hak akses pada peran (Fitur 8)'],
+                ['name' => 'roles.delete', 'description' => 'Menghapus peran kustom (Fitur 8)'],
             ],
-            'Pengawasan & Audit (APIP / Auditor)' => [
-                ['name' => 'pengawasan.view', 'description' => 'Mengakses modul survei, monev, dan formulir SPIP (Fitur 18-22)'],
-                ['name' => 'audit_spip.view', 'description' => 'Mengakses audit, riviu, dan tindak lanjut rekomendasi (Fitur 23-25)'],
+            'Periode Penilaian' => [
+                ['name' => 'periode.view', 'description' => 'Melihat daftar siklus periode penilaian RPJMD (Fitur 13)'],
+                ['name' => 'periode.create', 'description' => 'Menambahkan siklus periode penilaian RPJMD baru (Fitur 13)'],
+                ['name' => 'periode.edit', 'description' => 'Mengubah periode penilaian dan mengganti tahun aktif (Fitur 13)'],
+                ['name' => 'periode.delete', 'description' => 'Menghapus periode penilaian yang belum memiliki relasi data (Fitur 13)'],
             ],
-            'Laporan & Arsip' => [
-                ['name' => 'laporan.view', 'description' => 'Melihat dan mengekspor laporan manajemen risiko (Fitur 31)'],
-                ['name' => 'arsip.view', 'description' => 'Melihat arsip penilaian dan data historis (Fitur 32)'],
+            'Tujuan Renstra OPD' => [
+                ['name' => 'tujuan.view', 'description' => 'Melihat daftar tujuan strategis Renstra OPD (Fitur 14)'],
+                ['name' => 'tujuan.create', 'description' => 'Menambahkan tujuan strategis Renstra OPD baru (Fitur 14)'],
+                ['name' => 'tujuan.edit', 'description' => 'Mengubah pernyataan dan kode tujuan strategis (Fitur 14)'],
+                ['name' => 'tujuan.delete', 'description' => 'Menghapus tujuan strategis Renstra OPD (Fitur 14)'],
+                ['name' => 'tujuan.copy', 'description' => 'Menyalin tujuan strategis dari periode penilaian sebelumnya (Fitur Khusus)'],
             ],
-            'Manajemen Konten' => [
-                ['name' => 'content.view', 'description' => 'Melihat daftar konten publik dan banner portal'],
-                ['name' => 'content.manage', 'description' => 'Mengunggah, mengubah urutan, dan menghapus banner portal'],
+            'Sasaran Renstra OPD' => [
+                ['name' => 'sasaran.view', 'description' => 'Melihat daftar sasaran strategis Renstra OPD (Fitur 15)'],
+                ['name' => 'sasaran.create', 'description' => 'Menambahkan sasaran strategis Renstra OPD baru (Fitur 15)'],
+                ['name' => 'sasaran.edit', 'description' => 'Mengubah pernyataan dan kode sasaran strategis (Fitur 15)'],
+                ['name' => 'sasaran.delete', 'description' => 'Menghapus sasaran strategis Renstra OPD (Fitur 15)'],
+                ['name' => 'sasaran.copy', 'description' => 'Menyalin sasaran strategis dari periode penilaian sebelumnya (Fitur Khusus)'],
+            ],
+            'Indikator & IKU Renstra OPD' => [
+                ['name' => 'iku.view', 'description' => 'Melihat daftar IKU dan indikator sasaran Renstra OPD (Fitur 16 & 17)'],
+                ['name' => 'iku.create', 'description' => 'Menambahkan IKU dan indikator sasaran Renstra OPD baru (Fitur 16 & 17)'],
+                ['name' => 'iku.edit', 'description' => 'Mengubah formulasi IKU dan indikator (Fitur 16 & 17)'],
+                ['name' => 'iku.delete', 'description' => 'Menghapus IKU dan indikator sasaran Renstra OPD (Fitur 16 & 17)'],
+                ['name' => 'iku.copy', 'description' => 'Menyalin IKU dan indikator sasaran dari periode sebelumnya (Fitur Khusus)'],
+            ],
+            'Konteks Risiko Strategis' => [
+                ['name' => 'konteks_risiko.view', 'description' => 'Melihat penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
+                ['name' => 'konteks_risiko.create', 'description' => 'Menetapkan konteks risiko strategis OPD baru (Fitur 26 - Form 2B)'],
+                ['name' => 'konteks_risiko.edit', 'description' => 'Mengubah penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
+                ['name' => 'konteks_risiko.delete', 'description' => 'Menghapus penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
+                ['name' => 'konteks_risiko.export', 'description' => 'Mengekspor atau mencetak berkas Form 2B (Fitur 26 & 31)'],
+            ],
+            'Konteks Risiko Operasional' => [
+                ['name' => 'konteks_operasional.view', 'description' => 'Melihat penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
+                ['name' => 'konteks_operasional.create', 'description' => 'Menetapkan konteks risiko operasional OPD baru (Fitur 26 - Form 2C)'],
+                ['name' => 'konteks_operasional.edit', 'description' => 'Mengubah penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
+                ['name' => 'konteks_operasional.delete', 'description' => 'Menghapus penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
+                ['name' => 'konteks_operasional.export', 'description' => 'Mengekspor atau mencetak berkas Form 2C (Fitur 26 & 31)'],
+            ],
+            'Log Audit Keamanan' => [
+                ['name' => 'audit.view', 'description' => 'Melihat riwayat aktivitas dan log audit keamanan (Fitur 5)'],
+                ['name' => 'audit.export', 'description' => 'Mengekspor berkas log aktivitas ke Excel (Fitur 5)'],
+                ['name' => 'audit.purge', 'description' => 'Membersihkan arsip log audit yang telah melampaui retensi (Fitur Khusus)'],
+            ],
+            'Banner Login & Publik' => [
+                ['name' => 'content.view', 'description' => 'Melihat daftar banner portal login dan publik (CMS)'],
+                ['name' => 'content.create', 'description' => 'Mengunggah gambar dan materi banner baru (CMS)'],
+                ['name' => 'content.edit', 'description' => 'Mengubah urutan tampilan dan status aktif banner (CMS)'],
+                ['name' => 'content.delete', 'description' => 'Menghapus materi banner dari portal (CMS)'],
+            ],
+            'Pengaturan Sistem' => [
+                ['name' => 'settings.view', 'description' => 'Melihat konfigurasi parameter sistem dan instansi (Fitur 7)'],
+                ['name' => 'settings.edit', 'description' => 'Mengubah konfigurasi keamanan dan parameter sistem (Fitur 7)'],
             ],
         ];
 
@@ -98,6 +124,9 @@ class RbacSeeder extends Seeder
             }
         }
 
+        // Clean up obsolete/prototype permissions no longer in definition
+        Permission::whereNotIn('name', array_keys($allPermissions))->delete();
+
         // 2. Define Standard Roles based on Fitur dan Hak Akses Aplikasi.xlsx
         $rolesDefinition = [
             'Superadmin' => [
@@ -109,58 +138,79 @@ class RbacSeeder extends Seeder
                 'description' => 'Pengelola operasional data induk, pegawai, master data, dan pemantauan menyeluruh.',
                 'is_system' => false,
                 'permissions' => [
-                    'users.view', 'users.create', 'users.edit', 'users.delete',
-                    'roles.view',
-                    'audit.view',
-                    'opd.view', 'opd.create', 'opd.edit',
-                    'master.view', 'master.create', 'master.edit',
-                    'perencanaan.view', 'perencanaan.periode', 'perencanaan.cascading', 'perencanaan.renstra',
-                    'risiko.view', 'risiko.konteks', 'risiko.penilaian', 'risiko.rtp', 'risiko.kejadian', 'risiko.pengendalian', 'risiko.fraud', 'risiko.import',
-                    'pengawasan.view', 'audit_spip.view',
-                    'laporan.view', 'arsip.view',
+                    'dashboard.view', 'dashboard.export',
+                    'opd.view', 'opd.create', 'opd.edit', 'opd.delete',
+                    'users.view', 'users.create', 'users.edit', 'users.delete', 'users.reset_2fa',
+                    'master.view', 'master.create', 'master.edit', 'master.delete',
+                    'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
+                    'periode.view', 'periode.create', 'periode.edit', 'periode.delete',
+                    'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
+                    'sasaran.view', 'sasaran.create', 'sasaran.edit', 'sasaran.delete', 'sasaran.copy',
+                    'iku.view', 'iku.create', 'iku.edit', 'iku.delete', 'iku.copy',
+                    'konteks_risiko.view', 'konteks_risiko.create', 'konteks_risiko.edit', 'konteks_risiko.delete', 'konteks_risiko.export',
+                    'konteks_operasional.view', 'konteks_operasional.create', 'konteks_operasional.edit', 'konteks_operasional.delete', 'konteks_operasional.export',
+                    'audit.view', 'audit.export',
+                    'content.view', 'content.create', 'content.edit', 'content.delete',
                 ],
             ],
             'Bapperida' => [
                 'description' => 'Badan Perencanaan yang mengelola Periode Penilaian (Fitur 13) dan Cascading Makro Kinerja (Fitur 14-17).',
                 'is_system' => false,
                 'permissions' => [
-                    'perencanaan.view', 'perencanaan.periode', 'perencanaan.cascading', 'perencanaan.renstra',
-                    'pengawasan.view',
-                    'laporan.view', 'arsip.view',
+                    'dashboard.view', 'dashboard.export',
+                    'periode.view', 'periode.create', 'periode.edit', 'periode.delete',
+                    'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
+                    'sasaran.view', 'sasaran.create', 'sasaran.edit', 'sasaran.delete', 'sasaran.copy',
+                    'iku.view', 'iku.create', 'iku.edit', 'iku.delete', 'iku.copy',
+                    'konteks_risiko.view', 'konteks_risiko.export',
+                    'konteks_operasional.view', 'konteks_operasional.export',
                 ],
             ],
             'OPD' => [
-                'description' => 'Organisasi Perangkat Daerah yang mengelola Konteks Risiko (Form 2B & 2C) dan Penilaian Risiko OPD.',
+                'description' => 'Organisasi Perangkat Daerah yang mengelola data Renstra dan Risiko pada instansi masing-masing.',
                 'is_system' => false,
                 'permissions' => [
-                    'perencanaan.view',
-                    'risiko.view', 'risiko.konteks', 'risiko.penilaian', 'risiko.rtp', 'risiko.kejadian', 'risiko.pengendalian', 'risiko.fraud', 'risiko.import',
-                    'laporan.view', 'arsip.view',
+                    'dashboard.view',
+                    'tujuan.view',
+                    'sasaran.view',
+                    'iku.view',
+                    'konteks_risiko.view', 'konteks_risiko.create', 'konteks_risiko.edit', 'konteks_risiko.export',
+                    'konteks_operasional.view', 'konteks_operasional.create', 'konteks_operasional.edit', 'konteks_operasional.export',
                 ],
             ],
             'Inspektorat' => [
                 'description' => 'APIP / Pengawas Daerah yang memantau evaluasi SPIP, survei, wilayah, dan rekap risiko.',
                 'is_system' => false,
                 'permissions' => [
-                    'pengawasan.view',
-                    'risiko.view',
-                    'laporan.view', 'arsip.view',
+                    'dashboard.view',
+                    'tujuan.view',
+                    'sasaran.view',
+                    'iku.view',
+                    'konteks_risiko.view', 'konteks_risiko.export',
+                    'konteks_operasional.view', 'konteks_operasional.export',
+                    'audit.view', 'audit.export',
                 ],
             ],
             'Auditor' => [
                 'description' => 'Fungsional pengawas yang melaksanakan audit, riviu, dan tindak lanjut rekomendasi perbaikan.',
                 'is_system' => false,
                 'permissions' => [
-                    'audit_spip.view',
-                    'risiko.view',
-                    'laporan.view', 'arsip.view',
+                    'dashboard.view',
+                    'tujuan.view',
+                    'sasaran.view',
+                    'iku.view',
+                    'konteks_risiko.view', 'konteks_risiko.export',
+                    'konteks_operasional.view', 'konteks_operasional.export',
+                    'audit.view',
                 ],
             ],
             'Executive' => [
                 'description' => 'Pimpinan Daerah (Bupati / Sekda) untuk memantau dashboard eksekutif dan laporan ringkasan.',
                 'is_system' => false,
                 'permissions' => [
-                    'laporan.view', 'arsip.view',
+                    'dashboard.view', 'dashboard.export',
+                    'konteks_risiko.view', 'konteks_risiko.export',
+                    'konteks_operasional.view', 'konteks_operasional.export',
                 ],
             ],
         ];
@@ -175,9 +225,7 @@ class RbacSeeder extends Seeder
             );
 
             // Sync permissions for this role
-            if (!empty($info['permissions'])) {
-                $role->syncPermissions($info['permissions']);
-            }
+            $role->syncPermissions($info['permissions'] ?? []);
         }
 
         // 3. Assign Superadmin to Default Admin User
@@ -185,5 +233,8 @@ class RbacSeeder extends Seeder
         if ($admin) {
             $admin->syncRoles(['Superadmin']);
         }
+
+        // Clear cache again after seeding
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

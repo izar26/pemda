@@ -189,6 +189,10 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Deskripsi Aktivitas' />
     ),
+    meta: {
+      className: 'min-w-[260px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const log = row.original
       const hasChanges = Boolean(
@@ -197,7 +201,7 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
 
       return (
         <div className='flex flex-col gap-1 py-1 max-w-md'>
-          <span className='text-xs font-medium text-foreground leading-normal'>
+          <span className='text-xs font-medium text-foreground leading-normal whitespace-normal break-words'>
             {log.description}
           </span>
           {hasChanges && (

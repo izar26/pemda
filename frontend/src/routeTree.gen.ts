@@ -46,6 +46,12 @@ import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedRisikoKonteksStrategisIndexRouteImport } from './routes/_authenticated/risiko/konteks-strategis/index'
+import { Route as AuthenticatedRisikoKonteksOperasionalIndexRouteImport } from './routes/_authenticated/risiko/konteks-operasional/index'
+import { Route as AuthenticatedPerencanaanTujuanIndexRouteImport } from './routes/_authenticated/perencanaan/tujuan/index'
+import { Route as AuthenticatedPerencanaanSasaranIndexRouteImport } from './routes/_authenticated/perencanaan/sasaran/index'
+import { Route as AuthenticatedPerencanaanPeriodeIndexRouteImport } from './routes/_authenticated/perencanaan/periode/index'
+import { Route as AuthenticatedPerencanaanIkuIndexRouteImport } from './routes/_authenticated/perencanaan/iku/index'
 import { Route as AuthenticatedContentManagementBannersIndexRouteImport } from './routes/_authenticated/content-management/banners/index'
 
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
@@ -242,6 +248,42 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRisikoKonteksStrategisIndexRoute =
+  AuthenticatedRisikoKonteksStrategisIndexRouteImport.update({
+    id: '/risiko/konteks-strategis/',
+    path: '/risiko/konteks-strategis/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRisikoKonteksOperasionalIndexRoute =
+  AuthenticatedRisikoKonteksOperasionalIndexRouteImport.update({
+    id: '/risiko/konteks-operasional/',
+    path: '/risiko/konteks-operasional/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerencanaanTujuanIndexRoute =
+  AuthenticatedPerencanaanTujuanIndexRouteImport.update({
+    id: '/perencanaan/tujuan/',
+    path: '/perencanaan/tujuan/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerencanaanSasaranIndexRoute =
+  AuthenticatedPerencanaanSasaranIndexRouteImport.update({
+    id: '/perencanaan/sasaran/',
+    path: '/perencanaan/sasaran/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerencanaanPeriodeIndexRoute =
+  AuthenticatedPerencanaanPeriodeIndexRouteImport.update({
+    id: '/perencanaan/periode/',
+    path: '/perencanaan/periode/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerencanaanIkuIndexRoute =
+  AuthenticatedPerencanaanIkuIndexRouteImport.update({
+    id: '/perencanaan/iku/',
+    path: '/perencanaan/iku/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedContentManagementBannersIndexRoute =
   AuthenticatedContentManagementBannersIndexRouteImport.update({
     id: '/content-management/banners/',
@@ -285,6 +327,12 @@ export interface FileRoutesByFullPath {
   '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
   '/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
+  '/perencanaan/iku/': typeof AuthenticatedPerencanaanIkuIndexRoute
+  '/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
+  '/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
+  '/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
+  '/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
 }
 export interface FileRoutesByTo {
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -321,6 +369,12 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/content-management/banners': typeof AuthenticatedContentManagementBannersIndexRoute
+  '/perencanaan/iku': typeof AuthenticatedPerencanaanIkuIndexRoute
+  '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeIndexRoute
+  '/perencanaan/sasaran': typeof AuthenticatedPerencanaanSasaranIndexRoute
+  '/perencanaan/tujuan': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/risiko/konteks-operasional': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
+  '/risiko/konteks-strategis': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -362,6 +416,12 @@ export interface FileRoutesById {
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
+  '/_authenticated/perencanaan/iku/': typeof AuthenticatedPerencanaanIkuIndexRoute
+  '/_authenticated/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
+  '/_authenticated/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
+  '/_authenticated/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/_authenticated/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
+  '/_authenticated/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -401,6 +461,12 @@ export interface FileRouteTypes {
     | '/tasks/'
     | '/users/'
     | '/content-management/banners/'
+    | '/perencanaan/iku/'
+    | '/perencanaan/periode/'
+    | '/perencanaan/sasaran/'
+    | '/perencanaan/tujuan/'
+    | '/risiko/konteks-operasional/'
+    | '/risiko/konteks-strategis/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/clerk'
@@ -437,6 +503,12 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/users'
     | '/content-management/banners'
+    | '/perencanaan/iku'
+    | '/perencanaan/periode'
+    | '/perencanaan/sasaran'
+    | '/perencanaan/tujuan'
+    | '/risiko/konteks-operasional'
+    | '/risiko/konteks-strategis'
   id:
     | '__root__'
     | '/_authenticated'
@@ -477,6 +549,12 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
     | '/_authenticated/content-management/banners/'
+    | '/_authenticated/perencanaan/iku/'
+    | '/_authenticated/perencanaan/periode/'
+    | '/_authenticated/perencanaan/sasaran/'
+    | '/_authenticated/perencanaan/tujuan/'
+    | '/_authenticated/risiko/konteks-operasional/'
+    | '/_authenticated/risiko/konteks-strategis/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -757,6 +835,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/risiko/konteks-strategis/': {
+      id: '/_authenticated/risiko/konteks-strategis/'
+      path: '/risiko/konteks-strategis'
+      fullPath: '/risiko/konteks-strategis/'
+      preLoaderRoute: typeof AuthenticatedRisikoKonteksStrategisIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risiko/konteks-operasional/': {
+      id: '/_authenticated/risiko/konteks-operasional/'
+      path: '/risiko/konteks-operasional'
+      fullPath: '/risiko/konteks-operasional/'
+      preLoaderRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perencanaan/tujuan/': {
+      id: '/_authenticated/perencanaan/tujuan/'
+      path: '/perencanaan/tujuan'
+      fullPath: '/perencanaan/tujuan/'
+      preLoaderRoute: typeof AuthenticatedPerencanaanTujuanIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perencanaan/sasaran/': {
+      id: '/_authenticated/perencanaan/sasaran/'
+      path: '/perencanaan/sasaran'
+      fullPath: '/perencanaan/sasaran/'
+      preLoaderRoute: typeof AuthenticatedPerencanaanSasaranIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perencanaan/periode/': {
+      id: '/_authenticated/perencanaan/periode/'
+      path: '/perencanaan/periode'
+      fullPath: '/perencanaan/periode/'
+      preLoaderRoute: typeof AuthenticatedPerencanaanPeriodeIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perencanaan/iku/': {
+      id: '/_authenticated/perencanaan/iku/'
+      path: '/perencanaan/iku'
+      fullPath: '/perencanaan/iku/'
+      preLoaderRoute: typeof AuthenticatedPerencanaanIkuIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/content-management/banners/': {
       id: '/_authenticated/content-management/banners/'
       path: '/content-management/banners'
@@ -805,6 +925,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedContentManagementBannersIndexRoute: typeof AuthenticatedContentManagementBannersIndexRoute
+  AuthenticatedPerencanaanIkuIndexRoute: typeof AuthenticatedPerencanaanIkuIndexRoute
+  AuthenticatedPerencanaanPeriodeIndexRoute: typeof AuthenticatedPerencanaanPeriodeIndexRoute
+  AuthenticatedPerencanaanSasaranIndexRoute: typeof AuthenticatedPerencanaanSasaranIndexRoute
+  AuthenticatedPerencanaanTujuanIndexRoute: typeof AuthenticatedPerencanaanTujuanIndexRoute
+  AuthenticatedRisikoKonteksOperasionalIndexRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
+  AuthenticatedRisikoKonteksStrategisIndexRoute: typeof AuthenticatedRisikoKonteksStrategisIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -823,6 +949,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedContentManagementBannersIndexRoute:
     AuthenticatedContentManagementBannersIndexRoute,
+  AuthenticatedPerencanaanIkuIndexRoute: AuthenticatedPerencanaanIkuIndexRoute,
+  AuthenticatedPerencanaanPeriodeIndexRoute:
+    AuthenticatedPerencanaanPeriodeIndexRoute,
+  AuthenticatedPerencanaanSasaranIndexRoute:
+    AuthenticatedPerencanaanSasaranIndexRoute,
+  AuthenticatedPerencanaanTujuanIndexRoute:
+    AuthenticatedPerencanaanTujuanIndexRoute,
+  AuthenticatedRisikoKonteksOperasionalIndexRoute:
+    AuthenticatedRisikoKonteksOperasionalIndexRoute,
+  AuthenticatedRisikoKonteksStrategisIndexRoute:
+    AuthenticatedRisikoKonteksStrategisIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

@@ -14,6 +14,12 @@ import {
   Database,
   Building2,
   Images,
+  CalendarRange,
+  Flag,
+  Target,
+  Sparkles,
+  ShieldAlert,
+  FolderTree,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -38,6 +44,7 @@ export const sidebarData: SidebarData = {
           title: 'Dashboard',
           url: '/',
           icon: LayoutDashboard,
+          requiredPermission: 'dashboard.view',
         },
         {
           title: 'Perangkat Daerah (OPD)',
@@ -62,6 +69,52 @@ export const sidebarData: SidebarData = {
           url: '/roles',
           icon: ShieldCheck,
           requiredPermission: 'roles.view',
+        },
+      ],
+    },
+    {
+      title: 'Perencanaan Kinerja',
+      items: [
+        {
+          title: 'Periode Penilaian',
+          url: '/perencanaan/periode',
+          icon: CalendarRange,
+          requiredPermission: 'periode.view',
+        },
+        {
+          title: 'Tujuan Renstra OPD',
+          url: '/perencanaan/tujuan',
+          icon: Flag,
+          requiredPermission: 'tujuan.view',
+        },
+        {
+          title: 'Sasaran Renstra OPD',
+          url: '/perencanaan/sasaran',
+          icon: Target,
+          requiredPermission: 'sasaran.view',
+        },
+        {
+          title: 'Data IKU & Indikator',
+          url: '/perencanaan/iku',
+          icon: Sparkles,
+          requiredPermission: 'iku.view',
+        },
+      ],
+    },
+    {
+      title: 'Pengelolaan Risiko',
+      items: [
+        {
+          title: 'Konteks Strategis (2B)',
+          url: '/risiko/konteks-strategis',
+          icon: ShieldAlert,
+          requiredPermission: 'konteks_risiko.view',
+        },
+        {
+          title: 'Konteks Operasional (2C)',
+          url: '/risiko/konteks-operasional',
+          icon: FolderTree,
+          requiredPermission: 'konteks_operasional.view',
         },
       ],
     },

@@ -39,8 +39,8 @@ class AuditLogArchiveController extends Controller
      */
     public function purge(Request $request): JsonResponse
     {
-        if (!$request->user()->hasRole('Superadmin')) {
-            abort(403, 'Akses Ditolak. Hanya Superadmin yang berwenang melakukan pengarsipan dan pembersihan log.');
+        if (!$request->user()->can('audit.purge') && !$request->user()->hasRole('Superadmin')) {
+            abort(403, 'Akses Ditolak. Hanya pengguna dengan izin audit.purge atau Superadmin yang berwenang melakukan pengarsipan dan pembersihan log.');
         }
 
         $validated = $request->validate([

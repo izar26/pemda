@@ -48,6 +48,24 @@ class DatabaseSeeder extends Seeder
 
         // 5. Seed Master Data Manajemen Risiko & SPIP
         $this->call(MasterDataSeeder::class);
+
+        // 6. Seed Periode Penilaian (Perencanaan Kinerja)
+        $this->call(PeriodePenilaianSeeder::class);
+
+        // 7. Seed Data Tujuan Renstra OPD (Fitur 14)
+        $this->call(TujuanPenilaianSeeder::class);
+
+        // 8. Seed Data Sasaran Renstra OPD (Fitur 15)
+        $this->call(SasaranPenilaianSeeder::class);
+
+        // 9. Seed Data IKU & Indikator Renstra OPD (Fitur 16 & 17)
+        $this->call(IndikatorPenilaianSeeder::class);
+
+        // 10. Seed Penetapan Konteks Risiko Strategis OPD (Fitur 26 - Form 2B)
+        $this->call(KonteksPenilaianSeeder::class);
+
+        // 11. Seed Penetapan Konteks Risiko Operasional OPD (Fitur 26 - Form 2C)
+        $this->call(KonteksOperasionalSeeder::class);
     }
 }
 

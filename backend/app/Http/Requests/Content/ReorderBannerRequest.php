@@ -13,7 +13,7 @@ class ReorderBannerRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('content.manage') ?? false;
+        return $this->user()?->can('content.edit') || $this->user()?->can('content.manage') ?? false;
     }
 
     /**

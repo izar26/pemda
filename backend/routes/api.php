@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExportJobController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
+use App\Http\Controllers\Api\Perencanaan\PeriodePenilaianController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
 use App\Http\Controllers\Api\UserController;
@@ -63,6 +64,9 @@ Route::prefix('auth')->group(function () {
 
 // Dynamic RBAC & User Management Routes
 Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(function () {
+    // Dashboard Endpoints
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+
     // Excel Export Endpoints (High Performance Streaming & Async Job Downloads)
     Route::get('/dashboard/export', [DashboardController::class, 'export']);
     Route::get('/users/export', [UserController::class, 'export']);
@@ -115,6 +119,50 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::post('/banners/reorder', [BannerController::class, 'reorder']);
         Route::patch('/banners/{banner}/toggle-active', [BannerController::class, 'toggleActive']);
         Route::apiResource('/banners', BannerController::class);
+    });
+
+    // Modul Perencanaan Kinerja & Tata Kelola Risiko
+    Route::prefix('perencanaan')->group(function () {
+        Route::get('/periode/active', [PeriodePenilaianController::class, 'active']);
+        Route::get('/periode/stats', [PeriodePenilaianController::class, 'stats']);
+        Route::get('/periode/export', [PeriodePenilaianController::class, 'export']);
+        Route::patch('/periode/{periode}/activate', [PeriodePenilaianController::class, 'activate']);
+        Route::patch('/periode/{periode}/switch-tahun', [PeriodePenilaianController::class, 'switchTahun']);
+        Route::apiResource('/periode', PeriodePenilaianController::class)->parameters(['periode' => 'periode']);
+
+        // Fitur 14: Data Tujuan Renstra OPD
+        Route::get('/tujuan/stats', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'stats']);
+        Route::get('/tujuan/export', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'export']);
+        Route::post('/tujuan/copy', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'copy']);
+        Route::apiResource('/tujuan', \App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class)->parameters(['tujuan' => 'tujuan']);
+
+        // Fitur 15: Data Sasaran Renstra OPD
+        Route::get('/sasaran/stats', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'stats']);
+        Route::get('/sasaran/export', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'export']);
+        Route::post('/sasaran/copy', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'copy']);
+        Route::apiResource('/sasaran', \App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class)->parameters(['sasaran' => 'sasaran']);
+
+        // Fitur 16 & 17: Data IKU & Indikator Renstra OPD
+        Route::get('/iku/stats', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'stats']);
+        Route::get('/iku/export', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'export']);
+        Route::post('/iku/copy', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'copy']);
+        Route::apiResource('/iku', \App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class)->parameters(['iku' => 'iku']);
+    });
+
+    // Modul Pengelolaan Data Risiko (Fitur 26 - Form 2-10, RCA)
+    Route::prefix('risiko')->group(function () {
+        // Form 2B: Penetapan Konteks Risiko Strategis OPD
+        Route::get('/konteks-strategis/current', [\App\Http\Controllers\Api\Risiko\KonteksPenilaianController::class, 'current']);
+        Route::get('/konteks-strategis/{konteks}/export', [\App\Http\Controllers\Api\Risiko\KonteksPenilaianController::class, 'export']);
+        Route::apiResource('/konteks-strategis', \App\Http\Controllers\Api\Risiko\KonteksPenilaianController::class)->parameters(['konteks-strategis' => 'konteks']);
+
+        // Form 2C: Penetapan Konteks Risiko Operasional OPD
+        Route::get('/konteks-operasional/current', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'current']);
+        Route::get('/konteks-operasional/{konteks}/export', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'export']);
+        Route::post('/konteks-operasional/{konteks}/items', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'storeItem']);
+        Route::put('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'updateItem']);
+        Route::delete('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'destroyItem']);
+        Route::apiResource('/konteks-operasional', \App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class)->parameters(['konteks-operasional' => 'konteks']);
     });
 });
 

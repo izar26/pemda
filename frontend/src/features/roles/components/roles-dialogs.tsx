@@ -16,41 +16,59 @@ export function RolesDialogs({
 }: RolesDialogsProps) {
   const { open, setOpen, currentRow, setCurrentRow } = useRoles()
 
+  const handleClose = () => {
+    setOpen(null)
+    setTimeout(() => setCurrentRow(null), 300)
+  }
+
   return (
     <>
       <RoleFormDialog
-        open={open === 'create' || open === 'edit'}
+        key='role-add'
+        open={open === 'create'}
         onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setOpen(null)
-            setCurrentRow(null)
-          }
+          if (!isOpen) handleClose()
         }}
-        role={open === 'edit' ? currentRow : null}
+        role={null}
         existingRoles={roles}
         allPermissions={allPermissions}
         onSuccess={() => {
           onSuccess()
-          setOpen(null)
-          setCurrentRow(null)
+          handleClose()
         }}
       />
 
-      <RoleDeleteDialog
-        open={open === 'delete'}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setOpen(null)
-            setCurrentRow(null)
-          }
-        }}
-        role={currentRow}
-        onSuccess={() => {
-          onSuccess()
-          setOpen(null)
-          setCurrentRow(null)
-        }}
-      />
+      {currentRow && (
+        <>
+          <RoleFormDialog
+            key={`role-edit-${currentRow.id}`}
+            open={open === 'edit'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) handleClose()
+            }}
+            role={currentRow}
+            existingRoles={roles}
+            allPermissions={allPermissions}
+            onSuccess={() => {
+              onSuccess()
+              handleClose()
+            }}
+          />
+
+          <RoleDeleteDialog
+            key={`role-delete-${currentRow.id}`}
+            open={open === 'delete'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) handleClose()
+            }}
+            role={currentRow}
+            onSuccess={() => {
+              onSuccess()
+              handleClose()
+            }}
+          />
+        </>
+      )}
     </>
   )
 }

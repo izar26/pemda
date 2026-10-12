@@ -8,19 +8,48 @@ use App\Http\Controllers\Controller;
 use App\Models\Opd;
 use App\Models\User;
 use App\Services\Export\ExcelExportService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
     /**
+     * Get summary metrics for the executive dashboard.
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+        if (!$user?->can('dashboard.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat dashboard eksekutif.');
+        }
+
+        $totalOpd = Opd::count();
+        $activeOpd = Opd::where('is_active', true)->count();
+        $totalUsers = User::count();
+
+        return response()->json([
+            'total_instansi' => $totalOpd,
+            'active_instansi' => $activeOpd,
+            'total_pegawai' => $totalUsers,
+            'mitigation_rate' => 82,
+            'high_risk_count' => 18,
+            'spip_score' => 3.24,
+        ]);
+    }
+
+    /**
      * Export Executive Summary Report to Excel (.xlsx).
      */
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse
     {
-        $user = $request->user();
+        $user = $request->user() ?? auth('sanctum')->user();
         if (!$user) {
             abort(401, 'Unauthenticated.');
+        }
+
+        if (!$user->can('dashboard.export') && !$user->can('dashboard.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data dashboard.');
         }
 
         $totalOpd = Opd::count();

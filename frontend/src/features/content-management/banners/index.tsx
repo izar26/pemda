@@ -39,7 +39,9 @@ import type { Banner } from '@/types/banner'
 export function BannersManagement() {
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
-  const canManage = hasPermission('content.manage')
+  const canCreate = hasPermission('content.create') || hasPermission('content.manage')
+  const canEdit = hasPermission('content.edit') || hasPermission('content.manage')
+  const canDelete = hasPermission('content.delete') || hasPermission('content.manage')
 
   const [filterPlacement, setFilterPlacement] = useState<string>('login')
   const [formDialogOpen, setFormDialogOpen] = useState(false)
@@ -95,7 +97,7 @@ export function BannersManagement() {
   })
 
   const handleMove = (index: number, direction: 'up' | 'down') => {
-    if (!canManage) return
+    if (!canEdit) return
     const targetIndex = direction === 'up' ? index - 1 : index + 1
     if (targetIndex < 0 || targetIndex >= banners.length) return
 
@@ -137,7 +139,7 @@ export function BannersManagement() {
               Kelola gambar slider/carousel dinamis untuk halaman login dan portal publik.
             </p>
           </div>
-          {canManage && (
+          {canCreate && (
             <Button onClick={handleOpenAdd} className='gap-2'>
               <Plus className='h-4 w-4' />
               Tambah Banner
@@ -195,7 +197,7 @@ export function BannersManagement() {
                   ? 'Saat belum ada banner kustom, halaman login otomatis memakai gambar dashboard bawaan sistem.'
                   : 'Belum ada banner publik untuk penempatan ini.'}
               </p>
-              {canManage && (
+              {canCreate && (
                 <Button onClick={handleOpenAdd} className='mt-6 gap-2'>
                   <Plus className='h-4 w-4' />
                   Unggah Banner Pertama
@@ -257,7 +259,7 @@ export function BannersManagement() {
                     <Switch
                       checked={banner.is_active}
                       onCheckedChange={() => toggleMutation.mutate(banner.id)}
-                      disabled={!canManage || toggleMutation.isPending}
+                      disabled={!canEdit || toggleMutation.isPending}
                     />
                     <span className='text-xs text-muted-foreground'>
                       {banner.is_active ? 'Tayang' : 'Mati'}
@@ -266,7 +268,7 @@ export function BannersManagement() {
 
                   {/* Reorder and Edit Actions */}
                   <div className='flex items-center gap-1'>
-                    {canManage && (
+                    {canEdit && (
                       <>
                         <Button
                           variant='ghost'
@@ -297,16 +299,18 @@ export function BannersManagement() {
                         >
                           <Edit className='h-3.5 w-3.5' />
                         </Button>
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          className='h-7 w-7 text-destructive hover:text-destructive'
-                          onClick={() => setDeleteBannerId(banner.id)}
-                          title='Hapus banner'
-                        >
-                          <Trash2 className='h-3.5 w-3.5' />
-                        </Button>
                       </>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-7 w-7 text-destructive hover:text-destructive'
+                        onClick={() => setDeleteBannerId(banner.id)}
+                        title='Hapus banner'
+                      >
+                        <Trash2 className='h-3.5 w-3.5' />
+                      </Button>
                     )}
                   </div>
                 </CardContent>
