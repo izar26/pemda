@@ -6,10 +6,14 @@ export const bannerService = {
    * Fetch active banners for public display (unauthenticated)
    */
   async getPublicBanners(placement: string = 'login'): Promise<Banner[]> {
-    const response = await apiClient.get<{ data: Banner[] }>('/content/banners/public', {
-      params: { placement },
-    })
-    return response.data.data
+    try {
+      const response = await apiClient.get<{ data: Banner[] }>('/content/banners/public', {
+        params: { placement },
+      })
+      return response.data.data ?? []
+    } catch {
+      return []
+    }
   },
 
   /**

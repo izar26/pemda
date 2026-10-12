@@ -72,7 +72,11 @@ class Banner extends Model
             return $this->image_path;
         }
 
-        return Storage::disk('public')->url($this->image_path);
+        try {
+            return Storage::disk('public')->url($this->image_path);
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /**

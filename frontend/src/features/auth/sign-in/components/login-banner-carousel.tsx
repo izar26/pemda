@@ -16,6 +16,7 @@ export function LoginBannerCarousel() {
     queryKey: ['public-banners', 'login'],
     queryFn: () => bannerService.getPublicBanners('login'),
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: false,
   })
 
   // Initialize Embla with Autoplay

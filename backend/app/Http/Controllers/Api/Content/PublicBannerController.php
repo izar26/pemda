@@ -7,8 +7,10 @@ namespace App\Http\Controllers\Api\Content;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BannerResource;
 use App\Services\Content\BannerService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Log;
 
 class PublicBannerController extends Controller
 {
@@ -19,11 +21,19 @@ class PublicBannerController extends Controller
     /**
      * Get active banners for public display (e.g. login page, public portal).
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse|AnonymousResourceCollection
     {
-        $placement = $request->query('placement', 'login');
-        $banners = $this->bannerService->getPublicBanners((string) $placement);
+        try {
+            $placement = $request->query('placement', 'login');
+            $banners = $this->bannerService->getPublicBanners((string) $placement);
 
-        return BannerResource::collection($banners);
+            return BannerResource::collection($banners);
+        } catch (\Throwable $e) {
+            Log::warning('PublicBannerController@index failed: ' . $e->getMessage());
+
+            return response()->json([
+                'data' => [],
+            ]);
+        }
     }
 }
