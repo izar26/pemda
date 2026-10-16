@@ -18,7 +18,7 @@ export function SignIn2() {
           <div className='flex flex-col space-y-2 text-start'>
             <h2 className='text-lg font-semibold tracking-tight'>Masuk ke Aplikasi ManRis</h2>
             <p className='text-sm text-muted-foreground'>
-              Masukkan NIP atau Email dan kata sandi Anda untuk mengakses akun kedinasan.
+              Masukkan NIP atau Email dan kata sandi Anda.
             </p>
           </div>
           <UserAuthForm />
