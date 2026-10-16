@@ -24,8 +24,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const skipRedirect = error.config?.headers?.['X-Skip-Auth-Redirect'] === 'true'
       const isLoginRoute = window.location.pathname.includes('/sign-in')
-      if (!isLoginRoute) {
+      if (!isLoginRoute && !skipRedirect) {
         useAuthStore.getState().auth.reset()
         window.location.href = `/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
       }

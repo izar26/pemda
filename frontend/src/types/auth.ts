@@ -32,6 +32,7 @@ export interface AuthUser {
 export interface LoginPayload {
   identifier: string
   password: string
+  turnstile_token?: string
 }
 
 export interface LoginDirectSuccessResponse {

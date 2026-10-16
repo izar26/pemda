@@ -47,8 +47,10 @@ export const authService = {
   /**
    * Get current authenticated user profile
    */
-  async getProfile(): Promise<{ user: AuthUser }> {
-    const response = await apiClient.get<{ user: AuthUser }>('/auth/me')
+  async getProfile(skipAuthRedirect = false): Promise<{ user: AuthUser }> {
+    const response = await apiClient.get<{ user: AuthUser }>('/auth/me', {
+      headers: skipAuthRedirect ? { 'X-Skip-Auth-Redirect': 'true' } : undefined,
+    })
     return response.data
   },
 

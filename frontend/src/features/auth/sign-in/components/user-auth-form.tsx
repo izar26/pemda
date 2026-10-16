@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { authService } from '@/services/auth-service'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { TurnstileWidget } from '@/components/turnstile-widget'
 import {
   Form,
   FormControl,
@@ -20,6 +21,8 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
 
 const loginSchema = z.object({
   identifier: z
@@ -56,9 +59,24 @@ export function UserAuthForm({
   const [useRecoveryCode, setUseRecoveryCode] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string>('')
+  const [turnstileKey, setTurnstileKey] = useState<number>(0)
 
   const navigate = useNavigate()
   const { auth } = useAuthStore()
+
+  const handleTurnstileSuccess = useCallback((token: string) => {
+    setTurnstileToken(token)
+  }, [])
+
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('')
+  }, [])
+
+  const resetTurnstile = useCallback(() => {
+    setTurnstileToken('')
+    setTurnstileKey((prev) => prev + 1)
+  }, [])
 
   // Form Step 1: Login
   const loginForm = useForm<LoginValues>({
@@ -79,11 +97,21 @@ export function UserAuthForm({
 
   // Step 1: Submit email/NIP and password
   async function onLoginSubmit(data: LoginValues) {
+    if (turnstileSiteKey && !turnstileToken) {
+      const msg = 'Harap tunggu atau selesaikan verifikasi keamanan bot.'
+      setErrorMessage(msg)
+      toast.warning(msg)
+      return
+    }
+
     setIsLoading(true)
     setErrorMessage(null)
 
     try {
-      const response = await authService.login(data)
+      const response = await authService.login({
+        ...data,
+        turnstile_token: turnstileToken,
+      })
 
       if (response.requires_2fa) {
         setTempToken(response.temp_token)
@@ -98,6 +126,9 @@ export function UserAuthForm({
         navigate({ to: targetPath, replace: true })
       }
     } catch (error) {
+      // Reset Turnstile token on failure so user gets a fresh token
+      resetTurnstile()
+
       if (isAxiosError(error) && error.response?.data?.message) {
         const msg = error.response.data.message
         setErrorMessage(msg)
@@ -222,7 +253,24 @@ export function UserAuthForm({
               )}
             />
 
-            <Button type='submit' className='mt-2 w-full' disabled={isLoading}>
+            {turnstileSiteKey && (
+              <div className='my-1 flex justify-center'>
+                <TurnstileWidget
+                  key={turnstileKey}
+                  siteKey={turnstileSiteKey}
+                  action='login'
+                  onSuccess={handleTurnstileSuccess}
+                  onExpire={handleTurnstileExpire}
+                  onError={handleTurnstileExpire}
+                />
+              </div>
+            )}
+
+            <Button
+              type='submit'
+              className='mt-2 w-full'
+              disabled={isLoading || (Boolean(turnstileSiteKey) && !turnstileToken)}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />

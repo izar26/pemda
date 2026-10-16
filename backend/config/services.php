@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'turnstile' => [
+        'enabled' => env('TURNSTILE_ENABLED', true),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        'hostnames' => array_filter(array_map('trim', explode(',', (string) env('TURNSTILE_HOSTNAMES', 'localhost,127.0.0.1,mr.hexanusa.com')))),
+    ],
+
 ];
