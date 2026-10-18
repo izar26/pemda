@@ -15,6 +15,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { useAppConfig } from '@/hooks/use-app-config'
 
 type TeamSwitcherProps = {
   teams: {
@@ -27,6 +28,11 @@ type TeamSwitcherProps = {
 export function TeamSwitcher({ teams }: TeamSwitcherProps) {
   const { isMobile } = useSidebar()
   const [activeTeam, setActiveTeam] = React.useState(teams[0])
+  const { appName, instanceName, appLogoUrl } = useAppConfig()
+
+  // Use dynamic app name and instance name if using the default team
+  const displayName = activeTeam.name === 'Aplikasi ManRis' ? appName : activeTeam.name
+  const displayPlan = activeTeam.plan === 'Manajemen Risiko PEMDA' ? instanceName : activeTeam.plan
 
   if (teams.length <= 1) {
     return (
@@ -36,15 +42,25 @@ export function TeamSwitcher({ teams }: TeamSwitcherProps) {
             size='lg'
             className='hover:bg-transparent active:bg-transparent cursor-default'
           >
-            <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs'>
-              <activeTeam.logo className='size-4' />
-            </div>
+            {appLogoUrl ? (
+              <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-background border border-border/60 p-1 shadow-2xs overflow-hidden'>
+                <img
+                  src={appLogoUrl}
+                  alt={displayName}
+                  className='h-full w-full object-contain'
+                />
+              </div>
+            ) : (
+              <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs'>
+                <activeTeam.logo className='size-4' />
+              </div>
+            )}
             <div className='grid flex-1 text-start text-sm leading-tight'>
-              <span className='truncate font-bold tracking-tight'>
-                {activeTeam.name}
+              <span className='truncate font-bold tracking-tight text-sidebar-foreground'>
+                {displayName}
               </span>
-              <span className='truncate text-[11px] text-muted-foreground'>
-                {activeTeam.plan}
+              <span className='truncate text-[11px] text-sidebar-foreground/70'>
+                {displayPlan}
               </span>
             </div>
           </SidebarMenuButton>
@@ -62,14 +78,24 @@ export function TeamSwitcher({ teams }: TeamSwitcherProps) {
               size='lg'
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
-              <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs'>
-                <activeTeam.logo className='size-4' />
-              </div>
+              {appLogoUrl ? (
+                <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-background border border-border/60 p-1 shadow-2xs overflow-hidden'>
+                  <img
+                    src={appLogoUrl}
+                    alt={displayName}
+                    className='h-full w-full object-contain'
+                  />
+                </div>
+              ) : (
+                <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs'>
+                  <activeTeam.logo className='size-4' />
+                </div>
+              )}
               <div className='grid flex-1 text-start text-sm leading-tight'>
                 <span className='truncate font-bold tracking-tight'>
-                  {activeTeam.name}
+                  {displayName}
                 </span>
-                <span className='truncate text-[11px] text-muted-foreground'>{activeTeam.plan}</span>
+                <span className='truncate text-[11px] text-sidebar-foreground/70'>{displayPlan}</span>
               </div>
               <ChevronsUpDown className='ms-auto' />
             </SidebarMenuButton>

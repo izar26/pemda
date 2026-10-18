@@ -25,6 +25,7 @@ export interface OpdQueryParams {
   search?: string
   kategori?: string
   status?: 'all' | 'active' | 'inactive'
+  is_active?: string | boolean
   sort_by?: string
   sort_direction?: 'asc' | 'desc'
   all?: boolean
@@ -56,8 +57,8 @@ export const OPD_CATEGORIES = [
   'Inspektorat',
   'RSUD',
   'Kecamatan',
-  'Kantor',
-  'Lainnya',
+  'BUMD',
+  'DESA/KELURAHAN',
 ] as const
 
 export type OpdCategory = (typeof OPD_CATEGORIES)[number]

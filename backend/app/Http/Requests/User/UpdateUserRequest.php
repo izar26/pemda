@@ -13,8 +13,9 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $targetUser = $this->route('user');
-        if ($targetUser instanceof User && $targetUser->hasRole('Superadmin') && !$this->user()?->hasRole('Superadmin')) {
+        $target = $this->route('user');
+        $targetUser = $target instanceof User ? $target : (is_string($target) ? User::find($target) : null);
+        if ($targetUser && $targetUser->hasRole('Superadmin') && !$this->user()?->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
@@ -23,8 +24,9 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $targetUser = $this->route('user');
-        $userId = $targetUser instanceof User ? $targetUser->id : $targetUser;
+        $target = $this->route('user');
+        $targetUser = $target instanceof User ? $target : (is_string($target) ? User::find($target) : null);
+        $userId = $targetUser?->id ?? (is_string($target) ? $target : null);
 
         $roleRule = ['required', 'string'];
         if (!$this->user()?->hasRole('Superadmin')) {
@@ -51,7 +53,12 @@ class UpdateUserRequest extends FormRequest
                 Rule::unique('users', 'nip')->ignore($userId),
             ],
             'phone' => ['nullable', 'string', 'max:20'],
-            'opd_id' => ['nullable', 'string', 'uuid', 'exists:opds,id'],
+            'opd_id' => [
+                'nullable',
+                'string',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
             'pangkat_gol' => ['nullable', 'string', 'max:60'],
             'jabatan' => ['nullable', 'string', 'max:150'],
             'role' => $roleRule,

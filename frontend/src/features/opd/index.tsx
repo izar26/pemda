@@ -1,24 +1,16 @@
-'use client'
-
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Building2,
-  CheckCircle2,
-  Landmark,
-  Loader2,
-  RefreshCw,
-  Users as UsersIcon,
-} from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import type { OpdItem } from '@/types/opd'
 import { opdService } from '@/services/opd-service'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { ExportExcelButton } from '@/components/export-excel-button'
 import { OpdProvider, useOpd } from './components/opd-provider'
 import { OpdPrimaryButtons } from './components/opd-primary-buttons'
@@ -67,49 +59,15 @@ function OpdContent() {
       ? opdResponse.data
       : []
 
-  // 4 Standard Compact KPI Stats
   const totalInstansi = stats?.total ?? opdsList.length
-  const activeInstansi = stats?.active ?? opdsList.filter((o) => o.is_active).length
-  const dinasBadanCount =
-    (stats?.by_kategori?.['Dinas'] ?? 0) + (stats?.by_kategori?.['Badan'] ?? 0) ||
-    opdsList.filter((o) => o.kategori === 'Dinas' || o.kategori === 'Badan').length
-  const totalPegawai = stats?.total_pegawai ?? 0
-
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Total Instansi',
-      value: totalInstansi,
-      icon: Building2,
-      color: 'bg-primary/10 text-primary',
-    },
-    {
-      title: 'Instansi Aktif',
-      value: activeInstansi,
-      icon: CheckCircle2,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      valueColor: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      title: 'Dinas & Badan Daerah',
-      value: dinasBadanCount,
-      icon: Landmark,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-      valueColor: 'text-blue-600 dark:text-blue-400',
-    },
-    {
-      title: 'Pegawai ASN Terdaftar',
-      value: totalPegawai,
-      icon: UsersIcon,
-      color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-      valueColor: 'text-indigo-600 dark:text-indigo-400',
-    },
-  ]
 
   return (
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
+        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
@@ -118,10 +76,10 @@ function OpdContent() {
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Perangkat Daerah (OPD)
+              Perangkat Daerah (Total: {totalInstansi})
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Kelola unit kerja pemerintah daerah, sekretariat, dinas teknis, badan pendukung, RSUD, dan kecamatan.
+              Sekertariat Daerah, SKPD, RSUD Dan Kecamatan.
             </p>
           </div>
 
@@ -147,9 +105,6 @@ function OpdContent() {
             <OpdPrimaryButtons />
           </div>
         </PageHeader>
-
-        {/* Compact KPI Stats with Skeleton loading */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
 
         {/* OPD Data Table */}
         {isLoadingTable ? (

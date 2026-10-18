@@ -1,5 +1,6 @@
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -16,6 +17,7 @@ export function Tasks() {
     <TasksProvider>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
@@ -25,8 +27,8 @@ export function Tasks() {
         <PageHeader className='flex flex-wrap items-end justify-between gap-2'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Tasks</h2>
-            <p className='text-muted-foreground'>
-              Here&apos;s a list of your tasks for this month!
+            <p className='text-xs text-muted-foreground'>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
           <TasksPrimaryButtons />

@@ -49,9 +49,10 @@ export const perencanaanService = {
    * Get the single currently active period
    */
   async getActivePeriode(): Promise<PeriodePenilaianItem | null> {
-    const response = await apiClient.get<{ data: PeriodePenilaianItem | null }>(
-      '/perencanaan/periode/active'
-    )
+    const response = await apiClient.get<{
+      data: PeriodePenilaianItem | null
+      server_time?: string
+    }>('/perencanaan/periode/active')
     return response.data.data
   },
 
@@ -423,5 +424,38 @@ export const perencanaanService = {
     }
     const query = searchParams.toString()
     return `/api/perencanaan/iku/export${query ? `?${query}` : ''}`
+  },
+
+  /**
+   * Reorder evaluation goals within their OPD scope
+   */
+  async reorderTujuan(ids: string[]): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      '/perencanaan/tujuan/reorder',
+      { ids }
+    )
+    return response.data
+  },
+
+  /**
+   * Reorder strategic targets within their parent goal scope
+   */
+  async reorderSasaran(ids: string[]): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      '/perencanaan/sasaran/reorder',
+      { ids }
+    )
+    return response.data
+  },
+
+  /**
+   * Reorder indicators within their parent target scope
+   */
+  async reorderIndikator(ids: string[]): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      '/perencanaan/iku/reorder',
+      { ids }
+    )
+    return response.data
   },
 }

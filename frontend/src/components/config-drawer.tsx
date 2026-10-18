@@ -46,10 +46,11 @@ export function ConfigDrawer() {
         <Button
           size='icon'
           variant='ghost'
-          aria-label='Open theme settings'
-          className='rounded-full'
+          aria-label='Pengaturan Tema'
+          title='Pengaturan Tema'
+          className='scale-95 rounded-full'
         >
-          <Settings aria-hidden='true' />
+          <Settings className='size-[1.2rem]' aria-hidden='true' />
         </Button>
       </SheetTrigger>
       <SheetContent className='flex flex-col'>

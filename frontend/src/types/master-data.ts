@@ -36,6 +36,8 @@ export interface MasterDataBaseItem {
   updated_at?: string
 }
 
+export type MasterDataItem = MasterDataBaseItem
+
 export interface MasterDataPayload {
   nama: string
   kode?: string
@@ -111,7 +113,7 @@ export const MASTER_ENTITIES: MasterEntityMeta[] = [
   },
   {
     key: 'sumber-data',
-    label: 'Sumber Data Risiko',
+    label: 'Sumber Data',
     category: 'risiko',
     descField: 'deskripsi',
     descLabel: 'Keterangan',
@@ -120,7 +122,7 @@ export const MASTER_ENTITIES: MasterEntityMeta[] = [
   // Kategori 2: Tata Kelola & SPIP
   {
     key: 'unsur-spip',
-    label: 'Unsur & Sub-Unsur SPIP',
+    label: 'Unsur',
     category: 'spip',
     isHierarchical: true,
   },

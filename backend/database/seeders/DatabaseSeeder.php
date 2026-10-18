@@ -1,71 +1,55 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed the application's database with realistic and complete datasets across all menus.
      */
     public function run(): void
     {
-        // 1. Seed OPDs (Master Organisasi Perangkat Daerah)
+        // 1. Master Organisasi Perangkat Daerah (OPD, Dinas, Badan, RSUD, Kecamatan)
         $this->call(OpdSeeder::class);
 
-        // 2. Superadmin PEMDA
-        $sekda = \App\Models\Opd::where('kode', 'Sekda')->first();
-        User::updateOrCreate(
-            ['email' => 'admin@pemda.go.id'],
-            [
-                'name' => 'Administrator Utama',
-                'nip' => '198501012010011001',
-                'phone' => '081234567890',
-                'opd_id' => $sekda?->id,
-                'jabatan' => 'Pranata Komputer Ahli Pertama',
-                'pangkat_gol' => 'Penata Muda (III/a)',
-                'role' => 'superadmin',
-                'status' => 'active',
-                'password' => Hash::make('Password@123'),
-                'two_factor_secret' => null,
-                'two_factor_recovery_codes' => null,
-                'two_factor_confirmed_at' => null,
-                'failed_login_attempts' => 0,
-            ]
-        );
+        // 2. Direktori Kepegawaian ASN per Instansi Daerah (Fitur 12 - Manajemen Pegawai)
+        $this->call(PegawaiSeeder::class);
 
-        // 3. Seed Roles, Permissions, and assign Superadmin role
+        // 3. Matriks Peran & Hak Akses (Fitur 8 - Manajemen Hak Akses / RBAC)
         $this->call(RbacSeeder::class);
 
-        // 4. Seed System Settings & Initial Audit Logs
+        // 4. Akun Pengguna & Aktivasi Peran (Fitur 9 - Manajemen Users)
+        $this->call(UserAccountSeeder::class);
+
+        // 5. Konfigurasi Parameter & Keamanan Sistem (Fitur 7 - Pengaturan Sistem)
         $this->call(SystemSettingSeeder::class);
 
-        // 5. Seed Master Data Manajemen Risiko & SPIP
+        // 6. Manajemen Konten & Banner Portal (CMS Banner Login & Beranda)
+        $this->call(BannerSeeder::class);
+
+        // 7. Master Data Manajemen Risiko & SPIP Terintegrasi (Fitur 10 - Data Master)
         $this->call(MasterDataSeeder::class);
 
-        // 6. Seed Periode Penilaian (Perencanaan Kinerja)
+        // 8. Siklus Perencanaan & Periode Penilaian (Fitur 13 - Periode Penilaian)
         $this->call(PeriodePenilaianSeeder::class);
 
-        // 7. Seed Data Tujuan Renstra OPD (Fitur 14)
-        $this->call(TujuanPenilaianSeeder::class);
+        // 9-11. Pohon Kinerja: Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)
+        $this->call(TujuanSasaranIndikatorSeeder::class);
 
-        // 8. Seed Data Sasaran Renstra OPD (Fitur 15)
-        $this->call(SasaranPenilaianSeeder::class);
-
-        // 9. Seed Data IKU & Indikator Renstra OPD (Fitur 16 & 17)
-        $this->call(IndikatorPenilaianSeeder::class);
-
-        // 10. Seed Penetapan Konteks Risiko Strategis OPD (Fitur 26 - Form 2B)
+        // 12. Penetapan Konteks Risiko Strategis OPD (Fitur 26 - Form 2B)
         $this->call(KonteksPenilaianSeeder::class);
 
-        // 11. Seed Penetapan Konteks Risiko Operasional OPD (Fitur 26 - Form 2C)
+        // 13. Penetapan Konteks Risiko Operasional OPD (Fitur 26 - Form 2C)
         $this->call(KonteksOperasionalSeeder::class);
+
+        // 14. Log Aktivitas & Audit Keamanan Sistem (Fitur 5 - Log Audit Keamanan)
+        $this->call(AuditLogSeeder::class);
     }
 }
-

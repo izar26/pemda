@@ -53,6 +53,7 @@ export function ProfileForm() {
   const currentUser = useAuthStore((state) => state.auth.user)
   const setUser = useAuthStore((state) => state.auth.setUser)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isAdmin = currentUser?.role === 'Superadmin' || currentUser?.role === 'Admin Office'
 
   // Fetch dynamic OPDs
   const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
@@ -261,7 +262,7 @@ export function ProfileForm() {
                 </FormLabel>
                 <FormControl>
                   <SearchableSelect
-                    disabled={isSubmitting || isLoadingOpds}
+                    disabled={isSubmitting || isLoadingOpds || !isAdmin}
                     value={field.value}
                     onValueChange={field.onChange}
                     options={opdOptions}
@@ -275,7 +276,9 @@ export function ProfileForm() {
                   />
                 </FormControl>
                 <FormDescription className='text-[11px]'>
-                  Pilih unit kerja dinas, badan, sekretariat, atau kecamatan tempat Anda bertugas.
+                  {isAdmin
+                    ? 'Pilih unit kerja dinas, badan, sekretariat, atau kecamatan tempat Anda bertugas.'
+                    : 'Unit kerja instansi Anda dikunci demi isolasi keamanan multi-tenant. Hubungi Administrator untuk permohonan mutasi.'}
                 </FormDescription>
                 <FormMessage className='text-xs' />
               </FormItem>
@@ -296,12 +299,14 @@ export function ProfileForm() {
                     <Input
                       placeholder='Contoh: Kepala Bidang Aplikasi Informatika'
                       maxLength={150}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !isAdmin}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription className='text-[11px]'>
-                    Nama jabatan struktural atau fungsional kedinasan.
+                    {isAdmin
+                      ? 'Nama jabatan struktural atau fungsional kedinasan.'
+                      : 'Jabatan kedinasan resmi dikelola oleh Administrator melalui SK penempatan.'}
                   </FormDescription>
                   <FormMessage className='text-xs' />
                 </FormItem>

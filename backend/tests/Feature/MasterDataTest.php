@@ -6,6 +6,12 @@ namespace Tests\Feature;
 
 use App\Models\Master\MasterKategoriRisiko;
 use App\Models\Master\MasterPemilikRisiko;
+use App\Models\Master\MasterSumberData;
+use App\Models\Master\MasterUnsurSpip;
+use App\Models\Master\MasterSubUnsurSpip;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
+use App\Models\Perencanaan\TujuanPenilaian;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\MasterDataSeeder;
@@ -250,7 +256,7 @@ class MasterDataTest extends TestCase
             ->deleteJson("/api/master/unsur-spip/{$unsur->id}");
 
         $response->assertStatus(422)
-            ->assertJsonFragment(['message' => "Tidak dapat menghapus Unsur SPIP ini karena masih memiliki {$unsur->subUnsurs()->count()} Sub-Unsur terkait. Hapus atau pindahkan Sub-Unsur terlebih dahulu."]);
+            ->assertJsonFragment(['message' => "Tidak dapat menghapus Unsur SPIP '{$unsur->nama}' karena masih memiliki {$unsur->subUnsurs()->count()} Sub-Unsur terkait. Bersihkan data Sub-Unsur terlebih dahulu dari bawah."]);
     }
 
     public function test_authorized_user_can_manage_opd_master_data(): void
@@ -285,5 +291,152 @@ class MasterDataTest extends TestCase
             'kode' => 'KEC-TEST',
             'nama' => 'Kecamatan Contoh Baru',
         ]);
+    }
+
+    public function test_cannot_delete_sumber_data_when_used_in_tujuan_penilaian(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        $opd = Opd::firstOrFail();
+        $periode = PeriodePenilaian::create([
+            'nama_periode' => 'Periode Uji Aktif',
+            'tahun_mulai' => 2026,
+            'tahun_akhir' => 2030,
+            'tahun_penilaian' => 2026,
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_akhir' => '2026-12-31',
+            'status' => 'aktif',
+        ]);
+
+        $sumberData = MasterSumberData::firstOrFail();
+
+        TujuanPenilaian::create([
+            'periode_penilaian_id' => $periode->id,
+            'opd_id' => $opd->id,
+            'sumber_data_id' => $sumberData->id,
+            'kode_tujuan' => 'TUJ-GUARD',
+            'tujuan' => 'Tujuan Pengujian Guard Sumber Data',
+            'urutan' => 1,
+            'created_by' => $this->superadmin->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson("/api/master/sumber-data/{$sumberData->id}");
+
+        $response->assertStatus(422);
+
+        $this->assertStringContainsString('Tujuan Penilaian', $response->json('message'));
+        $this->assertDatabaseHas('master_sumber_datas', ['id' => $sumberData->id]);
+    }
+
+    public function test_cannot_deactivate_sumber_data_when_used_in_active_periode(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        $opd = Opd::firstOrFail();
+        $periode = PeriodePenilaian::create([
+            'nama_periode' => 'Periode Uji Aktif 2',
+            'tahun_mulai' => 2026,
+            'tahun_akhir' => 2030,
+            'tahun_penilaian' => 2026,
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_akhir' => '2026-12-31',
+            'status' => 'aktif',
+        ]);
+
+        $sumberData = MasterSumberData::firstOrFail();
+
+        TujuanPenilaian::create([
+            'periode_penilaian_id' => $periode->id,
+            'opd_id' => $opd->id,
+            'sumber_data_id' => $sumberData->id,
+            'kode_tujuan' => 'TUJ-GUARD-2',
+            'tujuan' => 'Tujuan Pengujian Deaktivasi Guard',
+            'urutan' => 2,
+            'created_by' => $this->superadmin->id,
+        ]);
+
+        // Attempt toggle
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson("/api/master/sumber-data/{$sumberData->id}/toggle");
+
+        $response->assertStatus(422);
+
+        $this->assertStringContainsString('periode penilaian aktif', $response->json('message'));
+
+        // Attempt update with is_active = false
+        $updateResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson("/api/master/sumber-data/{$sumberData->id}", [
+                'nama' => $sumberData->nama,
+                'is_active' => false,
+            ]);
+
+        $updateResponse->assertStatus(422);
+    }
+
+    public function test_cannot_create_sub_unsur_with_inactive_unsur_spip(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        $inactiveUnsur = MasterUnsurSpip::create([
+            'nomor' => '99',
+            'nama' => 'Unsur Nonaktif',
+            'is_active' => false,
+            'urutan' => 99,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/master/sub-unsur-spip', [
+                'unsur_spip_id' => $inactiveUnsur->id,
+                'kode' => '99.1',
+                'nama' => 'Sub Unsur Baru',
+                'urutan' => 1,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['unsur_spip_id']);
+    }
+
+    public function test_cannot_reorder_sub_unsurs_across_different_unsurs(): void
+    {
+        $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
+
+        $unsur1 = MasterUnsurSpip::create([
+            'nomor' => '91',
+            'nama' => 'Unsur 91',
+            'is_active' => true,
+            'urutan' => 91,
+        ]);
+
+        $unsur2 = MasterUnsurSpip::create([
+            'nomor' => '92',
+            'nama' => 'Unsur 92',
+            'is_active' => true,
+            'urutan' => 92,
+        ]);
+
+        $sub1 = \App\Models\Master\MasterSubUnsurSpip::create([
+            'unsur_spip_id' => $unsur1->id,
+            'kode' => '91.1',
+            'nama' => 'Sub 91.1',
+            'urutan' => 1,
+            'is_active' => true,
+        ]);
+
+        $sub2 = \App\Models\Master\MasterSubUnsurSpip::create([
+            'unsur_spip_id' => $unsur2->id,
+            'kode' => '92.1',
+            'nama' => 'Sub 92.1',
+            'urutan' => 1,
+            'is_active' => true,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/master/sub-unsur-spip/reorder', [
+                'ids' => [$sub1->id, $sub2->id],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Semua Sub-Unsur yang diurutkan harus berada di bawah Unsur SPIP yang sama.');
     }
 }

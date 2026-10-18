@@ -24,15 +24,18 @@ export function UsersReset2faDialog({
   async function handleReset() {
     setIsSubmitting(true)
     try {
-      const response = await userService.resetTwoFactor(currentRow.id)
-      toast.success(response.message || `2FA untuk ${currentRow.name} berhasil direset.`)
+      const response = await userService.resetUserAccountTwoFactor(currentRow.id)
+      toast.success(
+        response.message || `2FA untuk ${currentRow.name} berhasil direset.`
+      )
+      queryClient.invalidateQueries({ queryKey: ['user-accounts'] })
       queryClient.invalidateQueries({ queryKey: ['users'] })
       onOpenChange(false)
     } catch (error) {
       const msg =
         isAxiosError(error) && error.response?.data?.message
           ? error.response.data.message
-          : 'Gagal mereset 2FA pegawai.'
+          : 'Gagal mereset 2FA pengguna.'
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -49,7 +52,11 @@ export function UsersReset2faDialog({
   const descContent = (
     <div className='space-y-2 text-xs'>
       <p>
-        Pegawai: <strong className='text-foreground font-semibold'>{currentRow.name}</strong> ({currentRow.email})
+        Pengguna:{' '}
+        <strong className='text-foreground font-semibold'>
+          {currentRow.name}
+        </strong>{' '}
+        ({currentRow.email})
       </p>
       <div className='rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-amber-800 dark:text-amber-300 space-y-1 text-[11px] leading-relaxed'>
         <div className='flex items-center gap-1.5 font-semibold text-xs'>
@@ -57,7 +64,7 @@ export function UsersReset2faDialog({
           Perhatian Keamanan
         </div>
         <p>
-          Tindakan ini akan menghapus kunci Google Authenticator dan kode pemulihan pegawai yang bersangkutan, serta memutus seluruh sesi login aktif. Pegawai akan diminta mengonfigurasi 2FA kembali saat login berikutnya.
+          Tindakan ini akan menghapus kunci Google Authenticator dan kode pemulihan pengguna yang bersangkutan, serta memutus seluruh sesi login aktif. Pengguna akan diminta mengonfigurasi 2FA kembali saat login berikutnya.
         </p>
       </div>
     </div>

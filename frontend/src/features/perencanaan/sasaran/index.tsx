@@ -8,6 +8,7 @@ import {
   Target,
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -102,6 +103,7 @@ function SasaranContent() {
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
@@ -115,7 +117,7 @@ function SasaranContent() {
               Data Sasaran Renstra OPD
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Kelola rumusan sasaran strategis perangkat daerah dan keterkaitannya dengan tujuan Renstra OPD (Bapperida).
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 

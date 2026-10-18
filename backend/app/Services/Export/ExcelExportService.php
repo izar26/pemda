@@ -99,18 +99,35 @@ class ExcelExportService
     {
         if (is_array($rows)) {
             $sampleRows = array_slice($rows, 0, 60);
-            $remainingRows = array_slice($rows, count($sampleRows));
+            $continuousRows = function () use ($rows) {
+                foreach ($rows as $row) {
+                    yield $row;
+                }
+            };
         } else {
+            $iterator = $rows instanceof \IteratorAggregate ? $rows->getIterator() : $rows;
+            if (!($iterator instanceof \Iterator)) {
+                $iterator = new \IteratorIterator($iterator);
+                $iterator->rewind();
+            }
+
             $sampleRows = [];
             $sampleCount = 0;
-            foreach ($rows as $row) {
-                $sampleRows[] = $row;
+            while ($iterator->valid() && $sampleCount < 60) {
+                $sampleRows[] = $iterator->current();
                 $sampleCount++;
-                if ($sampleCount >= 60) {
-                    break;
-                }
+                $iterator->next();
             }
-            $remainingRows = $rows;
+
+            $continuousRows = function () use ($sampleRows, $iterator) {
+                foreach ($sampleRows as $sRow) {
+                    yield $sRow;
+                }
+                while ($iterator->valid()) {
+                    yield $iterator->current();
+                    $iterator->next();
+                }
+            };
         }
 
         $options = new Options();
@@ -172,16 +189,6 @@ class ExcelExportService
                 $currRow++;
             }
         }
-
-        // 3. Reconstruct continuous generator for seamless row consumption
-        $continuousRows = function () use ($sampleRows, $remainingRows) {
-            foreach ($sampleRows as $sRow) {
-                yield $sRow;
-            }
-            foreach ($remainingRows as $rRow) {
-                yield $rRow;
-            }
-        };
 
         return [$options, $continuousRows()];
     }

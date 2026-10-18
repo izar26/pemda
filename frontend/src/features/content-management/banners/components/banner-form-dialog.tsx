@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { isAxiosError } from 'axios'
 import {
   Dialog,
@@ -51,10 +51,14 @@ export function BannerFormDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Reset or initialize on open
-  useEffect(() => {
+  // Reset or initialize when open or banner changes
+  const [prevOpen, setPrevOpen] = useState(open)
+  const [prevBanner, setPrevBanner] = useState(banner)
+
+  if (open !== prevOpen || banner !== prevBanner) {
+    setPrevOpen(open)
+    setPrevBanner(banner)
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (banner) {
         setTitle(banner.title || '')
         setDescription(banner.description || '')
@@ -72,7 +76,7 @@ export function BannerFormDialog({
       }
       setRawImageSrc(null)
     }
-  }, [open, banner])
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

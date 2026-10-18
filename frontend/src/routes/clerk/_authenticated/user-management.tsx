@@ -12,6 +12,7 @@ import { ClerkLogo } from '@/assets/clerk-logo'
 import { Button } from '@/components/ui/button'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { LearnMore } from '@/components/learn-more'
 import { Search } from '@/components/search'
@@ -49,6 +50,7 @@ function UserManagement() {
     <UsersProvider>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
         <ConfigDrawer />
         <UserButton />

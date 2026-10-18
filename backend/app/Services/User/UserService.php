@@ -27,22 +27,26 @@ class UserService
     public function getUsers(array $filters = [], int $perPage = 10, ?User $currentUser = null): LengthAwarePaginator
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
-        $query = User::with(['roles', 'roles.permissions', 'opd']);
+        $query = User::with(['roles', 'roles.permissions', 'opd'])
+            ->whereNotNull('password');
 
         // Ghost filter: non-superadmin users must not see Superadmin accounts
         if (!$user?->hasRole('Superadmin')) {
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
-            })->where('role', '!=', 'Superadmin');
+            })->where(function ($q) {
+                $q->whereNull('role')->orWhere('role', '!=', 'Superadmin');
+            });
         }
 
-        // Search by name, email, nip, jabatan, or pangkat
+        // Search by name, email, nip, phone, jabatan, or pangkat
         if (!empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
                     ->orWhere('email', 'like', "%{$term}%")
                     ->orWhere('nip', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%")
                     ->orWhere('jabatan', 'like', "%{$term}%")
                     ->orWhere('pangkat_gol', 'like', "%{$term}%");
             });
@@ -223,6 +227,174 @@ class UserService
             // Revoke all Sanctum tokens
             $user->tokens()->delete();
             $user->delete();
+        });
+    }
+
+    /**
+     * Assign login account credentials and RBAC role to an existing Pegawai.
+     *
+     * @param  array{pegawai_id: string, role: string, password: string, status: string}  $data
+     */
+    public function assignUserAccount(array $data, ?User $currentUser = null): User
+    {
+        $actor = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+
+        if (($data['role'] ?? '') === 'Superadmin' && !$actor?->hasRole('Superadmin')) {
+            throw ValidationException::withMessages([
+                'role' => ['Peran yang dipilih tidak valid.'],
+            ]);
+        }
+
+        $pegawai = User::findOrFail($data['pegawai_id']);
+
+        if ($pegawai->hasAccount()) {
+            throw ValidationException::withMessages([
+                'pegawai_id' => ['Pegawai yang dipilih sudah memiliki akun pengguna aktif/nonaktif.'],
+            ]);
+        }
+
+        return DB::transaction(function () use ($pegawai, $data, $actor) {
+            $pegawai->update([
+                'role' => $data['role'],
+                'status' => $data['status'] ?? 'active',
+                'password' => Hash::make($data['password']),
+                'email_verified_at' => now(),
+                'failed_login_attempts' => 0,
+                'lockout_until' => null,
+            ]);
+
+            $pegawai->syncRoles([$data['role']]);
+
+            $this->auditLogService->log(
+                action: 'USER_ACCOUNT_CREATED',
+                module: 'Manajemen Users',
+                description: "Memberikan akun login kepada pegawai {$pegawai->name} ({$pegawai->email}) dengan peran {$data['role']}",
+                user: $actor,
+                context: [
+                    'pegawai_id' => $pegawai->id,
+                    'pegawai_name' => $pegawai->name,
+                    'role' => $data['role'],
+                    'status' => $data['status'] ?? 'active',
+                ],
+                auditableType: User::class,
+                auditableId: $pegawai->id
+            );
+
+            return $pegawai->load(['roles', 'roles.permissions', 'opd']);
+        });
+    }
+
+    /**
+     * Update an existing user account's role, password, and status (active/inactive).
+     *
+     * @param  array{role: string, status: string, password?: string|null}  $data
+     */
+    public function updateUserAccount(User $user, array $data, User $currentUser): User
+    {
+        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+            abort(404, 'Data akun pengguna tidak ditemukan.');
+        }
+
+        if (($data['role'] ?? '') === 'Superadmin' && !$currentUser->hasRole('Superadmin')) {
+            throw ValidationException::withMessages([
+                'role' => ['Peran yang dipilih tidak valid.'],
+            ]);
+        }
+
+        if ($user->hasRole('Superadmin') && $data['role'] !== 'Superadmin') {
+            $superadminCount = User::role('Superadmin')->count();
+            if ($superadminCount <= 1) {
+                throw ValidationException::withMessages([
+                    'role' => ['Tidak dapat mengubah peran ini. Sistem harus memiliki setidaknya satu Superadmin aktif.'],
+                ]);
+            }
+        }
+
+        if ($user->id === $currentUser->id && isset($data['status']) && $data['status'] !== 'active') {
+            throw ValidationException::withMessages([
+                'status' => ['Anda tidak dapat menonaktifkan akun Anda sendiri demi alasan keamanan.'],
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $data) {
+            $updatePayload = [
+                'role' => $data['role'],
+                'status' => $data['status'],
+            ];
+
+            if (!empty($data['password'])) {
+                $updatePayload['password'] = Hash::make($data['password']);
+            }
+
+            $user->update($updatePayload);
+            $user->syncRoles([$data['role']]);
+
+            if ($data['status'] === 'inactive') {
+                $user->tokens()->delete();
+            }
+
+            return $user->load(['roles', 'roles.permissions', 'opd']);
+        });
+    }
+
+    /**
+     * Revoke user login account while keeping the Pegawai biodata intact in Manajemen Pegawai.
+     */
+    public function revokeUserAccount(User $user, User $currentUser): void
+    {
+        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+            abort(404, 'Data akun pengguna tidak ditemukan.');
+        }
+
+        if ($user->id === $currentUser->id) {
+            throw ValidationException::withMessages([
+                'user' => ['Anda tidak dapat mencabut akun login Anda sendiri.'],
+            ]);
+        }
+
+        if ($user->hasRole('Superadmin')) {
+            $superadminCount = User::role('Superadmin')->count();
+            if ($superadminCount <= 1) {
+                throw ValidationException::withMessages([
+                    'user' => ['Tidak dapat mencabut satu-satunya akun Superadmin yang ada di sistem.'],
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($user, $currentUser) {
+            $oldRole = $user->roles->first()?->name ?? $user->role;
+
+            $user->tokens()->delete();
+            $user->syncRoles([]);
+
+            User::withoutAuditing(function () use ($user) {
+                $user->update([
+                    'password' => null,
+                    'role' => null,
+                    'status' => null,
+                    'two_factor_secret' => null,
+                    'two_factor_recovery_codes' => null,
+                    'two_factor_confirmed_at' => null,
+                    'failed_login_attempts' => 0,
+                    'lockout_until' => null,
+                    'activation_token' => null,
+                    'activation_token_expires_at' => null,
+                ]);
+            });
+
+            $this->auditLogService->log(
+                action: 'USER_ACCOUNT_REVOKED',
+                module: 'Manajemen Users',
+                description: "Mencabut akun login pengguna untuk pegawai {$user->name} ({$user->email})",
+                user: $currentUser,
+                context: [
+                    'pegawai_id' => $user->id,
+                    'pegawai_name' => $user->name,
+                    'revoked_role' => $oldRole,
+                ],
+                auditableType: User::class,
+                auditableId: $user->id
+            );
         });
     }
 

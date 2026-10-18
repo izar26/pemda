@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Perencanaan;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CopyTujuanPenilaianRequest extends FormRequest
 {
@@ -17,6 +18,17 @@ class CopyTujuanPenilaianRequest extends FormRequest
     }
 
     /**
+     * Prepare data before validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
+            $this->merge(['opd_id' => $user->opd_id]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -25,7 +37,11 @@ class CopyTujuanPenilaianRequest extends FormRequest
     {
         return [
             'source_periode_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
-            'opd_id' => ['nullable', 'uuid', 'exists:opds,id'],
+            'opd_id' => [
+                'nullable',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
         ];
     }
 

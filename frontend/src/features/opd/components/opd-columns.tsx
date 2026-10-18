@@ -1,5 +1,5 @@
 import { type ColumnDef } from '@tanstack/react-table'
-import { Building2, Loader2, User, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp, Building2, GripVertical, Loader2, User, Users } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
@@ -25,6 +25,11 @@ function getCategoryBadgeClass(kategori: string): string {
       return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
     case 'Kecamatan':
       return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+    case 'BUMD':
+      return 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800'
+    case 'DESA/KELURAHAN':
+    case 'Desa/Kelurahan':
+      return 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800'
     default:
       return 'bg-muted text-muted-foreground border-border'
   }
@@ -70,18 +75,72 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
   {
     accessorKey: 'urutan',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='No.' className='w-12 text-center' />
+      <DataTableColumnHeader column={column} title='Urutan' className='w-24 text-center' />
     ),
     meta: {
-      className: 'w-12 text-center',
+      className: 'w-24 text-center',
       thClassName: 'text-center',
       tdClassName: 'text-center',
     },
-    cell: ({ row }) => (
-      <div className='text-center text-xs font-mono font-medium text-muted-foreground'>
-        {row.getValue('urutan')}
-      </div>
-    ),
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as {
+        onMoveUp?: (id: string) => void
+        onMoveDown?: (id: string) => void
+        canEdit?: boolean
+        canReorder?: boolean
+      } | undefined
+
+      const canEdit = meta?.canEdit ?? false
+      const canReorder = meta?.canReorder ?? false
+      const item = row.original
+      const index = row.index
+      const isFirst = index === 0
+      const isLast = index === table.getRowModel().rows.length - 1
+
+      return (
+        <div className='flex items-center justify-center gap-1.5'>
+          {canEdit && canReorder && (
+            <div
+              className='cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5'
+              title='Tarik untuk ubah urutan'
+            >
+              <GripVertical className='h-3.5 w-3.5' />
+            </div>
+          )}
+          <span className='font-mono text-xs font-semibold px-1.5 py-0.5 rounded bg-muted/60 text-foreground min-w-[24px] text-center'>
+            {item.urutan}
+          </span>
+          {canEdit && canReorder && (
+            <div className='flex flex-col -space-y-1'>
+              <button
+                type='button'
+                disabled={isFirst}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  meta?.onMoveUp?.(item.id)
+                }}
+                className='p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:pointer-events-none'
+                title='Pindah ke atas'
+              >
+                <ArrowUp className='h-3 w-3' />
+              </button>
+              <button
+                type='button'
+                disabled={isLast}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  meta?.onMoveDown?.(item.id)
+                }}
+                className='p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:pointer-events-none'
+                title='Pindah ke bawah'
+              >
+                <ArrowDown className='h-3 w-3' />
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    },
     enableSorting: true,
   },
   {
@@ -208,9 +267,10 @@ export const opdColumns: ColumnDef<OpdItem>[] = [
   },
   {
     id: 'actions',
+    header: () => <div className='w-14 text-center'>Aksi</div>,
     cell: ({ row }) => <OpdRowActions row={row} />,
     meta: {
-      className: 'w-14 text-center',
+      className: 'w-16 min-w-[60px] text-center',
       thClassName: 'text-center',
       tdClassName: 'text-center',
     },

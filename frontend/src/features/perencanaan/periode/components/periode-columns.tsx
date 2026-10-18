@@ -1,4 +1,4 @@
-import { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import {
   CalendarDays,
   Clock,
@@ -181,17 +181,23 @@ export const periodeColumns: ColumnDef<PeriodePenilaianItem>[] = [
   {
     accessorKey: 'nama_periode',
     header: 'Siklus RPJMD',
+    meta: {
+      className: 'min-w-[240px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const item = row.original
       return (
-        <div>
-          <div className='font-semibold text-foreground'>{item.nama_periode}</div>
+        <div className='py-1 min-w-0'>
+          <div className='font-semibold text-foreground text-sm leading-snug whitespace-normal break-words'>
+            {item.nama_periode}
+          </div>
           {item.keterangan ? (
-            <div className='text-xs text-muted-foreground truncate max-w-[240px]'>
+            <div className='text-xs text-muted-foreground mt-0.5 whitespace-normal break-words line-clamp-2'>
               {item.keterangan}
             </div>
           ) : (
-            <div className='text-xs text-muted-foreground/60'>Tanpa catatan kebijakan</div>
+            <div className='text-xs text-muted-foreground/60 mt-0.5'>Tanpa catatan kebijakan</div>
           )}
         </div>
       )
@@ -200,11 +206,19 @@ export const periodeColumns: ColumnDef<PeriodePenilaianItem>[] = [
   {
     accessorKey: 'tahun_penilaian',
     header: 'Tahun Penilaian (Pilih Tahun Aktif)',
+    meta: {
+      className: 'min-w-[280px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => <YearPillsSelector item={row.original} />,
   },
   {
     id: 'rentang_tanggal',
     header: 'Periode Pelaksanaan',
+    meta: {
+      className: 'w-48 min-w-[180px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const item = row.original
       const formatDate = (d: string) => {
@@ -223,7 +237,7 @@ export const periodeColumns: ColumnDef<PeriodePenilaianItem>[] = [
       return (
         <div className='flex items-center gap-2 text-xs'>
           <CalendarDays className='h-4 w-4 text-muted-foreground shrink-0' />
-          <span>
+          <span className='font-mono text-[11px] text-muted-foreground'>
             {formatDate(item.tanggal_mulai)} s/d {formatDate(item.tanggal_akhir)}
           </span>
         </div>
@@ -232,73 +246,90 @@ export const periodeColumns: ColumnDef<PeriodePenilaianItem>[] = [
   },
   {
     accessorKey: 'sisa_hari',
-    header: 'Sisa Waktu',
+    header: () => <div className='text-center'>Sisa Waktu</div>,
+    meta: {
+      className: 'w-36 min-w-[130px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const item = row.original
       if (!item.is_aktif || item.sisa_hari === null) {
-        return <span className='text-xs text-muted-foreground'>-</span>
+        return <div className='text-xs text-muted-foreground text-center'>-</div>
       }
 
       if (item.sisa_hari < 0) {
         return (
-          <Badge variant='outline' className='gap-1 border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'>
-            <Clock className='h-3 w-3' />
-            <span>Lewat {Math.abs(item.sisa_hari)} hari</span>
-          </Badge>
+          <div className='flex justify-center'>
+            <Badge variant='outline' className='gap-1 border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'>
+              <Clock className='h-3 w-3' />
+              <span>Lewat {Math.abs(item.sisa_hari)} hari</span>
+            </Badge>
+          </div>
         )
       }
 
       if (item.sisa_hari <= 30) {
         return (
-          <Badge variant='outline' className='gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'>
-            <Clock className='h-3 w-3' />
-            <span>{item.sisa_hari} hari lagi</span>
-          </Badge>
+          <div className='flex justify-center'>
+            <Badge variant='outline' className='gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'>
+              <Clock className='h-3 w-3' />
+              <span>{item.sisa_hari} hari lagi</span>
+            </Badge>
+          </div>
         )
       }
 
       return (
-        <Badge variant='outline' className='gap-1 border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'>
-          <Clock className='h-3 w-3' />
-          <span>{item.sisa_hari} hari lagi</span>
-        </Badge>
+        <div className='flex justify-center'>
+          <Badge variant='outline' className='gap-1 border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'>
+            <Clock className='h-3 w-3' />
+            <span>{item.sisa_hari} hari lagi</span>
+          </Badge>
+        </div>
       )
     },
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: () => <div className='text-center'>Status</div>,
+    meta: {
+      className: 'w-36 min-w-[130px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const item = row.original
 
-      if (item.is_aktif) {
-        return (
-          <Badge className='bg-emerald-600/15 text-emerald-700 hover:bg-emerald-600/20 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 gap-1.5 py-1 px-2.5 font-medium'>
-            <CheckCircle2 className='h-3.5 w-3.5' />
-            <span>Aktif (Berjalan)</span>
-          </Badge>
-        )
-      }
-
-      if (item.status === 'arsip') {
-        return (
-          <Badge variant='secondary' className='gap-1 py-1 px-2.5 text-muted-foreground'>
-            <Archive className='h-3.5 w-3.5' />
-            <span>Arsip</span>
-          </Badge>
-        )
-      }
-
       return (
-        <Badge variant='outline' className='py-1 px-2.5 text-muted-foreground'>
-          <span>Tidak Aktif</span>
-        </Badge>
+        <div className='flex justify-center'>
+          {item.is_aktif ? (
+            <Badge className='bg-emerald-600/15 text-emerald-700 hover:bg-emerald-600/20 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 gap-1.5 py-1 px-2.5 font-medium'>
+              <CheckCircle2 className='h-3.5 w-3.5' />
+              <span>Aktif (Berjalan)</span>
+            </Badge>
+          ) : item.status === 'arsip' ? (
+            <Badge variant='secondary' className='gap-1 py-1 px-2.5 text-muted-foreground'>
+              <Archive className='h-3.5 w-3.5' />
+              <span>Arsip</span>
+            </Badge>
+          ) : (
+            <Badge variant='outline' className='py-1 px-2.5 text-muted-foreground'>
+              <span>Tidak Aktif</span>
+            </Badge>
+          )}
+        </div>
       )
     },
   },
   {
     id: 'actions',
     header: () => <div className='text-right'>Aksi</div>,
+    meta: {
+      className: 'w-36 min-w-[120px] text-right',
+      thClassName: 'text-right',
+      tdClassName: 'text-right',
+    },
     cell: PeriodeRowActions,
   },
 ]

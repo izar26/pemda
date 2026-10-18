@@ -1,29 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Building2,
   Clock,
+  ImageIcon,
   KeyRound,
   Lock,
   Mail,
   Phone,
   Save,
   Shield,
+  Trash2,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react'
 import { systemSettingService } from '@/services/system-setting-service'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 
 export function SystemSettings() {
@@ -31,16 +36,25 @@ export function SystemSettings() {
   const { hasPermission } = usePermissions()
   const canEdit = hasPermission('settings.edit')
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isDeletingLogo, setIsDeletingLogo] = useState(false)
+
   const { data: settings = [], isLoading } = useQuery({
     queryKey: ['system-settings'],
     queryFn: () => systemSettingService.getSettings(),
   })
 
+  // Extract current logo asset URL
+  const currentLogoUrl = settings.find((s) => s.key === 'app_logo')?.asset_url
+
   // Local form state
   const [formData, setFormData] = useState<Record<string, string | boolean | number>>({})
+  const isLoadedRef = useRef(false)
 
   useEffect(() => {
-    if (settings.length > 0) {
+    if (settings && settings.length > 0 && !isLoadedRef.current) {
+      isLoadedRef.current = true
       const initial: Record<string, string | boolean | number> = {}
       settings.forEach((s) => {
         if (s.type === 'boolean') {
@@ -51,7 +65,6 @@ export function SystemSettings() {
           initial[s.key] = s.value || ''
         }
       })
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(initial)
     }
   }, [settings])
@@ -60,14 +73,69 @@ export function SystemSettings() {
     mutationFn: (newSettings: Record<string, unknown>) =>
       systemSettingService.updateSettings(newSettings),
     onSuccess: (res) => {
+      isLoadedRef.current = false
       toast.success(res.message || 'Pengaturan sistem berhasil disimpan!')
       queryClient.invalidateQueries({ queryKey: ['system-settings'] })
+      queryClient.invalidateQueries({ queryKey: ['app-config'] })
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
     },
     onError: () => {
       toast.error('Gagal memperbarui pengaturan sistem.')
     },
   })
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Ukuran berkas logo maksimal 2 MB.')
+      e.target.value = ''
+      return
+    }
+
+    // Validate mime
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml']
+    if (!allowed.includes(file.type) && !file.name.endsWith('.svg')) {
+      toast.error('Format berkas tidak didukung. Harap pilih PNG, JPG, WebP, atau SVG.')
+      e.target.value = ''
+      return
+    }
+
+    try {
+      setIsUploadingLogo(true)
+      const res = await systemSettingService.uploadLogo(file)
+      toast.success(res.message || 'Logo resmi berhasil diunggah!')
+      queryClient.invalidateQueries({ queryKey: ['system-settings'] })
+      queryClient.invalidateQueries({ queryKey: ['app-config'] })
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
+    } catch {
+      toast.error('Gagal mengunggah logo aplikasi.')
+    } finally {
+      setIsUploadingLogo(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  async function handleDeleteLogo() {
+    if (!canEdit || isDeletingLogo) return
+
+    try {
+      setIsDeletingLogo(true)
+      const res = await systemSettingService.deleteLogo()
+      toast.success(res.message || 'Logo aplikasi berhasil dihapus.')
+      queryClient.invalidateQueries({ queryKey: ['system-settings'] })
+      queryClient.invalidateQueries({ queryKey: ['app-config'] })
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
+    } catch {
+      toast.error('Gagal menghapus logo aplikasi.')
+    } finally {
+      setIsDeletingLogo(false)
+    }
+  }
 
   function handleChange(key: string, value: string | boolean | number) {
     setFormData((prev) => ({
@@ -86,7 +154,9 @@ export function SystemSettings() {
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
+        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
@@ -105,7 +175,7 @@ export function SystemSettings() {
               )}
             </div>
             <p className='text-xs text-muted-foreground mt-0.5'>
-              Konfigurasi parameter operasional instansi, batas durasi keamanan sesi, dan kebijakan proteksi portal.
+              Konfigurasi identitas resmi instansi, kontak layanan terpadu, dan parameter batas sesi keamanan peramban.
             </p>
           </div>
 
@@ -122,9 +192,99 @@ export function SystemSettings() {
           )}
         </PageHeader>
 
+        {/* Hidden File Input for Logo */}
+        <input
+          ref={fileInputRef}
+          type='file'
+          accept='image/png,image/jpeg,image/webp,image/svg+xml'
+          className='hidden'
+          onChange={handleLogoUpload}
+        />
+
         {/* Form Sections */}
         <form onSubmit={handleSubmit} className='grid gap-5'>
-          {/* Card 1: Informasi Instansi & Portal */}
+          {/* Card 1: Identitas Visual & Logo Instansi */}
+          <Card className='shadow-2xs'>
+            <CardHeader className='pb-3'>
+              <div className='flex items-center gap-2'>
+                <div className='p-1.5 rounded-md bg-primary/10 text-primary'>
+                  <ImageIcon className='h-4 w-4' />
+                </div>
+                <div>
+                  <CardTitle className='text-sm font-semibold'>Logo & Identitas Visual Aplikasi</CardTitle>
+                  <CardDescription className='text-xs'>
+                    Logo resmi pemerintah daerah atau aplikasi yang tampil di sudut kiri atas sidebar navigasi dan halaman login.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className='space-y-4 text-xs'>
+              <div className='flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-lg border bg-muted/10'>
+                {/* Logo Display / Dropzone Box */}
+                <div className='relative flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-dashed border-border/80 bg-background/80 p-2 shadow-2xs overflow-hidden'>
+                  {isUploadingLogo ? (
+                    <div className='flex flex-col items-center justify-center gap-1 text-muted-foreground'>
+                      <Loader2 className='h-6 w-6 animate-spin text-primary' />
+                      <span className='text-[10px]'>Mengunggah...</span>
+                    </div>
+                  ) : currentLogoUrl ? (
+                    <img
+                      src={currentLogoUrl}
+                      alt='Logo Resmi Aplikasi'
+                      className='h-full w-full object-contain'
+                    />
+                  ) : (
+                    <div className='flex flex-col items-center justify-center gap-1 text-muted-foreground text-center'>
+                      <UploadCloud className='h-7 w-7 text-muted-foreground/60' />
+                      <span className='text-[9px] font-medium'>Bawaan</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions & Information */}
+                <div className='space-y-2 flex-1'>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      className='h-8 text-xs'
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!canEdit || isUploadingLogo || isDeletingLogo}
+                    >
+                      <UploadCloud className='h-3.5 w-3.5 mr-1.5' />
+                      {currentLogoUrl ? 'Ganti Logo' : 'Unggah Logo Baru'}
+                    </Button>
+
+                    {currentLogoUrl && canEdit && (
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        className='h-8 text-xs text-destructive hover:bg-destructive/10'
+                        onClick={handleDeleteLogo}
+                        disabled={isDeletingLogo || isUploadingLogo}
+                      >
+                        {isDeletingLogo ? (
+                          <Loader2 className='h-3.5 w-3.5 mr-1.5 animate-spin' />
+                        ) : (
+                          <Trash2 className='h-3.5 w-3.5 mr-1.5' />
+                        )}
+                        Hapus Logo (Reset)
+                      </Button>
+                    )}
+                  </div>
+
+                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                    Format didukung: <strong>PNG, WebP, SVG, JPG</strong> (Maks. 2 MB).
+                    Disarankan menggunakan gambar berlatar belakang <strong>transparan</strong> agar serasi pada mode terang maupun gelap.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Informasi Instansi & Portal */}
           <Card className='shadow-2xs'>
             <CardHeader className='pb-3'>
               <div className='flex items-center gap-2'>
@@ -134,7 +294,7 @@ export function SystemSettings() {
                 <div>
                   <CardTitle className='text-sm font-semibold'>Identitas & Kontak Instansi</CardTitle>
                   <CardDescription className='text-xs'>
-                    Informasi resmi pemerintah daerah yang digunakan pada identitas sistem.
+                    Informasi resmi pemerintah daerah yang digunakan pada judul sidebar, tab peramban, dan dokumen sistem.
                   </CardDescription>
                 </div>
               </div>
@@ -205,7 +365,7 @@ export function SystemSettings() {
             </CardContent>
           </Card>
 
-          {/* Card 2: Keamanan & Kebijakan Sesi */}
+          {/* Card 3: Keamanan & Kebijakan Sesi */}
           <Card className='shadow-2xs'>
             <CardHeader className='pb-3'>
               <div className='flex items-center gap-2'>
@@ -264,41 +424,6 @@ export function SystemSettings() {
                   <p className='text-[10px] text-muted-foreground'>
                     Akun diblokir sementara setelah jumlah kegagalan berturut-turut tercapai.
                   </p>
-                </div>
-              </div>
-
-              <div className='border-t pt-3.5 space-y-3'>
-                <div className='flex items-center justify-between gap-4 p-2.5 rounded-lg border bg-muted/10'>
-                  <div>
-                    <Label className='text-xs font-semibold'>Wajibkan 2FA untuk Akun Administrator</Label>
-                    <p className='text-[11px] text-muted-foreground mt-0.5'>
-                      Setiap akun dengan hak akses tingkat tinggi wajib mengaktifkan Google Authenticator.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={Boolean(formData.require_2fa_for_admin)}
-                    onCheckedChange={(val) => handleChange('require_2fa_for_admin', val)}
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                <div className='flex items-center justify-between gap-4 p-2.5 rounded-lg border bg-amber-500/5 border-amber-200/50'>
-                  <div>
-                    <div className='flex items-center gap-1.5'>
-                      <Label className='text-xs font-semibold text-amber-700 dark:text-amber-400'>
-                        Mode Pemeliharaan Sistem (Maintenance)
-                      </Label>
-                      <Badge variant='outline' className='text-[10px] text-amber-600 border-amber-300'>Kritis</Badge>
-                    </div>
-                    <p className='text-[11px] text-muted-foreground mt-0.5'>
-                      Membatasi login hanya bagi Superadmin selama proses pembaruan basis data server.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={Boolean(formData.maintenance_mode)}
-                    onCheckedChange={(val) => handleChange('maintenance_mode', val)}
-                    disabled={!canEdit}
-                  />
                 </div>
               </div>
             </CardContent>

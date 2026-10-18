@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\User;
+
+use App\Models\User;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+
+class UpdateUserAccountRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        $target = $this->route('user');
+        $targetUser = $target instanceof User ? $target : (is_string($target) ? User::find($target) : null);
+        if ($targetUser && $targetUser->hasRole('Superadmin') && !$this->user()?->hasRole('Superadmin')) {
+            abort(404, 'Data akun pengguna tidak ditemukan.');
+        }
+
+        return $this->user()?->can('users.edit') ?? false;
+    }
+
+    public function rules(): array
+    {
+        $roleRule = ['required', 'string'];
+        if (!$this->user()?->hasRole('Superadmin')) {
+            $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
+                $query->where('name', '!=', 'Superadmin');
+            });
+        } else {
+            $roleRule[] = 'exists:roles,name';
+        }
+
+        return [
+            'role' => $roleRule,
+            'status' => ['required', 'string', 'in:active,inactive'],
+            'password' => [
+                'nullable',
+                'string',
+                Password::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols(),
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'role.required' => 'Peran (Role) wajib dipilih.',
+            'role.exists' => 'Peran yang dipilih tidak ditemukan dalam sistem.',
+            'status.required' => 'Status akun wajib ditentukan.',
+            'status.in' => 'Status akun hanya boleh Aktif (active) atau Nonaktif (inactive).',
+        ];
+    }
+}

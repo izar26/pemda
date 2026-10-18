@@ -68,11 +68,17 @@ export interface TujuanPenilaianItem {
   id: string
   periode_penilaian_id: string
   opd_id: string
+  sumber_data_id?: string | null
   kode_tujuan: string | null
   tujuan: string
   urutan: number
   keterangan: string | null
   sasaran_count: number
+  sumber_data?: {
+    id: string
+    nama: string
+    deskripsi?: string | null
+  } | null
   opd?: {
     id: string
     nama: string
@@ -97,6 +103,10 @@ export interface TujuanPenilaianItem {
 
 export interface TujuanStats {
   total_tujuan: number
+  total_sasaran?: number
+  total_indikator?: number
+  total_iku?: number
+  total_indikator_biasa?: number
   opd_terpetakan: number
   total_opd: number
   persentase_pemetaan: number
@@ -111,6 +121,7 @@ export interface TujuanStats {
 export interface TujuanFormData {
   periode_penilaian_id?: string
   opd_id: string
+  sumber_data_id?: string | null
   kode_tujuan?: string
   tujuan: string
   urutan?: number
@@ -126,6 +137,7 @@ export interface TujuanFilterParams {
   search?: string
   opd_id?: string
   periode_penilaian_id?: string
+  sumber_data_id?: string
   sort_by?: string
   sort_direction?: 'asc' | 'desc'
   page?: number
@@ -232,6 +244,8 @@ export interface IndikatorPenilaianItem {
   kode_indikator: string | null
   indikator: string
   jenis: IndikatorJenis
+  satuan?: string | null
+  target?: string | null
   urutan: number
   keterangan: string | null
   opd?: {

@@ -17,7 +17,7 @@ use Illuminate\Database\Seeder;
 class KonteksPenilaianSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Run the database seeds for Form 2B Konteks Risiko Strategis.
      */
     public function run(): void
     {
@@ -28,68 +28,107 @@ class KonteksPenilaianSeeder extends Seeder
 
         $admin = User::where('email', 'admin@pemda.go.id')->first();
         $adminId = $admin?->id;
-
-        // OPD DPUTR (Dinas Pekerjaan Umum dan Tata Ruang) from Sheet 2B
-        $dputr = Opd::where('kode', 'DPUTR')->orWhere('nama', 'ilike', '%Pekerjaan Umum%')->first();
-        if (!$dputr) {
-            return;
-        }
-
         $sumberData = MasterSumberData::where('nama', 'Renstra SKPD')->first();
 
-        $tujuan = TujuanPenilaian::where('periode_penilaian_id', $activePeriode->id)
-            ->where('opd_id', $dputr->id)
-            ->where('kode_tujuan', 'TUJ-01')
-            ->first();
-
-        if (!$tujuan) {
-            return;
-        }
-
-        $sasarans = SasaranPenilaian::where('periode_penilaian_id', $activePeriode->id)
-            ->where('opd_id', $dputr->id)
-            ->whereIn('kode_sasaran', ['SAS-01', 'SAS-02'])
-            ->get();
-
-        $indikators = IndikatorPenilaian::where('periode_penilaian_id', $activePeriode->id)
-            ->where('opd_id', $dputr->id)
-            ->whereIn('kode_indikator', ['IKU-01', 'IKU-02'])
-            ->get();
-
-        $konteks = KonteksPenilaian::updateOrCreate(
+        $items = [
             [
-                'periode_penilaian_id' => $activePeriode->id,
-                'opd_id' => $dputr->id,
-            ],
-            [
-                'sumber_data_id' => $sumberData?->id,
-                'tujuan_penilaian_id' => $tujuan->id,
-                'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
-                'informasi_lain' => '-',
+                'opd_kode' => 'DPUTR',
+                'tujuan_kode' => 'TUJ-01',
+                'sasaran_kodes' => ['SAS-01', 'SAS-02'],
+                'indikator_kodes' => ['IKU-01', 'IKU-02'],
+                'status' => 'final',
                 'nama_kepala' => 'ERI RIHANDIAR, S.T., M.T.',
                 'nip_kepala' => '19680801 199703 1 005',
                 'jabatan_kepala' => 'Kepala Dinas Pekerjaan Umum dan Tata Ruang Kabupaten Cianjur',
                 'tanggal_penetapan' => '2027-01-15',
+            ],
+            [
+                'opd_kode' => 'Diskominfo',
+                'tujuan_kode' => 'TUJ-01',
+                'sasaran_kodes' => ['SAS-01', 'SAS-02'],
+                'indikator_kodes' => ['IKU-01', 'IKU-02'],
                 'status' => 'final',
-                'created_by' => $adminId,
-                'updated_by' => $adminId,
-            ]
-        );
+                'nama_kepala' => 'Dr. H. Cecep Dicky Haryadi, S.H., M.H.',
+                'nip_kepala' => '19720415 199803 1 004',
+                'jabatan_kepala' => 'Kepala Dinas Komunikasi, Informatika dan Persandian',
+                'tanggal_penetapan' => '2027-01-20',
+            ],
+            [
+                'opd_kode' => 'Dinkes',
+                'tujuan_kode' => 'TUJ-01',
+                'sasaran_kodes' => ['SAS-01', 'SAS-02'],
+                'indikator_kodes' => ['IKU-01', 'IKU-02'],
+                'status' => 'draft',
+                'nama_kepala' => 'dr. H. Irvan Nur Fauzi',
+                'nip_kepala' => '19750912 200212 1 003',
+                'jabatan_kepala' => 'Kepala Dinas Kesehatan Kabupaten Cianjur',
+                'tanggal_penetapan' => '2027-02-01',
+            ],
+        ];
 
-        // Sync Sasarans (SAS-01 and SAS-02)
-        $sasaranSync = [];
-        $urutanSas = 1;
-        foreach ($sasarans as $s) {
-            $sasaranSync[$s->id] = ['urutan' => $urutanSas++];
-        }
-        $konteks->sasarans()->sync($sasaranSync);
+        foreach ($items as $config) {
+            $opd = Opd::where('kode', $config['opd_kode'])
+                ->orWhere('nama', 'like', "%{$config['opd_kode']}%")
+                ->first();
 
-        // Sync Indikators (IKU-01 and IKU-02)
-        $indikatorSync = [];
-        $urutanInd = 1;
-        foreach ($indikators as $i) {
-            $indikatorSync[$i->id] = ['urutan' => $urutanInd++];
+            if (!$opd) {
+                continue;
+            }
+
+            $tujuan = TujuanPenilaian::where('periode_penilaian_id', $activePeriode->id)
+                ->where('opd_id', $opd->id)
+                ->where('kode_tujuan', $config['tujuan_kode'])
+                ->first();
+
+            if (!$tujuan) {
+                continue;
+            }
+
+            $sasarans = SasaranPenilaian::where('periode_penilaian_id', $activePeriode->id)
+                ->where('opd_id', $opd->id)
+                ->whereIn('kode_sasaran', $config['sasaran_kodes'])
+                ->get();
+
+            $indikators = IndikatorPenilaian::where('periode_penilaian_id', $activePeriode->id)
+                ->where('opd_id', $opd->id)
+                ->whereIn('kode_indikator', $config['indikator_kodes'])
+                ->get();
+
+            $konteks = KonteksPenilaian::updateOrCreate(
+                [
+                    'periode_penilaian_id' => $activePeriode->id,
+                    'opd_id' => $opd->id,
+                ],
+                [
+                    'sumber_data_id' => $sumberData?->id,
+                    'tujuan_penilaian_id' => $tujuan->id,
+                    'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+                    'informasi_lain' => '-',
+                    'nama_kepala' => $config['nama_kepala'],
+                    'nip_kepala' => $config['nip_kepala'],
+                    'jabatan_kepala' => $config['jabatan_kepala'],
+                    'tanggal_penetapan' => $config['tanggal_penetapan'],
+                    'status' => $config['status'],
+                    'created_by' => $adminId,
+                    'updated_by' => $adminId,
+                ]
+            );
+
+            // Sync Sasarans
+            $sasaranSync = [];
+            $uSas = 1;
+            foreach ($sasarans as $s) {
+                $sasaranSync[$s->id] = ['urutan' => $uSas++];
+            }
+            $konteks->sasarans()->sync($sasaranSync);
+
+            // Sync Indikators
+            $indSync = [];
+            $uInd = 1;
+            foreach ($indikators as $i) {
+                $indSync[$i->id] = ['urutan' => $uInd++];
+            }
+            $konteks->indikators()->sync($indSync);
         }
-        $konteks->indikators()->sync($indikatorSync);
     }
 }

@@ -1,5 +1,11 @@
 import { type ColumnDef } from '@tanstack/react-table'
-import { Building2, ShieldAlert, ShieldCheck, User as UserIcon } from 'lucide-react'
+import {
+  Award,
+  Building2,
+  ShieldAlert,
+  ShieldCheck,
+  User as UserIcon,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { statusBadgeMap } from '../data/data'
@@ -12,6 +18,10 @@ export const usersColumns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Pegawai' />
     ),
+    meta: {
+      className: 'min-w-[220px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const user = row.original
       const initials = user.name
@@ -22,20 +32,26 @@ export const usersColumns: ColumnDef<User>[] = [
         .toUpperCase()
 
       return (
-        <div className='flex items-center gap-3 py-1'>
+        <div className='flex items-center gap-3 py-1 min-w-0'>
           <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-xs text-primary'>
             {initials || <UserIcon className='h-4 w-4' />}
           </div>
           <div className='flex flex-col min-w-0'>
-            <span className='font-semibold text-sm text-foreground leading-tight truncate'>
+            <span className='font-semibold text-sm text-foreground leading-snug whitespace-normal break-words'>
               {user.name}
             </span>
-            <span className='text-xs text-muted-foreground font-mono mt-0.5'>
+            <span className='text-xs text-muted-foreground font-mono mt-0.5 whitespace-nowrap'>
               {user.nip ? `NIP. ${user.nip}` : 'NIP belum diisi'}
             </span>
           </div>
         </div>
       )
+    },
+    filterFn: (row, _id, value) => {
+      const searchStr = String(value || '').toLowerCase()
+      const name = (row.original.name || '').toLowerCase()
+      const nip = (row.original.nip || '').toLowerCase()
+      return name.includes(searchStr) || nip.includes(searchStr)
     },
     enableSorting: true,
   },
@@ -44,17 +60,37 @@ export const usersColumns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Jabatan & Golongan' />
     ),
+    meta: {
+      className: 'w-52 min-w-[170px] max-w-[230px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const user = row.original
+      const isKepala = user.jabatan === 'Kepala OPD'
       return (
-        <div className='flex flex-col py-1 text-xs gap-1 max-w-[220px]'>
-          <span className='font-medium text-foreground leading-tight'>
-            {user.jabatan || <span className='text-muted-foreground italic'>Belum diatur</span>}
-          </span>
+        <div className='flex flex-col py-1 text-xs gap-1 min-w-0'>
+          <div className='flex items-center gap-1'>
+            {isKepala ? (
+              <Badge
+                variant='outline'
+                className='w-fit text-[11px] font-semibold px-2 py-0 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1'
+              >
+                <Award className='h-3 w-3 shrink-0' />
+                Kepala OPD
+              </Badge>
+            ) : (
+              <Badge
+                variant='outline'
+                className='w-fit text-[11px] font-medium px-2 py-0 border-border bg-muted/40 text-foreground'
+              >
+                Pegawai
+              </Badge>
+            )}
+          </div>
           {user.pangkat_gol ? (
-            <Badge variant='secondary' className='w-fit text-[11px] font-normal px-1.5 py-0'>
+            <span className='text-[11px] text-muted-foreground'>
               {user.pangkat_gol}
-            </Badge>
+            </span>
           ) : (
             <span className='text-[11px] text-muted-foreground'>-</span>
           )}
@@ -69,14 +105,24 @@ export const usersColumns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Instansi / OPD' />
     ),
+    meta: {
+      className: 'w-72 min-w-[240px] max-w-[300px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const opd = row.original.opd
       return (
-        <div className='flex flex-col py-1 text-xs gap-1 max-w-[240px]'>
+        <div className='flex flex-col py-1 text-xs gap-1 min-w-0'>
           <div className='flex items-start gap-1.5'>
             <Building2 className='h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5' />
-            <span className='font-medium text-foreground leading-tight'>
-              {opd ? opd.nama : <span className='text-muted-foreground italic'>Belum Ditugaskan</span>}
+            <span className='font-medium text-foreground leading-snug whitespace-normal break-words'>
+              {opd ? (
+                opd.nama
+              ) : (
+                <span className='text-muted-foreground italic'>
+                  Belum Ditugaskan
+                </span>
+              )}
             </span>
           </div>
           {opd?.kategori && (
@@ -97,12 +143,18 @@ export const usersColumns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Kontak' />
     ),
+    meta: {
+      className: 'min-w-[190px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const user = row.original
       return (
-        <div className='flex flex-col py-1 text-xs'>
-          <span className='font-medium text-foreground'>{user.email}</span>
-          <span className='text-muted-foreground mt-0.5'>
+        <div className='flex flex-col py-1 text-xs min-w-0'>
+          <span className='font-medium text-foreground break-all'>
+            {user.email}
+          </span>
+          <span className='text-muted-foreground mt-0.5 font-mono text-[11px]'>
             {user.phone ? user.phone : '-'}
           </span>
         </div>
@@ -115,8 +167,12 @@ export const usersColumns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Peran & 2FA' />
     ),
+    meta: {
+      className: 'w-36 min-w-[130px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
-      const roleName = row.getValue('role') as string
+      const roleName = (row.getValue('role') as string) || '-'
       const isSuper = roleName === 'Superadmin'
       const is2fa = Boolean(row.original.two_factor_enabled)
 
@@ -148,30 +204,60 @@ export const usersColumns: ColumnDef<User>[] = [
         </div>
       )
     },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
     enableSorting: false,
   },
   {
     accessorKey: 'status',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Status' />
+      <DataTableColumnHeader
+        column={column}
+        title='Status Akun'
+        className='justify-center'
+      />
     ),
+    meta: {
+      className: 'w-28 min-w-[110px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
-      const status = row.original.status
+      const status = row.original.status || 'inactive'
       const config = statusBadgeMap.get(status) || {
-        label: status,
+        label: status === 'active' ? 'Aktif' : 'Nonaktif',
         className: 'bg-muted text-muted-foreground',
       }
 
       return (
-        <Badge variant='outline' className={`text-xs font-medium capitalize ${config.className}`}>
-          {config.label}
-        </Badge>
+        <div className='flex justify-center'>
+          <Badge
+            variant='outline'
+            className={`text-xs font-medium capitalize ${config.className}`}
+          >
+            {config.label}
+          </Badge>
+        </div>
       )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
     },
     enableSorting: false,
   },
   {
     id: 'actions',
-    cell: DataTableRowActions,
+    header: () => <div className='text-right'>Aksi</div>,
+    meta: {
+      className: 'w-16 min-w-[60px] text-right',
+      thClassName: 'text-right',
+      tdClassName: 'text-right',
+    },
+    cell: ({ row }) => (
+      <div className='flex items-center justify-end'>
+        <DataTableRowActions row={row} />
+      </div>
+    ),
   },
 ]

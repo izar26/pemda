@@ -25,6 +25,12 @@ class EnsureNotTwoFactorPending
             }
         }
 
+        if ($user && !$user->hasRole('Superadmin') && $user->opd && !$user->opd->is_active) {
+            return response()->json([
+                'message' => "Instansi / Perangkat Daerah ({$user->opd->nama}) tempat akun Anda terdaftar saat ini berstatus nonaktif. Akses dinonaktifkan.",
+            ], 403);
+        }
+
         return $next($request);
     }
 }

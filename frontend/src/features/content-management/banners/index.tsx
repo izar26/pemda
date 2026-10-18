@@ -15,10 +15,12 @@ import {
 import { bannerService } from '@/services/banner-service'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -123,8 +125,10 @@ export function BannersManagement() {
   return (
     <>
       <Header fixed>
-        <div className='ms-auto flex items-center space-x-4'>
+        <div className='ms-auto flex items-center gap-2 sm:gap-3'>
+          <NavbarStatus />
           <ThemeSwitch />
+          <ConfigDrawer />
           <ProfileDropdown />
         </div>
       </Header>
@@ -136,7 +140,7 @@ export function BannersManagement() {
               Manajemen Banner Publik
             </h2>
             <p className='text-sm text-muted-foreground'>
-              Kelola gambar slider/carousel dinamis untuk halaman login dan portal publik.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
           {canCreate && (

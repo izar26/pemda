@@ -48,34 +48,60 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Kritis',
   },
 
-  // 3. Manajemen Pegawai (Fitur 9 & 12)
+  // 3. Manajemen Pegawai (Fitur 12)
+  'pegawai.view': {
+    label: 'Lihat Direktori Pegawai',
+    description: 'Melihat daftar biodata pegawai ASN, NIP, jabatan, dan kontak per OPD.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'pegawai.create': {
+    label: 'Tambah Data Pegawai',
+    description: 'Menambahkan biodata pegawai baru ke instansi perangkat daerah.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'pegawai.edit': {
+    label: 'Edit Pegawai & Kepala OPD',
+    description: 'Mengubah biodata pegawai, mutasi OPD, serta pergantian jabatan Kepala OPD.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'pegawai.delete': {
+    label: 'Hapus Data Pegawai',
+    description: 'Menghapus biodata pegawai secara permanen dari direktori instansi.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+
+  // 3b. Manajemen Users (Fitur 9)
   'users.view': {
-    label: 'Lihat Pegawai',
-    description: 'Melihat daftar ASN/pegawai, NIP, email dinas, dan status akun.',
+    label: 'Lihat Akun Users',
+    description: 'Melihat daftar akun login pengguna, peran RBAC, dan status keamanan 2FA.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
   'users.create': {
-    label: 'Tambah Pegawai',
-    description: 'Membuat akun dinas baru dan mengirimkan undangan aktivasi.',
+    label: 'Buat Akun User',
+    description: 'Memberikan akun login, peran (role), dan kata sandi kepada pegawai.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'users.edit': {
-    label: 'Edit Pegawai',
-    description: 'Mengubah profil, nomor kontak, jabatan kedinasan, dan status pegawai.',
+    label: 'Edit Akun User',
+    description: 'Mengubah peran (role), kata sandi, dan status aktif/nonaktif akun pengguna.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'users.delete': {
-    label: 'Hapus Pegawai',
-    description: 'Menghapus akun pegawai dan mencabut akses portal secara permanen.',
+    label: 'Cabut Akun User',
+    description: 'Mencabut akses login dan peran pengguna tanpa menghapus biodata pegawai.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
   'users.reset_2fa': {
-    label: 'Reset 2FA',
-    description: 'Mereset autentikasi 2 faktor pegawai yang kehilangan perangkat.',
+    label: 'Reset 2FA User',
+    description: 'Mereset autentikasi 2 faktor pengguna yang kehilangan perangkat.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
@@ -158,34 +184,34 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Kritis',
   },
 
-  // 7. Tujuan Renstra OPD (Fitur 14)
+  // 7. Tujuan, Sasaran & Indikator (Fitur 14-17)
   'tujuan.view': {
-    label: 'Lihat Tujuan Renstra OPD',
-    description: 'Melihat daftar tujuan strategis Renstra seluruh perangkat daerah.',
+    label: 'Lihat Tujuan, Sasaran & Indikator',
+    description: 'Melihat pohon kinerja Tujuan, Sasaran, dan Indikator (IKU) seluruh perangkat daerah.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
   'tujuan.create': {
-    label: 'Tambah Tujuan Renstra',
-    description: 'Menambahkan rumusan tujuan strategis Renstra pada perangkat daerah.',
+    label: 'Tambah Tujuan, Sasaran & Indikator',
+    description: 'Menambahkan rumusan Tujuan, Sasaran, dan Indikator (IKU) pada perangkat daerah.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'tujuan.edit': {
-    label: 'Edit Tujuan Renstra',
-    description: 'Mengubah narasi pernyataan dan kode tujuan strategis Renstra.',
+    label: 'Edit & Urutkan Tujuan, Sasaran & Indikator',
+    description: 'Mengubah data maupun urutan (drag & drop) Tujuan, Sasaran, dan Indikator (IKU).',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'tujuan.delete': {
-    label: 'Hapus Tujuan Renstra',
-    description: 'Menghapus tujuan strategis yang belum terhubung dengan sasaran.',
+    label: 'Hapus Tujuan, Sasaran & Indikator',
+    description: 'Menghapus item Tujuan, Sasaran, atau Indikator dari pohon kinerja.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
   'tujuan.copy': {
-    label: 'Salin Tujuan dari Periode Lain',
-    description: 'Menyalin massal tujuan strategis dari periode penilaian sebelumnya.',
+    label: 'Salin dari Periode Lain',
+    description: 'Menyalin pohon Tujuan, Sasaran, dan Indikator dari periode penilaian sebelumnya.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },

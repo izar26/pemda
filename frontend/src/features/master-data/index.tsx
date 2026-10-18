@@ -1,21 +1,19 @@
 'use client'
 
-import { useState, useMemo } from 'react'
 import { useQueryClient, useIsFetching } from '@tanstack/react-query'
 import {
-  Layers,
   RefreshCw,
-  ShieldAlert,
 } from 'lucide-react'
 import { MASTER_ENTITIES, type MasterEntityKey } from '@/types/master-data'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExportExcelButton } from '@/components/export-excel-button'
 import { MasterGenericTable } from './components/master-generic-table'
 import { MasterSpipTable } from './components/master-spip-table'
@@ -30,28 +28,9 @@ function MasterDataContent() {
   const queryClient = useQueryClient()
   const isFetching = useIsFetching({ queryKey: ['master'] }) > 0
   const { selectedEntity, setSelectedEntity, targetUnsurId } = useMasterData()
-  const [mainCategory, setMainCategory] = useState<'risiko' | 'spip'>('risiko')
-
-  const risikoEntities = useMemo(
-    () => MASTER_ENTITIES.filter((e) => e.category === 'risiko'),
-    []
-  )
-  const spipEntities = useMemo(
-    () => MASTER_ENTITIES.filter((e) => e.category === 'spip'),
-    []
-  )
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['master'] })
-  }
-
-  const handleCategoryChange = (val: 'risiko' | 'spip') => {
-    setMainCategory(val)
-    if (val === 'risiko') {
-      setSelectedEntity(risikoEntities[0])
-    } else {
-      setSelectedEntity(spipEntities[0])
-    }
   }
 
   const handleEntitySelect = (key: MasterEntityKey) => {
@@ -61,14 +40,13 @@ function MasterDataContent() {
     }
   }
 
-  const displayedEntities =
-    mainCategory === 'risiko' ? risikoEntities : spipEntities
-
   return (
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
+        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
@@ -80,7 +58,7 @@ function MasterDataContent() {
               Manajemen Data Master Sistem
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Kelola parameter referensi Manajemen Risiko (MR), SPIP, dan tata kelola instansi Pemerintah Daerah.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 
@@ -112,52 +90,31 @@ function MasterDataContent() {
           </div>
         </PageHeader>
 
-        {/* Category Switcher & Sub-entity Tabs */}
-        <div className='space-y-3.5'>
-          {/* Main Category Tabs */}
-          <Tabs
-            value={mainCategory}
-            onValueChange={(val) => handleCategoryChange(val as 'risiko' | 'spip')}
-            className='w-full'
-          >
-            <TabsList className='grid grid-cols-2 max-w-sm h-9 p-1 bg-muted/40'>
-              <TabsTrigger
-                value='risiko'
-                className='text-xs font-semibold gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs'
+        {/* Unified Entity Tabs */}
+        <div
+          role='tablist'
+          aria-label='Data Master'
+          className='flex overflow-x-auto pb-1.5 gap-1.5 border-b'
+        >
+          {MASTER_ENTITIES.map((ent) => {
+            const isActive = ent.key === selectedEntity.key
+            return (
+              <button
+                key={ent.key}
+                role='tab'
+                aria-selected={isActive}
+                type='button'
+                onClick={() => handleEntitySelect(ent.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-2xs'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                }`}
               >
-                <ShieldAlert className='h-3.5 w-3.5 text-primary' />
-                Manajemen Risiko (MR)
-              </TabsTrigger>
-              <TabsTrigger
-                value='spip'
-                className='text-xs font-semibold gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs'
-              >
-                <Layers className='h-3.5 w-3.5 text-primary' />
-                Tata Kelola & SPIP
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Sub-Tabs Pills for Entities */}
-          <div className='flex overflow-x-auto pb-1 gap-1.5 border-b'>
-            {displayedEntities.map((ent) => {
-              const isActive = ent.key === selectedEntity.key
-              return (
-                <button
-                  key={ent.key}
-                  type='button'
-                  onClick={() => handleEntitySelect(ent.key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-2xs'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                  }`}
-                >
-                  <span>{ent.label}</span>
-                </button>
-              )
-            })}
-          </div>
+                <span>{ent.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* Entity Table View */}

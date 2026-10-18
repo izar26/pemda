@@ -31,7 +31,12 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
             'nip' => ['required', 'string', 'max:30', 'unique:users,nip'],
             'phone' => ['required', 'string', 'max:20'],
-            'opd_id' => ['required', 'string', 'uuid', 'exists:opds,id'],
+            'opd_id' => [
+                'required',
+                'string',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
             'pangkat_gol' => ['required', 'string', 'max:60'],
             'jabatan' => ['required', 'string', 'max:150'],
             'role' => $roleRule,

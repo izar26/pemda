@@ -1,6 +1,8 @@
 import { type ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
-import { ChevronRight } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Lock } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   Collapsible,
   CollapsibleContent,
@@ -33,11 +35,18 @@ import {
   type NavGroup as NavGroupProps,
 } from './types'
 import { usePermissions } from '@/hooks/use-permissions'
+import {
+  useRisikoWizardProgress,
+  type ResolvedWizardStep,
+} from '@/features/risiko/shared/risiko-wizard-store'
 
 export function NavGroup({ title, items }: NavGroupProps) {
   const { state, isMobile } = useSidebar()
   const href = useLocation({ select: (location) => location.href })
   const { hasPermission } = usePermissions()
+  const isRisikoWizardGroup = title === 'Pengelolaan Risiko'
+  const { steps: wizardSteps, completedCount, totalSteps } =
+    useRisikoWizardProgress(isRisikoWizardGroup)
 
   // Filter items and sub-items based on requiredPermission
   const visibleItems = items
@@ -69,10 +78,33 @@ export function NavGroup({ title, items }: NavGroupProps) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{title}</SidebarGroupLabel>
+      <SidebarGroupLabel className='flex items-center justify-between pr-1'>
+        <span>{title}</span>
+        {isRisikoWizardGroup && state !== 'collapsed' && (
+          <Badge
+            variant='outline'
+            className='text-[9px] font-mono px-1.5 py-0 h-4 border-primary/30 text-primary bg-primary/5'
+          >
+            Tahap {completedCount}/{totalSteps}
+          </Badge>
+        )}
+      </SidebarGroupLabel>
       <SidebarMenu>
-        {visibleItems.map((item) => {
+        {visibleItems.map((item, idx) => {
           const key = `${item.title}-${item.url}`
+
+          if (isRisikoWizardGroup && !item.items) {
+            const matchedStep = wizardSteps.find((s) => s.url === item.url)
+            return (
+              <SidebarWizardMenuLink
+                key={key}
+                item={item}
+                href={href}
+                step={matchedStep}
+                isLast={idx === visibleItems.length - 1}
+              />
+            )
+          }
 
           if (!item.items)
             return <SidebarMenuLink key={key} item={item} href={href} />
@@ -89,6 +121,105 @@ export function NavGroup({ title, items }: NavGroupProps) {
   )
 }
 
+function SidebarWizardMenuLink({
+  item,
+  href,
+  step,
+  isLast,
+}: {
+  item: NavLink
+  href: string
+  step?: ResolvedWizardStep
+  isLast: boolean
+}) {
+  const { setOpenMobile, state } = useSidebar()
+  const isActive = checkIsActive(href, item)
+  const isLocked = step ? !step.isUnlocked : false
+  const isCompleted = step ? step.isCompleted : false
+  const stepNum = step?.stepNumber ?? 1
+
+  function handleLockedClick(e: React.MouseEvent) {
+    e.preventDefault()
+    toast.warning(
+      `Langkah ${stepNum} (${item.title}) masih terkunci. Silakan lengkapi dan simpan langkah sebelumnya terlebih dahulu.`
+    )
+  }
+
+  return (
+    <SidebarMenuItem className='relative'>
+      {/* Vertical Stepper Connector Line */}
+      {!isLast && state !== 'collapsed' && (
+        <span
+          aria-hidden='true'
+          className={cn(
+            'pointer-events-none absolute left-[18px] top-7 -bottom-2 w-[1.5px] z-0 transition-colors',
+            isCompleted ? 'bg-emerald-500/50' : 'bg-border'
+          )}
+        />
+      )}
+
+      {isLocked ? (
+        <SidebarMenuButton
+          isActive={false}
+          tooltip={`${item.title} (Terkunci)`}
+          onClick={handleLockedClick}
+          className='opacity-60 cursor-not-allowed hover:bg-transparent'
+        >
+          <span className='relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-mono text-muted-foreground'>
+            <Lock className='h-2.5 w-2.5' />
+          </span>
+          <span className='truncate whitespace-nowrap flex-1 text-muted-foreground'>
+            {item.title}
+          </span>
+          <Badge
+            variant='secondary'
+            className='rounded-full px-1.5 py-0 text-[9px] h-4 text-muted-foreground font-normal'
+          >
+            Terkunci
+          </Badge>
+        </SidebarMenuButton>
+      ) : (
+        <SidebarMenuButton
+          asChild
+          isActive={isActive}
+          tooltip={item.title}
+        >
+          <Link to={item.url} onClick={() => setOpenMobile(false)}>
+            <span
+              className={cn(
+                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold font-mono transition-colors',
+                isActive
+                  ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
+                  : isCompleted
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
+                  : 'bg-secondary text-secondary-foreground border border-border'
+              )}
+            >
+              {isCompleted ? (
+                <CheckCircle2 className='h-3 w-3' />
+              ) : (
+                stepNum
+              )}
+            </span>
+            <span className='truncate whitespace-nowrap flex-1'>{item.title}</span>
+            {isActive ? (
+              <Badge className='rounded-full px-1.5 py-0 text-[9px] h-4'>
+                Aktif
+              </Badge>
+            ) : isCompleted ? (
+              <Badge
+                variant='outline'
+                className='rounded-full px-1.5 py-0 text-[9px] h-4 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+              >
+                Selesai
+              </Badge>
+            ) : null}
+          </Link>
+        </SidebarMenuButton>
+      )}
+    </SidebarMenuItem>
+  )
+}
 
 function NavBadge({ children }: { children: ReactNode }) {
   return <Badge className='rounded-full px-1 py-0 text-xs'>{children}</Badge>

@@ -1,23 +1,16 @@
 import { getRouteApi } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import {
-  Loader2,
-  MailPlus,
-  RefreshCw,
-  ShieldCheck,
-  UserCheck,
-  Users as UsersIcon,
-} from 'lucide-react'
-
+import { Loader2, RefreshCw } from 'lucide-react'
 import { userService } from '@/services/user-service'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { ExportExcelButton } from '@/components/export-excel-button'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
@@ -30,87 +23,56 @@ export function Users() {
   const search = route.useSearch()
   const navigate = route.useNavigate()
 
-  // Fetch real users from backend API
   const {
     data: usersResponse,
     isLoading,
     isRefetching,
     refetch,
   } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => userService.getUsers({ per_page: 100 }),
+    queryKey: ['user-accounts'],
+    queryFn: () => userService.getUserAccounts({ per_page: 200 }),
     staleTime: 30 * 1000,
   })
 
   const usersList = usersResponse?.data || []
-
-  // KPI Calculations
-  const totalUsers = usersList.length
-  const activeUsers = usersList.filter((u) => u.status === 'active').length
-  const twoFactorUsers = usersList.filter((u) => u.two_factor_enabled).length
-  const pendingUsers = usersList.filter(
-    (u) => u.status === 'pending_activation' || u.is_pending_activation
-  ).length
-
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Total Pegawai',
-      value: totalUsers,
-      icon: UsersIcon,
-      color: 'bg-primary/10 text-primary',
-    },
-    {
-      title: 'Pegawai Aktif',
-      value: activeUsers,
-      icon: UserCheck,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      valueColor: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      title: 'Terproteksi 2FA',
-      value: twoFactorUsers,
-      icon: ShieldCheck,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-      valueColor: 'text-blue-600 dark:text-blue-400',
-    },
-    {
-      title: 'Menunggu Aktivasi',
-      value: pendingUsers,
-      icon: MailPlus,
-      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      valueColor: 'text-amber-600 dark:text-amber-400',
-    },
-  ]
+  const totalUsers = usersResponse?.meta?.total ?? usersList.length
 
   return (
     <UsersProvider>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
+        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6'>
-        {/* Header Title & Actions (Sticky) */}
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Manajemen Pegawai & Pengguna
+              Manajemen Users (Total: {totalUsers})
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Kelola akun resmi pegawai, penugasan peran jabatan, dan status keamanan autentikasi 2FA.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
             <ExportExcelButton
-              endpoint='/users/export'
+              endpoint='/user-accounts/export'
               params={{
-                ...(search?.username || search?.name ? { search: search?.username || search?.name } : {}),
-                ...(Array.isArray(search?.status) && search.status.length > 0 ? { status: search.status[0] } : {}),
-                ...(Array.isArray(search?.role) && search.role.length > 0 ? { role: search.role[0] } : {}),
+                ...(search?.username || search?.name
+                  ? { search: search?.username || search?.name }
+                  : {}),
+                ...(Array.isArray(search?.status) && search.status.length > 0
+                  ? { status: search.status[0] }
+                  : {}),
+                ...(Array.isArray(search?.role) && search.role.length > 0
+                  ? { role: search.role[0] }
+                  : {}),
               }}
-              filename='Data_Pegawai_PEMDA.xlsx'
+              filename='Data_Users_PEMDA.xlsx'
               label='Ekspor Excel'
             />
 
@@ -130,15 +92,12 @@ export function Users() {
           </div>
         </PageHeader>
 
-        {/* Compact KPI Stats with Skeleton loading */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoading} />
-
-
-        {/* Users Table / Loading State */}
         {isLoading ? (
           <div className='flex flex-col items-center justify-center h-64 gap-2 rounded-lg border bg-card/50'>
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
-            <p className='text-xs text-muted-foreground'>Memuat data pegawai...</p>
+            <p className='text-xs text-muted-foreground'>
+              Memuat data akun users...
+            </p>
           </div>
         ) : (
           <UsersTable data={usersList} search={search} navigate={navigate} />

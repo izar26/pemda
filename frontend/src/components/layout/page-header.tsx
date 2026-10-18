@@ -16,7 +16,7 @@ export function PageHeader({
       className={cn(
         'transition-all',
         sticky &&
-          'sticky top-16 z-20 -mx-4 -mt-6 mb-2 px-4 py-3.5 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-xs supports-[backdrop-filter]:bg-background/85',
+          'sticky top-16 group-data-[layout=fixed]/main:top-0 z-20 -mx-4 -mt-6 mb-2 px-4 py-3.5 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-xs supports-[backdrop-filter]:bg-background/85',
         className
       )}
       {...props}

@@ -4,6 +4,7 @@ export interface DashboardStats {
   total_instansi: number
   active_instansi: number
   total_pegawai: number
+  total_iku?: number
   mitigation_rate: number
   high_risk_count: number
   spip_score: number

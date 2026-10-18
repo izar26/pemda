@@ -1,41 +1,29 @@
-import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ShieldAlert,
-  AlertTriangle,
-  Award,
   Building2,
+  Users,
+  ShieldAlert,
+  Target,
   RefreshCw,
-  TrendingUp,
-  ShieldCheck,
-  CheckCircle2,
-  Calendar,
 } from 'lucide-react'
-import { usePermissions } from '@/hooks/use-permissions'
 import { useAuthStore } from '@/stores/auth-store'
 import { dashboardService } from '@/services/dashboard-service'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
-import { ExportExcelButton } from '@/components/export-excel-button'
 import { RiskHeatmap } from './components/risk-heatmap'
-import { MitigationTrendChart } from './components/mitigation-trend-chart'
-import { OpdRiskRanking } from './components/opd-risk-ranking'
 import { RecentActivityFeed } from './components/recent-activity-feed'
 
 export function Dashboard() {
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.auth.user)
-  const { hasPermission } = usePermissions()
-  const canExport = hasPermission('dashboard.export') || hasPermission('dashboard.view')
-  const [activeTab, setActiveTab] = useState<'overview' | 'matrix' | 'opd'>('overview')
 
   // Fetch real Dashboard stats (authorized via dashboard.view)
   const { data: dashStats, isLoading: isLoadingStats, isRefetching, refetch } = useQuery({
@@ -49,57 +37,46 @@ export function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ['dashboard-audit-logs'] })
   }
 
-  const totalInstansi = dashStats?.total_instansi ?? 40
-  const activeInstansi = dashStats?.active_instansi ?? 38
-  const totalPegawai = dashStats?.total_pegawai ?? 124
-
-  // Executive KPI Stat Cards
+  // Executive KPI Stat Cards (1. Jumlah OPD, 2. Jumlah Users, 3. Risiko Tinggi & Kritis, 4. Jumlah IKU)
   const kpiItems: KpiStatItem[] = [
     {
-      title: 'Total Profil Risiko PEMDA',
-      value: 148,
-      icon: ShieldAlert,
-      color: 'bg-primary/10 text-primary',
-      subtitle: '82% Memiliki Rencana Mitigasi',
+      title: 'Jumlah OPD',
+      value: dashStats?.total_instansi ?? 0,
+      icon: Building2,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    },
+    {
+      title: 'Jumlah Users',
+      value: dashStats?.total_pegawai ?? 0,
+      icon: Users,
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     },
     {
       title: 'Risiko Tinggi & Kritis',
-      value: 18,
-      icon: AlertTriangle,
+      value: dashStats?.high_risk_count ?? 18,
+      icon: ShieldAlert,
       color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
       valueColor: 'text-rose-600 dark:text-rose-400',
-      subtitle: 'Prioritas Penanganan Pimpinan',
+      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     },
     {
-      title: 'Indeks Maturitas SPIP',
-      value: '3.24',
-      icon: Award,
-      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-      valueColor: 'text-blue-600 dark:text-blue-400',
-      subtitle: 'Predikat Terintegrasi Sangat Baik',
-    },
-    {
-      title: 'Kepatuhan Instansi OPD',
-      value: `${Math.round((activeInstansi / totalInstansi) * 100)}%`,
-      icon: Building2,
-      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      valueColor: 'text-emerald-600 dark:text-emerald-400',
-      subtitle: `${activeInstansi} dari ${totalInstansi} OPD Aktif`,
+      title: 'Jumlah IKU',
+      value: dashStats?.total_iku ?? 0,
+      icon: Target,
+      color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     },
   ]
-
-  const currentDateStr = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
 
   return (
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
+        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
@@ -107,31 +84,15 @@ export function Dashboard() {
         {/* Header Title & Executive Greeting (Sticky) */}
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-1 min-w-0 flex-1'>
-            <div className='flex items-center gap-2 flex-wrap'>
-              <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-                Selamat Datang, {user?.name || 'Administrator'}
-              </h2>
-              <Badge
-                variant='outline'
-                className='bg-primary/5 text-primary border-primary/20 text-xs px-2.5 py-0.5 font-semibold gap-1.5'
-              >
-                <Calendar className='h-3 w-3' />
-                Tahun Anggaran 2026
-              </Badge>
-            </div>
+            <h2 className='text-2xl font-bold tracking-tight text-foreground'>
+              Selamat Datang, {user?.name || 'Administrator'}
+            </h2>
             <p className='text-xs text-muted-foreground'>
-              Ringkasan Eksekutif Profil Risiko, Pengawasan SPIP, dan Kinerja Instansi Pemerintah Daerah.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
-            {canExport && (
-              <ExportExcelButton
-                endpoint='/dashboard/export'
-                filename='Laporan_Ringkasan_Eksekutif_PEMDA.xlsx'
-                label='Ekspor Laporan'
-              />
-            )}
             <Button
               variant='outline'
               size='sm'
@@ -145,100 +106,18 @@ export function Dashboard() {
           </div>
         </PageHeader>
 
-        {/* Executive Banner Status Card */}
-        <div className='relative overflow-hidden rounded-xl border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 sm:p-5 text-card-foreground shadow-2xs'>
-          <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10'>
-            <div className='space-y-1 max-w-2xl'>
-              <div className='flex items-center gap-2'>
-                <ShieldCheck className='h-5 w-5 text-primary' />
-                <h3 className='font-bold text-sm sm:text-base text-foreground'>
-                  Sistem Tata Kelola & Pengendalian Intern Terintegrasi
-                </h3>
-              </div>
-              <p className='text-xs text-muted-foreground leading-relaxed'>
-                Pemantauan real-time pelaksanaan Manajemen Risiko di <strong>{totalInstansi} Perangkat Daerah (OPD)</strong> dengan dukungan <strong>{totalPegawai} Pegawai Terdaftar</strong>. Seluruh proses audit terlindungi oleh kubah arsip WORM.
-              </p>
-            </div>
-
-            <div className='flex items-center gap-3 shrink-0'>
-              <div className='flex flex-col items-end text-xs'>
-                <span className='text-muted-foreground'>Tanggal Hari Ini</span>
-                <span className='font-bold text-foreground'>{currentDateStr}</span>
-              </div>
-              <Badge className='bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-1.5 gap-1.5 shadow-2xs'>
-                <CheckCircle2 className='h-3.5 w-3.5' /> Sistem Normal
-              </Badge>
-            </div>
-          </div>
-        </div>
-
         {/* Executive KPI Stat Cards */}
         <KpiStatsCards items={kpiItems} isLoading={isLoadingStats} />
 
-        {/* Tab Navigation Dashboard */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => setActiveTab(val as 'overview' | 'matrix' | 'opd')}
-          className='space-y-4'
-        >
-          <TabsList className='grid grid-cols-3 max-w-md h-9 p-1 bg-muted/50'>
-            <TabsTrigger
-              value='overview'
-              className='text-xs font-semibold gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs'
-            >
-              <TrendingUp className='h-3.5 w-3.5 text-primary' />
-              Ringkasan Eksekutif
-            </TabsTrigger>
-            <TabsTrigger
-              value='matrix'
-              className='text-xs font-semibold gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs'
-            >
-              <ShieldAlert className='h-3.5 w-3.5 text-rose-500' />
-              Peta Risiko
-            </TabsTrigger>
-            <TabsTrigger
-              value='opd'
-              className='text-xs font-semibold gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs'
-            >
-              <Building2 className='h-3.5 w-3.5 text-blue-500' />
-              Kepatuhan OPD
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Tab 1: Ringkasan Eksekutif Main Grid */}
-          <TabsContent value='overview' className='space-y-4 m-0'>
-            {/* Grid Row 1: Mitigation Trend + Risk Heatmap */}
-            <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <MitigationTrendChart />
-              <RiskHeatmap />
-            </div>
-
-            {/* Grid Row 2: Top OPD Ranking Spotlight + Live Security Feed */}
-            <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <OpdRiskRanking />
-              <RecentActivityFeed />
-            </div>
-          </TabsContent>
-
-          {/* Tab 2: Peta Risiko Detailed Matrix View */}
-          <TabsContent value='matrix' className='space-y-4 m-0'>
-            <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <RiskHeatmap />
-              <MitigationTrendChart />
-            </div>
-          </TabsContent>
-
-          {/* Tab 3: Kepatuhan OPD Detailed View */}
-          <TabsContent value='opd' className='space-y-4 m-0'>
-            <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <OpdRiskRanking />
-              <RecentActivityFeed />
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Dashboard Content Grid: Risk Heatmap & Recent Activity Feed */}
+        <div className='grid grid-cols-1 gap-4 lg:grid-cols-6'>
+          <RiskHeatmap />
+          <RecentActivityFeed />
+        </div>
       </Main>
     </>
   )
 }
 
 export default Dashboard
+

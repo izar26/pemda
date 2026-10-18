@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { useAuthStore } from '@/stores/auth-store'
 
 const roleSchema = z.object({
   name: z
@@ -40,7 +41,7 @@ const roleSchema = z.object({
     .min(2, 'Nama peran minimal 2 karakter.')
     .max(50, 'Nama peran maksimal 50 karakter.'),
   description: z.string().max(255, 'Deskripsi maksimal 255 karakter.').optional(),
-  template: z.enum(['empty', 'readonly', 'copy']).optional(),
+  template: z.enum(['readonly', 'copy']).optional(),
   copyFromRole: z.string().optional(),
 })
 
@@ -67,12 +68,17 @@ export function RoleFormDialog({
   const isSystem = Boolean(role?.is_system)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const currentUser = useAuthStore((state) => state.auth.user)
+  const isSuperadmin =
+    currentUser?.role === 'Superadmin' ||
+    currentUser?.roles?.includes('Superadmin')
+
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleSchema),
     defaultValues: {
       name: '',
       description: '',
-      template: 'empty',
+      template: 'readonly',
       copyFromRole: '',
     },
   })
@@ -85,14 +91,14 @@ export function RoleFormDialog({
         form.reset({
           name: role.name,
           description: role.description || '',
-          template: 'empty',
+          template: 'readonly',
           copyFromRole: '',
         })
       } else {
         form.reset({
           name: '',
           description: '',
-          template: 'empty',
+          template: 'readonly',
           copyFromRole: existingRoles[0]?.name || '',
         })
       }
@@ -104,14 +110,16 @@ export function RoleFormDialog({
 
     try {
       if (isEdit && role) {
-        // Update name and description only (permissions are managed dynamically in matrix)
-        const currentPermNames = role.permissions.map((p) => p.name)
+        // Update name and description while preserving existing permissions
+        const currentPermNames = (role.permissions || [])
+          .map((p) => p.name)
+          .filter((name) => isSuperadmin || !name.startsWith('roles.'))
         await rbacService.updateRole(role.id, {
           name: isSystem ? role.name : data.name,
           description: data.description,
-          permissions: currentPermNames.length > 0 ? currentPermNames : ['users.view'],
+          permissions: currentPermNames,
         })
-        toast.success(`Informasi peran "${data.name}" berhasil diperbarui.`)
+        toast.success(`Peran "${data.name}" berhasil diperbarui.`)
       } else {
         // Compute initial permissions based on selected template
         let initialPerms: string[] = []
@@ -119,11 +127,19 @@ export function RoleFormDialog({
         if (data.template === 'readonly') {
           // Grant all view permissions
           initialPerms = allPermissions
-            .filter((p) => p.name.endsWith('.view'))
+            .filter(
+              (p) =>
+                p.name.endsWith('.view') &&
+                (isSuperadmin || !p.name.startsWith('roles.'))
+            )
             .map((p) => p.name)
         } else if (data.template === 'copy' && data.copyFromRole) {
           const source = existingRoles.find((r) => r.name === data.copyFromRole)
-          initialPerms = source ? source.permissions.map((p) => p.name) : []
+          initialPerms = source
+            ? (source.permissions || [])
+                .map((p) => p.name)
+                .filter((name) => isSuperadmin || !name.startsWith('roles.'))
+            : []
         }
 
         await rbacService.createRole({
@@ -131,7 +147,7 @@ export function RoleFormDialog({
           description: data.description,
           permissions: initialPerms,
         })
-        toast.success(`Peran "${data.name}" berhasil ditambahkan ke matriks kewenangan.`)
+        toast.success(`Peran "${data.name}" berhasil ditambahkan.`)
       }
 
       onSuccess()
@@ -158,12 +174,12 @@ export function RoleFormDialog({
             </div>
             <div>
               <DialogTitle className='text-base font-bold text-foreground'>
-                {isEdit ? `Edit Informasi Peran: ${role?.name}` : 'Tambah Peran (Role) Baru'}
+                {isEdit ? `Ubah Peran: ${role?.name}` : 'Tambah Peran (Role) Baru'}
               </DialogTitle>
               <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
                 {isEdit
-                  ? 'Perbarui nama atau deskripsi peran. Hak akses dapat diatur langsung pada lembar matriks.'
-                  : 'Definisikan jabatan peran kedinasan baru ke dalam matriks tata kelola.'}
+                  ? 'Perbarui nama atau deskripsi peran. Hak akses dapat diatur melalui menu Hak Akses.'
+                  : 'Definisikan jabatan peran kedinasan baru ke dalam sistem tata kelola.'}
               </DialogDescription>
             </div>
           </div>
@@ -240,23 +256,9 @@ export function RoleFormDialog({
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
                             className='grid grid-cols-1 gap-2'
                           >
-                            <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
-                              <FormControl>
-                                <RadioGroupItem value='empty' />
-                              </FormControl>
-                              <div className='flex flex-col'>
-                                <span className='font-semibold text-foreground text-xs'>
-                                  Standar Minimal (users.view)
-                                </span>
-                                <span className='text-[11px] text-muted-foreground'>
-                                  Mulai dengan hak akses dasar, lalu sesuaikan di lembar matriks.
-                                </span>
-                              </div>
-                            </FormItem>
-
                             <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
                               <FormControl>
                                 <RadioGroupItem value='readonly' />

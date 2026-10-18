@@ -63,6 +63,22 @@ export interface KonteksPenilaianItem {
   updated_at?: string
 }
 
+export interface KonteksOpdMeta {
+  kepala_opd: {
+    nama: string | null
+    nip: string | null
+    jabatan: string | null
+  }
+  operasional_summary: {
+    id: string | null
+    status: 'draft' | 'final' | null
+    total_items: number
+    programs_count: number
+    kegiatans_count: number
+    sub_kegiatans_count: number
+  }
+}
+
 export interface KonteksPenilaianFormData {
   periode_penilaian_id?: string
   opd_id: string
@@ -77,6 +93,7 @@ export interface KonteksPenilaianFormData {
   jabatan_kepala?: string
   tanggal_penetapan?: string
   status?: 'draft' | 'final'
+  reset_operasional_items?: boolean
 }
 
 export interface KonteksPenilaianFilterParams {
@@ -196,7 +213,7 @@ export interface KonteksOperasionalFormData {
 export interface KonteksOperasionalItemFormData {
   parent_id?: string | null
   jenis: KonteksOperasionalItemJenis
-  kode: string
+  kode?: string
   nama: string
   urutan?: number
   indikators?: Array<{

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Perencanaan;
 
 use App\Models\Opd;
+use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
@@ -314,5 +315,217 @@ class SasaranPenilaianTest extends TestCase
 
         $deleteResponse = $this->actingAs($this->opdUser)->deleteJson("/api/perencanaan/sasaran/{$sasaran->id}");
         $deleteResponse->assertStatus(403);
+    }
+
+    public function test_cannot_delete_sasaran_with_child_indikator_must_delete_bottom_up(): void
+    {
+        $sasaran = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $this->tujuanPupr->id,
+            'opd_id' => $this->puprOpd->id,
+            'kode_sasaran' => 'SAS-DEL-GUARD',
+            'sasaran' => 'Sasaran Memiliki Indikator',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $indikator = IndikatorPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->puprOpd->id,
+            'tujuan_penilaian_id' => $this->tujuanPupr->id,
+            'sasaran_penilaian_id' => $sasaran->id,
+            'kode_indikator' => 'IKU-DEL',
+            'indikator' => 'Indikator Sasaran Anak',
+            'jenis' => 'IKU',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // Attempt deleting Sasaran directly must return 422
+        $response = $this->actingAs($this->admin)->deleteJson("/api/perencanaan/sasaran/{$sasaran->id}");
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['sasaran']);
+
+        $this->assertDatabaseHas('sasaran_penilaians', ['id' => $sasaran->id]);
+
+        // Delete child Indikator first
+        $delIndikator = $this->actingAs($this->admin)->deleteJson("/api/perencanaan/iku/{$indikator->id}");
+        $delIndikator->assertStatus(200);
+        $this->assertDatabaseMissing('indikator_penilaians', ['id' => $indikator->id]);
+
+        // Now delete Sasaran succeeds
+        $delSasaran = $this->actingAs($this->admin)->deleteJson("/api/perencanaan/sasaran/{$sasaran->id}");
+        $delSasaran->assertStatus(200);
+        $this->assertDatabaseMissing('sasaran_penilaians', ['id' => $sasaran->id]);
+    }
+
+    public function test_opd_cannot_update_or_delete_other_opd_sasaran(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Kesehatan',
+            'kode' => 'Dinkes',
+            'kategori' => 'Dinas',
+            'urutan' => 2,
+            'is_active' => true,
+        ]);
+
+        $dinkesTujuan = TujuanPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $otherOpd->id,
+            'kode_tujuan' => 'TUJ-01',
+            'tujuan' => 'Meningkatkan derajat kesehatan',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $dinkesSasaran = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-01',
+            'sasaran' => 'Sasaran Dinkes',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // PUPR staff tries to update Dinkes Sasaran
+        $updateRes = $this->actingAs($this->opdUser)->putJson("/api/perencanaan/sasaran/{$dinkesSasaran->id}", [
+            'sasaran' => 'Diubah oleh PUPR',
+        ]);
+        $updateRes->assertStatus(403);
+
+        // PUPR staff tries to delete Dinkes Sasaran
+        $deleteRes = $this->actingAs($this->opdUser)->deleteJson("/api/perencanaan/sasaran/{$dinkesSasaran->id}");
+        $deleteRes->assertStatus(403);
+    }
+
+    public function test_opd_cannot_reorder_other_opd_sasaran(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Kesehatan',
+            'kode' => 'Dinkes',
+            'kategori' => 'Dinas',
+            'urutan' => 2,
+            'is_active' => true,
+        ]);
+
+        $dinkesTujuan = TujuanPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $otherOpd->id,
+            'kode_tujuan' => 'TUJ-01',
+            'tujuan' => 'Meningkatkan derajat kesehatan',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $sasaran1 = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-01',
+            'sasaran' => 'Sasaran 1',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $sasaran2 = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-02',
+            'sasaran' => 'Sasaran 2',
+            'urutan' => 2,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // PUPR staff attempts to reorder Dinkes Sasarans
+        $res = $this->actingAs($this->opdUser)->postJson('/api/perencanaan/sasaran/reorder', [
+            'ids' => [$sasaran2->id, $sasaran1->id],
+        ]);
+        $res->assertStatus(403);
+    }
+
+    public function test_opd_cannot_show_other_opd_sasaran(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Kesehatan',
+            'kode' => 'Dinkes',
+            'kategori' => 'Dinas',
+            'urutan' => 2,
+            'is_active' => true,
+        ]);
+
+        $dinkesTujuan = TujuanPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $otherOpd->id,
+            'kode_tujuan' => 'TUJ-DINKES',
+            'tujuan' => 'Meningkatkan derajat kesehatan',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $dinkesSasaran = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-DINKES',
+            'sasaran' => 'Sasaran Rahasia Dinkes',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // PUPR staff tries to view Dinkes's Sasaran details
+        $res = $this->actingAs($this->opdUser)->getJson("/api/perencanaan/sasaran/{$dinkesSasaran->id}");
+        $res->assertStatus(403);
+    }
+
+    public function test_opd_index_and_export_scoped_to_own_opd(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Kesehatan',
+            'kode' => 'Dinkes',
+            'kategori' => 'Dinas',
+            'urutan' => 2,
+            'is_active' => true,
+        ]);
+
+        $dinkesTujuan = TujuanPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $otherOpd->id,
+            'kode_tujuan' => 'TUJ-DINKES',
+            'tujuan' => 'Meningkatkan derajat kesehatan',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $this->tujuanPupr->id,
+            'opd_id' => $this->puprOpd->id,
+            'kode_sasaran' => 'SAS-PUPR',
+            'sasaran' => 'Sasaran PUPR Sendiri',
+            'urutan' => 1,
+            'created_by' => $this->opdUser->id,
+        ]);
+
+        SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-DINKES',
+            'sasaran' => 'Sasaran Dinkes Rahasia',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // PUPR staff requests index without filters or passing Dinkes's ID
+        $res = $this->actingAs($this->opdUser)->getJson("/api/perencanaan/sasaran?opd_id={$otherOpd->id}");
+        $res->assertStatus(200);
+        $res->assertJsonPath('meta.total', 1);
+        $res->assertJsonPath('data.0.opd.id', $this->puprOpd->id);
+
+        // PUPR staff requests export
+        $exportRes = $this->actingAs($this->opdUser)->get("/api/perencanaan/sasaran/export?opd_id={$otherOpd->id}");
+        $exportRes->assertStatus(200);
     }
 }

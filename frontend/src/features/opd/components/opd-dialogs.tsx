@@ -6,7 +6,7 @@ import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 import { Building2, Loader2, AlertTriangle, Trash2 } from 'lucide-react'
 import { opdService } from '@/services/opd-service'
-import { OPD_CATEGORIES, type OpdItem } from '@/types/opd'
+import { OPD_CATEGORIES, type OpdItem, type OpdPayload } from '@/types/opd'
 import { useOpd } from './opd-provider'
 import {
   Dialog,
@@ -42,7 +42,6 @@ const opdFormSchema = z.object({
   kode: z.string().min(2, 'Kode instansi minimal 2 karakter').max(50),
   kategori: z.string().min(1, 'Pilih kategori perangkat daerah'),
   kepala: z.string().max(255).optional(),
-  urutan: z.number().min(0, 'Nomor urut tidak boleh negatif'),
   is_active: z.boolean(),
 })
 
@@ -71,7 +70,6 @@ export function OpdActionDialog({
       kode: '',
       kategori: 'Dinas',
       kepala: '',
-      urutan: 0,
       is_active: true,
     },
   })
@@ -84,7 +82,6 @@ export function OpdActionDialog({
           kode: currentRow.kode,
           kategori: currentRow.kategori,
           kepala: currentRow.kepala || '',
-          urutan: currentRow.urutan,
           is_active: currentRow.is_active,
         })
       } else {
@@ -93,7 +90,6 @@ export function OpdActionDialog({
           kode: '',
           kategori: 'Dinas',
           kepala: '',
-          urutan: 0,
           is_active: true,
         })
       }
@@ -103,13 +99,15 @@ export function OpdActionDialog({
   async function onSubmit(values: OpdFormValues) {
     setIsSubmitting(true)
     try {
-      const payload = {
+      const payload: OpdPayload = {
         nama: values.nama.trim(),
         kode: values.kode.trim(),
         kategori: values.kategori,
         kepala: values.kepala?.trim() || null,
-        urutan: values.urutan,
         is_active: values.is_active,
+      }
+      if (isEdit && currentRow) {
+        payload.urutan = currentRow.urutan
       }
 
       if (isEdit && currentRow) {
@@ -237,61 +235,7 @@ export function OpdActionDialog({
                 />
               </div>
 
-              {/* Kepala Instansi */}
-              <FormField
-                control={form.control}
-                name='kepala'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='text-xs font-semibold'>
-                      Kepala Perangkat Daerah (Opsional)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='Contoh: Dr. H. Fulan, S.Sos., M.Si.'
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className='text-[11px] text-muted-foreground'>
-                      Nama pejabat pimpinan unit kerja beserta gelar kedinasan.
-                    </FormDescription>
-                    <FormMessage className='text-xs' />
-                  </FormItem>
-                )}
-              />
-
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1'>
-                {/* Urutan */}
-                <FormField
-                  control={form.control}
-                  name='urutan'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        Nomor Urutan Tampilan
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type='number'
-                          min={0}
-                          placeholder='0'
-                          disabled={isSubmitting}
-                          value={field.value ?? 0}
-                          onChange={(e) =>
-                            field.onChange(
-                              isNaN(e.target.valueAsNumber)
-                                ? 0
-                                : e.target.valueAsNumber
-                            )
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-
+              <div className='pt-1'>
                 {/* Status Aktif */}
                 <FormField
                   control={form.control}
@@ -414,7 +358,7 @@ export function OpdDeleteDialog({
         </div>
       ) : (
         <div className='rounded-md border border-amber-500/20 bg-amber-500/10 p-2.5 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed'>
-          Tindakan ini tidak dapat dibatalkan. Seluruh data konfigurasi instansi akan dihapus dari sistem secara permanen.
+          Tindakan ini tidak dapat dibatalkan. Penghapusan akan ditolak oleh sistem jika OPD ini masih memiliki pegawai atau data perencanaan/risiko terkait (Tujuan, Sasaran, Indikator, Form 2B/2C). Bersihkan data dari bawah terlebih dahulu.
         </div>
       )}
     </div>

@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\AuditLog;
 use App\Models\SystemSetting;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class SystemSettingSeeder extends Seeder
@@ -50,6 +48,23 @@ class SystemSettingSeeder extends Seeder
                 'label' => 'Nomor Kontak Dukungan',
                 'description' => 'Nomor telepon saluran siaga / bantuan teknis TI.',
             ],
+            // Branding Group
+            [
+                'key' => 'app_logo',
+                'value' => null,
+                'group' => 'branding',
+                'type' => 'string',
+                'label' => 'Logo Resmi Aplikasi / Instansi',
+                'description' => 'Logo resmi yang tampil pada header aplikasi, sidebar, dan portal login.',
+            ],
+            [
+                'key' => 'app_favicon',
+                'value' => null,
+                'group' => 'branding',
+                'type' => 'string',
+                'label' => 'Favicon Tab Browser',
+                'description' => 'Ikon kecil pada tab peramban web.',
+            ],
 
             // Security Group
             [
@@ -61,14 +76,6 @@ class SystemSettingSeeder extends Seeder
                 'description' => 'Durasi inaktivitas sebelum pengguna otomatis dikeluarkan dari sistem.',
             ],
             [
-                'key' => 'require_2fa_for_admin',
-                'value' => '1',
-                'group' => 'security',
-                'type' => 'boolean',
-                'label' => 'Wajibkan 2FA untuk Administrator',
-                'description' => 'Memaksa setiap akun dengan peran administratif mengaktifkan Google Authenticator.',
-            ],
-            [
                 'key' => 'max_login_attempts',
                 'value' => '5',
                 'group' => 'security',
@@ -76,54 +83,16 @@ class SystemSettingSeeder extends Seeder
                 'label' => 'Batas Maksimal Percobaan Login',
                 'description' => 'Jumlah toleransi kesalahan kata sandi sebelum akun diblokir sementara.',
             ],
-            [
-                'key' => 'maintenance_mode',
-                'value' => '0',
-                'group' => 'security',
-                'type' => 'boolean',
-                'label' => 'Mode Pemeliharaan Sistem',
-                'description' => 'Membatasi akses hanya untuk Administrator Utama selama masa pembaruan server.',
-            ],
         ];
+
+        // Clean up retired security keys if present
+        SystemSetting::whereIn('key', ['require_2fa_for_admin', 'maintenance_mode'])->delete();
 
         foreach ($settings as $setting) {
             SystemSetting::updateOrCreate(
                 ['key' => $setting['key']],
                 $setting
             );
-        }
-
-        // Seed some initial audit logs
-        $admin = User::where('email', 'admin@pemda.go.id')->first();
-
-        if (AuditLog::count() === 0) {
-            AuditLog::create([
-                'user_id' => $admin?->id,
-                'user_name' => $admin?->name ?? 'Administrator Utama',
-                'user_nip' => $admin?->nip ?? '198501012010011001',
-                'user_email' => $admin?->email ?? 'admin@pemda.go.id',
-                'action' => 'SYSTEM_INIT',
-                'module' => 'Pengaturan Sistem',
-                'description' => 'Inisialisasi sistem portal dan konfigurasi awal basis data.',
-                'ip_address' => '127.0.0.1',
-                'user_agent' => 'System Seeder',
-                'context' => ['status' => 'completed'],
-                'created_at' => now()->subHours(2),
-            ]);
-
-            AuditLog::create([
-                'user_id' => $admin?->id,
-                'user_name' => $admin?->name ?? 'Administrator Utama',
-                'user_nip' => $admin?->nip ?? '198501012010011001',
-                'user_email' => $admin?->email ?? 'admin@pemda.go.id',
-                'action' => 'LOGIN',
-                'module' => 'Autentikasi',
-                'description' => 'Berhasil masuk ke portal sistem melalui autentikasi kredensial resmi.',
-                'ip_address' => '127.0.0.1',
-                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'context' => ['method' => 'web_login'],
-                'created_at' => now()->subHour(),
-            ]);
         }
     }
 }

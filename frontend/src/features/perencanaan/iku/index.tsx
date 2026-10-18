@@ -8,6 +8,7 @@ import {
   Target,
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -102,6 +103,7 @@ function IkuContent() {
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
@@ -115,7 +117,7 @@ function IkuContent() {
               Data IKU & Indikator Renstra OPD
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Kelola Indikator Kinerja Utama (IKU) dan indikator sasaran Renstra perangkat daerah (Bapperida).
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 

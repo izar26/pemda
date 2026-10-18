@@ -217,7 +217,6 @@ export function UserAuthForm({
                   <FormLabel>Email atau NIP Pegawai</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder='admin@pemda.go.id atau 19850101...'
                       autoComplete='username'
                       disabled={isLoading}
                       {...field}
@@ -236,7 +235,6 @@ export function UserAuthForm({
                   <FormLabel>Kata Sandi</FormLabel>
                   <FormControl>
                     <PasswordInput
-                      placeholder='••••••••'
                       autoComplete='current-password'
                       disabled={isLoading}
                       {...field}
@@ -279,7 +277,7 @@ export function UserAuthForm({
               ) : (
                 <>
                   <LogIn className='mr-2 h-4 w-4' />
-                  Masuk ke Sistem
+                  Masuk
                 </>
               )}
             </Button>

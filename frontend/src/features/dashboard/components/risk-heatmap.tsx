@@ -19,7 +19,7 @@ export function RiskHeatmap() {
           <div>
             <CardTitle className='text-base font-bold flex items-center gap-2'>
               <ShieldAlert className='h-4 w-4 text-rose-500' />
-              Distribusi Peta Risiko PEMDA
+              Peta Risiko
             </CardTitle>
             <CardDescription className='text-xs'>
               Profil tingkat keparahan risiko teridentifikasi (Total: {total} Item)

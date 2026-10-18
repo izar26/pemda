@@ -17,7 +17,7 @@ interface RoleRowActionsProps {
 }
 
 export function RoleRowActions({ row }: RoleRowActionsProps) {
-  const { setOpen, setCurrentRow, setActiveTab } = useRoles()
+  const { setOpen, setCurrentRow } = useRoles()
   const { hasPermission } = usePermissions()
   const role = row.original
 
@@ -39,11 +39,12 @@ export function RoleRowActions({ row }: RoleRowActionsProps) {
       <DropdownMenuContent align='end' className='w-48'>
         <DropdownMenuItem
           onClick={() => {
-            setActiveTab('matrix')
+            setCurrentRow(role)
+            setOpen('permissions')
           }}
         >
           <KeyRound className='mr-2 h-4 w-4 text-primary' />
-          Matriks Hak Akses
+          Hak Akses
         </DropdownMenuItem>
 
         {canEdit && (
@@ -54,7 +55,7 @@ export function RoleRowActions({ row }: RoleRowActionsProps) {
             }}
           >
             <Edit className='mr-2 h-4 w-4' />
-            Ubah Informasi Peran
+            Ubah Peran
           </DropdownMenuItem>
         )}
 

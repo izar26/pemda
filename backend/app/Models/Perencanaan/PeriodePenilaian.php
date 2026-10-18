@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Models\Perencanaan;
 
 use App\Models\Concerns\HasUuid7;
+use App\Models\Risiko\KonteksOperasional;
+use App\Models\Risiko\KonteksPenilaian;
 use App\Models\User;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PeriodePenilaian extends Model
 {
@@ -94,6 +97,46 @@ class PeriodePenilaian extends Model
     }
 
     /**
+     * @return HasMany<TujuanPenilaian, $this>
+     */
+    public function tujuanPenilaians(): HasMany
+    {
+        return $this->hasMany(TujuanPenilaian::class, 'periode_penilaian_id');
+    }
+
+    /**
+     * @return HasMany<SasaranPenilaian, $this>
+     */
+    public function sasaranPenilaians(): HasMany
+    {
+        return $this->hasMany(SasaranPenilaian::class, 'periode_penilaian_id');
+    }
+
+    /**
+     * @return HasMany<IndikatorPenilaian, $this>
+     */
+    public function indikatorPenilaians(): HasMany
+    {
+        return $this->hasMany(IndikatorPenilaian::class, 'periode_penilaian_id');
+    }
+
+    /**
+     * @return HasMany<KonteksPenilaian, $this>
+     */
+    public function konteksPenilaians(): HasMany
+    {
+        return $this->hasMany(KonteksPenilaian::class, 'periode_penilaian_id');
+    }
+
+    /**
+     * @return HasMany<KonteksOperasional, $this>
+     */
+    public function konteksOperasionals(): HasMany
+    {
+        return $this->hasMany(KonteksOperasional::class, 'periode_penilaian_id');
+    }
+
+    /**
      * Check if this period is currently active.
      */
     public function isAktif(): bool
@@ -116,3 +159,4 @@ class PeriodePenilaian extends Model
         return $active;
     }
 }
+

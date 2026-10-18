@@ -58,6 +58,19 @@ class KonteksOperasionalService
     }
 
     /**
+     * Resolve target evaluation period ID optionally without throwing exception.
+     */
+    public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
+    {
+        if (!empty($periodeId)) {
+            return $periodeId;
+        }
+
+        $active = PeriodePenilaian::where('status', 'aktif')->first();
+        return $active ? (string) $active->id : null;
+    }
+
+    /**
      * Get paginated list of operational context assessments (Form 2C).
      *
      * @param array<string, mixed> $filters
@@ -68,7 +81,10 @@ class KonteksOperasionalService
         string $sortBy = 'created_at',
         string $sortDirection = 'desc'
     ): LengthAwarePaginator {
-        $periodeId = $this->resolvePeriodeId($filters['periode_penilaian_id'] ?? null);
+        $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
+        if (!$periodeId) {
+            return KonteksOperasional::query()->whereRaw('1 = 0')->paginate($perPage);
+        }
         $filters['periode_penilaian_id'] = $periodeId;
 
         $query = KonteksOperasional::query()
@@ -82,15 +98,65 @@ class KonteksOperasionalService
 
     /**
      * Get operational context assessment by OPD and active period.
+     * Automatically provisions or syncs header from Form 2B if Form 2B exists.
      */
     public function getKonteksByOpd(string $opdId, ?string $periodeId = null): ?KonteksOperasional
     {
-        $resolvedPeriodeId = $this->resolvePeriodeId($periodeId);
+        $resolvedPeriodeId = $this->resolveOptionalPeriodeId($periodeId);
+        if (!$resolvedPeriodeId) {
+            return null;
+        }
 
-        return KonteksOperasional::with($this->relations)
-            ->where('periode_penilaian_id', $resolvedPeriodeId)
+        $konteksStrategis = KonteksPenilaian::where('periode_penilaian_id', $resolvedPeriodeId)
             ->where('opd_id', $opdId)
             ->first();
+
+        // Step 2C cannot exist or be unlocked if Step 2B hasn't been created yet
+        if (!$konteksStrategis) {
+            return null;
+        }
+
+        $operasional = KonteksOperasional::where('periode_penilaian_id', $resolvedPeriodeId)
+            ->where('opd_id', $opdId)
+            ->first();
+
+        if (!$operasional) {
+            $operasional = KonteksOperasional::create([
+                'periode_penilaian_id' => $resolvedPeriodeId,
+                'opd_id' => $opdId,
+                'sumber_data_id' => $konteksStrategis->sumber_data_id,
+                'konteks_penilaian_id' => $konteksStrategis->id,
+                'nama_pemda' => $konteksStrategis->nama_pemda ?? 'Pemerintah Kabupaten Cianjur',
+                'informasi_lain' => '-',
+                'nama_kepala' => $konteksStrategis->nama_kepala,
+                'nip_kepala' => $konteksStrategis->nip_kepala,
+                'jabatan_kepala' => $konteksStrategis->jabatan_kepala,
+                'tanggal_penetapan' => $konteksStrategis->tanggal_penetapan ?? now()->toDateString(),
+                'status' => 'draft',
+                'created_by' => $konteksStrategis->created_by,
+                'updated_by' => $konteksStrategis->updated_by,
+            ]);
+        } elseif (
+            $operasional->konteks_penilaian_id !== $konteksStrategis->id ||
+            $operasional->sumber_data_id !== $konteksStrategis->sumber_data_id ||
+            $operasional->nama_kepala !== $konteksStrategis->nama_kepala ||
+            $operasional->nip_kepala !== $konteksStrategis->nip_kepala ||
+            $operasional->jabatan_kepala !== $konteksStrategis->jabatan_kepala ||
+            $operasional->tanggal_penetapan?->toDateString() !== $konteksStrategis->tanggal_penetapan?->toDateString() ||
+            $operasional->nama_pemda !== ($konteksStrategis->nama_pemda ?? $operasional->nama_pemda)
+        ) {
+            $operasional->update([
+                'konteks_penilaian_id' => $konteksStrategis->id,
+                'sumber_data_id' => $konteksStrategis->sumber_data_id,
+                'nama_pemda' => $konteksStrategis->nama_pemda ?? $operasional->nama_pemda,
+                'nama_kepala' => $konteksStrategis->nama_kepala,
+                'nip_kepala' => $konteksStrategis->nip_kepala,
+                'jabatan_kepala' => $konteksStrategis->jabatan_kepala,
+                'tanggal_penetapan' => $konteksStrategis->tanggal_penetapan,
+            ]);
+        }
+
+        return $operasional->load($this->relations);
     }
 
     /**
@@ -114,6 +180,16 @@ class KonteksOperasionalService
         $userId = $user?->id ?? auth('sanctum')->id();
 
         return DB::transaction(function () use ($data, $periodeId, $opdId, $userId) {
+            $konteksStrategis = KonteksPenilaian::where('periode_penilaian_id', $periodeId)
+                ->where('opd_id', $opdId)
+                ->first();
+
+            if (!$konteksStrategis) {
+                throw ValidationException::withMessages([
+                    'opd_id' => 'Langkah 1: Penetapan Konteks Risiko Strategis (Form 2B) belum diisi untuk perangkat daerah ini.',
+                ]);
+            }
+
             $opd = Opd::find($opdId);
 
             $attributes = [
@@ -121,24 +197,24 @@ class KonteksOperasionalService
                 'opd_id' => $opdId,
             ];
 
-            $konteksStrategis = KonteksPenilaian::where('periode_penilaian_id', $periodeId)
-                ->where('opd_id', $opdId)
-                ->first();
+            $konteks = KonteksOperasional::where($attributes)->first();
+
+            $informasiLain = array_key_exists('informasi_lain', $data)
+                ? (trim((string) $data['informasi_lain']) !== '' ? trim((string) $data['informasi_lain']) : '-')
+                : ($konteks?->informasi_lain ?? '-');
 
             $values = [
-                'sumber_data_id' => $data['sumber_data_id'] ?? null,
-                'konteks_penilaian_id' => $data['konteks_penilaian_id'] ?? $konteksStrategis?->id,
-                'nama_pemda' => $data['nama_pemda'] ?? 'Pemerintah Kabupaten Cianjur',
-                'informasi_lain' => $data['informasi_lain'] ?? '-',
-                'nama_kepala' => $data['nama_kepala'] ?? $opd?->kepala,
-                'nip_kepala' => $data['nip_kepala'] ?? null,
-                'jabatan_kepala' => $data['jabatan_kepala'] ?? ($opd ? "Kepala {$opd->nama}" : null),
-                'tanggal_penetapan' => $data['tanggal_penetapan'] ?? now()->toDateString(),
-                'status' => $data['status'] ?? 'draft',
+                'sumber_data_id' => $konteksStrategis->sumber_data_id,
+                'konteks_penilaian_id' => $konteksStrategis->id,
+                'nama_pemda' => $konteksStrategis->nama_pemda ?? 'Pemerintah Kabupaten Cianjur',
+                'informasi_lain' => $informasiLain,
+                'nama_kepala' => $konteksStrategis->nama_kepala ?? $opd?->kepala,
+                'nip_kepala' => $konteksStrategis->nip_kepala ?? null,
+                'jabatan_kepala' => $konteksStrategis->jabatan_kepala ?? ($opd ? "Kepala {$opd->nama}" : null),
+                'tanggal_penetapan' => $data['tanggal_penetapan'] ?? $konteksStrategis->tanggal_penetapan ?? now()->toDateString(),
+                'status' => $data['status'] ?? 'final',
                 'updated_by' => $userId,
             ];
-
-            $konteks = KonteksOperasional::where($attributes)->first();
 
             if ($konteks) {
                 $konteks->update($values);
@@ -150,6 +226,8 @@ class KonteksOperasionalService
             // Optional: Batch items synchronization if provided
             if (isset($data['items']) && is_array($data['items'])) {
                 $this->syncBatchItems($konteks, $data['items']);
+            } else {
+                $this->recalculateTreeCodes($konteks);
             }
 
             return $konteks->load($this->relations);
@@ -163,8 +241,16 @@ class KonteksOperasionalService
      */
     public function syncBatchItems(KonteksOperasional $konteks, array $itemsData): void
     {
-        // First delete existing items
-        $konteks->items()->delete();
+        // Delete existing items safely from bottom up to avoid FK constraint issues
+        KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+            ->where('jenis', 'sub_kegiatan')
+            ->delete();
+        KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+            ->where('jenis', 'kegiatan')
+            ->delete();
+        KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+            ->where('jenis', 'program')
+            ->delete();
 
         // Code mapping to parent ID: ['A' => uuid, 'A.1' => uuid, ...]
         $codeMap = [];
@@ -182,6 +268,11 @@ class KonteksOperasionalService
             if ($item['jenis'] === 'kegiatan') {
                 $parentKode = $item['parent_kode'] ?? explode('.', $item['kode'])[0] ?? null;
                 $parentId = $parentKode && isset($codeMap[$parentKode]) ? $codeMap[$parentKode] : null;
+                if (!$parentId) {
+                    throw ValidationException::withMessages([
+                        'items' => "Kegiatan '{$item['nama']}' ({$item['kode']}) tidak memiliki Program induk yang valid dalam payload.",
+                    ]);
+                }
                 $created = $this->createItemWithIndikators($konteks, $parentId, $item);
                 $codeMap[$item['kode']] = $created->id;
             }
@@ -194,9 +285,16 @@ class KonteksOperasionalService
                 $parts = explode('.', $item['kode']);
                 $parentKode = $item['parent_kode'] ?? (count($parts) >= 2 ? "{$parts[0]}.{$parts[1]}" : null);
                 $parentId = $parentKode && isset($codeMap[$parentKode]) ? $codeMap[$parentKode] : null;
+                if (!$parentId) {
+                    throw ValidationException::withMessages([
+                        'items' => "Sub-Kegiatan '{$item['nama']}' ({$item['kode']}) tidak memiliki Kegiatan induk yang valid dalam payload.",
+                    ]);
+                }
                 $this->createItemWithIndikators($konteks, $parentId, $item);
             }
         }
+
+        $this->recalculateTreeCodes($konteks);
     }
 
     /**
@@ -213,7 +311,7 @@ class KonteksOperasionalService
             'konteks_operasional_id' => $konteks->id,
             'parent_id' => $parentId,
             'jenis' => $itemData['jenis'],
-            'kode' => $itemData['kode'],
+            'kode' => $itemData['kode'] ?? 'A',
             'nama' => $itemData['nama'],
             'urutan' => $itemData['urutan'] ?? 1,
         ]);
@@ -235,7 +333,7 @@ class KonteksOperasionalService
     }
 
     /**
-     * Save (create or update) a single operational tree item.
+     * Save (create or update) a single operational tree item and auto-recalculate hierarchical codes.
      *
      * @param array<string, mixed> $data
      */
@@ -245,25 +343,37 @@ class KonteksOperasionalService
         ?string $itemId = null
     ): KonteksOperasionalItem {
         return DB::transaction(function () use ($konteks, $data, $itemId) {
+            $targetJenis = $data['jenis'] ?? null;
+            $parentId = $targetJenis === 'program' ? null : ($data['parent_id'] ?? null);
+
             if ($itemId) {
                 $item = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
                     ->findOrFail($itemId);
 
+                $newJenis = $targetJenis ?? $item->jenis;
+                $resolvedParentId = $newJenis === 'program'
+                    ? null
+                    : (array_key_exists('parent_id', $data) ? $data['parent_id'] : $item->parent_id);
+
                 $item->update([
-                    'parent_id' => $data['parent_id'] ?? $item->parent_id,
-                    'jenis' => $data['jenis'] ?? $item->jenis,
-                    'kode' => $data['kode'] ?? $item->kode,
+                    'parent_id' => $resolvedParentId,
+                    'jenis' => $newJenis,
                     'nama' => $data['nama'] ?? $item->nama,
                     'urutan' => $data['urutan'] ?? $item->urutan,
                 ]);
             } else {
+                $maxUrutan = (int) KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+                    ->where('jenis', $data['jenis'])
+                    ->where('parent_id', $parentId)
+                    ->max('urutan');
+
                 $item = KonteksOperasionalItem::create([
                     'konteks_operasional_id' => $konteks->id,
-                    'parent_id' => $data['parent_id'] ?? null,
+                    'parent_id' => $parentId,
                     'jenis' => $data['jenis'],
-                    'kode' => $data['kode'],
+                    'kode' => !empty($data['kode']) ? $data['kode'] : 'TEMP',
                     'nama' => $data['nama'],
-                    'urutan' => $data['urutan'] ?? 1,
+                    'urutan' => $data['urutan'] ?? ($maxUrutan + 1),
                 ]);
             }
 
@@ -282,26 +392,148 @@ class KonteksOperasionalService
                 }
             }
 
-            return $item->load(['indikators', 'children.indikators']);
+            $this->recalculateTreeCodes($konteks);
+
+            return $item->fresh(['indikators', 'children.indikators']) ?? $item;
         });
     }
 
     /**
-     * Delete an operational tree item (and all its children).
+     * Delete an operational tree item with strict bottom-up guard and renumber remaining nodes.
+     *
+     * @throws ValidationException
      */
     public function deleteItem(KonteksOperasional $konteks, string $itemId): void
     {
-        $item = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
-            ->findOrFail($itemId);
+        DB::transaction(function () use ($konteks, $itemId) {
+            $item = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+                ->findOrFail($itemId);
 
-        $item->delete();
+            $childCount = KonteksOperasionalItem::where('parent_id', $item->id)->count();
+            if ($childCount > 0) {
+                $childLabel = $item->jenis === 'program' ? 'Kegiatan' : 'Sub-Kegiatan';
+                $selfLabel = $item->jenis === 'program' ? 'Program' : 'Kegiatan';
+
+                throw ValidationException::withMessages([
+                    'item' => "Tidak dapat menghapus {$selfLabel} '{$item->nama}' karena masih memiliki {$childCount} {$childLabel} di bawahnya. Bersihkan data {$childLabel} terlebih dahulu dari bawah.",
+                ]);
+            }
+
+            $item->delete();
+
+            $this->recalculateTreeCodes($konteks);
+        });
+    }
+
+    /**
+     * Reorder items within Form 2C and auto-recalculate tree codes.
+     *
+     * @param array<int, string> $orderedIds
+     */
+    public function reorderItems(KonteksOperasional $konteks, array $orderedIds): void
+    {
+        DB::transaction(function () use ($konteks, $orderedIds) {
+            foreach ($orderedIds as $index => $id) {
+                KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+                    ->where('id', $id)
+                    ->update(['urutan' => $index + 1]);
+            }
+
+            $this->recalculateTreeCodes($konteks);
+        });
+    }
+
+    /**
+     * Automatically recalculate sequential codes (A, B, A.1, A.1.1) and urutan across the tree.
+     */
+    public function recalculateTreeCodes(KonteksOperasional $konteks): void
+    {
+        $programs = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+            ->where('jenis', 'program')
+            ->orderBy('urutan', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($programs->values() as $pIdx => $prog) {
+            $pUrutan = $pIdx + 1;
+            $progKode = $this->indexToAlpha($pUrutan);
+
+            if ($prog->kode !== $progKode || (int) $prog->urutan !== $pUrutan) {
+                $prog->update([
+                    'kode' => $progKode,
+                    'urutan' => $pUrutan,
+                ]);
+            }
+
+            $kegiatans = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+                ->where('jenis', 'kegiatan')
+                ->where('parent_id', $prog->id)
+                ->orderBy('urutan', 'asc')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($kegiatans->values() as $kIdx => $keg) {
+                $kUrutan = $kIdx + 1;
+                $kegKode = "{$progKode}.{$kUrutan}";
+
+                if ($keg->kode !== $kegKode || (int) $keg->urutan !== $kUrutan) {
+                    $keg->update([
+                        'kode' => $kegKode,
+                        'urutan' => $kUrutan,
+                    ]);
+                }
+
+                $subKegiatans = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+                    ->where('jenis', 'sub_kegiatan')
+                    ->where('parent_id', $keg->id)
+                    ->orderBy('urutan', 'asc')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                foreach ($subKegiatans->values() as $sIdx => $sub) {
+                    $sUrutan = $sIdx + 1;
+                    $subKode = "{$kegKode}.{$sUrutan}";
+
+                    if ($sub->kode !== $subKode || (int) $sub->urutan !== $sUrutan) {
+                        $sub->update([
+                            'kode' => $subKode,
+                            'urutan' => $sUrutan,
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Convert 1-based index to Excel-style alphabetical code (1 -> A, 2 -> B, ..., 26 -> Z, 27 -> AA).
+     */
+    protected function indexToAlpha(int $num): string
+    {
+        $alpha = '';
+        while ($num > 0) {
+            $mod = ($num - 1) % 26;
+            $alpha = chr(65 + $mod) . $alpha;
+            $num = intdiv($num - $mod, 26);
+        }
+
+        return $alpha ?: 'A';
     }
 
     /**
      * Delete whole operational context assessment document.
+     *
+     * @throws ValidationException
      */
     public function deleteKonteks(KonteksOperasional $konteks): void
     {
+        $itemCount = $konteks->items()->count();
+        if ($itemCount > 0) {
+            throw ValidationException::withMessages([
+                'konteks' => "Tidak dapat menghapus dokumen Konteks Operasional (Form 2C) ini karena masih memiliki {$itemCount} rincian Program/Kegiatan/Sub-Kegiatan. Bersihkan rincian terlebih dahulu dari bawah.",
+            ]);
+        }
+
         $konteks->delete();
     }
 
@@ -380,7 +612,7 @@ class KonteksOperasionalService
             $writer->addRow(Row::fromValues(['']));
 
             // Tanda Tangan
-            $tgl = $konteks->tanggal_penetapan ? $konteks->tanggal_penetapan->isoFormat('D MMMM Y') : date('d F Y');
+            $tgl = $konteks->tanggal_penetapan ? $konteks->tanggal_penetapan->locale('id')->isoFormat('D MMMM Y') : date('d F Y');
             $writer->addRow(Row::fromValues(['', '', "Cianjur, {$tgl}"]));
             $writer->addRow(Row::fromValues(['', '', $konteks->jabatan_kepala ?? "Kepala {$konteks->opd?->nama}"]));
             $writer->addRow(Row::fromValues(['', '', 'Kabupaten Cianjur']));

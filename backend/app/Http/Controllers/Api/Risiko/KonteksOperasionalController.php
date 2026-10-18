@@ -13,6 +13,7 @@ use App\Models\Risiko\KonteksOperasional;
 use App\Services\Risiko\KonteksOperasionalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class KonteksOperasionalController extends Controller
@@ -135,6 +136,8 @@ class KonteksOperasionalController extends Controller
         }
 
         $data = $request->validated();
+        $data['opd_id'] = $konteks->opd_id;
+        $data['periode_penilaian_id'] = $konteks->periode_penilaian_id;
         $updated = $this->service->saveKonteks($data, $request->user());
 
         return response()->json([
@@ -162,6 +165,38 @@ class KonteksOperasionalController extends Controller
 
         return response()->json([
             'message' => 'Penetapan Konteks Risiko Operasional OPD (Form 2C) berhasil dihapus.',
+        ]);
+    }
+
+    /**
+     * Reorder operational items within Form 2C and auto-recalculate sequential codes.
+     */
+    public function reorderItems(Request $request, string $id): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user?->can('konteks_operasional.edit')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan rincian operasional Form 2C.');
+        }
+
+        $konteks = $this->service->getKonteksById($id);
+        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
+        }
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => [
+                'required',
+                'uuid',
+                Rule::exists('konteks_operasional_items', 'id')->where('konteks_operasional_id', $konteks->id),
+            ],
+        ]);
+
+        $this->service->reorderItems($konteks, $validated['ids']);
+
+        return response()->json([
+            'message' => 'Urutan rincian operasional Form 2C berhasil diperbarui.',
+            'data' => new KonteksOperasionalResource($konteks->fresh(['programs.indikators', 'programs.children.indikators', 'programs.children.children.indikators'])),
         ]);
     }
 

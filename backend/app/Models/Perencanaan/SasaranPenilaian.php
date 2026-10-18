@@ -6,12 +6,14 @@ namespace App\Models\Perencanaan;
 
 use App\Models\Concerns\HasUuid7;
 use App\Models\Opd;
+use App\Models\Risiko\KonteksPenilaian;
 use App\Models\User;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class SasaranPenilaian extends Model
 {
@@ -87,6 +89,21 @@ class SasaranPenilaian extends Model
     public function indikators(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(IndikatorPenilaian::class, 'sasaran_penilaian_id');
+    }
+
+    /**
+     * Relasi ke Konteks Penilaian (Form 2B) via pivot table.
+     *
+     * @return BelongsToMany<KonteksPenilaian, $this>
+     */
+    public function konteksPenilaians(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            KonteksPenilaian::class,
+            'konteks_penilaian_sasarans',
+            'sasaran_penilaian_id',
+            'konteks_penilaian_id'
+        )->withTimestamps();
     }
 
     /**

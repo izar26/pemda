@@ -70,6 +70,10 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Waktu & Tanggal' />
     ),
+    meta: {
+      className: 'w-48 min-w-[170px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const dateStr = row.getValue('created_at') as string
       const date = new Date(dateStr)
@@ -96,6 +100,10 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Pelaksana / Pegawai' />
     ),
+    meta: {
+      className: 'min-w-[220px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const log = row.original
       const name = log.user_name || 'Sistem Otomatis'
@@ -107,12 +115,12 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
         .toUpperCase()
 
       return (
-        <div className='flex items-center gap-3 py-1'>
+        <div className='flex items-center gap-3 py-1 min-w-0'>
           <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-xs text-primary'>
             {initials || <UserIcon className='h-4 w-4' />}
           </div>
-          <div className='flex flex-col min-w-0 max-w-[200px]'>
-            <span className='font-semibold text-sm text-foreground leading-tight truncate'>
+          <div className='flex flex-col min-w-0'>
+            <span className='font-semibold text-sm text-foreground leading-snug whitespace-normal break-words'>
               {name}
             </span>
             <span className='text-xs text-muted-foreground font-mono mt-0.5 truncate'>
@@ -127,8 +135,13 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
   {
     accessorKey: 'module',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Modul' />
+      <DataTableColumnHeader column={column} title='Modul' className='justify-center' />
     ),
+    meta: {
+      className: 'w-36 min-w-[130px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const module = row.getValue('module') as string
       let badgeClass = 'border-muted-foreground/30 bg-muted/40 text-foreground'
@@ -154,9 +167,11 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
       }
 
       return (
-        <Badge variant='outline' className={`text-xs px-2 py-0.5 font-medium ${badgeClass}`}>
-          {module}
-        </Badge>
+        <div className='flex justify-center'>
+          <Badge variant='outline' className={`text-xs px-2 py-0.5 font-medium ${badgeClass}`}>
+            {module}
+          </Badge>
+        </div>
       )
     },
     filterFn: (row, id, value) => {
@@ -167,19 +182,26 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
   {
     accessorKey: 'action',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Aksi' />
+      <DataTableColumnHeader column={column} title='Aksi' className='justify-center' />
     ),
+    meta: {
+      className: 'w-28 min-w-[100px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const action = row.getValue('action') as string
       const config = getActionBadgeConfig(action)
 
       return (
-        <Badge
-          variant='outline'
-          className={`text-xs font-mono font-medium ${config.className}`}
-        >
-          {config.label}
-        </Badge>
+        <div className='flex justify-center'>
+          <Badge
+            variant='outline'
+            className={`text-xs font-mono font-medium ${config.className}`}
+          >
+            {config.label}
+          </Badge>
+        </div>
       )
     },
     enableSorting: true,
@@ -225,6 +247,9 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Alamat IP' />
     ),
+    meta: {
+      className: 'w-36 min-w-[120px]',
+    },
     cell: ({ row }) => {
       const ip = row.getValue('ip_address') as string | null
       return (
@@ -238,6 +263,16 @@ export const auditColumns: ColumnDef<AuditLog>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <AuditActionCell log={row.original} />,
+    header: () => <div className='text-right'>Aksi</div>,
+    meta: {
+      className: 'w-20 min-w-[70px] text-right',
+      thClassName: 'text-right',
+      tdClassName: 'text-right',
+    },
+    cell: ({ row }) => (
+      <div className='flex items-center justify-end'>
+        <AuditActionCell log={row.original} />
+      </div>
+    ),
   },
 ]

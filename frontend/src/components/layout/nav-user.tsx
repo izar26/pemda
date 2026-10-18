@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import {
-  Bell,
   ChevronsUpDown,
   LogOut,
   Shield,
@@ -63,9 +62,9 @@ export function NavUser({ user }: NavUserProps) {
                 </Avatar>
                 <div className='grid flex-1 text-start text-sm leading-tight'>
                   <span className='truncate font-semibold'>{user.name}</span>
-                  <span className='truncate text-xs text-muted-foreground'>{user.email}</span>
+                  <span className='truncate text-xs text-sidebar-foreground/70'>{user.email}</span>
                 </div>
-                <ChevronsUpDown className='ms-auto size-4 text-muted-foreground' />
+                <ChevronsUpDown className='ms-auto size-4 text-sidebar-foreground/70' />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -102,12 +101,6 @@ export function NavUser({ user }: NavUserProps) {
                   <Link to='/settings/account'>
                     <Shield className='mr-2 h-4 w-4' />
                     Keamanan & Kata Sandi
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to='/settings/notifications'>
-                    <Bell className='mr-2 h-4 w-4' />
-                    Notifikasi
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuGroup>

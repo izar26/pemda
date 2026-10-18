@@ -29,7 +29,12 @@ class InviteUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
             'role' => $roleRule,
-            'opd_id' => ['required', 'string', 'uuid', 'exists:opds,id'],
+            'opd_id' => [
+                'required',
+                'string',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
             'jabatan' => ['required', 'string', 'max:150'],
             'notes' => ['required', 'string', 'max:500'],
         ];

@@ -146,6 +146,8 @@ export function SearchableSelect({
         collisionPadding={12}
         sideOffset={4}
         className='w-[--radix-popover-trigger-width] min-w-[280px] max-w-[420px] p-0 shadow-lg border max-h-[min(380px,var(--radix-popover-content-available-height,380px))]'
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         <Command
           filter={(itemValue, search) => {
@@ -155,7 +157,11 @@ export function SearchableSelect({
           }}
         >
           <CommandInput placeholder={searchPlaceholder} className='h-9 text-xs' />
-          <CommandList className='max-h-[260px] overflow-y-auto overscroll-contain p-1'>
+          <CommandList
+            className='max-h-[260px] overflow-y-auto overscroll-contain p-1'
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             <CommandEmpty className='py-6 text-center text-xs text-muted-foreground'>
               {emptyMessage}
             </CommandEmpty>

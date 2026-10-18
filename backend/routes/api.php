@@ -9,9 +9,12 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExportJobController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
+use App\Http\Controllers\Api\PegawaiController;
 use App\Http\Controllers\Api\Perencanaan\PeriodePenilaianController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
+use App\Http\Controllers\Api\PublicAppConfigController;
+use App\Http\Controllers\Api\UserAccountController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +30,9 @@ Route::get('/ping', function () {
 
 // Public Banners (Login Carousel, Public Portals)
 Route::get('/content/banners/public', [PublicBannerController::class, 'index']);
+
+// Public Application Identity & Branding Configuration
+Route::get('/public/app-config', [PublicAppConfigController::class, 'index']);
 
 // Master OPD (Perangkat Daerah) - Publicly available for dropdowns & registration
 Route::get('/opds', [OpdController::class, 'index']);
@@ -69,6 +75,8 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
 
     // Excel Export Endpoints (High Performance Streaming & Async Job Downloads)
     Route::get('/dashboard/export', [DashboardController::class, 'export']);
+    Route::get('/pegawai/export', [PegawaiController::class, 'export']);
+    Route::get('/user-accounts/export', [UserAccountController::class, 'export']);
     Route::get('/users/export', [UserController::class, 'export']);
     Route::get('/opds/export', [OpdController::class, 'export']);
     Route::get('/roles/export', [RoleController::class, 'export']);
@@ -80,7 +88,15 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     Route::get('/permissions', [RoleController::class, 'permissions']);
     Route::apiResource('/roles', RoleController::class);
 
-    // User Management
+    // Manajemen Pegawai (Employee Directory without Account Credentials)
+    Route::get('/pegawai/check-kepala/{opdId}', [PegawaiController::class, 'checkKepalaOpd'])->whereUuid('opdId');
+    Route::apiResource('/pegawai', PegawaiController::class)->parameters(['pegawai' => 'pegawai']);
+
+    // Manajemen Users (Dedicated Login Account & Role Assignment)
+    Route::post('/user-accounts/{user}/reset-2fa', [UserAccountController::class, 'resetTwoFactor'])->whereUuid('user');
+    Route::apiResource('/user-accounts', UserAccountController::class)->parameters(['user-accounts' => 'user'])->except(['show']);
+
+    // Legacy / Direct User Endpoints
     Route::post('/users/invite', [UserController::class, 'invite']);
     Route::post('/users/{user}/resend-invitation', [UserController::class, 'resendInvitation']);
     Route::post('/users/{user}/reset-2fa', [UserController::class, 'resetTwoFactor']);
@@ -92,12 +108,15 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     Route::post('/audit-logs/archive-purge', [AuditLogArchiveController::class, 'purge']);
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 
-    // System Settings
+    // System Settings & Assets
     Route::get('/system-settings', [SystemSettingController::class, 'index']);
     Route::put('/system-settings', [SystemSettingController::class, 'update']);
+    Route::post('/system-settings/logo', [SystemSettingController::class, 'uploadLogo']);
+    Route::delete('/system-settings/logo', [SystemSettingController::class, 'deleteLogo']);
 
     // Perangkat Daerah (OPD) Dedicated CRUD & Stats
     Route::get('/opds/stats', [OpdController::class, 'stats']);
+    Route::post('/opds/reorder', [OpdController::class, 'reorder']);
     Route::post('/opds', [OpdController::class, 'store']);
     Route::put('/opds/{opd}', [OpdController::class, 'update']);
     Route::patch('/opds/{opd}/toggle', [OpdController::class, 'toggleActive']);
@@ -106,6 +125,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     // Master Data (Manajemen Risiko & SPIP)
     Route::prefix('master')->group(function () {
         Route::get('/{entity}/export', [MasterDataController::class, 'export']);
+        Route::post('/{entity}/reorder', [MasterDataController::class, 'reorder']);
         Route::get('/{entity}', [MasterDataController::class, 'index']);
         Route::get('/{entity}/{id}', [MasterDataController::class, 'show']);
         Route::post('/{entity}', [MasterDataController::class, 'store']);
@@ -134,18 +154,21 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::get('/tujuan/stats', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'stats']);
         Route::get('/tujuan/export', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'export']);
         Route::post('/tujuan/copy', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'copy']);
+        Route::post('/tujuan/reorder', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'reorder']);
         Route::apiResource('/tujuan', \App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class)->parameters(['tujuan' => 'tujuan']);
 
         // Fitur 15: Data Sasaran Renstra OPD
         Route::get('/sasaran/stats', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'stats']);
         Route::get('/sasaran/export', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'export']);
         Route::post('/sasaran/copy', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'copy']);
+        Route::post('/sasaran/reorder', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'reorder']);
         Route::apiResource('/sasaran', \App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class)->parameters(['sasaran' => 'sasaran']);
 
         // Fitur 16 & 17: Data IKU & Indikator Renstra OPD
         Route::get('/iku/stats', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'stats']);
         Route::get('/iku/export', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'export']);
         Route::post('/iku/copy', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'copy']);
+        Route::post('/iku/reorder', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'reorder']);
         Route::apiResource('/iku', \App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class)->parameters(['iku' => 'iku']);
     });
 
@@ -159,6 +182,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         // Form 2C: Penetapan Konteks Risiko Operasional OPD
         Route::get('/konteks-operasional/current', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'current']);
         Route::get('/konteks-operasional/{konteks}/export', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'export']);
+        Route::post('/konteks-operasional/{konteks}/items/reorder', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'reorderItems']);
         Route::post('/konteks-operasional/{konteks}/items', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'storeItem']);
         Route::put('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'updateItem']);
         Route::delete('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'destroyItem']);

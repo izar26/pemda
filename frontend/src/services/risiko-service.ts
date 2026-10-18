@@ -1,5 +1,6 @@
 import apiClient from '@/lib/api-client'
 import type {
+  KonteksOpdMeta,
   KonteksPenilaianFormData,
   KonteksPenilaianItem,
   KonteksPenilaianFilterParams,
@@ -32,9 +33,22 @@ export const risikoService = {
   async getCurrentKonteks(params: { opd_id?: string; periode_penilaian_id?: string } = {}) {
     const response = await apiClient.get<{
       data: KonteksPenilaianItem | null
+      meta?: KonteksOpdMeta
       message?: string
     }>('/risiko/konteks-strategis/current', { params })
     return response.data.data
+  },
+
+  /**
+   * Get current active OPD context assessment along with OPD Kepala & Form 2C metadata.
+   */
+  async getCurrentKonteksWithMeta(params: { opd_id?: string; periode_penilaian_id?: string } = {}) {
+    const response = await apiClient.get<{
+      data: KonteksPenilaianItem | null
+      meta?: KonteksOpdMeta
+      message?: string
+    }>('/risiko/konteks-strategis/current', { params })
+    return response.data
   },
 
   /**
@@ -43,6 +57,7 @@ export const risikoService = {
   async getKonteksById(id: string) {
     const response = await apiClient.get<{
       data: KonteksPenilaianItem
+      meta?: KonteksOpdMeta
     }>(`/risiko/konteks-strategis/${id}`)
     return response.data.data
   },
@@ -54,6 +69,7 @@ export const risikoService = {
     const response = await apiClient.post<{
       message: string
       data: KonteksPenilaianItem
+      meta?: KonteksOpdMeta
     }>('/risiko/konteks-strategis', data)
     return response.data
   },
@@ -65,6 +81,7 @@ export const risikoService = {
     const response = await apiClient.put<{
       message: string
       data: KonteksPenilaianItem
+      meta?: KonteksOpdMeta
     }>(`/risiko/konteks-strategis/${id}`, data)
     return response.data
   },
@@ -198,6 +215,17 @@ export const risikoService = {
     const response = await apiClient.delete<{
       message: string
     }>(`/risiko/konteks-operasional/${konteksId}/items/${itemId}`)
+    return response.data
+  },
+
+  /**
+   * Reorder items in Form 2C.
+   */
+  async reorderKonteksOperasionalItems(konteksId: string, ids: string[]) {
+    const response = await apiClient.post<{
+      message: string
+      data: KonteksOperasionalItem
+    }>(`/risiko/konteks-operasional/${konteksId}/items/reorder`, { ids })
     return response.data
   },
 

@@ -5,8 +5,8 @@ export const opdCategoryFilterOptions = [
   { label: 'Inspektorat', value: 'Inspektorat' },
   { label: 'RSUD', value: 'RSUD' },
   { label: 'Kecamatan', value: 'Kecamatan' },
-  { label: 'Kantor', value: 'Kantor' },
-  { label: 'Lainnya', value: 'Lainnya' },
+  { label: 'BUMD', value: 'BUMD' },
+  { label: 'DESA/KELURAHAN', value: 'DESA/KELURAHAN' },
 ]
 
 export const opdStatusFilterOptions = [

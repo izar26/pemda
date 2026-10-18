@@ -44,6 +44,20 @@ class IndikatorPenilaianService
     }
 
     /**
+     * Resolve optional target evaluation period ID (returns null if no active period).
+     */
+    public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
+    {
+        if (!empty($periodeId)) {
+            return $periodeId;
+        }
+
+        $active = PeriodePenilaian::where('status', 'aktif')->first();
+
+        return $active ? (string) $active->id : null;
+    }
+
+    /**
      * Get paginated list of evaluation indicators / IKU.
      *
      * @param array<string, mixed> $filters
@@ -54,7 +68,10 @@ class IndikatorPenilaianService
         string $sortBy = 'urutan',
         string $sortDirection = 'asc'
     ): LengthAwarePaginator {
-        $periodeId = $this->resolvePeriodeId($filters['periode_penilaian_id'] ?? null);
+        $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
+        if (!$periodeId) {
+            return IndikatorPenilaian::query()->whereRaw('1 = 0')->paginate($perPage);
+        }
         $filters['periode_penilaian_id'] = $periodeId;
 
         $query = IndikatorPenilaian::query()
@@ -76,7 +93,10 @@ class IndikatorPenilaianService
      */
     public function getAllIndikator(array $filters = []): Collection
     {
-        $periodeId = $this->resolvePeriodeId($filters['periode_penilaian_id'] ?? null);
+        $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
+        if (!$periodeId) {
+            return new Collection();
+        }
         $filters['periode_penilaian_id'] = $periodeId;
 
         return IndikatorPenilaian::query()
@@ -206,11 +226,19 @@ class IndikatorPenilaianService
     public function updateIndikator(IndikatorPenilaian $indikator, array $data): IndikatorPenilaian
     {
         // If sasaran changed, resolve opd and tujuan from new sasaran
+        if (!empty($data['sasaran_penilaian_id']) && $data['sasaran_penilaian_id'] !== $indikator->sasaran_penilaian_id) {
+            if ($indikator->konteksPenilaians()->exists()) {
+                throw ValidationException::withMessages([
+                    'sasaran_penilaian_id' => 'Tidak dapat memindahkan Sasaran induk pada Indikator ini karena sedang digunakan pada Konteks Penilaian Strategis (Form 2B).',
+                ]);
+            }
+        }
+
         if (!empty($data['sasaran_penilaian_id'])) {
             $sasaran = SasaranPenilaian::find($data['sasaran_penilaian_id']);
             if ($sasaran) {
-                $data['opd_id'] = $data['opd_id'] ?? $sasaran->opd_id;
-                $data['tujuan_penilaian_id'] = $data['tujuan_penilaian_id'] ?? $sasaran->tujuan_penilaian_id;
+                $data['opd_id'] = $sasaran->opd_id;
+                $data['tujuan_penilaian_id'] = $sasaran->tujuan_penilaian_id;
             }
         }
 
@@ -223,11 +251,42 @@ class IndikatorPenilaianService
     }
 
     /**
-     * Delete an evaluation indicator.
+     * Delete an evaluation indicator with strict bottom-up guard.
+     *
+     * @throws ValidationException
      */
     public function deleteIndikator(IndikatorPenilaian $indikator): void
     {
+        $konteksCount = $indikator->konteksPenilaians()->count();
+        if ($konteksCount > 0) {
+            throw ValidationException::withMessages([
+                'indikator' => "Tidak dapat menghapus Indikator/IKU ini karena sedang digunakan pada {$konteksCount} Konteks Penilaian Strategis (Form 2B). Bersihkan penggunaannya pada Form 2B terlebih dahulu.",
+            ]);
+        }
+
         $indikator->delete();
+    }
+
+    /**
+     * Reorder indicators within their parent target scope.
+     *
+     * @param array<int, string> $orderedIds
+     */
+    public function reorderIndikator(array $orderedIds): void
+    {
+        DB::transaction(function () use ($orderedIds) {
+            foreach (array_values($orderedIds) as $index => $id) {
+                $urutan = $index + 1;
+                $item = IndikatorPenilaian::find($id);
+                if ($item) {
+                    $prefix = $item->jenis === 'Biasa' ? 'IND' : 'IKU';
+                    $item->update([
+                        'urutan' => $urutan,
+                        'kode_indikator' => sprintf('%s-%02d', $prefix, $urutan),
+                    ]);
+                }
+            }
+        });
     }
 
     /**
@@ -250,7 +309,10 @@ class IndikatorPenilaianService
             ]);
         }
 
-        $query = IndikatorPenilaian::with(['tujuan', 'sasaran'])->where('periode_penilaian_id', $sourcePeriodeId);
+        $query = IndikatorPenilaian::with(['tujuan.sumberData', 'sasaran', 'opd'])
+            ->where('periode_penilaian_id', $sourcePeriodeId)
+            ->whereHas('opd', fn ($q) => $q->where('is_active', true));
+
         if (!empty($opdId)) {
             $query->where('opd_id', $opdId);
         }
@@ -264,8 +326,16 @@ class IndikatorPenilaianService
         $sourceItems = $query->orderBy('urutan', 'asc')->get();
         if ($sourceItems->isEmpty()) {
             throw ValidationException::withMessages([
-                'source_periode_id' => 'Tidak ada data indikator / IKU yang ditemukan pada periode sumber tersebut.',
+                'source_periode_id' => 'Tidak ada data indikator / IKU (dengan OPD aktif) yang ditemukan pada periode sumber tersebut.',
             ]);
+        }
+
+        foreach ($sourceItems as $item) {
+            if ($item->tujuan?->sumberData && !$item->tujuan->sumberData->is_active) {
+                throw ValidationException::withMessages([
+                    'source_periode_id' => "Tidak dapat menyalin Indikator '{$item->indikator}' karena Sumber Data '{$item->tujuan->sumberData->nama}' pada Tujuan induknya sedang nonaktif.",
+                ]);
+            }
         }
 
         $userId = $creator?->id ?? auth('sanctum')->id();
@@ -294,6 +364,7 @@ class IndikatorPenilaianService
                         $newTujuan = TujuanPenilaian::create([
                             'periode_penilaian_id' => $targetPeriodeId,
                             'opd_id' => $item->opd_id,
+                            'sumber_data_id' => $sourceTuj->sumber_data_id,
                             'kode_tujuan' => $sourceTuj->kode_tujuan,
                             'tujuan' => $sourceTuj->tujuan,
                             'urutan' => ((int) $maxTujuanUrutan) + 1,

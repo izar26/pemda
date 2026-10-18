@@ -1,0 +1,146 @@
+[
+  {
+    "jenis": "program",
+    "kode": "A",
+    "nama": "Program Pengelolaan Informasi dan Komunikasi Publik",
+    "parent_kode": null,
+    "indikators": [
+      {
+        "indikator": "Indeks Kepuasan Layanan Informasi Publik",
+        "target": "85.50"
+      }
+    ]
+  },
+  {
+    "jenis": "kegiatan",
+    "kode": "A.1",
+    "nama": "Pengelolaan Informasi dan Dokumentasi Pemerintah Daerah",
+    "parent_kode": "A",
+    "indikators": [
+      {
+        "indikator": "Persentase Permohonan Informasi Publik yang Terlayani Tepat Waktu (%)",
+        "target": "98.00"
+      }
+    ]
+  },
+  {
+    "jenis": "sub_kegiatan",
+    "kode": "A.1.1",
+    "nama": "Penyusunan Berita dan Publikasi Media Informasi Resmi Daerah",
+    "parent_kode": "A.1",
+    "indikators": [
+      {
+        "indikator": "Jumlah Rilis Berita dan Konten Edukasi Publik Terpublikasi (Konten)",
+        "target": "360.00"
+      }
+    ]
+  },
+  {
+    "jenis": "sub_kegiatan",
+    "kode": "A.1.2",
+    "nama": "Fasilitasi Pelayanan Informasi Publik dan PPID Utama",
+    "parent_kode": "A.1",
+    "indikators": [
+      {
+        "indikator": "Tingkat Kepatuhan SOP Layanan Informasi PPID (%)",
+        "target": "100.00"
+      }
+    ]
+  },
+  {
+    "jenis": "kegiatan",
+    "kode": "A.2",
+    "nama": "Pengelolaan Saluran Komunikasi Publik dan Kanal Aspirasi",
+    "parent_kode": "A",
+    "indikators": [
+      {
+        "indikator": "Persentase Tindak Lanjut Pengaduan Masyarakat melalui SP4N LAPOR! (%)",
+        "target": "95.00"
+      }
+    ]
+  },
+  {
+    "jenis": "sub_kegiatan",
+    "kode": "A.2.1",
+    "nama": "Pengelolaan Opini dan Aspirasi Publik di Media Sosial Daerah",
+    "parent_kode": "A.2",
+    "indikators": [
+      {
+        "indikator": "Jumlah Laporan Analisis Isu Strategis Daerah (Laporan)",
+        "target": "12.00"
+      }
+    ]
+  },
+  {
+    "jenis": "program",
+    "kode": "B",
+    "nama": "Program Penyelenggaraan Sistem Pemerintahan Berbasis Elektronik (SPBE)",
+    "parent_kode": null,
+    "indikators": [
+      {
+        "indikator": "Indeks Kematangan Penyelenggaraan SPBE Pemerintah Daerah",
+        "target": "3.80"
+      }
+    ]
+  },
+  {
+    "jenis": "kegiatan",
+    "kode": "B.1",
+    "nama": "Penyelenggaraan Infrastruktur Pusat Data dan Jaringan Intra Pemerintah",
+    "parent_kode": "B",
+    "indikators": [
+      {
+        "indikator": "Tingkat Ketersediaan Jaringan Fiber Optik dan Internet OPD (%)",
+        "target": "99.20"
+      }
+    ]
+  },
+  {
+    "jenis": "sub_kegiatan",
+    "kode": "B.1.1",
+    "nama": "Pemeliharaan dan Pengamanan Server Data Center Pemkab",
+    "parent_kode": "B.1",
+    "indikators": [
+      {
+        "indikator": "Uptime Layanan Server Data Center Daerah (%)",
+        "target": "99.50"
+      }
+    ]
+  },
+  {
+    "jenis": "sub_kegiatan",
+    "kode": "B.1.2",
+    "nama": "Penyelenggaraan Computer Security Incident Response Team (CSIRT)",
+    "parent_kode": "B.1",
+    "indikators": [
+      {
+        "indikator": "Waktu Tanggap Penanganan Insiden Siber (Menit)",
+        "target": "30.00"
+      }
+    ]
+  },
+  {
+    "jenis": "kegiatan",
+    "kode": "B.2",
+    "nama": "Pengembangan dan Integrasi Aplikasi Informatika Pemerintahan Daerah",
+    "parent_kode": "B",
+    "indikators": [
+      {
+        "indikator": "Persentase Layanan Publik yang Terintegrasi Single Sign-On (SSO) (%)",
+        "target": "85.00"
+      }
+    ]
+  },
+  {
+    "jenis": "sub_kegiatan",
+    "kode": "B.2.1",
+    "nama": "Pembangunan dan Pemeliharaan Aplikasi Layanan Terpadu",
+    "parent_kode": "B.2",
+    "indikators": [
+      {
+        "indikator": "Jumlah Aplikasi Terintegrasi dalam Arsitektur SPBE (Sistem)",
+        "target": "15.00"
+      }
+    ]
+  }
+]

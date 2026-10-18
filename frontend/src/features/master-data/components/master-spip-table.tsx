@@ -3,9 +3,12 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronRight,
   Edit,
+  GripVertical,
   Loader2,
   Plus,
   RefreshCw,
@@ -20,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 import { useMasterData } from './master-data-provider'
 
 export function MasterSpipTable() {
@@ -51,7 +55,125 @@ export function MasterSpipTable() {
     queryFn: () => masterDataService.getItems('unsur-spip'),
   })
 
-  const unsurs = response?.data || []
+  const [prevData, setPrevData] = useState(response?.data)
+  const [localUnsurs, setLocalUnsurs] = useState<NonNullable<typeof response>['data']>(() => response?.data ?? [])
+  const [draggedUnsurId, setDraggedUnsurId] = useState<string | null>(null)
+  const [dragOverUnsurId, setDragOverUnsurId] = useState<string | null>(null)
+
+  const [draggedSubId, setDraggedSubId] = useState<string | null>(null)
+  const [dragOverSubId, setDragOverSubId] = useState<string | null>(null)
+
+  if (response?.data !== prevData) {
+    setPrevData(response?.data)
+    if (response?.data) {
+      setLocalUnsurs(response.data)
+    }
+  }
+
+  const canReorder = canEdit && !searchTerm.trim()
+
+  async function handleReorderUnsur(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return
+    const fromIndex = localUnsurs.findIndex((u) => u.id === sourceId)
+    const toIndex = localUnsurs.findIndex((u) => u.id === targetId)
+    if (fromIndex === -1 || toIndex === -1) return
+
+    const reordered = [...localUnsurs]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+
+    const updated = reordered.map((item, idx) => ({
+      ...item,
+      urutan: idx + 1,
+    }))
+    setLocalUnsurs(updated)
+
+    try {
+      await masterDataService.reorderItems(
+        'unsur-spip',
+        updated.map((u) => u.id)
+      )
+      toast.success('Urutan Unsur SPIP berhasil diperbarui.')
+      queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
+    } catch {
+      toast.error('Gagal memperbarui urutan Unsur SPIP.')
+      queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
+    }
+  }
+
+  function handleMoveUpUnsur(id: string) {
+    const index = localUnsurs.findIndex((u) => u.id === id)
+    if (index > 0) {
+      handleReorderUnsur(id, localUnsurs[index - 1].id)
+    }
+  }
+
+  function handleMoveDownUnsur(id: string) {
+    const index = localUnsurs.findIndex((u) => u.id === id)
+    if (index < localUnsurs.length - 1 && index !== -1) {
+      handleReorderUnsur(id, localUnsurs[index + 1].id)
+    }
+  }
+
+  async function handleReorderSubUnsur(
+    unsurId: string,
+    sourceId: string,
+    targetId: string
+  ) {
+    if (sourceId === targetId) return
+    const unsurIndex = localUnsurs.findIndex((u) => u.id === unsurId)
+    if (unsurIndex === -1) return
+
+    const currentSubList = [...(localUnsurs[unsurIndex].sub_unsurs || [])]
+    const fromIndex = currentSubList.findIndex((s) => s.id === sourceId)
+    const toIndex = currentSubList.findIndex((s) => s.id === targetId)
+    if (fromIndex === -1 || toIndex === -1) return
+
+    const [moved] = currentSubList.splice(fromIndex, 1)
+    currentSubList.splice(toIndex, 0, moved)
+
+    const updatedSubList = currentSubList.map((item, idx) => ({
+      ...item,
+      urutan: idx + 1,
+    }))
+
+    const nextUnsurs = [...localUnsurs]
+    nextUnsurs[unsurIndex] = {
+      ...nextUnsurs[unsurIndex],
+      sub_unsurs: updatedSubList,
+    }
+    setLocalUnsurs(nextUnsurs)
+
+    try {
+      await masterDataService.reorderItems(
+        'sub-unsur-spip',
+        updatedSubList.map((s) => s.id)
+      )
+      toast.success('Urutan bagian Sub-Unsur SPIP berhasil diperbarui.')
+      queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
+    } catch {
+      toast.error('Gagal memperbarui urutan Sub-Unsur SPIP.')
+      queryClient.invalidateQueries({ queryKey: ['master', 'unsur-spip'] })
+    }
+  }
+
+  function handleMoveUpSubUnsur(unsurId: string, subId: string) {
+    const unsur = localUnsurs.find((u) => u.id === unsurId)
+    if (!unsur || !unsur.sub_unsurs) return
+    const index = unsur.sub_unsurs.findIndex((s) => s.id === subId)
+    if (index > 0) {
+      handleReorderSubUnsur(unsurId, subId, unsur.sub_unsurs[index - 1].id)
+    }
+  }
+
+  function handleMoveDownSubUnsur(unsurId: string, subId: string) {
+    const unsur = localUnsurs.find((u) => u.id === unsurId)
+    if (!unsur || !unsur.sub_unsurs) return
+    const index = unsur.sub_unsurs.findIndex((s) => s.id === subId)
+    if (index < unsur.sub_unsurs.length - 1 && index !== -1) {
+      handleReorderSubUnsur(unsurId, subId, unsur.sub_unsurs[index + 1].id)
+    }
+  }
 
   function toggleExpand(id: string) {
     setCollapsedIds((prev) => {
@@ -88,7 +210,7 @@ export function MasterSpipTable() {
   })
 
   // Filter unsurs or their subUnsurs
-  const filteredUnsurs = unsurs.filter((unsur) => {
+  const filteredUnsurs = localUnsurs.filter((unsur) => {
     if (!searchTerm.trim()) return true
     const term = searchTerm.toLowerCase()
     const matchUnsur =
@@ -165,14 +287,45 @@ export function MasterSpipTable() {
               : 'Belum ada data Unsur SPIP terdaftar.'}
           </div>
         ) : (
-          filteredUnsurs.map((unsur) => {
+          filteredUnsurs.map((unsur, unsurIdx) => {
             const isExpanded = !collapsedIds.has(unsur.id)
             const subList = unsur.sub_unsurs || []
+            const isFirstUnsur = unsurIdx === 0
+            const isLastUnsur = unsurIdx === filteredUnsurs.length - 1
 
             return (
               <div
                 key={unsur.id}
-                className='rounded-md border bg-card shadow-2xs overflow-hidden transition-all'
+                draggable={canReorder}
+                onDragStart={(e) => {
+                  if (!canReorder) return
+                  setDraggedUnsurId(unsur.id)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragOver={(e) => {
+                  if (!canReorder || !draggedUnsurId || draggedUnsurId === unsur.id) return
+                  e.preventDefault()
+                  setDragOverUnsurId(unsur.id)
+                }}
+                onDragLeave={() => {
+                  setDragOverUnsurId(null)
+                }}
+                onDrop={(e) => {
+                  if (!canReorder || !draggedUnsurId || draggedUnsurId === unsur.id) return
+                  e.preventDefault()
+                  handleReorderUnsur(draggedUnsurId, unsur.id)
+                  setDraggedUnsurId(null)
+                  setDragOverUnsurId(null)
+                }}
+                onDragEnd={() => {
+                  setDraggedUnsurId(null)
+                  setDragOverUnsurId(null)
+                }}
+                className={cn(
+                  'rounded-md border bg-card shadow-2xs overflow-hidden transition-all',
+                  draggedUnsurId === unsur.id && 'opacity-40 bg-muted/60',
+                  dragOverUnsurId === unsur.id && 'border-t-2 border-primary bg-primary/5'
+                )}
               >
                 {/* Unsur Header Bar */}
                 <div
@@ -181,7 +334,16 @@ export function MasterSpipTable() {
                   }`}
                   onClick={() => toggleExpand(unsur.id)}
                 >
-                  <div className='flex items-center gap-3 min-w-0'>
+                  <div className='flex items-center gap-2.5 min-w-0'>
+                    {canReorder && (
+                      <div
+                        className='cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5'
+                        title='Tarik untuk ubah urutan unsur'
+                      >
+                        <GripVertical className='h-4 w-4' />
+                      </div>
+                    )}
+
                     <button
                       type='button'
                       className='p-1 rounded-md text-muted-foreground hover:text-foreground'
@@ -217,6 +379,31 @@ export function MasterSpipTable() {
                     className='flex items-center gap-2 justify-end pl-7 sm:pl-0'
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {canReorder && (
+                      <div className='flex items-center gap-0.5 mr-1'>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          disabled={isFirstUnsur}
+                          className='h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-20'
+                          onClick={() => handleMoveUpUnsur(unsur.id)}
+                          title='Pindah unsur ke atas'
+                        >
+                          <ArrowUp className='h-3.5 w-3.5' />
+                        </Button>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          disabled={isLastUnsur}
+                          className='h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-20'
+                          onClick={() => handleMoveDownUnsur(unsur.id)}
+                          title='Pindah unsur ke bawah'
+                        >
+                          <ArrowDown className='h-3.5 w-3.5' />
+                        </Button>
+                      </div>
+                    )}
+
                     <div className='flex items-center gap-1.5 mr-2'>
                       <Switch
                         checked={unsur.is_active}
@@ -318,90 +505,162 @@ export function MasterSpipTable() {
                       </div>
                     ) : (
                       <div className='divide-y rounded-md border overflow-hidden'>
-                        {subList.map((sub, idx) => (
-                          <div
-                            key={sub.id}
-                            className='flex items-center justify-between p-2.5 sm:px-3 text-xs hover:bg-muted/20 transition-colors'
-                          >
-                            <div className='flex items-center gap-2.5 min-w-0 pr-2'>
-                              <span className='font-mono text-muted-foreground text-[11px] w-5 text-right'>
-                                {idx + 1}.
-                              </span>
-                              <span className='font-medium text-foreground truncate'>
-                                {sub.nama}
-                              </span>
-                            </div>
+                        {subList.map((sub, idx) => {
+                          const isFirstSub = idx === 0
+                          const isLastSub = idx === subList.length - 1
 
-                            <div className='flex items-center gap-2 shrink-0'>
-                              <Switch
-                                checked={sub.is_active}
-                                onCheckedChange={() =>
-                                  toggleMutation.mutate({
-                                    entityKey: 'sub-unsur-spip',
-                                    id: sub.id,
-                                  })
-                                }
-                                disabled={!canEdit || toggleMutation.isPending}
-                                className='data-[state=checked]:bg-emerald-600 scale-75'
-                              />
-
-                              <Badge
-                                variant='outline'
-                                className={`text-[9px] font-medium ${
-                                  sub.is_active
-                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
-                                    : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
-                                }`}
-                              >
-                                {sub.is_active ? 'Aktif' : 'Nonaktif'}
-                              </Badge>
-
-                              {canEdit && (
-                                <Button
-                                  variant='ghost'
-                                  size='icon'
-                                  className='h-6 w-6 text-muted-foreground hover:text-foreground'
-                                  onClick={() => {
-                                    setSelectedEntity({
-                                      key: 'sub-unsur-spip',
-                                      label: 'Sub-Unsur SPIP',
-                                      category: 'spip',
-                                    })
-                                    setCurrentItem(sub)
-                                    setTargetUnsurId(unsur.id)
-                                    setOpen('edit')
-                                  }}
-                                >
-                                  <Edit className='h-3 w-3' />
-                                </Button>
+                          return (
+                            <div
+                              key={sub.id}
+                              draggable={canReorder}
+                              onDragStart={(e) => {
+                                if (!canReorder) return
+                                e.stopPropagation()
+                                setDraggedSubId(sub.id)
+                                e.dataTransfer.effectAllowed = 'move'
+                              }}
+                              onDragOver={(e) => {
+                                if (!canReorder || !draggedSubId || draggedSubId === sub.id) return
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setDragOverSubId(sub.id)
+                              }}
+                              onDragLeave={(e) => {
+                                e.stopPropagation()
+                                setDragOverSubId(null)
+                              }}
+                              onDrop={(e) => {
+                                if (!canReorder || !draggedSubId || draggedSubId === sub.id) return
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleReorderSubUnsur(unsur.id, draggedSubId, sub.id)
+                                setDraggedSubId(null)
+                                setDragOverSubId(null)
+                              }}
+                              onDragEnd={(e) => {
+                                e.stopPropagation()
+                                setDraggedSubId(null)
+                                setDragOverSubId(null)
+                              }}
+                              className={cn(
+                                'flex items-center justify-between p-2.5 sm:px-3 text-xs hover:bg-muted/20 transition-colors',
+                                draggedSubId === sub.id && 'opacity-40 bg-muted/60',
+                                dragOverSubId === sub.id && 'border-t-2 border-primary bg-primary/5'
                               )}
+                            >
+                              <div className='flex items-center gap-2 min-w-0 pr-2'>
+                                {canReorder && (
+                                  <div
+                                    className='cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5'
+                                    title='Tarik untuk ubah urutan bagian'
+                                  >
+                                    <GripVertical className='h-3.5 w-3.5' />
+                                  </div>
+                                )}
+                                <span className='font-mono text-muted-foreground text-[11px] w-5 text-right'>
+                                  {idx + 1}.
+                                </span>
+                                <span className='font-medium text-foreground truncate'>
+                                  {sub.nama}
+                                </span>
+                              </div>
 
-                              {canDelete && (
-                                <Button
-                                  variant='ghost'
-                                  size='icon'
-                                  className='h-6 w-6 text-muted-foreground hover:text-destructive'
-                                  onClick={() => {
-                                    setSelectedEntity({
-                                      key: 'sub-unsur-spip',
-                                      label: 'Sub-Unsur SPIP',
-                                      category: 'spip',
-                                    })
-                                    setDeleteTarget({
+                              <div className='flex items-center gap-2 shrink-0'>
+                                {canReorder && (
+                                  <div className='flex items-center gap-0.5 mr-1'>
+                                    <Button
+                                      variant='ghost'
+                                      size='icon'
+                                      disabled={isFirstSub}
+                                      className='h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-20'
+                                      onClick={() => handleMoveUpSubUnsur(unsur.id, sub.id)}
+                                      title='Pindah bagian ke atas'
+                                    >
+                                      <ArrowUp className='h-3 w-3' />
+                                    </Button>
+                                    <Button
+                                      variant='ghost'
+                                      size='icon'
+                                      disabled={isLastSub}
+                                      className='h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-20'
+                                      onClick={() => handleMoveDownSubUnsur(unsur.id, sub.id)}
+                                      title='Pindah bagian ke bawah'
+                                    >
+                                      <ArrowDown className='h-3 w-3' />
+                                    </Button>
+                                  </div>
+                                )}
+
+                                <Switch
+                                  checked={sub.is_active}
+                                  onCheckedChange={() =>
+                                    toggleMutation.mutate({
                                       entityKey: 'sub-unsur-spip',
-                                      label: 'Sub-Unsur SPIP',
                                       id: sub.id,
-                                      name: sub.nama,
                                     })
-                                    setOpen('delete')
-                                  }}
+                                  }
+                                  disabled={!canEdit || toggleMutation.isPending}
+                                  className='data-[state=checked]:bg-emerald-600 scale-75'
+                                />
+
+                                <Badge
+                                  variant='outline'
+                                  className={`text-[9px] font-medium ${
+                                    sub.is_active
+                                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+                                      : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
+                                  }`}
                                 >
-                                  <Trash2 className='h-3 w-3' />
-                                </Button>
-                              )}
+                                  {sub.is_active ? 'Aktif' : 'Nonaktif'}
+                                </Badge>
+
+                                {canEdit && (
+                                  <Button
+                                    variant='ghost'
+                                    size='icon'
+                                    className='h-6 w-6 text-muted-foreground hover:text-foreground'
+                                    onClick={() => {
+                                      setSelectedEntity({
+                                        key: 'sub-unsur-spip',
+                                        label: 'Sub-Unsur SPIP',
+                                        category: 'spip',
+                                      })
+                                      setCurrentItem(sub)
+                                      setTargetUnsurId(unsur.id)
+                                      setOpen('edit')
+                                    }}
+                                  >
+                                    <Edit className='h-3 w-3' />
+                                  </Button>
+                                )}
+
+                                {canDelete && (
+                                  <Button
+                                    variant='ghost'
+                                    size='icon'
+                                    className='h-6 w-6 text-muted-foreground hover:text-destructive'
+                                    onClick={() => {
+                                      setSelectedEntity({
+                                        key: 'sub-unsur-spip',
+                                        label: 'Sub-Unsur SPIP',
+                                        category: 'spip',
+                                      })
+                                      setDeleteTarget({
+                                        entityKey: 'sub-unsur-spip',
+                                        label: 'Sub-Unsur SPIP',
+                                        id: sub.id,
+                                        name: sub.nama,
+                                      })
+                                      setOpen('delete')
+                                    }}
+                                  >
+                                    <Trash2 className='h-3 w-3' />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>

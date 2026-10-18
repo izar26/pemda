@@ -129,6 +129,11 @@ class User extends Authenticatable
         return $this->status === 'active';
     }
 
+    public function hasAccount(): bool
+    {
+        return !empty($this->password);
+    }
+
     public function isPendingActivation(): bool
     {
         return $this->status === 'pending_activation';

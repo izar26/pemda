@@ -2,10 +2,6 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  CalendarRange,
-  CheckCircle2,
-  Clock,
-  Archive,
   RefreshCw,
   Loader2,
   AlertTriangle,
@@ -13,6 +9,7 @@ import {
 import type { PeriodePenilaianItem } from '@/types/perencanaan'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -20,7 +17,6 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { ExportExcelButton } from '@/components/export-excel-button'
 import { PeriodeProvider, usePeriode } from './components/periode-provider'
 import { PeriodePrimaryButtons } from './components/periode-primary-buttons'
@@ -68,52 +64,12 @@ function PeriodeContent() {
     ? periodeResponse.data
     : []
 
-  // 4 Standard Compact KPI Stats
-  const totalPeriode = stats?.total ?? periodeList.length
-  const activeYear = stats?.aktif?.tahun_penilaian ? `Tahun ${stats.aktif.tahun_penilaian}` : 'Belum Ada'
-  const activeCycle = stats?.aktif?.nama_periode ?? 'Tidak ada periode aktif'
-
-  let sisaHariLabel = '-'
-  if (stats?.aktif?.sisa_hari !== null && stats?.aktif?.sisa_hari !== undefined) {
-    if (stats.aktif.sisa_hari < 0) {
-      sisaHariLabel = `Lewat ${Math.abs(stats.aktif.sisa_hari)} Hari`
-    } else if (stats.aktif.sisa_hari <= 30) {
-      sisaHariLabel = `${stats.aktif.sisa_hari} Hari Lagi`
-    } else {
-      sisaHariLabel = `${stats.aktif.sisa_hari} Hari Lagi`
-    }
-  }
-
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Total Periode',
-      value: totalPeriode,
-      icon: CalendarRange,
-    },
-    {
-      title: 'Periode Berjalan (Aktif)',
-      value: activeYear,
-      sub: activeCycle,
-      icon: CheckCircle2,
-    },
-    {
-      title: 'Sisa Waktu Penilaian',
-      value: sisaHariLabel,
-      sub: stats?.aktif?.tanggal_akhir ? `Batas: ${stats.aktif.tanggal_akhir}` : 'Batas waktu penilaian',
-      icon: Clock,
-    },
-    {
-      title: 'Periode Diarsipkan',
-      value: stats?.arsip ?? 0,
-      icon: Archive,
-    },
-  ]
-
   return (
     <>
       <Header fixed>
-        <Search />
-        <div className='ms-auto flex items-center space-x-4'>
+        <Search className='me-auto' />
+        <NavbarStatus />
+        <div className='flex items-center space-x-2 sm:space-x-3'>
           <ThemeSwitch />
           <ConfigDrawer />
           <ProfileDropdown />
@@ -125,10 +81,10 @@ function PeriodeContent() {
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Periode Penilaian RPJMD
+              Periode Penilaian
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Kelola siklus 5 tahunan RPJMD dan tahun penilaian risiko berjalan daerah (Fitur No. 13).
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 
@@ -154,9 +110,6 @@ function PeriodeContent() {
             <PeriodePrimaryButtons />
           </div>
         </PageHeader>
-
-        {/* 4 Standard Compact KPI Stats */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoading && !isRefetching} />
 
         {/* Warning Banner: Zero Active Period State Protection */}
         {!stats?.aktif && !isLoading && (

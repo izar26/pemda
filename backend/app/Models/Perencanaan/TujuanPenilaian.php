@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models\Perencanaan;
 
 use App\Models\Concerns\HasUuid7;
+use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
+use App\Models\Risiko\KonteksPenilaian;
 use App\Models\User;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +30,7 @@ class TujuanPenilaian extends Model
     protected $fillable = [
         'periode_penilaian_id',
         'opd_id',
+        'sumber_data_id',
         'kode_tujuan',
         'tujuan',
         'urutan',
@@ -60,6 +63,16 @@ class TujuanPenilaian extends Model
     }
 
     /**
+     * Relasi ke Master Sumber Data.
+     *
+     * @return BelongsTo<MasterSumberData, self>
+     */
+    public function sumberData(): BelongsTo
+    {
+        return $this->belongsTo(MasterSumberData::class, 'sumber_data_id');
+    }
+
+    /**
      * Relasi ke pengguna pembuat data (Audit).
      *
      * @return BelongsTo<User, self>
@@ -77,6 +90,26 @@ class TujuanPenilaian extends Model
     public function sasarans(): HasMany
     {
         return $this->hasMany(SasaranPenilaian::class, 'tujuan_penilaian_id')->orderBy('urutan', 'asc');
+    }
+
+    /**
+     * Relasi ke Indikator Penilaian.
+     *
+     * @return HasMany<IndikatorPenilaian, self>
+     */
+    public function indikators(): HasMany
+    {
+        return $this->hasMany(IndikatorPenilaian::class, 'tujuan_penilaian_id');
+    }
+
+    /**
+     * Relasi ke Konteks Penilaian (Form 2B).
+     *
+     * @return HasMany<KonteksPenilaian, self>
+     */
+    public function konteksPenilaians(): HasMany
+    {
+        return $this->hasMany(KonteksPenilaian::class, 'tujuan_penilaian_id');
     }
 
     /**
@@ -102,13 +135,23 @@ class TujuanPenilaian extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         if (!empty($filters['search'])) {
-            $search = trim((string) $filters['search']);
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('tujuan', 'ilike', "%{$search}%")
-                    ->orWhere('kode_tujuan', 'ilike', "%{$search}%")
-                    ->orWhereHas('opd', function (Builder $opdQ) use ($search) {
-                        $opdQ->where('nama', 'ilike', "%{$search}%")
-                            ->orWhere('kode', 'ilike', "%{$search}%");
+            $search = strtolower(trim((string) $filters['search']));
+            $like = "%{$search}%";
+            $query->where(function (Builder $q) use ($like) {
+                $q->whereRaw('LOWER(tujuan) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(COALESCE(kode_tujuan, \'\')) LIKE ?', [$like])
+                    ->orWhereHas('opd', function (Builder $opdQ) use ($like) {
+                        $opdQ->whereRaw('LOWER(nama) LIKE ?', [$like])
+                            ->orWhereRaw('LOWER(kode) LIKE ?', [$like]);
+                    })
+                    ->orWhereHas('sumberData', function (Builder $sdQ) use ($like) {
+                        $sdQ->whereRaw('LOWER(nama) LIKE ?', [$like]);
+                    })
+                    ->orWhereHas('sasarans', function (Builder $sasQ) use ($like) {
+                        $sasQ->whereRaw('LOWER(sasaran) LIKE ?', [$like])
+                            ->orWhereHas('indikators', function (Builder $indQ) use ($like) {
+                                $indQ->whereRaw('LOWER(indikator) LIKE ?', [$like]);
+                            });
                     });
             });
         }
@@ -121,6 +164,11 @@ class TujuanPenilaian extends Model
             $query->where('opd_id', $filters['opd_id']);
         }
 
+        if (!empty($filters['sumber_data_id']) && $filters['sumber_data_id'] !== 'all') {
+            $query->where('sumber_data_id', $filters['sumber_data_id']);
+        }
+
         return $query;
     }
 }
+

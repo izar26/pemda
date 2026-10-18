@@ -43,6 +43,20 @@ class SasaranPenilaianService
     }
 
     /**
+     * Resolve optional target evaluation period ID (returns null if no active period).
+     */
+    public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
+    {
+        if (!empty($periodeId)) {
+            return $periodeId;
+        }
+
+        $active = PeriodePenilaian::where('status', 'aktif')->first();
+
+        return $active ? (string) $active->id : null;
+    }
+
+    /**
      * Get paginated list of evaluation strategic targets.
      *
      * @param array<string, mixed> $filters
@@ -53,7 +67,10 @@ class SasaranPenilaianService
         string $sortBy = 'urutan',
         string $sortDirection = 'asc'
     ): LengthAwarePaginator {
-        $periodeId = $this->resolvePeriodeId($filters['periode_penilaian_id'] ?? null);
+        $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
+        if (!$periodeId) {
+            return SasaranPenilaian::query()->whereRaw('1 = 0')->paginate($perPage);
+        }
         $filters['periode_penilaian_id'] = $periodeId;
 
         $query = SasaranPenilaian::query()
@@ -75,7 +92,10 @@ class SasaranPenilaianService
      */
     public function getAllSasaran(array $filters = []): Collection
     {
-        $periodeId = $this->resolvePeriodeId($filters['periode_penilaian_id'] ?? null);
+        $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
+        if (!$periodeId) {
+            return new Collection();
+        }
         $filters['periode_penilaian_id'] = $periodeId;
 
         return SasaranPenilaian::query()
@@ -194,8 +214,16 @@ class SasaranPenilaianService
      */
     public function updateSasaran(SasaranPenilaian $sasaran, array $data): SasaranPenilaian
     {
-        // If tujuan changed but opd omitted, sync opd with new tujuan
-        if (!empty($data['tujuan_penilaian_id']) && empty($data['opd_id'])) {
+        if (!empty($data['tujuan_penilaian_id']) && $data['tujuan_penilaian_id'] !== $sasaran->tujuan_penilaian_id) {
+            if ($sasaran->indikators()->exists() || $sasaran->konteksPenilaians()->exists()) {
+                throw ValidationException::withMessages([
+                    'tujuan_penilaian_id' => 'Tidak dapat memindahkan Tujuan induk pada Sasaran ini karena sudah memiliki Indikator atau digunakan pada Konteks Penilaian (Form 2B). Bersihkan data turunannya terlebih dahulu dari bawah.',
+                ]);
+            }
+        }
+
+        // If tujuan changed, sync opd with new tujuan
+        if (!empty($data['tujuan_penilaian_id'])) {
             $tujuan = TujuanPenilaian::find($data['tujuan_penilaian_id']);
             if ($tujuan) {
                 $data['opd_id'] = $tujuan->opd_id;
@@ -211,11 +239,49 @@ class SasaranPenilaianService
     }
 
     /**
-     * Delete an evaluation target.
+     * Delete an evaluation target with strict bottom-up guard.
+     *
+     * @throws ValidationException
      */
     public function deleteSasaran(SasaranPenilaian $sasaran): void
     {
+        $indikatorCount = $sasaran->indikators()->count();
+        $konteksCount = $sasaran->konteksPenilaians()->count();
+
+        if ($indikatorCount > 0 || $konteksCount > 0) {
+            $usages = [];
+            if ($indikatorCount > 0) {
+                $usages[] = "{$indikatorCount} Indikator/IKU";
+            }
+            if ($konteksCount > 0) {
+                $usages[] = "{$konteksCount} Konteks Penilaian Strategis (Form 2B)";
+            }
+            $usageText = implode(', ', $usages);
+
+            throw ValidationException::withMessages([
+                'sasaran' => "Tidak dapat menghapus Sasaran ini karena masih memiliki data turunan ({$usageText}). Bersihkan data turunannya terlebih dahulu dari bawah.",
+            ]);
+        }
+
         $sasaran->delete();
+    }
+
+    /**
+     * Reorder strategic targets within their parent goal scope.
+     *
+     * @param array<int, string> $orderedIds
+     */
+    public function reorderSasaran(array $orderedIds): void
+    {
+        DB::transaction(function () use ($orderedIds) {
+            foreach (array_values($orderedIds) as $index => $id) {
+                $urutan = $index + 1;
+                SasaranPenilaian::where('id', $id)->update([
+                    'urutan' => $urutan,
+                    'kode_sasaran' => sprintf('SAS-%02d', $urutan),
+                ]);
+            }
+        });
     }
 
     /**
@@ -237,7 +303,10 @@ class SasaranPenilaianService
             ]);
         }
 
-        $query = SasaranPenilaian::with('tujuan')->where('periode_penilaian_id', $sourcePeriodeId);
+        $query = SasaranPenilaian::with(['tujuan.sumberData', 'opd'])
+            ->where('periode_penilaian_id', $sourcePeriodeId)
+            ->whereHas('opd', fn ($q) => $q->where('is_active', true));
+
         if (!empty($opdId)) {
             $query->where('opd_id', $opdId);
         }
@@ -248,8 +317,16 @@ class SasaranPenilaianService
         $sourceItems = $query->orderBy('urutan', 'asc')->get();
         if ($sourceItems->isEmpty()) {
             throw ValidationException::withMessages([
-                'source_periode_id' => 'Tidak ada data sasaran yang ditemukan pada periode sumber tersebut.',
+                'source_periode_id' => 'Tidak ada data sasaran (dengan OPD aktif) yang ditemukan pada periode sumber tersebut.',
             ]);
+        }
+
+        foreach ($sourceItems as $item) {
+            if ($item->tujuan?->sumberData && !$item->tujuan->sumberData->is_active) {
+                throw ValidationException::withMessages([
+                    'source_periode_id' => "Tidak dapat menyalin Sasaran '{$item->sasaran}' karena Sumber Data '{$item->tujuan->sumberData->nama}' pada Tujuan induknya sedang nonaktif.",
+                ]);
+            }
         }
 
         $userId = $creator?->id ?? auth('sanctum')->id();
@@ -279,6 +356,7 @@ class SasaranPenilaianService
                         $newTujuan = TujuanPenilaian::create([
                             'periode_penilaian_id' => $targetPeriodeId,
                             'opd_id' => $item->opd_id,
+                            'sumber_data_id' => $sourceTujuan->sumber_data_id,
                             'kode_tujuan' => $sourceTujuan->kode_tujuan,
                             'tujuan' => $sourceTujuan->tujuan,
                             'urutan' => ((int) $maxTujuanUrutan) + 1,

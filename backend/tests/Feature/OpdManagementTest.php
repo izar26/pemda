@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
+use App\Models\Perencanaan\TujuanPenilaian;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\MasterDataSeeder;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -161,7 +165,7 @@ class OpdManagementTest extends TestCase
             ->deleteJson("/api/opds/{$opd->id}");
 
         $response->assertStatus(422)
-            ->assertJsonFragment(['message' => 'Tidak dapat menghapus OPD ini karena masih terdapat pegawai yang ditugaskan di instansi ini.']);
+            ->assertJsonFragment(['message' => "Tidak dapat menghapus Perangkat Daerah (OPD) '{$opd->nama}' karena masih memiliki data terkait (1 Pegawai). Bersihkan data turunannya terlebih dahulu dari bawah."]);
 
         $this->assertDatabaseHas('opds', ['id' => $opd->id]);
     }
@@ -169,9 +173,9 @@ class OpdManagementTest extends TestCase
     public function test_can_delete_opd_without_assigned_users(): void
     {
         $opd = Opd::create([
-            'nama' => 'Kantor Baru',
-            'kode' => 'KB',
-            'kategori' => 'Kantor',
+            'nama' => 'BUMD Tirta Makmur',
+            'kode' => 'BUMD-TM',
+            'kategori' => 'BUMD',
             'is_active' => true,
             'urutan' => 1,
         ]);
@@ -183,5 +187,126 @@ class OpdManagementTest extends TestCase
             ->assertJsonFragment(['message' => 'Perangkat daerah berhasil dihapus.']);
 
         $this->assertDatabaseMissing('opds', ['id' => $opd->id]);
+    }
+
+    public function test_can_create_opd_with_bumd_and_desa_kelurahan(): void
+    {
+        $payloadBumd = [
+            'nama' => 'BUMD Cianjur Mandiri',
+            'kode' => 'BUMD-CM',
+            'kategori' => 'BUMD',
+            'kepala' => 'Direktur Utama',
+            'is_active' => true,
+        ];
+
+        $respBumd = $this->actingAs($this->superadmin)->postJson('/api/opds', $payloadBumd);
+        $respBumd->assertCreated()
+            ->assertJsonPath('data.kategori', 'BUMD');
+
+        $payloadDesa = [
+            'nama' => 'Desa Nagrak',
+            'kode' => 'DS-NAGRAK',
+            'kategori' => 'DESA/KELURAHAN',
+            'kepala' => 'Kepala Desa',
+            'is_active' => true,
+        ];
+
+        $respDesa = $this->actingAs($this->superadmin)->postJson('/api/opds', $payloadDesa);
+        $respDesa->assertCreated()
+            ->assertJsonPath('data.kategori', 'DESA/KELURAHAN');
+    }
+
+    public function test_rejects_deprecated_categories_kantor_and_lainnya(): void
+    {
+        $respKantor = $this->actingAs($this->superadmin)->postJson('/api/opds', [
+            'nama' => 'Kantor Pengujian',
+            'kode' => 'KANTOR-TEST',
+            'kategori' => 'Kantor',
+        ]);
+        $respKantor->assertStatus(422)
+            ->assertJsonValidationErrors(['kategori']);
+
+        $respLainnya = $this->actingAs($this->superadmin)->postJson('/api/opds', [
+            'nama' => 'Instansi Lainnya',
+            'kode' => 'LAINNYA-TEST',
+            'kategori' => 'Lainnya',
+        ]);
+        $respLainnya->assertStatus(422)
+            ->assertJsonValidationErrors(['kategori']);
+    }
+
+    public function test_cannot_deactivate_opd_with_active_users(): void
+    {
+        $opd = Opd::create([
+            'nama' => 'Dinas Perhubungan',
+            'kode' => 'DISHUB',
+            'kategori' => 'Dinas',
+            'is_active' => true,
+        ]);
+
+        User::factory()->create([
+            'email' => 'dishub_staff@pemda.go.id',
+            'opd_id' => $opd->id,
+            'status' => 'active',
+        ]);
+
+        // Attempt toggle
+        $response = $this->actingAs($this->superadmin)
+            ->patchJson("/api/opds/{$opd->id}/toggle");
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('pegawai aktif', $response->json('message'));
+
+        // Attempt update with is_active = false
+        $updateResponse = $this->actingAs($this->superadmin)
+            ->putJson("/api/opds/{$opd->id}", [
+                'nama' => $opd->nama,
+                'kode' => $opd->kode,
+                'kategori' => $opd->kategori,
+                'is_active' => false,
+            ]);
+
+        $updateResponse->assertStatus(422);
+        $this->assertStringContainsString('pegawai aktif', $updateResponse->json('message'));
+    }
+
+    public function test_cannot_deactivate_opd_used_in_active_periode(): void
+    {
+        $this->seed(MasterDataSeeder::class);
+
+        $opd = Opd::create([
+            'nama' => 'Badan Keuangan dan Aset Daerah',
+            'kode' => 'BKAD',
+            'kategori' => 'Badan',
+            'is_active' => true,
+        ]);
+
+        $periode = PeriodePenilaian::create([
+            'nama_periode' => 'RPJMD Aktif BKAD',
+            'tahun_mulai' => 2026,
+            'tahun_akhir' => 2030,
+            'tahun_penilaian' => 2026,
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_akhir' => '2026-12-31',
+            'status' => 'aktif',
+        ]);
+
+        $sumberData = MasterSumberData::firstOrFail();
+
+        TujuanPenilaian::create([
+            'periode_penilaian_id' => $periode->id,
+            'opd_id' => $opd->id,
+            'sumber_data_id' => $sumberData->id,
+            'kode_tujuan' => 'TUJ-BKAD',
+            'tujuan' => 'Tujuan Pengujian OPD',
+            'urutan' => 1,
+            'created_by' => $this->superadmin->id,
+        ]);
+
+        $response = $this->actingAs($this->superadmin)
+            ->patchJson("/api/opds/{$opd->id}/toggle");
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('periode penilaian aktif', $response->json('message'));
     }
 }

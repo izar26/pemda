@@ -248,7 +248,7 @@ class OpdController extends Controller
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'kode' => ['required', 'string', 'max:50', 'unique:opds,kode'],
-            'kategori' => ['required', 'string', 'in:Dinas,Badan,Sekretariat,Inspektorat,RSUD,Kecamatan,Kantor,Lainnya'],
+            'kategori' => ['required', 'string', 'in:Dinas,Badan,Sekretariat,Inspektorat,RSUD,Kecamatan,BUMD,DESA/KELURAHAN,Desa/Kelurahan'],
             'kepala' => ['nullable', 'string', 'max:255'],
             'urutan' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
@@ -270,6 +270,45 @@ class OpdController extends Controller
     }
 
     /**
+     * Reorder OPD display sequence.
+     */
+    public function reorder(Request $request, \App\Services\Audit\AuditLogService $auditLogService): JsonResponse
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+        if (!$user?->can('opd.edit')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan perangkat daerah.');
+        }
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'uuid', 'exists:opds,id'],
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $user, $auditLogService) {
+            foreach ($validated['ids'] as $index => $id) {
+                Opd::where('id', $id)->update(['urutan' => $index + 1]);
+            }
+
+            $auditLogService->log(
+                action: 'OPD_REORDER',
+                module: 'Perangkat Daerah',
+                description: 'Memperbarui urutan tampilan perangkat daerah',
+                user: $user,
+                context: [
+                    'action_type' => 'REORDER',
+                    'count' => count($validated['ids']),
+                    'ids' => $validated['ids'],
+                ],
+                auditableType: Opd::class,
+            );
+        });
+
+        return response()->json([
+            'message' => 'Urutan perangkat daerah berhasil diperbarui.',
+        ]);
+    }
+
+    /**
      * Update an existing OPD.
      */
     public function update(Request $request, Opd $opd): JsonResponse
@@ -281,11 +320,22 @@ class OpdController extends Controller
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'kode' => ['required', 'string', 'max:50', Rule::unique('opds', 'kode')->ignore($opd->id)],
-            'kategori' => ['required', 'string', 'in:Dinas,Badan,Sekretariat,Inspektorat,RSUD,Kecamatan,Kantor,Lainnya'],
+            'kategori' => ['required', 'string', 'in:Dinas,Badan,Sekretariat,Inspektorat,RSUD,Kecamatan,BUMD,DESA/KELURAHAN,Desa/Kelurahan'],
             'kepala' => ['nullable', 'string', 'max:255'],
             'urutan' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if (array_key_exists('is_active', $validated) && $opd->is_active && !$validated['is_active']) {
+            $blocker = $this->getDeactivationBlockerMessage($opd);
+            if ($blocker !== null) {
+                return response()->json(['message' => $blocker], 422);
+            }
+        }
+
+        if (!array_key_exists('urutan', $validated) || $validated['urutan'] === null) {
+            unset($validated['urutan']);
+        }
 
         $opd->update($validated);
         $opd->loadCount('users');
@@ -303,6 +353,13 @@ class OpdController extends Controller
     {
         if (!$request->user()?->can('opd.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah status perangkat daerah.');
+        }
+
+        if ($opd->is_active) {
+            $blocker = $this->getDeactivationBlockerMessage($opd);
+            if ($blocker !== null) {
+                return response()->json(['message' => $blocker], 422);
+            }
         }
 
         $opd->update(['is_active' => !$opd->is_active]);
@@ -323,9 +380,10 @@ class OpdController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus perangkat daerah.');
         }
 
-        if ($opd->users()->count() > 0) {
+        $blocker = $this->getDeletionBlockerMessage($opd);
+        if ($blocker !== null) {
             return response()->json([
-                'message' => 'Tidak dapat menghapus OPD ini karena masih terdapat pegawai yang ditugaskan di instansi ini.',
+                'message' => $blocker,
             ], 422);
         }
 
@@ -335,4 +393,99 @@ class OpdController extends Controller
             'message' => 'Perangkat daerah berhasil dihapus.',
         ]);
     }
+
+    /**
+     * Check if an OPD cannot be deactivated because it is used in the active period or has active employees.
+     */
+    protected function getDeactivationBlockerMessage(Opd $opd): ?string
+    {
+        $activeUsersCount = $opd->users()->where('status', 'active')->count();
+        $tujuanAktifCount = $opd->tujuanPenilaians()->whereHas('periode', fn ($q) => $q->where('status', 'aktif'))->count();
+        $sasaranAktifCount = $opd->sasaranPenilaians()->whereHas('periode', fn ($q) => $q->where('status', 'aktif'))->count();
+        $indikatorAktifCount = $opd->indikatorPenilaians()->whereHas('periode', fn ($q) => $q->where('status', 'aktif'))->count();
+        $konteksAktifCount = $opd->konteksPenilaians()->whereHas('periode', fn ($q) => $q->where('status', 'aktif'))->count();
+        $operasionalAktifCount = $opd->konteksOperasionals()->whereHas('periode', fn ($q) => $q->where('status', 'aktif'))->count();
+
+        if (
+            $activeUsersCount > 0 ||
+            $tujuanAktifCount > 0 ||
+            $sasaranAktifCount > 0 ||
+            $indikatorAktifCount > 0 ||
+            $konteksAktifCount > 0 ||
+            $operasionalAktifCount > 0
+        ) {
+            $usages = [];
+            if ($activeUsersCount > 0) {
+                $usages[] = "{$activeUsersCount} Pegawai/Akun Aktif";
+            }
+            if ($tujuanAktifCount > 0) {
+                $usages[] = "{$tujuanAktifCount} Tujuan";
+            }
+            if ($sasaranAktifCount > 0) {
+                $usages[] = "{$sasaranAktifCount} Sasaran";
+            }
+            if ($indikatorAktifCount > 0) {
+                $usages[] = "{$indikatorAktifCount} Indikator";
+            }
+            if ($konteksAktifCount > 0) {
+                $usages[] = "{$konteksAktifCount} Konteks Strategis";
+            }
+            if ($operasionalAktifCount > 0) {
+                $usages[] = "{$operasionalAktifCount} Konteks Operasional";
+            }
+            $usageText = implode(', ', $usages);
+
+            return "Tidak dapat menonaktifkan Perangkat Daerah (OPD) '{$opd->nama}' karena sedang digunakan pada periode penilaian aktif atau masih memiliki pegawai aktif ({$usageText}).";
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if an OPD cannot be deleted because it has child/dependent records.
+     */
+    protected function getDeletionBlockerMessage(Opd $opd): ?string
+    {
+        $userCount = $opd->users()->count();
+        $tujuanCount = $opd->tujuanPenilaians()->count();
+        $sasaranCount = $opd->sasaranPenilaians()->count();
+        $indikatorCount = $opd->indikatorPenilaians()->count();
+        $konteksCount = $opd->konteksPenilaians()->count();
+        $operasionalCount = $opd->konteksOperasionals()->count();
+
+        if (
+            $userCount > 0 ||
+            $tujuanCount > 0 ||
+            $sasaranCount > 0 ||
+            $indikatorCount > 0 ||
+            $konteksCount > 0 ||
+            $operasionalCount > 0
+        ) {
+            $usages = [];
+            if ($userCount > 0) {
+                $usages[] = "{$userCount} Pegawai";
+            }
+            if ($tujuanCount > 0) {
+                $usages[] = "{$tujuanCount} Tujuan";
+            }
+            if ($sasaranCount > 0) {
+                $usages[] = "{$sasaranCount} Sasaran";
+            }
+            if ($indikatorCount > 0) {
+                $usages[] = "{$indikatorCount} Indikator";
+            }
+            if ($konteksCount > 0) {
+                $usages[] = "{$konteksCount} Konteks Strategis";
+            }
+            if ($operasionalCount > 0) {
+                $usages[] = "{$operasionalCount} Konteks Operasional";
+            }
+            $usageText = implode(', ', $usages);
+
+            return "Tidak dapat menghapus Perangkat Daerah (OPD) '{$opd->nama}' karena masih memiliki data terkait ({$usageText}). Bersihkan data turunannya terlebih dahulu dari bawah.";
+        }
+
+        return null;
+    }
 }
+

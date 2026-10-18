@@ -104,4 +104,38 @@ class ProfileTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_non_admin_opd_user_cannot_mutate_own_opd_or_jabatan(): void
+    {
+        $diskominfo = Opd::where('kode', 'Diskominfo')->firstOrFail();
+        $dputr = Opd::where('kode', 'DPUTR')->firstOrFail();
+
+        $opdUser = User::factory()->create([
+            'name' => 'Staf Diskominfo',
+            'email' => 'staf.kominfo@pemda.go.id',
+            'nip' => '199501012020011005',
+            'opd_id' => $diskominfo->id,
+            'jabatan' => 'Pegawai',
+            'status' => 'active',
+        ]);
+        $opdUser->assignRole('OPD');
+
+        $token = $opdUser->createToken('test', ['*'])->plainTextToken;
+
+        // OPD user attempts to move to DPUTR and escalate jabatan to Kepala OPD
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson('/api/auth/profile', [
+                'name' => 'Staf Diskominfo Updated',
+                'opd_id' => $dputr->id,
+                'jabatan' => 'Kepala OPD',
+            ]);
+
+        $response->assertStatus(200);
+
+        $opdUser->refresh();
+        $this->assertEquals('Staf Diskominfo Updated', $opdUser->name);
+        // OPD and Jabatan must remain unchanged
+        $this->assertEquals($diskominfo->id, $opdUser->opd_id);
+        $this->assertEquals('Pegawai', $opdUser->jabatan);
+    }
 }

@@ -75,16 +75,42 @@ describe('handleServerError', () => {
     log.mockRestore()
   })
 
-  it('does not log the error to the console in production', () => {
-    vi.stubEnv('DEV', false)
+  it('extracts Laravel data.message correctly', () => {
+    const error = new AxiosError('Unprocessable Entity')
+    error.response = {
+      status: 422,
+      data: { message: 'Kredensial yang Anda masukkan tidak valid.' },
+    } as AxiosError['response']
 
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const err = new Error('not logged')
+    handleServerError(error)
 
-    handleServerError(err)
+    expect(toastError).toHaveBeenCalledWith('Kredensial yang Anda masukkan tidak valid.')
+  })
 
-    expect(log).not.toHaveBeenCalled()
+  it('extracts first Laravel validation error from data.errors', () => {
+    const error = new AxiosError('Unprocessable Entity')
+    error.response = {
+      status: 422,
+      data: {
+        message: 'The given data was invalid.',
+        errors: {
+          nip: ['NIP sudah terdaftar dalam sistem.'],
+        },
+      },
+    } as AxiosError['response']
 
-    log.mockRestore()
+    handleServerError(error)
+
+    expect(toastError).toHaveBeenCalledWith('NIP sudah terdaftar dalam sistem.')
+  })
+
+  it('silently ignores canceled requests without firing toast error', () => {
+    const error = new AxiosError('canceled')
+    error.code = 'ERR_CANCELED'
+
+    handleServerError(error)
+
+    expect(toastError).not.toHaveBeenCalled()
   })
 })
+

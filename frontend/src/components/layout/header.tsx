@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { NavbarStatus } from './navbar-status'
 
 type HeaderProps = React.HTMLAttributes<HTMLElement> & {
   fixed?: boolean
@@ -26,17 +31,25 @@ export function Header({ className, fixed = true, children, ...props }: HeaderPr
   return (
     <header
       className={cn(
-        'z-40 h-16 w-full',
-        fixed && 'header-fixed peer/header sticky top-0 bg-background/95 backdrop-blur-md border-b border-border/60 shadow-xs supports-[backdrop-filter]:bg-background/85',
+        'z-40 h-16 w-full dark bg-neutral-950 text-neutral-100 border-b border-neutral-800 shadow-xs group-has-data-[variant=inset]/sidebar-wrapper:md:rounded-t-xl',
+        fixed && 'header-fixed peer/header sticky top-0 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/90',
         offset > 10 && 'shadow-sm',
         className
       )}
       {...props}
     >
-      <div className='relative flex h-full items-center gap-3 px-4 sm:gap-4'>
+      <div className='relative flex h-full items-center gap-2.5 px-3 sm:px-4 sm:gap-3'>
         <SidebarTrigger variant='outline' className='max-md:scale-125' />
         <Separator orientation='vertical' className='h-6' />
-        {children}
+        {children ?? (
+          <>
+            <Search className='me-auto' />
+            <NavbarStatus />
+            <ThemeSwitch />
+            <ConfigDrawer />
+            <ProfileDropdown />
+          </>
+        )}
       </div>
     </header>
   )

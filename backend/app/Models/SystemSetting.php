@@ -34,4 +34,24 @@ class SystemSetting extends Model
             default => $this->value,
         };
     }
+
+    /**
+     * Get full URL for asset settings.
+     */
+    public function getAssetUrlAttribute(): ?string
+    {
+        if (empty($this->value) || !in_array($this->key, ['app_logo', 'app_favicon'], true)) {
+            return null;
+        }
+
+        if (str_starts_with($this->value, 'http://') || str_starts_with($this->value, 'https://')) {
+            return $this->value;
+        }
+
+        try {
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->value);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
 }

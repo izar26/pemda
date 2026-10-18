@@ -35,6 +35,7 @@ class UserResource extends JsonResource
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getAllPermissions()->pluck('name'),
             'status' => $this->status,
+            'has_account' => $this->hasAccount(),
             'is_pending_activation' => $this->isPendingActivation(),
             'invitation_sent_at' => $this->invitation_sent_at?->toIso8601String(),
             'two_factor_enabled' => $this->hasTwoFactorEnabled(),

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { syncServerTime } from '@/lib/server-time'
 import { useAuthStore } from '@/stores/auth-store'
 
 export const apiClient = axios.create({
@@ -19,9 +20,16 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// Handle 401 unauthenticated globally
+// Handle 401 unauthenticated globally & sync server time
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && typeof response.data === 'object' && response.data.server_time) {
+      syncServerTime(response.data.server_time)
+    } else if (response.headers?.['date']) {
+      syncServerTime(response.headers['date'])
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       const skipRedirect = error.config?.headers?.['X-Skip-Auth-Redirect'] === 'true'

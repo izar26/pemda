@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Opd;
+use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\User;
 use App\Services\Export\ExcelExportService;
 use Illuminate\Http\JsonResponse;
@@ -26,12 +27,14 @@ class DashboardController extends Controller
 
         $totalOpd = Opd::count();
         $activeOpd = Opd::where('is_active', true)->count();
-        $totalUsers = User::count();
+        $totalUsers = User::whereNotNull('password')->count();
+        $totalIku = IndikatorPenilaian::where('jenis', 'IKU')->count();
 
         return response()->json([
             'total_instansi' => $totalOpd,
             'active_instansi' => $activeOpd,
             'total_pegawai' => $totalUsers,
+            'total_iku' => $totalIku,
             'mitigation_rate' => 82,
             'high_risk_count' => 18,
             'spip_score' => 3.24,

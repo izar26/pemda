@@ -68,16 +68,6 @@ export function RolesTable({ data }: RolesTableProps) {
         table={table}
         searchPlaceholder='Cari nama peran atau deskripsi...'
         searchKey='name'
-        filters={[
-          {
-            columnId: 'is_system',
-            title: 'Tipe Peran',
-            options: [
-              { label: 'Peran Sistem', value: 'system' },
-              { label: 'Peran Kustom', value: 'custom' },
-            ],
-          },
-        ]}
       />
 
       <div className='overflow-hidden rounded-md border bg-card shadow-2xs'>

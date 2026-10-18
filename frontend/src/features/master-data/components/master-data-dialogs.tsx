@@ -122,8 +122,8 @@ export function MasterDataDialogs() {
                 <span className='font-semibold text-foreground'>{deleteTarget.name}</span> dari{' '}
                 <span className='font-semibold text-foreground'>{deleteTarget.label}</span>?
               </p>
-              <p className='text-muted-foreground'>
-                Tindakan ini tidak dapat dibatalkan jika data sudah digunakan di modul Manajemen Risiko atau SPIP.
+              <p className='text-destructive font-medium'>
+                Perhatian: Penghapusan akan ditolak oleh sistem jika data ini masih digunakan pada modul Perencanaan, Risiko, atau memiliki data turunan di bawahnya. Bersihkan data dari bawah terlebih dahulu.
               </p>
             </div>
           }

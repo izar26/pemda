@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Perencanaan;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CopySasaranPenilaianRequest extends FormRequest
 {
@@ -13,7 +14,18 @@ class CopySasaranPenilaianRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('sasaran.copy') || $this->user()?->can('sasaran.create') ?? false;
+        return ($this->user()?->can('tujuan.copy') || $this->user()?->can('tujuan.create')) ?? false;
+    }
+
+    /**
+     * Prepare data before validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
+            $this->merge(['opd_id' => $user->opd_id]);
+        }
     }
 
     /**
@@ -25,9 +37,32 @@ class CopySasaranPenilaianRequest extends FormRequest
     {
         return [
             'source_periode_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
-            'opd_id' => ['nullable', 'uuid', 'exists:opds,id'],
+            'opd_id' => [
+                'nullable',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
             'tujuan_penilaian_id' => ['nullable', 'uuid', 'exists:tujuan_penilaians,id'],
         ];
+    }
+
+    /**
+     * Custom after validation hook for cascading integrity.
+     */
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            if (!empty($this->tujuan_penilaian_id)) {
+                $tujuan = \App\Models\Perencanaan\TujuanPenilaian::find($this->tujuan_penilaian_id);
+                if ($tujuan && !empty($this->opd_id) && $tujuan->opd_id !== $this->opd_id) {
+                    $validator->errors()->add('tujuan_penilaian_id', 'Tujuan strategis yang dipilih tidak berasal dari Perangkat Daerah (OPD) yang sama.');
+                }
+            }
+        });
     }
 
     /**

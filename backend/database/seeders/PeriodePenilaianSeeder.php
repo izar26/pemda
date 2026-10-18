@@ -50,5 +50,22 @@ class PeriodePenilaianSeeder extends Seeder
                 'created_by' => $admin?->id,
             ]
         );
+
+        // 3. Upcoming Draft Cycle: RPJMD 2031 - 2035 (Perencanaan Mendatang)
+        PeriodePenilaian::updateOrCreate(
+            [
+                'tahun_mulai' => 2031,
+                'tahun_akhir' => 2035,
+            ],
+            [
+                'nama_periode' => 'RPJMD 2031 - 2035',
+                'tahun_penilaian' => 2031,
+                'tanggal_mulai' => '2031-01-02',
+                'tanggal_akhir' => '2031-12-31',
+                'status' => 'draft',
+                'keterangan' => 'Draf usulan perencanaan siklus RPJMD periode jangka menengah berikutnya.',
+                'created_by' => $admin?->id,
+            ]
+        );
     }
 }

@@ -94,4 +94,14 @@ export const opdService = {
     const response = await apiClient.delete<{ message: string }>(`/opds/${id}`)
     return response.data
   },
+
+  /**
+   * Reorder OPD items.
+   */
+  async reorderOpds(ids: string[]): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/opds/reorder', {
+      ids,
+    })
+    return response.data
+  },
 }

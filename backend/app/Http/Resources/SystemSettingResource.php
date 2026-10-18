@@ -29,6 +29,7 @@ class SystemSettingResource extends JsonResource
             'type' => $this->type,
             'label' => $this->label,
             'description' => $this->description,
+            'asset_url' => $this->asset_url,
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }

@@ -19,7 +19,7 @@ export function RecentActivityFeed() {
           <div>
             <CardTitle className='text-base font-bold flex items-center gap-2'>
               <History className='h-4 w-4 text-blue-500' />
-              Aktivitas & Log Sistem Terakhir
+              Log Aktivitas
             </CardTitle>
             <CardDescription className='text-xs'>
               Umpan real-time transparan rekam jejak pengguna

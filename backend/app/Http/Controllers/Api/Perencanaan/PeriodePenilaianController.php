@@ -60,19 +60,25 @@ class PeriodePenilaianController extends Controller
 
     /**
      * Get the single currently active period.
+     * Open to all authenticated users so navbar status and active evaluation year are visible across all roles.
      */
     public function active(Request $request): JsonResponse
     {
-        $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.view')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk melihat periode aktif.');
+        try {
+            $active = $this->periodeService->getActivePeriode();
+
+            return response()->json([
+                'data' => $active ? new PeriodePenilaianResource($active) : null,
+                'server_time' => now()->toIso8601String(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PeriodePenilaianController@active failed: ' . $e->getMessage());
+
+            return response()->json([
+                'data' => null,
+                'server_time' => now()->toIso8601String(),
+            ]);
         }
-
-        $active = $this->periodeService->getActivePeriode();
-
-        return response()->json([
-            'data' => $active ? new PeriodePenilaianResource($active) : null,
-        ]);
     }
 
     /**

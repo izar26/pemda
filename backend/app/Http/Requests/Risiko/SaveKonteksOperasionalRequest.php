@@ -6,6 +6,7 @@ namespace App\Http\Requests\Risiko;
 
 use App\Models\Perencanaan\PeriodePenilaian;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SaveKonteksOperasionalRequest extends FormRequest
 {
@@ -45,9 +46,21 @@ class SaveKonteksOperasionalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'periode_penilaian_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
-            'opd_id' => ['required', 'uuid', 'exists:opds,id'],
-            'sumber_data_id' => ['nullable', 'uuid', 'exists:master_sumber_datas,id'],
+            'periode_penilaian_id' => [
+                'required',
+                'uuid',
+                Rule::exists('periode_penilaians', 'id')->where('status', 'aktif'),
+            ],
+            'opd_id' => [
+                'required',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
+            'sumber_data_id' => [
+                'nullable',
+                'uuid',
+                Rule::exists('master_sumber_datas', 'id')->where('is_active', true),
+            ],
             'informasi_lain' => ['nullable', 'string', 'max:5000'],
             'nama_pemda' => ['nullable', 'string', 'max:150'],
             'nama_kepala' => ['nullable', 'string', 'max:150'],
@@ -60,11 +73,11 @@ class SaveKonteksOperasionalRequest extends FormRequest
             'items' => ['nullable', 'array'],
             'items.*.jenis' => ['required_with:items', 'in:program,kegiatan,sub_kegiatan'],
             'items.*.kode' => ['required_with:items', 'string', 'max:50'],
-            'items.*.nama' => ['required_with:items', 'string'],
+            'items.*.nama' => ['required_with:items', 'string', 'max:2000'],
             'items.*.parent_kode' => ['nullable', 'string', 'max:50'],
             'items.*.urutan' => ['nullable', 'integer', 'min:1'],
             'items.*.indikators' => ['nullable', 'array'],
-            'items.*.indikators.*.indikator' => ['required_with:items.*.indikators', 'string'],
+            'items.*.indikators.*.indikator' => ['required_with:items.*.indikators', 'string', 'max:2000'],
             'items.*.indikators.*.target' => ['required_with:items.*.indikators', 'string', 'max:100'],
             'items.*.indikators.*.satuan' => ['nullable', 'string', 'max:50'],
         ];

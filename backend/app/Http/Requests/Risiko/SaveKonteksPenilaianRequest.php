@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
+use App\Models\Master\MasterSumberData;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class SaveKonteksPenilaianRequest extends FormRequest
@@ -49,9 +51,21 @@ class SaveKonteksPenilaianRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'periode_penilaian_id' => ['required', 'uuid', 'exists:periode_penilaians,id'],
-            'opd_id' => ['required', 'uuid', 'exists:opds,id'],
-            'sumber_data_id' => ['nullable', 'uuid', 'exists:master_sumber_datas,id'],
+            'periode_penilaian_id' => [
+                'required',
+                'uuid',
+                Rule::exists('periode_penilaians', 'id')->where('status', 'aktif'),
+            ],
+            'opd_id' => [
+                'required',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
+            'sumber_data_id' => [
+                'required',
+                'uuid',
+                Rule::exists('master_sumber_datas', 'id')->where('is_active', true),
+            ],
             'tujuan_penilaian_id' => ['required', 'uuid', 'exists:tujuan_penilaians,id'],
             'sasaran_ids' => ['required', 'array', 'min:1'],
             'sasaran_ids.*' => ['uuid', 'exists:sasaran_penilaians,id'],
@@ -64,6 +78,7 @@ class SaveKonteksPenilaianRequest extends FormRequest
             'jabatan_kepala' => ['nullable', 'string', 'max:150'],
             'tanggal_penetapan' => ['nullable', 'date'],
             'status' => ['nullable', 'in:draft,final'],
+            'reset_operasional_items' => ['nullable', 'boolean'],
         ];
     }
 
@@ -77,12 +92,18 @@ class SaveKonteksPenilaianRequest extends FormRequest
                 return;
             }
 
-            // 1. Verify Tujuan matches OPD & Periode
+            // 1. Verify Tujuan matches OPD, Periode, and Sumber Data
             $tujuan = TujuanPenilaian::find($this->tujuan_penilaian_id);
             if (!$tujuan || $tujuan->opd_id !== $this->opd_id || $tujuan->periode_penilaian_id !== $this->periode_penilaian_id) {
                 $validator->errors()->add('tujuan_penilaian_id', 'Tujuan strategis yang dipilih tidak sesuai dengan OPD atau periode penilaian aktif.');
                 return;
             }
+
+            if ($tujuan->sumber_data_id !== null && $tujuan->sumber_data_id !== $this->sumber_data_id) {
+                $validator->errors()->add('sumber_data_id', 'Sumber data yang dipilih tidak sesuai dengan sumber data pada Tujuan strategis terpilih.');
+                return;
+            }
+
 
             // 2. Verify all selected Sasarans belong to selected Tujuan
             $sasaranCount = SasaranPenilaian::whereIn('id', $this->sasaran_ids)

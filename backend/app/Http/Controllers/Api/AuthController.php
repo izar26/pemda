@@ -249,6 +249,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => new UserResource($request->user()),
+            'server_time' => now()->toIso8601String(),
         ]);
     }
 

@@ -35,26 +35,22 @@ type DataTableProps = {
 }
 
 export function UsersTable({ data, search, navigate }: DataTableProps) {
-  // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
 
-  // Fetch dynamic roles for toolbar filters
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
     queryFn: rbacService.getRoles,
     staleTime: 5 * 60 * 1000,
   })
 
-  // Fetch dynamic OPDs for toolbar filters
   const { data: opds = [] } = useQuery({
     queryKey: ['opds', 'list'],
     queryFn: () => opdService.getOpds(),
     staleTime: 5 * 60 * 1000,
   })
 
-  // Synced with URL states
   const {
     columnFilters,
     onColumnFiltersChange,
@@ -116,19 +112,16 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Cari nama atau NIP pegawai...'
+        searchPlaceholder='Cari nama atau NIP pengguna...'
         searchKey='name'
         filters={[
           {
             columnId: 'status',
-            title: 'Status',
+            title: 'Status Akun',
             options: [
               { label: 'Aktif', value: 'active' },
-              { label: 'Menunggu Aktivasi', value: 'pending_activation' },
               { label: 'Nonaktif', value: 'inactive' },
-              { label: 'Ditangguhkan', value: 'suspended' },
             ],
-
           },
           {
             columnId: 'role',
@@ -204,7 +197,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
                   colSpan={columns.length}
                   className='h-32 text-center text-muted-foreground text-sm'
                 >
-                  Tidak ada data pegawai yang sesuai dengan kriteria pencarian.
+                  Tidak ada akun user yang sesuai dengan kriteria pencarian.
                 </TableCell>
               </TableRow>
             )}

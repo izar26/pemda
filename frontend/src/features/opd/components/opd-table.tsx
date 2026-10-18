@@ -12,8 +12,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { useQueryClient } from '@tanstack/react-query'
 import { Building2 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { OpdItem } from '@/types/opd'
+import { opdService } from '@/services/opd-service'
+import { usePermissions } from '@/hooks/use-permissions'
 import { cn } from '@/lib/utils'
 import {
   Table,
@@ -33,13 +37,73 @@ interface OpdTableProps {
 }
 
 export function OpdTable({ data }: OpdTableProps) {
+  const queryClient = useQueryClient()
   const { setTableFilters } = useOpd()
+  const { hasPermission } = usePermissions()
+  const canEdit = hasPermission('opd.edit')
+
+  const [localItems, setLocalItems] = useState<OpdItem[]>(data)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLocalItems(data)
+  }, [data])
+
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'urutan', desc: false },
   ])
+
+  // Reorder is permitted when viewing the natural order without active filter
+  const canReorder =
+    canEdit &&
+    columnFilters.length === 0 &&
+    sorting.length > 0 &&
+    sorting[0].id === 'urutan' &&
+    !sorting[0].desc
+
+  async function handleReorder(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return
+    const fromIndex = localItems.findIndex((it) => it.id === sourceId)
+    const toIndex = localItems.findIndex((it) => it.id === targetId)
+    if (fromIndex === -1 || toIndex === -1) return
+
+    const reordered = [...localItems]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+
+    const updated = reordered.map((item, idx) => ({
+      ...item,
+      urutan: idx + 1,
+    }))
+    setLocalItems(updated)
+
+    try {
+      await opdService.reorderOpds(updated.map((it) => it.id))
+      toast.success('Urutan perangkat daerah berhasil diperbarui.')
+      queryClient.invalidateQueries({ queryKey: ['opds'] })
+    } catch {
+      toast.error('Gagal memperbarui urutan perangkat daerah.')
+      queryClient.invalidateQueries({ queryKey: ['opds'] })
+    }
+  }
+
+  function handleMoveUp(id: string) {
+    const index = localItems.findIndex((it) => it.id === id)
+    if (index > 0) {
+      handleReorder(id, localItems[index - 1].id)
+    }
+  }
+
+  function handleMoveDown(id: string) {
+    const index = localItems.findIndex((it) => it.id === id)
+    if (index < localItems.length - 1 && index !== -1) {
+      handleReorder(id, localItems[index + 1].id)
+    }
+  }
 
   // Sync active filters to OpdProvider for export
   useEffect(() => {
@@ -60,8 +124,14 @@ export function OpdTable({ data }: OpdTableProps) {
   }, [columnFilters, setTableFilters])
 
   const table = useReactTable({
-    data,
+    data: localItems,
     columns,
+    meta: {
+      canEdit,
+      canReorder,
+      onMoveUp: handleMoveUp,
+      onMoveDown: handleMoveDown,
+    },
     state: {
       sorting,
       rowSelection,
@@ -137,8 +207,37 @@ export function OpdTable({ data }: OpdTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
+                  draggable={canReorder}
+                  onDragStart={(e) => {
+                    if (!canReorder) return
+                    setDraggedId(row.original.id)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragOver={(e) => {
+                    if (!canReorder || !draggedId || draggedId === row.original.id) return
+                    e.preventDefault()
+                    setDragOverId(row.original.id)
+                  }}
+                  onDragLeave={() => {
+                    setDragOverId(null)
+                  }}
+                  onDrop={(e) => {
+                    if (!canReorder || !draggedId || draggedId === row.original.id) return
+                    e.preventDefault()
+                    handleReorder(draggedId, row.original.id)
+                    setDraggedId(null)
+                    setDragOverId(null)
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null)
+                    setDragOverId(null)
+                  }}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='hover:bg-muted/40 transition-colors'
+                  className={cn(
+                    'hover:bg-muted/40 transition-colors',
+                    draggedId === row.original.id && 'opacity-40 bg-muted/60',
+                    dragOverId === row.original.id && 'border-t-2 border-primary bg-primary/5'
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

@@ -28,15 +28,29 @@ export const tasksColumns: ColumnDef<Task>[] = [
         className='translate-y-0.5'
       />
     ),
+    meta: {
+      className: 'w-10 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: 'id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Task' />
+      <DataTableColumnHeader column={column} title='Task' className='justify-center' />
     ),
-    cell: ({ row }) => <div className='w-20'>{row.getValue('id')}</div>,
+    meta: {
+      className: 'w-24 text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
+    cell: ({ row }) => (
+      <div className='w-20 text-center font-mono text-xs text-muted-foreground'>
+        {row.getValue('id')}
+      </div>
+    ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -46,16 +60,22 @@ export const tasksColumns: ColumnDef<Task>[] = [
       <DataTableColumnHeader column={column} title='Title' />
     ),
     meta: {
-      className: 'ps-1 max-w-0 w-2/3',
-      tdClassName: 'ps-4',
+      className: 'min-w-[280px]',
+      tdClassName: 'whitespace-normal',
     },
     cell: ({ row }) => {
       const label = labels.find((label) => label.value === row.original.label)
 
       return (
-        <div className='flex space-x-2'>
-          {label && <Badge variant='outline'>{label.label}</Badge>}
-          <span className='truncate font-medium'>{row.getValue('title')}</span>
+        <div className='flex items-center space-x-2 min-w-0 py-1'>
+          {label && (
+            <Badge variant='outline' className='shrink-0'>
+              {label.label}
+            </Badge>
+          )}
+          <span className='font-medium text-sm text-foreground leading-snug whitespace-normal break-words'>
+            {row.getValue('title')}
+          </span>
         </div>
       )
     },
@@ -65,7 +85,10 @@ export const tasksColumns: ColumnDef<Task>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Status' />
     ),
-    meta: { className: 'ps-1', tdClassName: 'ps-4' },
+    meta: {
+      className: 'w-36 min-w-[120px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const status = statuses.find(
         (status) => status.value === row.getValue('status')
@@ -76,9 +99,9 @@ export const tasksColumns: ColumnDef<Task>[] = [
       }
 
       return (
-        <div className='flex w-25 items-center gap-2'>
+        <div className='flex items-center gap-2 text-xs'>
           {status.icon && (
-            <status.icon className='size-4 text-muted-foreground' />
+            <status.icon className='size-4 text-muted-foreground shrink-0' />
           )}
           <span>{status.label}</span>
         </div>
@@ -93,7 +116,10 @@ export const tasksColumns: ColumnDef<Task>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Priority' />
     ),
-    meta: { className: 'ps-1', tdClassName: 'ps-3' },
+    meta: {
+      className: 'w-32 min-w-[110px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const priority = priorities.find(
         (priority) => priority.value === row.getValue('priority')
@@ -104,9 +130,9 @@ export const tasksColumns: ColumnDef<Task>[] = [
       }
 
       return (
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-2 text-xs'>
           {priority.icon && (
-            <priority.icon className='size-4 text-muted-foreground' />
+            <priority.icon className='size-4 text-muted-foreground shrink-0' />
           )}
           <span>{priority.label}</span>
         </div>
@@ -118,6 +144,16 @@ export const tasksColumns: ColumnDef<Task>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    header: () => <div className='text-right'>Aksi</div>,
+    meta: {
+      className: 'w-16 min-w-[60px] text-right',
+      thClassName: 'text-right',
+      tdClassName: 'text-right',
+    },
+    cell: ({ row }) => (
+      <div className='flex items-center justify-end'>
+        <DataTableRowActions row={row} />
+      </div>
+    ),
   },
 ]

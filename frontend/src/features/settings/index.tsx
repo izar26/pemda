@@ -1,8 +1,8 @@
 import { Outlet } from '@tanstack/react-router'
-import { Monitor, Bell, Palette, ShieldCheck, UserCog } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
+import { Palette, ShieldCheck, UserCog } from 'lucide-react'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -26,16 +26,6 @@ const sidebarNavItems = [
     href: '/settings/appearance',
     icon: <Palette size={18} />,
   },
-  {
-    title: 'Notifikasi',
-    href: '/settings/notifications',
-    icon: <Bell size={18} />,
-  },
-  {
-    title: 'Layar & Tampilan',
-    href: '/settings/display',
-    icon: <Monitor size={18} />,
-  },
 ]
 
 export function Settings() {
@@ -44,6 +34,7 @@ export function Settings() {
       {/* ===== Top Heading ===== */}
       <Header>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
@@ -51,15 +42,14 @@ export function Settings() {
 
       <Main fixed>
         <PageHeader className='space-y-0.5'>
-          <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
+          <h2 className='text-2xl font-bold tracking-tight text-foreground'>
             Pengaturan Akun & Preferensi
-          </h1>
+          </h2>
           <p className='text-xs text-muted-foreground'>
-            Kelola profil aparatur, konfigurasi autentikasi 2FA, dan tampilan portal.
+            Kelola profil kedinasan, keamanan kata sandi, autentikasi dua faktor (2FA), serta preferensi tampilan aplikasi Anda.
           </p>
         </PageHeader>
-        <Separator className='my-4 lg:my-6' />
-        <div className='flex flex-1 flex-col space-y-2 overflow-hidden md:space-y-2 lg:flex-row lg:space-y-0 lg:space-x-12'>
+        <div className='mt-3 flex flex-1 flex-col space-y-2 overflow-hidden md:space-y-2 lg:flex-row lg:space-y-0 lg:space-x-12'>
           <aside className='top-0 lg:sticky lg:w-1/5'>
             <SidebarNav items={sidebarNavItems} />
           </aside>

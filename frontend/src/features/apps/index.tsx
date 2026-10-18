@@ -13,6 +13,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -87,6 +88,7 @@ export function Apps() {
       {/* ===== Top Heading ===== */}
       <Header>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
@@ -99,7 +101,7 @@ export function Apps() {
             App Integrations
           </h1>
           <p className='text-xs text-muted-foreground'>
-            Here&apos;s a list of your apps for the integration!
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
         </PageHeader>
         <div className='my-4 flex items-end justify-between sm:my-0 sm:items-center'>

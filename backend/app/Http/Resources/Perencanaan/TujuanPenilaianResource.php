@@ -23,10 +23,18 @@ class TujuanPenilaianResource extends JsonResource
             'id' => $this->id,
             'periode_penilaian_id' => $this->periode_penilaian_id,
             'opd_id' => $this->opd_id,
+            'sumber_data_id' => $this->sumber_data_id,
             'kode_tujuan' => $this->kode_tujuan,
             'tujuan' => $this->tujuan,
             'urutan' => $this->urutan,
             'keterangan' => $this->keterangan,
+            'sumber_data' => $this->whenLoaded('sumberData', function () {
+                return $this->sumberData ? [
+                    'id' => $this->sumberData->id,
+                    'nama' => $this->sumberData->nama,
+                    'deskripsi' => $this->sumberData->deskripsi,
+                ] : null;
+            }),
             'opd' => $this->whenLoaded('opd', function () {
                 return [
                     'id' => $this->opd->id,

@@ -6,6 +6,7 @@ namespace App\Services\Auth;
 
 use App\Enums\LoginLogStatus;
 use App\Models\LoginLog;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Audit\AuditLogService;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -30,8 +31,14 @@ class AuthenticationService
         $cleanIdentifier = trim($identifier);
         $throttleKey = 'login_attempt:' . Str::lower($cleanIdentifier) . '|' . $ip;
 
-        // 1. Rate Limiting Check (Max 5 attempts / 60 seconds)
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+        // Retrieve dynamic security thresholds from system settings
+        $maxAttempts = (int) (SystemSetting::where('key', 'max_login_attempts')->value('value') ?? 5);
+        if ($maxAttempts < 1) {
+            $maxAttempts = 5;
+        }
+
+        // 1. Rate Limiting Check
+        if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             $this->recordLog(null, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, "Rate limited for {$seconds}s");
 
@@ -46,11 +53,11 @@ class AuthenticationService
             ->orWhere('nip', $cleanIdentifier)
             ->first();
 
-        // 3. Timing-attack Defense (Calculate dummy hash if user not found)
-        if (!$user) {
+        // 3. Timing-attack Defense (Calculate dummy hash if user not found or has no account)
+        if (!$user || empty($user->password)) {
             Hash::check($password, '$2y$12$e8F35Q4X1X1X1X1X1X1X1OuL6q2.4X1X1X1X1X1X1X1X1X1X1X1X1');
             RateLimiter::hit($throttleKey, 60);
-            $this->recordLog(null, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::FAILED_CREDENTIALS, 'User not found');
+            $this->recordLog(null, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::FAILED_CREDENTIALS, 'User not found or no account');
 
             throw new HttpResponseException(response()->json([
                 'message' => 'Kredensial yang Anda masukkan tidak valid.',
@@ -73,12 +80,12 @@ class AuthenticationService
             RateLimiter::hit($throttleKey, 60);
             $user->increment('failed_login_attempts');
 
-            if ($user->failed_login_attempts >= 5) {
+            if ($user->failed_login_attempts >= $maxAttempts) {
                 $user->update(['lockout_until' => now()->addMinutes(15)]);
-                $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, '5 failed attempts, locked 15m', $user);
+                $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_LOCKED, "{$maxAttempts} failed attempts, locked 15m", $user);
 
                 throw new HttpResponseException(response()->json([
-                    'message' => 'Akun Anda telah dikunci selama 15 menit karena 5 kali percobaan salah demi alasan keamanan.',
+                    'message' => "Akun Anda telah dikunci selama 15 menit karena {$maxAttempts} kali percobaan salah demi alasan keamanan.",
                 ], 423));
             }
 
@@ -95,6 +102,15 @@ class AuthenticationService
 
             throw new HttpResponseException(response()->json([
                 'message' => 'Akun Anda tidak aktif atau sedang ditangguhkan. Silakan hubungi Administrator OPD.',
+            ], 403));
+        }
+
+        // 6b. Active OPD Check for Non-Superadmin
+        if (!$user->hasRole('Superadmin') && $user->opd && !$user->opd->is_active) {
+            $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_INACTIVE, "User's OPD '{$user->opd->nama}' is inactive", $user);
+
+            throw new HttpResponseException(response()->json([
+                'message' => "Instansi / Perangkat Daerah ({$user->opd->nama}) tempat akun Anda terdaftar saat ini berstatus nonaktif. Silakan hubungi Administrator sistem.",
             ], 403));
         }
 
@@ -129,11 +145,15 @@ class AuthenticationService
             'last_login_ip' => $ip,
         ]);
 
-        $expirationMinutes = (int) config('sanctum.expiration', 480);
+        $sessionLifetime = (int) (SystemSetting::where('key', 'session_lifetime_minutes')->value('value') ?? 60);
+        if ($sessionLifetime < 5) {
+            $sessionLifetime = 60;
+        }
+
         $fullToken = $user->createToken(
             'auth-token',
             ['*'],
-            now()->addMinutes($expirationMinutes)
+            now()->addMinutes($sessionLifetime)
         )->plainTextToken;
 
         $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::SUCCESS, 'Authenticated without 2FA', $user);
@@ -141,7 +161,8 @@ class AuthenticationService
         return [
             'requires_2fa' => false,
             'token' => $fullToken,
-            'expires_in' => $expirationMinutes * 60,
+            'expires_in' => $sessionLifetime * 60,
+            'session_lifetime_minutes' => $sessionLifetime,
             'user' => $user,
             'message' => "Selamat datang kembali, {$user->name}!",
         ];
@@ -190,11 +211,15 @@ class AuthenticationService
             'lockout_until' => null,
         ]);
 
-        $expirationMinutes = (int) config('sanctum.expiration', 480);
+        $sessionLifetime = (int) (SystemSetting::where('key', 'session_lifetime_minutes')->value('value') ?? 60);
+        if ($sessionLifetime < 5) {
+            $sessionLifetime = 60;
+        }
+
         $fullToken = $user->createToken(
             'auth-token',
             ['*'],
-            now()->addMinutes($expirationMinutes)
+            now()->addMinutes($sessionLifetime)
         )->plainTextToken;
 
         $this->recordLog(
@@ -209,7 +234,8 @@ class AuthenticationService
 
         return [
             'token' => $fullToken,
-            'expires_in' => $expirationMinutes * 60,
+            'expires_in' => $sessionLifetime * 60,
+            'session_lifetime_minutes' => $sessionLifetime,
             'user' => $user,
             'used_backup' => $result['used_backup'],
             'message' => "Verifikasi 2FA berhasil. Selamat datang kembali, {$user->name}!",

@@ -27,7 +27,7 @@ class IndikatorPenilaianController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('iku.view')) {
+        if (!$user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data IKU & Indikator perencanaan.');
         }
 
@@ -40,6 +40,10 @@ class IndikatorPenilaianController extends Controller
             'jenis',
         ]);
 
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+            $filters['opd_id'] = (string) $user->opd_id;
+        }
+
         // Fast unpaginated query (dropdown or cascading)
         if ($request->boolean('all') || $request->input('paginate') === 'false') {
             $items = $this->indikatorService->getAllIndikator($filters);
@@ -48,7 +52,7 @@ class IndikatorPenilaianController extends Controller
             ]);
         }
 
-        $perPage = (int) $request->input('per_page', 10);
+        $perPage = (int) $request->input('per_page', 15);
         $sortBy = (string) $request->input('sort_by', 'urutan');
         $sortDirection = (string) $request->input('sort_direction', 'asc');
 
@@ -71,7 +75,7 @@ class IndikatorPenilaianController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('iku.view')) {
+        if (!$user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik IKU & Indikator.');
         }
 
@@ -105,8 +109,12 @@ class IndikatorPenilaianController extends Controller
     public function show(Request $request, IndikatorPenilaian $iku): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('iku.view')) {
+        if (!$user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian IKU & Indikator.');
+        }
+
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian IKU & Indikator OPD lain.');
         }
 
         $loaded = $this->indikatorService->getIndikatorById((string) $iku->id);
@@ -121,6 +129,11 @@ class IndikatorPenilaianController extends Controller
      */
     public function update(UpdateIndikatorPenilaianRequest $request, IndikatorPenilaian $iku): JsonResponse
     {
+        $user = $request->user();
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah IKU/Indikator OPD lain.');
+        }
+
         $updated = $this->indikatorService->updateIndikator($iku, $request->validated());
         $label = $updated->jenis === 'IKU' ? 'Indikator Kinerja Utama (IKU)' : 'Indikator Renstra';
 
@@ -136,8 +149,12 @@ class IndikatorPenilaianController extends Controller
     public function destroy(Request $request, IndikatorPenilaian $iku): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('iku.delete')) {
+        if (!$user?->can('tujuan.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus data IKU & Indikator.');
+        }
+
+        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus IKU/Indikator OPD lain.');
         }
 
         $label = $iku->jenis === 'IKU' ? 'Indikator Kinerja Utama (IKU)' : 'Indikator Renstra';
@@ -153,10 +170,15 @@ class IndikatorPenilaianController extends Controller
      */
     public function copy(CopyIndikatorPenilaianRequest $request): JsonResponse
     {
+        $user = $request->user() ?? auth('sanctum')->user();
         $validated = $request->validated();
+        $targetOpdId = ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']))
+            ? (string) $user->opd_id
+            : ($validated['opd_id'] ?? null);
+
         $count = $this->indikatorService->copyFromPeriode(
             (string) $validated['source_periode_id'],
-            $validated['opd_id'] ?? null,
+            $targetOpdId,
             $validated['sasaran_penilaian_id'] ?? null,
             $validated['jenis'] ?? null,
             $request->user()
@@ -174,7 +196,7 @@ class IndikatorPenilaianController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('iku.view')) {
+        if (!$user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data IKU & Indikator.');
         }
 
@@ -187,6 +209,50 @@ class IndikatorPenilaianController extends Controller
             'jenis',
         ]);
 
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+            $filters['opd_id'] = (string) $user->opd_id;
+        }
+
         return $this->indikatorService->exportIndikator($filters);
+    }
+
+    /**
+     * Reorder indicators within their parent target scope.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+        if (!$user?->can('tujuan.edit')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan indikator kinerja.');
+        }
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'uuid', 'exists:indikator_penilaians,id'],
+        ]);
+
+        $items = IndikatorPenilaian::whereIn('id', $validated['ids'])->get();
+        if ($items->count() !== count($validated['ids'])) {
+            abort(422, 'Sebagian data indikator tidak ditemukan.');
+        }
+
+        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+            foreach ($items as $item) {
+                if ($item->opd_id !== $user->opd_id) {
+                    abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan IKU/Indikator OPD lain.');
+                }
+            }
+        }
+
+        $distinctOpds = $items->pluck('opd_id')->unique();
+        if ($distinctOpds->count() > 1) {
+            abort(422, 'Semua indikator yang diurutkan harus berasal dari Perangkat Daerah (OPD) yang sama.');
+        }
+
+        $this->indikatorService->reorderIndikator($validated['ids']);
+
+        return response()->json([
+            'message' => 'Urutan indikator kinerja berhasil diperbarui.',
+        ]);
     }
 }

@@ -11,12 +11,16 @@ export const rolesColumns: ColumnDef<Role>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Peran & Identitas' />
     ),
+    meta: {
+      className: 'min-w-[260px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const role = row.original
       const isSystem = role.is_system
 
       return (
-        <div className='flex items-center gap-3 py-1'>
+        <div className='flex items-center gap-3 py-1 min-w-0'>
           <div
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-2xs ${
               isSystem
@@ -30,11 +34,11 @@ export const rolesColumns: ColumnDef<Role>[] = [
               <KeyRound className='h-4 w-4' />
             )}
           </div>
-          <div className='flex flex-col min-w-0 max-w-sm'>
-            <span className='font-semibold text-sm text-foreground leading-tight truncate'>
+          <div className='flex flex-col min-w-0'>
+            <span className='font-semibold text-sm text-foreground leading-snug whitespace-normal break-words'>
               {role.name}
             </span>
-            <span className='text-xs text-muted-foreground line-clamp-1 mt-0.5'>
+            <span className='text-xs text-muted-foreground mt-0.5 whitespace-normal break-words line-clamp-2'>
               {role.description || 'Tidak ada deskripsi khusus.'}
             </span>
           </div>
@@ -46,24 +50,33 @@ export const rolesColumns: ColumnDef<Role>[] = [
   {
     accessorKey: 'is_system',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Tipe Peran' />
+      <DataTableColumnHeader column={column} title='Tipe Peran' className='justify-center' />
     ),
+    meta: {
+      className: 'w-28 min-w-[100px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const isSystem = row.getValue('is_system') as boolean
-      return isSystem ? (
-        <Badge
-          variant='outline'
-          className='w-fit text-xs px-2 py-0.5 font-medium border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
-        >
-          Sistem
-        </Badge>
-      ) : (
-        <Badge
-          variant='outline'
-          className='w-fit text-xs px-2 py-0.5 font-medium border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
-        >
-          Kustom
-        </Badge>
+      return (
+        <div className='flex justify-center'>
+          {isSystem ? (
+            <Badge
+              variant='outline'
+              className='w-fit text-xs px-2 py-0.5 font-medium border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
+            >
+              Sistem
+            </Badge>
+          ) : (
+            <Badge
+              variant='outline'
+              className='w-fit text-xs px-2 py-0.5 font-medium border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+            >
+              Kustom
+            </Badge>
+          )}
+        </div>
       )
     },
     filterFn: (row, id, value) => {
@@ -78,20 +91,24 @@ export const rolesColumns: ColumnDef<Role>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Kewenangan Hak Akses' />
     ),
+    meta: {
+      className: 'min-w-[200px]',
+      tdClassName: 'whitespace-normal',
+    },
     cell: ({ row }) => {
       const role = row.original
       const count = role.permissions_count ?? role.permissions?.length ?? 0
       const preview = (role.permissions || []).slice(0, 2)
 
       return (
-        <div className='flex flex-col gap-1 py-1 text-xs'>
+        <div className='flex flex-col gap-1 py-1 text-xs min-w-0'>
           <div className='flex items-center gap-1.5'>
             <Badge variant='secondary' className='font-semibold text-[11px] px-2'>
               {count} Hak Akses
             </Badge>
           </div>
           {preview.length > 0 && (
-            <div className='flex items-center gap-1 text-[11px] text-muted-foreground truncate max-w-xs'>
+            <div className='flex items-center gap-1 text-[11px] text-muted-foreground'>
               <Shield className='h-3 w-3 shrink-0' />
               <span className='truncate font-mono'>
                 {preview.map((p) => p.name).join(', ')}
@@ -107,12 +124,17 @@ export const rolesColumns: ColumnDef<Role>[] = [
   {
     accessorKey: 'users_count',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Pengguna Ditugaskan' />
+      <DataTableColumnHeader column={column} title='Pengguna Ditugaskan' className='justify-center' />
     ),
+    meta: {
+      className: 'w-44 min-w-[140px] text-center',
+      thClassName: 'text-center',
+      tdClassName: 'text-center',
+    },
     cell: ({ row }) => {
       const count = (row.getValue('users_count') as number) ?? 0
       return (
-        <div className='flex items-center gap-1.5 py-1 text-xs text-muted-foreground'>
+        <div className='flex items-center justify-center gap-1.5 py-1 text-xs text-muted-foreground'>
           <UsersIcon className='h-3.5 w-3.5 text-foreground' />
           <span className='font-medium text-foreground'>{count}</span> Pegawai
         </div>
@@ -122,6 +144,16 @@ export const rolesColumns: ColumnDef<Role>[] = [
   },
   {
     id: 'actions',
-    cell: RoleRowActions,
+    header: () => <div className='text-right'>Aksi</div>,
+    meta: {
+      className: 'w-16 min-w-[60px] text-right',
+      thClassName: 'text-right',
+      tdClassName: 'text-right',
+    },
+    cell: ({ row }) => (
+      <div className='flex items-center justify-end'>
+        <RoleRowActions row={row} />
+      </div>
+    ),
   },
 ]

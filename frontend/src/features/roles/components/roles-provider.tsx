@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import useDialogState from '@/hooks/use-dialog-state'
 import type { Role } from '@/types/rbac'
 
-export type RolesDialogType = 'create' | 'edit' | 'delete'
+export type RolesDialogType = 'create' | 'edit' | 'permissions' | 'delete'
 
 interface RolesContextType {
   open: RolesDialogType | null

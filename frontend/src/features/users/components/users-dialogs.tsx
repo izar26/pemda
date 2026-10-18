@@ -1,6 +1,5 @@
 import { UsersActionDialog } from './users-action-dialog'
 import { UsersDeleteDialog } from './users-delete-dialog'
-import { UsersInviteDialog } from './users-invite-dialog'
 import { UsersReset2faDialog } from './users-reset-2fa-dialog'
 import { useUsers } from './users-provider'
 
@@ -9,14 +8,6 @@ export function UsersDialogs() {
 
   return (
     <>
-      <UsersInviteDialog
-        key='user-invite'
-        open={open === 'invite'}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setOpen(null)
-        }}
-      />
-
       <UsersActionDialog
         key='user-add'
         open={open === 'add'}
@@ -24,7 +15,6 @@ export function UsersDialogs() {
           if (!isOpen) setOpen(null)
         }}
       />
-
 
       {currentRow && (
         <>

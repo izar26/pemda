@@ -10,6 +10,8 @@ export interface MasterQueryParams {
   search?: string
   is_active?: string | boolean
   unsur_spip_id?: string
+  per_page?: number
+  page?: number
 }
 
 export const masterDataService = {
@@ -91,6 +93,20 @@ export const masterDataService = {
   ): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(
       `/master/${entity}/${id}`
+    )
+    return response.data
+  },
+
+  /**
+   * Reorder items for a specific master entity
+   */
+  async reorderItems(
+    entity: MasterEntityKey,
+    ids: string[]
+  ): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      `/master/${entity}/reorder`,
+      { ids }
     )
     return response.data
   },

@@ -12,10 +12,12 @@ import {
 import { auditService } from '@/services/audit-service'
 import { useAuthStore } from '@/stores/auth-store'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
 import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -82,7 +84,9 @@ function AuditLogsContent() {
     <>
       <Header fixed>
         <Search className='me-auto' />
+        <NavbarStatus />
         <ThemeSwitch />
+        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
@@ -105,7 +109,7 @@ function AuditLogsContent() {
               )}
             </div>
             <p className='text-xs text-muted-foreground'>
-              Transparansi riwayat aktivitas pengguna, sesi autentikasi, dan perubahan hak akses sistem.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
 

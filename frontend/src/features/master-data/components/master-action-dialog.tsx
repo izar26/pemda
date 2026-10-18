@@ -41,7 +41,6 @@ const formSchema = z.object({
   kode: z.string().max(50, 'Kode maksimal 50 karakter.').optional(),
   nomor: z.string().max(10, 'Nomor maksimal 10 karakter.').optional(),
   deskripsi: z.string().optional(),
-  urutan: z.number().min(0, 'Urutan minimal 0.'),
   is_active: z.boolean(),
 })
 
@@ -74,7 +73,6 @@ export function MasterActionDialog({
       kode: '',
       nomor: '',
       deskripsi: '',
-      urutan: 0,
       is_active: true,
     },
   })
@@ -91,7 +89,6 @@ export function MasterActionDialog({
           kode: (itemAny.kode as string) || '',
           nomor: (itemAny.nomor as string) || '',
           deskripsi: descVal,
-          urutan: currentItem.urutan ?? 0,
           is_active: currentItem.is_active ?? true,
         })
       } else {
@@ -100,7 +97,6 @@ export function MasterActionDialog({
           kode: '',
           nomor: '',
           deskripsi: '',
-          urutan: 0,
           is_active: true,
         })
       }
@@ -112,8 +108,10 @@ export function MasterActionDialog({
     try {
       const payload: Record<string, unknown> = {
         nama: values.nama.trim(),
-        urutan: values.urutan,
         is_active: values.is_active,
+      }
+      if (isEdit && currentItem?.urutan !== undefined) {
+        payload.urutan = currentItem.urutan
       }
 
       if (entity.hasCode && values.kode) {
@@ -279,48 +277,18 @@ export function MasterActionDialog({
                 />
               )}
 
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1'>
-                {/* Urutan */}
-                <FormField
-                  control={form.control}
-                  name='urutan'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        Urutan Tampilan
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type='number'
-                          min={0}
-                          disabled={isSubmitting}
-                          value={field.value ?? 0}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value === '' ? 0 : Number(e.target.value)
-                            )
-                          }
-                        />
-                      </FormControl>
-                      <FormDescription className='text-[11px]'>
-                        Angka untuk mengurutkan posisi entri.
-                      </FormDescription>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-
+              <div className='pt-1'>
                 {/* Status Aktif */}
                 <FormField
                   control={form.control}
                   name='is_active'
                   render={({ field }) => (
-                    <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-2xs mt-auto'>
+                    <FormItem className='flex flex-row items-center justify-between rounded-lg border p-3 shadow-2xs'>
                       <div className='space-y-0.5'>
                         <FormLabel className='text-xs font-semibold'>
                           Status Aktif
                         </FormLabel>
-                        <FormDescription className='text-[11px]'>
+                        <FormDescription className='text-[11px] text-muted-foreground'>
                           {field.value
                             ? 'Aktif digunakan'
                             : 'Dinonaktifkan'}

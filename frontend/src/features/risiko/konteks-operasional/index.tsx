@@ -1,339 +1,608 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import {
-  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
   Building2,
-  Calendar,
+  CalendarRange,
+  CheckCircle2,
+  Database,
+  FileSpreadsheet,
+  FileText,
   FolderTree,
-  GitBranch,
-  Layers,
   Loader2,
-  Plus,
+  Save,
   Target,
+  UserCheck,
 } from 'lucide-react'
+import { usePermissions } from '@/hooks/use-permissions'
+import { risikoService } from '@/services/risiko-service'
+import type {
+  KonteksOperasionalItemJenis,
+  KonteksOperasionalItemNode,
+} from '@/types/risiko'
 import { Header } from '@/components/layout/header'
+import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
-import { PageHeader } from '@/components/layout/page-header'
-import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
-import { SearchableSelect } from '@/components/searchable-select'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
-import { opdService } from '@/services/opd-service'
-import { perencanaanService } from '@/services/perencanaan-service'
-import { risikoService } from '@/services/risiko-service'
-import { useAuthStore } from '@/stores/auth-store'
-import { usePermissions } from '@/hooks/use-permissions'
-import { OperasionalDetailView } from './components/operasional-detail-view'
-import { OperasionalHeaderDialog } from './components/operasional-header-dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { SearchableSelect } from '@/components/searchable-select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { RisikoWizardHeader } from '../shared/risiko-wizard-header'
+import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
+import { OperasionalTreeTable } from './components/operasional-tree-table'
+import { OperasionalItemDialog } from './components/operasional-item-dialog'
 
-export function KonteksOperasionalFeature() {
+export function KonteksOperasionalPage() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const user = useAuthStore((s) => s.auth.user)
   const { hasPermission } = usePermissions()
+  const hasRedirectedRef = useRef(false)
 
-  const isSuperadminOrAdminOffice =
-    user?.role === 'Superadmin' ||
-    user?.roles?.some(
-      (r: { name: string } | string) =>
-        (typeof r === 'string' ? r : r.name) === 'Superadmin' ||
-        (typeof r === 'string' ? r : r.name) === 'Admin Office'
-    )
+  const canEdit =
+    hasPermission('konteks_operasional.create') ||
+    hasPermission('konteks_operasional.edit')
+  const canExport =
+    hasPermission('konteks_operasional.export') ||
+    hasPermission('konteks_operasional.view')
 
-  // Selected OPD state (for Admin/Superadmin)
-  const defaultOpd = user?.opd_id ? String(user.opd_id) : ''
-  const [selectedOpdId, setSelectedOpdId] = useState<string>(defaultOpd)
-  const [isHeaderDialogOpen, setIsHeaderDialogOpen] = useState(false)
+  const {
+    user,
+    isOpdRole,
+    opds,
+    effectiveOpdId,
+    setSelectedOpdId,
+    activePeriode,
+    konteks2B,
+    opdMeta,
+    steps,
+    completedCount,
+    totalSteps,
+    progressPercentage,
+    isStep2BCompleted,
+    isLoading: isLoadingWizard,
+  } = useRisikoWizardProgress()
 
-  // 1. Fetch Active Period
-  const { data: activePeriode, isLoading: isLoadingPeriode } = useQuery({
-    queryKey: ['periode', 'active'],
-    queryFn: () => perencanaanService.getActivePeriode(),
-    staleTime: 60 * 1000,
-  })
+  // Item Drawer State (Program / Kegiatan / Sub Kegiatan)
+  const [itemDialogOpen, setItemDialogOpen] = useState(false)
+  const [editingItem, setEditingItem] =
+    useState<KonteksOperasionalItemNode | null>(null)
+  const [parentItem, setParentItem] =
+    useState<KonteksOperasionalItemNode | null>(null)
+  const [targetJenis, setTargetJenis] =
+    useState<KonteksOperasionalItemJenis>('program')
 
-  // 2. Fetch OPD list (if admin)
-  const { data: opdList = [] } = useQuery({
-    queryKey: ['opds', 'all-for-konteks-operasional'],
-    queryFn: () => opdService.getOpds({ all: true }),
-    staleTime: 5 * 60 * 1000,
-    enabled: Boolean(isSuperadminOrAdminOffice),
-  })
+  const [informasiLain, setInformasiLain] = useState<string>('-')
+  const [isSavingStep, setIsSavingStep] = useState(false)
+  const [saveIntent, setSaveIntent] = useState<'save' | 'save_and_next'>('save')
+  const [isExporting, setIsExporting] = useState(false)
 
-  const effectiveOpdId = isSuperadminOrAdminOffice
-    ? selectedOpdId || (opdList[0]?.id ? String(opdList[0].id) : '')
-    : defaultOpd
+  // Sequential Lock Guard: Redirect to Step 1 (2B) if 2B is not completed yet
+  useEffect(() => {
+    if (
+      !isLoadingWizard &&
+      activePeriode &&
+      effectiveOpdId &&
+      !isStep2BCompleted
+    ) {
+      if (!hasRedirectedRef.current) {
+        hasRedirectedRef.current = true
+        toast.warning(
+          'Langkah 2 (Form 2C) belum dapat diakses. Silakan lengkapi dan simpan Langkah 1 (Konteks Strategis 2B) terlebih dahulu.'
+        )
+      }
+      navigate({ to: '/risiko/konteks-strategis', replace: true })
+    } else {
+      hasRedirectedRef.current = false
+    }
+  }, [
+    isLoadingWizard,
+    activePeriode,
+    effectiveOpdId,
+    isStep2BCompleted,
+    navigate,
+  ])
 
-  const selectedOpdObj = opdList.find((o) => String(o.id) === effectiveOpdId)
-
-  // 3. Fetch Konteks Operasional for effective OPD
+  // Fetch Form 2C data (auto-provisioned & synced from 2B by backend)
   const {
     data: currentKonteks,
-    isLoading: isLoadingKonteks,
-    refetch: refetchKonteks,
+    isLoading: isLoadingOperasional,
+    refetch: refetchOperasional,
   } = useQuery({
-    queryKey: ['konteks-operasional', 'current', effectiveOpdId, activePeriode?.id],
+    queryKey: ['risiko-operasional-current', effectiveOpdId, activePeriode?.id],
     queryFn: () =>
       risikoService.getCurrentKonteksOperasional({
         opd_id: effectiveOpdId,
-        periode_penilaian_id: activePeriode?.id ? String(activePeriode.id) : undefined,
+        periode_penilaian_id: activePeriode?.id,
       }),
-    enabled: Boolean(effectiveOpdId && activePeriode?.id),
-    staleTime: 30 * 1000,
+    enabled:
+      Boolean(effectiveOpdId) &&
+      Boolean(activePeriode?.id) &&
+      isStep2BCompleted,
   })
 
-  const opdOptions = opdList.map((opd) => ({
-    value: String(opd.id),
-    label: `${opd.nama} (${opd.kode})`,
-  }))
+  // Sync informasi_lain from loaded currentKonteks (resets properly on OPD switch)
+  useEffect(() => {
+    setInformasiLain(currentKonteks?.informasi_lain || '-')
+  }, [currentKonteks?.id, currentKonteks?.informasi_lain])
 
-  const canCreate = hasPermission('konteks_operasional.create')
-  const canEdit = hasPermission('konteks_operasional.edit')
+  async function handleTreeMutated() {
+    await Promise.all([
+      refetchOperasional(),
+      queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+    ])
+  }
 
-  // KPI Calculations
-  const stats = useMemo(() => {
-    if (!currentKonteks?.programs) {
-      return { prog: 0, keg: 0, sub: 0, ind: 0 }
+  function handleOpenAddProgram() {
+    setEditingItem(null)
+    setParentItem(null)
+    setTargetJenis('program')
+    setItemDialogOpen(true)
+  }
+
+  function handleOpenAddChild(
+    parent: KonteksOperasionalItemNode,
+    jenis: KonteksOperasionalItemJenis
+  ) {
+    setEditingItem(null)
+    setParentItem(parent)
+    setTargetJenis(jenis)
+    setItemDialogOpen(true)
+  }
+
+  function handleOpenEditItem(item: KonteksOperasionalItemNode) {
+    setEditingItem(item)
+    setParentItem(null)
+    setTargetJenis(item.jenis)
+    setItemDialogOpen(true)
+  }
+
+  async function handleSaveStep(intent: 'save' | 'save_and_next') {
+    if (!effectiveOpdId || !activePeriode?.id || !currentKonteks) return
+
+    const programsCount = currentKonteks.programs?.length || 0
+    if (programsCount === 0) {
+      toast.error(
+        'Silakan tambahkan minimal 1 Program (NO: A) beserta indikator dan targetnya sebelum menyimpan Form 2C.'
+      )
+      return
     }
-    let totalKeg = 0
-    let totalSub = 0
-    let totalInd = 0
-    currentKonteks.programs.forEach((p) => {
-      totalInd += p.indikators?.length || 0
-      p.children?.forEach((k) => {
-        totalKeg++
-        totalInd += k.indikators?.length || 0
-        k.children?.forEach((s) => {
-          totalSub++
-          totalInd += s.indikators?.length || 0
-        })
+
+    setSaveIntent(intent)
+    setIsSavingStep(true)
+    try {
+      await risikoService.updateKonteksOperasional(currentKonteks.id, {
+        periode_penilaian_id: activePeriode.id,
+        opd_id: effectiveOpdId,
+        sumber_data_id: konteks2B?.sumber_data_id || undefined,
+        informasi_lain: informasiLain.trim() || '-',
+        status: 'final',
       })
-    })
-    return {
-      prog: currentKonteks.programs.length,
-      keg: totalKeg,
-      sub: totalSub,
-      ind: totalInd,
-    }
-  }, [currentKonteks])
 
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Program Utama',
-      value: stats.prog,
-      subtitle: 'Program operasional diuji risikonya',
-      icon: Layers,
-    },
-    {
-      title: 'Kegiatan Operasional',
-      value: stats.keg,
-      subtitle: 'Kegiatan dari seluruh program',
-      icon: GitBranch,
-    },
-    {
-      title: 'Sub-Kegiatan Operasional',
-      value: stats.sub,
-      subtitle: 'Sub-kegiatan level teknis',
-      icon: FolderTree,
-    },
-    {
-      title: 'Indikator & Target Kinerja',
-      value: stats.ind,
-      subtitle: 'Total tolok ukur kinerja Renstra',
-      icon: Target,
-    },
-  ]
+      await Promise.all([
+        refetchOperasional(),
+        queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+      ])
+
+      if (intent === 'save_and_next') {
+        toast.success(
+          'Langkah 2 (Form 2C) berhasil disimpan! Progres Penetapan Konteks Risiko (2B & 2C) telah mencapai 100%.'
+        )
+      } else {
+        toast.success(
+          'Penetapan Konteks Risiko Operasional OPD (Form 2C) berhasil disimpan.'
+        )
+      }
+    } catch {
+      toast.error('Gagal menyimpan status penyelesaian Form 2C.')
+    } finally {
+      setIsSavingStep(false)
+    }
+  }
+
+  async function handleExportExcel() {
+    if (!currentKonteks?.id) return
+    setIsExporting(true)
+    try {
+      const opdCode = currentKonteks.opd?.kode || konteks2B?.opd?.kode || 'OPD'
+      const tahun =
+        currentKonteks.periode?.tahun_penilaian ||
+        activePeriode?.tahun_penilaian ||
+        new Date().getFullYear()
+      await risikoService.exportOperasionalExcel(
+        currentKonteks.id,
+        `Form_2C_Konteks_Operasional_${opdCode}_${tahun}.xlsx`
+      )
+      toast.success('File Excel Form 2C berhasil diunduh.')
+    } catch {
+      toast.error('Gagal mengunduh file Excel Form 2C.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const resolvedOpdName = useMemo(() => {
+    if (isOpdRole) {
+      return user?.opd?.nama || konteks2B?.opd?.nama || 'Perangkat Daerah Anda'
+    }
+    const found = opds.find((o) => String(o.id) === String(effectiveOpdId))
+    return found ? `${found.kode} - ${found.nama}` : 'Pilih Perangkat Daerah'
+  }, [isOpdRole, user?.opd?.nama, konteks2B?.opd?.nama, opds, effectiveOpdId])
+
+  const resolvedKepalaNama =
+    opdMeta?.kepala_opd?.nama ||
+    konteks2B?.nama_kepala ||
+    currentKonteks?.nama_kepala ||
+    '-'
+  const resolvedKepalaNip =
+    opdMeta?.kepala_opd?.nip ||
+    konteks2B?.nip_kepala ||
+    currentKonteks?.nip_kepala ||
+    '-'
+
+  const isLoading = isLoadingWizard || isLoadingOperasional
 
   return (
     <>
       <Header fixed>
-        <Search />
-        <div className='ml-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ConfigDrawer />
-          <ProfileDropdown />
-        </div>
+        <Search className='me-auto' />
+        <NavbarStatus />
+        <ThemeSwitch />
+        <ConfigDrawer />
+        <ProfileDropdown />
       </Header>
 
-      <Main className='space-y-6'>
-        {/* Page Header */}
-        <PageHeader>
+      <Main className='flex flex-1 flex-col gap-5 sm:gap-6 pb-12'>
+        {/* Page Title */}
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <div className='space-y-1'>
-            <div className='flex items-center gap-2 mb-0.5'>
-              <Badge variant='outline' className='text-[10px] font-mono px-1.5 py-0'>
-                FORM 2C
+            <div className='flex items-center gap-2 flex-wrap'>
+              <h2 className='text-2xl font-bold tracking-tight'>
+                Penetapan Konteks Risiko Operasional OPD
+              </h2>
+              <Badge
+                variant='outline'
+                className='font-mono text-xs border-primary/30 text-primary bg-primary/5'
+              >
+                Form 2C • Langkah 2
               </Badge>
-              <span className='text-xs text-muted-foreground'>
-                Pengelolaan Data Risiko (Fitur No. 26)
-              </span>
             </div>
-            <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Penetapan Konteks Risiko Operasional OPD
-            </h2>
-            <p className='text-xs text-muted-foreground'>
-              Penetapan konteks risiko operasional tingkat Program, Kegiatan, dan Sub-Kegiatan
-              beserta Indikator & Target Kinerja Renstra/Renja OPD.
+            <p className='text-sm text-muted-foreground'>
+              Susun hierarki Program (A), Kegiatan (A.1), dan Sub Kegiatan (A.1.1) beserta Indikator dan Targetnya.
             </p>
           </div>
 
-          <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
-            {currentKonteks ? (
-              canEdit && (
-                <Button
-                  onClick={() => setIsHeaderDialogOpen(true)}
-                  size='sm'
-                  className='gap-2 text-xs shadow-xs'
-                >
-                  <Plus className='h-4 w-4' />
-                  <span>Ubah Pengesahan (Form 2C)</span>
-                </Button>
-              )
-            ) : (
-              canCreate && (
-                <Button
-                  onClick={() => setIsHeaderDialogOpen(true)}
-                  size='sm'
-                  className='gap-2 text-xs shadow-xs'
-                >
-                  <Plus className='h-4 w-4' />
-                  <span>Tetapkan Konteks (Form 2C)</span>
-                </Button>
-              )
-            )}
-          </div>
-        </PageHeader>
-
-        {/* KPI Stats Cards */}
-        <KpiStatsCards
-          items={kpiItems}
-          isLoading={isLoadingKonteks || isLoadingPeriode}
-          count={4}
-        />
-
-        {/* Active Period & OPD Filter Bar */}
-        {activePeriode ? (
-          <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border bg-card shadow-2xs'>
-            <div className='flex items-center gap-3'>
-              <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
-                <Calendar className='h-4 w-4' />
-              </div>
-              <div>
-                <div className='flex items-center gap-2'>
-                  <span className='text-[11px] font-semibold text-muted-foreground uppercase tracking-wide'>
-                    Periode Penilaian Aktif:
-                  </span>
-                  <Badge variant='default' className='text-[10px] px-1.5 py-0'>
-                    Tahun {activePeriode.tahun_penilaian}
-                  </Badge>
-                </div>
-                <p className='text-xs font-bold text-foreground mt-0.5'>
-                  {activePeriode.nama_periode} ({activePeriode.rentang_tahun})
-                </p>
-              </div>
-            </div>
-
-            {/* Admin OPD Selector Combobox */}
-            {isSuperadminOrAdminOffice && (
-              <div className='flex items-center gap-2 min-w-[280px] sm:max-w-md w-full sm:w-auto'>
-                <Building2 className='h-4 w-4 text-muted-foreground shrink-0' />
-                <div className='flex-1'>
-                  <SearchableSelect
-                    options={opdOptions}
-                    value={effectiveOpdId}
-                    onValueChange={(val) => setSelectedOpdId(val)}
-                    placeholder='Pilih OPD / Dinas...'
-                    searchPlaceholder='Cari nama/kode dinas...'
-                    emptyMessage='Perangkat daerah tidak ditemukan.'
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        ) : !isLoadingPeriode ? (
-          <Alert variant='destructive'>
-            <AlertCircle className='h-4 w-4' />
-            <AlertTitle>Tidak Ada Periode Penilaian Aktif</AlertTitle>
-            <AlertDescription className='text-xs'>
-              Form 2C hanya dapat diisi jika terdapat Periode Penilaian yang aktif. Silakan hubungi
-              Bapperida atau aktifkan periode terlebih dahulu di menu Perencanaan Kinerja.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        {/* Main Content Area */}
-        {isLoadingKonteks || isLoadingPeriode ? (
-          <div className='flex flex-col items-center justify-center min-h-[320px] rounded-xl border border-dashed bg-card/40 p-12 text-center'>
-            <Loader2 className='h-8 w-8 animate-spin text-primary mb-3' />
-            <p className='text-sm font-medium text-foreground'>
-              Memuat data Penetapan Konteks Risiko Operasional...
-            </p>
-            <p className='text-xs text-muted-foreground mt-1'>
-              Sinkronisasi pohon operasional Program, Kegiatan, dan Sub-Kegiatan Renstra OPD
-            </p>
-          </div>
-        ) : currentKonteks ? (
-          <OperasionalDetailView
-            konteks={currentKonteks}
-            onEditHeader={() => setIsHeaderDialogOpen(true)}
-            onDeleted={() => {
-              queryClient.invalidateQueries({ queryKey: ['konteks-operasional'] })
-              refetchKonteks()
-            }}
-            onRefetch={() => {
-              queryClient.invalidateQueries({ queryKey: ['konteks-operasional'] })
-              refetchKonteks()
-            }}
-          />
-        ) : (
-          /* Empty State: Form 2C hasn't been established yet */
-          <Card className='border-dashed'>
-            <CardContent className='flex flex-col items-center justify-center py-16 px-4 text-center'>
-              <div className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4'>
-                <FolderTree className='h-8 w-8' />
-              </div>
-              <h3 className='text-lg font-bold text-foreground'>
-                Formulir 2C Belum Ditetapkan untuk OPD Ini
-              </h3>
-              <p className='text-xs text-muted-foreground max-w-lg mt-1 mb-6'>
-                Penetapan Konteks Risiko Operasional OPD memetakan seluruh program, kegiatan, dan
-                sub-kegiatan prioritas beserta target kinerja tahun {activePeriode?.tahun_penilaian}.
-                Tujuan strategis akan tersinkronisasi otomatis dari Form 2B.
-              </p>
-              {canCreate && (
-                <Button
-                  onClick={() => setIsHeaderDialogOpen(true)}
-                  className='gap-2 text-xs shadow-xs'
-                >
-                  <Plus className='h-4 w-4' />
-                  <span>Tetapkan Konteks Risiko Operasional (Form 2C)</span>
-                </Button>
+          {currentKonteks?.id && canExport && (
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className='gap-1.5 shrink-0'
+            >
+              {isExporting ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <FileSpreadsheet className='h-4 w-4 text-emerald-600' />
               )}
-            </CardContent>
-          </Card>
-        )}
+              <span>Unduh Excel (2C)</span>
+            </Button>
+          )}
+        </div>
 
-        {/* Header / Pengesahan Dialog */}
-        <OperasionalHeaderDialog
-          open={isHeaderDialogOpen}
-          onOpenChange={setIsHeaderDialogOpen}
-          currentKonteks={currentKonteks}
-          opdId={effectiveOpdId}
-          opdName={selectedOpdObj?.nama || currentKonteks?.opd?.nama}
-          opdKepala={selectedOpdObj?.kepala || currentKonteks?.opd?.kepala}
-          periodeId={activePeriode?.id ? String(activePeriode.id) : undefined}
-          tahunPenilaian={activePeriode?.tahun_penilaian}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['konteks-operasional'] })
-            refetchKonteks()
-          }}
+        {/* Wizard Stepper Header */}
+        <RisikoWizardHeader
+          currentStepId='2c'
+          steps={steps}
+          completedCount={completedCount}
+          totalSteps={totalSteps}
+          progressPercentage={progressPercentage}
         />
+
+        {!isLoading && !activePeriode ? (
+          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
+            <AlertTriangle className='h-5 w-5 shrink-0 mt-0.5' />
+            <div className='text-xs space-y-1'>
+              <p className='font-bold text-sm'>
+                Form Tidak Dapat Diisi: Belum Ada Periode Penilaian Aktif
+              </p>
+              <p className='text-destructive/90 leading-relaxed'>
+                Silakan aktifkan periode penilaian terlebih dahulu pada menu{' '}
+                <strong>Perencanaan Kinerja &rarr; Periode Penilaian</strong>.
+              </p>
+            </div>
+          </div>
+        ) : isLoading ? (
+          <div className='space-y-4'>
+            <Skeleton className='h-48 w-full rounded-xl' />
+            <Skeleton className='h-96 w-full rounded-xl' />
+          </div>
+        ) : (
+          <div className='space-y-6'>
+            {/* CARD 1: INHERITED CONTEXT FROM FORM 2B */}
+            <div className='rounded-xl border bg-card shadow-2xs overflow-hidden'>
+              <div className='border-b bg-muted/40 px-5 py-3.5 flex items-center justify-between gap-2 flex-wrap'>
+                <div className='flex items-center gap-2'>
+                  <Building2 className='h-4 w-4 text-primary' />
+                  <h3 className='text-xs font-bold uppercase tracking-wider text-foreground'>
+                    Konteks Penilaian & Acuan Strategis (Otomatis dari Form 2B)
+                  </h3>
+                </div>
+                <div className='flex items-center gap-2 text-[11px] text-muted-foreground'>
+                  <UserCheck className='h-3.5 w-3.5 text-emerald-600' />
+                  <span>
+                    Kepala OPD:{' '}
+                    <strong className='text-foreground'>{resolvedKepalaNama}</strong>
+                    {resolvedKepalaNip !== '-' && ` (NIP. ${resolvedKepalaNip})`}
+                  </span>
+                </div>
+              </div>
+
+              <div className='p-5 space-y-4'>
+                {/* Row 1: Nama Pemda, Tahun, Periode, OPD */}
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  <div className='space-y-1.5'>
+                    <label className='text-xs font-semibold text-muted-foreground'>
+                      Nama Pemda
+                    </label>
+                    <Input
+                      value={
+                        konteks2B?.nama_pemda ||
+                        currentKonteks?.nama_pemda ||
+                        'Pemerintah Kabupaten Cianjur'
+                      }
+                      disabled
+                      className='h-9 text-xs bg-muted/60 font-medium'
+                    />
+                  </div>
+
+                  <div className='space-y-1.5'>
+                    <label className='text-xs font-semibold text-muted-foreground flex items-center gap-1.5'>
+                      <CalendarRange className='h-3.5 w-3.5 text-primary' />
+                      <span>Tahun Penilaian</span>
+                    </label>
+                    <Input
+                      value={String(activePeriode?.tahun_penilaian || '-')}
+                      disabled
+                      className='h-9 text-xs bg-muted/60 font-mono font-bold'
+                    />
+                  </div>
+
+                  <div className='space-y-1.5'>
+                    <label className='text-xs font-semibold text-muted-foreground'>
+                      Periode yang Dinilai
+                    </label>
+                    <Input
+                      value={activePeriode?.rentang_tahun || '-'}
+                      disabled
+                      className='h-9 text-xs bg-muted/60 font-mono font-medium'
+                    />
+                  </div>
+
+                  <div className='space-y-1.5'>
+                    <label className='text-xs font-semibold text-muted-foreground'>
+                      OPD yang Dinilai
+                    </label>
+                    {isOpdRole ? (
+                      <Input
+                        value={resolvedOpdName}
+                        disabled
+                        className='h-9 text-xs bg-muted/60 font-semibold'
+                      />
+                    ) : (
+                      <SearchableSelect
+                        value={effectiveOpdId}
+                        onValueChange={(val: string) => setSelectedOpdId(val)}
+                        placeholder='Pilih Perangkat Daerah...'
+                        searchPlaceholder='Cari kode atau nama OPD...'
+                        emptyMessage='Perangkat daerah tidak ditemukan.'
+                        options={opds.map((opd) => ({
+                          value: String(opd.id),
+                          label: `${opd.kode} - ${opd.nama}`,
+                        }))}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 2: Inherited Sumber Data & Tujuan Strategis from Form 2B */}
+                <div className='grid grid-cols-1 lg:grid-cols-12 gap-4 pt-3 border-t'>
+                  <div className='lg:col-span-4 space-y-1.5'>
+                    <div className='flex items-center justify-between'>
+                      <label className='text-xs font-semibold text-muted-foreground flex items-center gap-1.5'>
+                        <Database className='h-3.5 w-3.5 text-primary' />
+                        <span>Sumber Data</span>
+                      </label>
+                      <Badge
+                        variant='secondary'
+                        className='text-[9px] px-1.5 py-0 h-4 font-normal'
+                      >
+                        Ditentukan di Form 2B
+                      </Badge>
+                    </div>
+                    <Input
+                      value={
+                        konteks2B?.sumber_data?.nama ||
+                        currentKonteks?.sumber_data?.nama ||
+                        'Renstra SKPD'
+                      }
+                      disabled
+                      className='h-9 text-xs bg-muted/60 font-semibold'
+                    />
+                  </div>
+
+                  <div className='lg:col-span-8 space-y-1.5'>
+                    <div className='flex items-center justify-between gap-2'>
+                      <label className='text-xs font-semibold text-muted-foreground flex items-center gap-1.5'>
+                        <Target className='h-3.5 w-3.5 text-primary' />
+                        <span>Tujuan Strategis</span>
+                      </label>
+                      <button
+                        type='button'
+                        onClick={() => navigate({ to: '/risiko/konteks-strategis' })}
+                        className='text-[11px] font-medium text-primary hover:underline'
+                      >
+                        Ubah di Langkah 1 (Form 2B) &rarr;
+                      </button>
+                    </div>
+                    <div className='rounded-lg border bg-primary/[0.03] px-3.5 py-2 text-xs font-semibold text-foreground leading-relaxed'>
+                      {konteks2B?.tujuan?.kode_tujuan && (
+                        <span className='font-mono text-primary mr-1.5'>
+                          [{konteks2B.tujuan.kode_tujuan}]
+                        </span>
+                      )}
+                      {konteks2B?.tujuan?.tujuan ||
+                        currentKonteks?.tujuan_strategis?.tujuan ||
+                        '-'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 2: PROGRAM / KEGIATAN / SUB KEGIATAN BUILDER TABLE */}
+            <div className='rounded-xl border bg-card shadow-2xs overflow-hidden'>
+              <div className='border-b bg-muted/40 px-5 py-3.5 flex items-center justify-between gap-2 flex-wrap'>
+                <div className='flex items-center gap-2'>
+                  <FolderTree className='h-4 w-4 text-primary' />
+                  <div>
+                    <h3 className='text-xs font-bold uppercase tracking-wider text-foreground'>
+                      Program / Kegiatan / Sub Kegiatan
+                    </h3>
+                    <p className='text-[11px] text-muted-foreground'>
+                      Kode NO (A = Program, A.1 = Kegiatan, A.1.1 = Sub Kegiatan) diurutkan otomatis oleh sistem.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className='p-5'>
+                {currentKonteks && (
+                  <OperasionalTreeTable
+                    konteksId={currentKonteks.id}
+                    programs={currentKonteks.programs || []}
+                    canEdit={canEdit}
+                    onAddProgram={handleOpenAddProgram}
+                    onAddChild={handleOpenAddChild}
+                    onEditItem={handleOpenEditItem}
+                    onRefetch={handleTreeMutated}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* CARD 3: INFORMASI LAIN & AKSI PENYELESAIAN */}
+            <div className='rounded-xl border bg-card shadow-2xs overflow-hidden'>
+              <div className='border-b bg-muted/40 px-5 py-3.5 flex items-center justify-between gap-2 flex-wrap'>
+                <div className='flex items-center gap-2'>
+                  <FileText className='h-4 w-4 text-primary' />
+                  <div>
+                    <h3 className='text-xs font-bold uppercase tracking-wider text-foreground'>
+                      Informasi Lain
+                    </h3>
+                    <p className='text-[11px] text-muted-foreground'>
+                      Tuliskan informasi lain atau catatan operasional terkait Form 2C.
+                    </p>
+                  </div>
+                </div>
+                <Badge variant='outline' className='text-[10px] font-normal'>
+                  Form 2C
+                </Badge>
+              </div>
+
+              <div className='p-5'>
+                <Textarea
+                  value={informasiLain}
+                  onChange={(e) => setInformasiLain(e.target.value)}
+                  disabled={!canEdit}
+                  placeholder='Tuliskan informasi lain atau catatan operasional terkait Form 2C (isi "-" bila tidak ada)...'
+                  className='text-xs min-h-[90px] bg-background'
+                />
+              </div>
+
+              {/* WIZARD FOOTER NAVIGATION BAR */}
+              <div className='border-t bg-muted/40 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => navigate({ to: '/risiko/konteks-strategis' })}
+                  className='gap-1.5'
+                >
+                  <ArrowLeft className='h-4 w-4' />
+                  <span>Kembali ke Langkah 1 (2B)</span>
+                </Button>
+
+                <div className='flex items-center justify-end gap-2.5 flex-wrap'>
+                  {canEdit && (
+                    <>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        disabled={isSavingStep}
+                        onClick={() => handleSaveStep('save')}
+                        className='gap-1.5'
+                      >
+                        {isSavingStep && saveIntent === 'save' ? (
+                          <Loader2 className='h-4 w-4 animate-spin' />
+                        ) : (
+                          <Save className='h-4 w-4' />
+                        )}
+                        <span>Simpan</span>
+                      </Button>
+
+                      <Button
+                        type='button'
+                        size='sm'
+                        disabled={isSavingStep}
+                        onClick={() => handleSaveStep('save_and_next')}
+                        className='gap-1.5 shadow-2xs'
+                      >
+                        {isSavingStep && saveIntent === 'save_and_next' ? (
+                          <Loader2 className='h-4 w-4 animate-spin' />
+                        ) : (
+                          <>
+                            <CheckCircle2 className='h-4 w-4' />
+                            <span>Simpan dan Lanjutkan</span>
+                            <ArrowRight className='h-4 w-4' />
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Main>
+
+      {/* Slide-over Sheet for adding/editing Program (A), Kegiatan (A.1), Sub Kegiatan (A.1.1) */}
+      {currentKonteks && (
+        <OperasionalItemDialog
+          open={itemDialogOpen}
+          onOpenChange={setItemDialogOpen}
+          konteksId={currentKonteks.id}
+          editingItem={editingItem}
+          parentItem={parentItem}
+          targetJenis={targetJenis}
+          programsList={currentKonteks.programs || []}
+          onSuccess={handleTreeMutated}
+        />
+      )}
     </>
   )
 }
-export default KonteksOperasionalFeature
+
+export { KonteksOperasionalPage as KonteksOperasionalFeature }

@@ -1,49 +1,36 @@
-import { useEffect, useState } from 'react'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, CheckSquare, Loader2, Shield, ShieldCheck, Square } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Check,
+  KeyRound,
+  Loader2,
+  Search,
+  Shield,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import type { Permission, Role } from '@/types/rbac'
 import { rbacService } from '@/services/rbac-service'
+import { useAuthStore } from '@/stores/auth-store'
+import { getPermissionMetadata } from '../data/permission-metadata'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-
-const roleFormSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Nama peran minimal 2 karakter.')
-    .max(50, 'Nama peran maksimal 50 karakter.'),
-  description: z.string().max(255, 'Deskripsi maksimal 255 karakter.').optional(),
-  permissions: z.array(z.string()).min(1, 'Pilih setidaknya satu hak akses untuk peran ini.'),
-})
-
-type RoleFormValues = z.infer<typeof roleFormSchema>
+import { Switch } from '@/components/ui/switch'
 
 interface RoleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  role: Role | null // null for create mode, Role for edit mode
+  role: Role
   groupedPermissions: Record<string, Permission[]>
+  canEditPermissions?: boolean
   onSuccess: () => void
 }
 
@@ -52,312 +39,417 @@ export function RoleDialog({
   onOpenChange,
   role,
   groupedPermissions,
+  canEditPermissions = true,
   onSuccess,
 }: RoleDialogProps) {
-  const isEdit = Boolean(role)
-  const isSystemRole = Boolean(role?.is_system)
+  const currentUser = useAuthStore((state) => state.auth.user)
+  const isSuperadmin =
+    currentUser?.role === 'Superadmin' ||
+    currentUser?.roles?.includes('Superadmin')
+
+  const isSuperRole = role.name === 'Superadmin'
+  const isOwnRole =
+    !isSuperadmin &&
+    (role.name === currentUser?.role ||
+      Boolean(currentUser?.roles?.includes(role.name)))
+
+  const isEditable = canEditPermissions && !isSuperRole && !isOwnRole
+
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const form = useForm<RoleFormValues>({
-    resolver: zodResolver(roleFormSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      permissions: [],
-    },
-  })
+  // Filter available permissions based on security guardrails
+  const availableGroupedPermissions = useMemo(() => {
+    const result: Record<string, Permission[]> = {}
+    Object.entries(groupedPermissions).forEach(([groupName, perms]) => {
+      if (groupName === 'Manajemen Peran & Izin' && !isSuperadmin) {
+        return
+      }
+      const allowedPerms = isSuperadmin
+        ? perms
+        : perms.filter((p) => !p.name.startsWith('roles.'))
+      if (allowedPerms.length > 0) {
+        result[groupName] = allowedPerms
+      }
+    })
+    return result
+  }, [groupedPermissions, isSuperadmin])
 
-  // Populate form on edit
+  const allAvailablePermissions = useMemo(
+    () => Object.values(availableGroupedPermissions).flat(),
+    [availableGroupedPermissions]
+  )
+
+  const initialPermSet = useMemo(() => {
+    if (isSuperRole) {
+      return new Set(allAvailablePermissions.map((p) => p.name))
+    }
+    return new Set(
+      (role.permissions || [])
+        .map((p) => p.name)
+        .filter((name) => isSuperadmin || !name.startsWith('roles.'))
+    )
+  }, [role, isSuperRole, allAvailablePermissions, isSuperadmin])
+
+  const [selectedSet, setSelectedSet] = useState<Set<string>>(
+    () => new Set(initialPermSet)
+  )
+
   useEffect(() => {
     if (open) {
-      if (role) {
-        form.reset({
-          name: role.name,
-          description: role.description || '',
-          permissions: role.permissions.map((p) => p.name),
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedSet(new Set(initialPermSet))
+      setSearchQuery('')
+    }
+  }, [open, initialPermSet])
+
+  // Calculate number of changed permissions compared to server state
+  const dirtyCount = useMemo(() => {
+    if (!isEditable) return 0
+    let diff = 0
+    selectedSet.forEach((p) => {
+      if (!initialPermSet.has(p)) diff++
+    })
+    initialPermSet.forEach((p) => {
+      if (!selectedSet.has(p)) diff++
+    })
+    return diff
+  }, [selectedSet, initialPermSet, isEditable])
+
+  // Filtered permissions for display
+  const filteredGroups = useMemo(() => {
+    const result: Record<string, Permission[]> = {}
+    const q = searchQuery.trim().toLowerCase()
+
+    Object.entries(availableGroupedPermissions).forEach(
+      ([groupName, perms]) => {
+        const matched = perms.filter((perm) => {
+          const meta = getPermissionMetadata(perm.name)
+          if (q) {
+            return (
+              perm.name.toLowerCase().includes(q) ||
+              meta.label.toLowerCase().includes(q) ||
+              groupName.toLowerCase().includes(q)
+            )
+          }
+          return true
         })
-      } else {
-        form.reset({
-          name: '',
-          description: '',
-          permissions: [],
-        })
+
+        if (matched.length > 0) {
+          result[groupName] = matched
+        }
       }
-    }
-  }, [open, role, form])
+    )
 
-  const selectedPermissions = form.watch('permissions') || []
+    return result
+  }, [availableGroupedPermissions, searchQuery])
 
-  // Toggle all permissions in a specific group
-  function toggleGroup(groupPermissions: Permission[]) {
-    const groupPermNames = groupPermissions.map((p) => p.name)
-    const allSelected = groupPermNames.every((name) => selectedPermissions.includes(name))
-
-    let updated: string[]
-    if (allSelected) {
-      // Uncheck all in group
-      updated = selectedPermissions.filter((name) => !groupPermNames.includes(name))
-    } else {
-      // Check all in group
-      const newPerms = groupPermNames.filter((name) => !selectedPermissions.includes(name))
-      updated = [...selectedPermissions, ...newPerms]
-    }
-
-    form.setValue('permissions', updated, { shouldValidate: true })
-  }
-
-  // Toggle single permission
   function togglePermission(permName: string) {
-    const isChecked = selectedPermissions.includes(permName)
-    const updated = isChecked
-      ? selectedPermissions.filter((name) => name !== permName)
-      : [...selectedPermissions, permName]
-
-    form.setValue('permissions', updated, { shouldValidate: true })
+    if (!isEditable) return
+    setSelectedSet((prev) => {
+      const next = new Set(prev)
+      if (next.has(permName)) {
+        next.delete(permName)
+      } else {
+        next.add(permName)
+      }
+      return next
+    })
   }
 
-  async function onSubmit(data: RoleFormValues) {
+  function toggleGroup(groupPermissions: Permission[]) {
+    if (!isEditable) return
+    const groupNames = groupPermissions.map((p) => p.name)
+    const allSelected = groupNames.every((name) => selectedSet.has(name))
+
+    setSelectedSet((prev) => {
+      const next = new Set(prev)
+      if (allSelected) {
+        groupNames.forEach((n) => next.delete(n))
+      } else {
+        groupNames.forEach((n) => next.add(n))
+      }
+      return next
+    })
+  }
+
+  function handleGrantAll() {
+    if (!isEditable) return
+    setSelectedSet(new Set(allAvailablePermissions.map((p) => p.name)))
+  }
+
+  function handleSetReadOnly() {
+    if (!isEditable) return
+    const viewPerms = allAvailablePermissions
+      .filter((p) => p.name.endsWith('.view'))
+      .map((p) => p.name)
+    setSelectedSet(new Set(viewPerms))
+  }
+
+  function handleClearAll() {
+    if (!isEditable) return
+    setSelectedSet(new Set())
+  }
+
+  async function handleSave() {
+    if (!isEditable) return
     setIsSubmitting(true)
 
     try {
-      if (isEdit && role) {
-        await rbacService.updateRole(role.id, {
-          name: data.name,
-          description: data.description,
-          permissions: data.permissions,
-        })
-        toast.success(`Peran "${data.name}" berhasil diperbarui.`)
-      } else {
-        await rbacService.createRole({
-          name: data.name,
-          description: data.description,
-          permissions: data.permissions,
-        })
-        toast.success(`Peran "${data.name}" berhasil ditambahkan.`)
-      }
-
+      await rbacService.updateRole(role.id, {
+        name: role.name,
+        description: role.description || undefined,
+        permissions: Array.from(selectedSet),
+      })
+      toast.success(`Hak akses untuk peran "${role.name}" berhasil disimpan.`)
       onSuccess()
       onOpenChange(false)
     } catch (error) {
       const msg =
         isAxiosError(error) && error.response?.data?.message
           ? error.response.data.message
-          : 'Terjadi kesalahan saat menyimpan peran.'
+          : 'Terjadi kesalahan saat menyimpan hak akses peran.'
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const totalPermissions = Object.values(groupedPermissions).flat().length
+  const totalPermissions = allAvailablePermissions.length
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
-        {/* Pinned Header */}
-        <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
-              <ShieldCheck className='h-5 w-5' />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side='right'
+        className='flex flex-col p-0 gap-0 sm:max-w-md w-full shadow-2xl'
+      >
+        {/* Compact Header */}
+        <SheetHeader className='px-5 py-4 border-b bg-muted/20 shrink-0 text-start pr-12'>
+          <div className='flex items-center gap-2.5'>
+            <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+              <KeyRound className='h-4 w-4' />
             </div>
-            <div>
-              <DialogTitle className='text-lg font-bold text-foreground'>
-                {isEdit ? `Edit Peran: ${role?.name}` : 'Tambah Peran (Role) Baru'}
-              </DialogTitle>
-              <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
-                {isEdit
-                  ? 'Sesuaikan nama, deskripsi, dan matriks hak akses untuk peran ini.'
-                  : 'Tentukan nama peran kerja dan pilih hak akses operasional yang diizinkan.'}
-              </DialogDescription>
+            <div className='min-w-0 flex-1'>
+              <SheetTitle className='text-sm font-bold text-foreground truncate'>
+                Hak Akses: {role.name}
+              </SheetTitle>
+              <div className='flex items-center gap-2 mt-0.5'>
+                <span className='text-xs text-muted-foreground'>
+                  {isSuperRole ? totalPermissions : selectedSet.size} dari{' '}
+                  {totalPermissions} izin aktif
+                </span>
+                {!isEditable && (
+                  <Badge
+                    variant='outline'
+                    className='text-[10px] py-0 px-1.5 text-amber-700 bg-amber-500/10 border-amber-500/20'
+                  >
+                    Hanya-Lihat
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
-        {/* Scrollable Form Body with min-h-0 */}
-        <div className='flex-1 overflow-y-auto px-6 py-4 min-h-0'>
-          <Form {...form}>
-            <form
-              id='role-dialog-form'
-              onSubmit={form.handleSubmit(onSubmit)}
-              className='space-y-5'
-            >
-              {/* Info Sistem Badge jika peran bawaan */}
-              {isSystemRole && (
-                <div className='flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-800 dark:text-amber-300'>
-                  <Shield className='h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400' />
-                  <span>
-                    Ini adalah <strong>Peran Sistem Bawaan</strong>. Nama peran tidak dapat
-                    diubah, namun Anda tetap dapat menyesuaikan hak aksesnya.
-                  </span>
-                </div>
-              )}
+        {/* Compact Search & Quick Actions Bar */}
+        <div className='px-5 py-2.5 border-b bg-card shrink-0 space-y-2'>
+          <div className='relative'>
+            <Search className='absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none' />
+            <Input
+              placeholder='Cari izin atau menu...'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className='h-8 pl-8 pr-7 text-xs'
+            />
+            {searchQuery && (
+              <button
+                type='button'
+                onClick={() => setSearchQuery('')}
+                className='absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground'
+              >
+                <X className='h-3.5 w-3.5' />
+              </button>
+            )}
+          </div>
 
-              {/* Form Nama & Deskripsi */}
-              <div className='grid gap-4 sm:grid-cols-2'>
-                <FormField
-                  control={form.control}
-                  name='name'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>Nama Peran</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='Contoh: Auditor Inspektorat'
-                          disabled={isSubmitting || isSystemRole}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name='description'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>Deskripsi Singkat</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='Contoh: Pengawas audit internal tata kelola'
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
+          {isEditable && (
+            <div className='flex items-center justify-between text-xs pt-0.5'>
+              <span className='text-[11px] text-muted-foreground'>Pilihan cepat:</span>
+              <div className='flex items-center gap-1'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='h-6 px-1.5 text-[11px]'
+                  onClick={handleGrantAll}
+                >
+                  Semua
+                </Button>
+                <span className='text-muted-foreground/30'>•</span>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='h-6 px-1.5 text-[11px]'
+                  onClick={handleSetReadOnly}
+                >
+                  Hanya-Lihat
+                </Button>
+                <span className='text-muted-foreground/30'>•</span>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='h-6 px-1.5 text-[11px] text-muted-foreground'
+                  onClick={handleClearAll}
+                >
+                  Kosongkan
+                </Button>
               </div>
-
-              {/* Matriks Hak Akses (Permissions Matrix) */}
-              <div className='space-y-3 pt-2'>
-                <div className='flex items-center justify-between border-b pb-2'>
-                  <div>
-                    <h4 className='text-xs font-bold uppercase tracking-wider text-foreground'>
-                      Matriks Hak Akses (Permissions)
-                    </h4>
-                    <p className='text-[11px] text-muted-foreground'>
-                      Centang hak akses yang diizinkan untuk peran ini.
-                    </p>
-                  </div>
-                  <Badge variant='secondary' className='text-[11px] font-mono'>
-                    {selectedPermissions.length} / {totalPermissions} Terpilih
-                  </Badge>
-                </div>
-
-                {form.formState.errors.permissions && (
-                  <p className='text-xs font-medium text-destructive'>
-                    {form.formState.errors.permissions.message}
-                  </p>
-                )}
-
-                {/* Kelompok Hak Akses per Modul */}
-                <div className='space-y-4 pt-1'>
-                  {Object.entries(groupedPermissions).map(([groupName, groupPerms]) => {
-                    const groupNames = groupPerms.map((p) => p.name)
-                    const isGroupAllSelected = groupNames.every((n) =>
-                      selectedPermissions.includes(n)
-                    )
-
-                    return (
-                      <div
-                        key={groupName}
-                        className='rounded-lg border bg-card/60 p-3.5 space-y-3 shadow-2xs'
-                      >
-                        <div className='flex items-center justify-between'>
-                          <span className='font-semibold text-xs text-foreground flex items-center gap-1.5'>
-                            <div className='h-2 w-2 rounded-full bg-primary' />
-                            {groupName}
-                          </span>
-                          <Button
-                            type='button'
-                            variant='ghost'
-                            size='sm'
-                            className='h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground'
-                            onClick={() => toggleGroup(groupPerms)}
-                          >
-                            {isGroupAllSelected ? (
-                              <>
-                                <CheckSquare className='h-3 w-3 mr-1 text-primary' />
-                                Batal Pilih Semua
-                              </>
-                            ) : (
-                              <>
-                                <Square className='h-3 w-3 mr-1' />
-                                Pilih Semua
-                              </>
-                            )}
-                          </Button>
-                        </div>
-
-                        <div className='grid gap-2 sm:grid-cols-2 pt-1'>
-                          {groupPerms.map((perm) => {
-                            const isChecked = selectedPermissions.includes(perm.name)
-                            return (
-                              <div
-                                key={perm.name}
-                                onClick={() => togglePermission(perm.name)}
-                                className={`flex items-start gap-2.5 rounded-md border p-2.5 text-xs transition-colors cursor-pointer select-none ${
-                                  isChecked
-                                    ? 'border-primary/40 bg-primary/5 text-foreground'
-                                    : 'border-border/60 hover:bg-muted/40 text-muted-foreground'
-                                }`}
-                              >
-                                <Checkbox
-                                  checked={isChecked}
-                                  onCheckedChange={() => togglePermission(perm.name)}
-                                  className='mt-0.5'
-                                />
-                                <div className='space-y-0.5 leading-none'>
-                                  <span className='font-mono font-medium text-foreground text-[11px] block'>
-                                    {perm.name}
-                                  </span>
-                                  {perm.description && (
-                                    <p className='text-[10px] text-muted-foreground leading-normal'>
-                                      {perm.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </form>
-          </Form>
+            </div>
+          )}
         </div>
 
-        {/* Pinned Footer */}
-        <DialogFooter className='px-6 py-3.5 border-t bg-muted/20 shrink-0 flex flex-row items-center justify-end gap-2'>
-          <Button
-            type='button'
-            variant='outline'
-            disabled={isSubmitting}
-            onClick={() => onOpenChange(false)}
-          >
-            Batal
-          </Button>
-          <Button type='submit' form='role-dialog-form' disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Menyimpan...
-              </>
+        {/* Compact Permissions List */}
+        <div className='flex-1 overflow-y-auto px-5 py-3 min-h-0 space-y-3.5'>
+          {Object.keys(filteredGroups).length === 0 ? (
+            <div className='flex flex-col items-center justify-center py-12 text-center'>
+              <Shield className='h-7 w-7 text-muted-foreground/40 mb-1.5' />
+              <p className='text-xs text-muted-foreground'>
+                Tidak ada izin yang sesuai dengan pencarian.
+              </p>
+            </div>
+          ) : (
+            Object.entries(filteredGroups).map(([groupName, groupPerms]) => {
+              const allSelected = groupPerms.every((p) =>
+                selectedSet.has(p.name)
+              )
+
+              return (
+                <div key={groupName} className='space-y-1'>
+                  {/* Module Title */}
+                  <div className='flex items-center justify-between py-1 px-1 border-b border-border/40'>
+                    <span className='font-bold text-[11px] text-foreground uppercase tracking-wide'>
+                      {groupName}
+                    </span>
+                    {isEditable && (
+                      <button
+                        type='button'
+                        onClick={() => toggleGroup(groupPerms)}
+                        className='text-[11px] text-primary hover:underline font-medium'
+                      >
+                        {allSelected ? 'Batal' : 'Pilih Semua'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Compact items list (single clean row per permission) */}
+                  <div className='divide-y divide-border/30 rounded-lg border bg-card/60 overflow-hidden'>
+                    {groupPerms.map((perm) => {
+                      const meta = getPermissionMetadata(perm.name)
+                      const isChecked = isSuperRole
+                        ? true
+                        : selectedSet.has(perm.name)
+
+                      return (
+                        <div
+                          key={perm.name}
+                          onClick={() => {
+                            if (isEditable) togglePermission(perm.name)
+                          }}
+                          className={`flex items-center justify-between px-3 py-2 text-xs transition-colors select-none ${
+                            isEditable
+                              ? 'cursor-pointer hover:bg-muted/40'
+                              : 'cursor-default'
+                          } ${isChecked ? 'bg-primary/[0.03]' : ''}`}
+                        >
+                          <div className='flex items-center gap-2 min-w-0 pr-2'>
+                            <span
+                              className={`truncate leading-tight ${
+                                isChecked
+                                  ? 'font-medium text-foreground'
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
+                              {meta.label}
+                            </span>
+                            {meta.risk === 'critical' && (
+                              <span className='text-[9px] font-semibold text-rose-600 bg-rose-500/10 px-1 py-0.2 rounded shrink-0'>
+                                Kritis
+                              </span>
+                            )}
+                          </div>
+
+                          <div
+                            className='shrink-0'
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {isEditable ? (
+                              <Switch
+                                checked={isChecked}
+                                onCheckedChange={() =>
+                                  togglePermission(perm.name)
+                                }
+                                className='scale-85'
+                              />
+                            ) : isChecked ? (
+                              <Check className='h-4 w-4 text-emerald-600' />
+                            ) : (
+                              <span className='text-muted-foreground/30 font-mono text-xs px-1'>
+                                —
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Compact Footer */}
+        <SheetFooter className='px-5 py-3 border-t bg-muted/20 shrink-0 flex flex-row items-center justify-between sm:justify-between gap-2'>
+          <span className='text-xs text-muted-foreground'>
+            {dirtyCount > 0 ? (
+              <span className='text-amber-600 font-medium'>
+                {dirtyCount} perubahan belum disimpan
+              </span>
             ) : (
-              <>
-                <Check className='mr-2 h-4 w-4' />
-                {isEdit ? 'Simpan Perubahan' : 'Buat Peran'}
-              </>
+              <span>Tersimpan</span>
             )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </span>
+
+          <div className='flex items-center gap-2'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-8 text-xs'
+              disabled={isSubmitting}
+              onClick={() => onOpenChange(false)}
+            >
+              {isEditable ? 'Batal' : 'Tutup'}
+            </Button>
+            {isEditable && (
+              <Button
+                type='button'
+                size='sm'
+                className='h-8 text-xs'
+                disabled={isSubmitting || dirtyCount === 0}
+                onClick={handleSave}
+              >
+                {isSubmitting && (
+                  <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
+                )}
+                Simpan
+              </Button>
+            )}
+          </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

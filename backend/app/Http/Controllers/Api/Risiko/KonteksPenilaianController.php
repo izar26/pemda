@@ -76,10 +76,13 @@ class KonteksPenilaianController extends Controller
             ], 200);
         }
 
-        $konteks = $this->service->getKonteksByOpd($targetOpdId, $request->get('periode_penilaian_id'));
+        $periodeId = $request->get('periode_penilaian_id');
+        $konteks = $this->service->getKonteksByOpd($targetOpdId, $periodeId);
+        $meta = $this->service->getOpdMeta($targetOpdId, $periodeId);
 
         return response()->json([
             'data' => $konteks ? new KonteksPenilaianResource($konteks) : null,
+            'meta' => $meta,
         ]);
     }
 
@@ -90,10 +93,12 @@ class KonteksPenilaianController extends Controller
     {
         $data = $request->validated();
         $konteks = $this->service->saveKonteks($data, $request->user());
+        $meta = $this->service->getOpdMeta((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id);
 
         return response()->json([
             'message' => 'Penetapan Konteks Risiko Strategis OPD (Form 2B) berhasil disimpan.',
             'data' => new KonteksPenilaianResource($konteks),
+            'meta' => $meta,
         ], 201);
     }
 
@@ -114,6 +119,7 @@ class KonteksPenilaianController extends Controller
 
         return response()->json([
             'data' => new KonteksPenilaianResource($konteks),
+            'meta' => $this->service->getOpdMeta((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id),
         ]);
     }
 
@@ -133,11 +139,14 @@ class KonteksPenilaianController extends Controller
         }
 
         $data = $request->validated();
+        $data['opd_id'] = $konteks->opd_id;
+        $data['periode_penilaian_id'] = $konteks->periode_penilaian_id;
         $updated = $this->service->saveKonteks($data, $request->user());
 
         return response()->json([
             'message' => 'Penetapan Konteks Risiko Strategis OPD (Form 2B) berhasil diperbarui.',
             'data' => new KonteksPenilaianResource($updated),
+            'meta' => $this->service->getOpdMeta((string) $updated->opd_id, (string) $updated->periode_penilaian_id),
         ]);
     }
 

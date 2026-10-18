@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Perencanaan;
 
+use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\KonteksPenilaian;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -356,5 +358,169 @@ class IndikatorPenilaianTest extends TestCase
 
         $deleteResponse = $this->actingAs($this->opdUser)->deleteJson("/api/perencanaan/iku/{$item->id}");
         $deleteResponse->assertStatus(403);
+    }
+
+    public function test_cannot_delete_indikator_used_in_konteks_penilaian_must_delete_bottom_up(): void
+    {
+        $sumber = MasterSumberData::create([
+            'nama' => 'RPJMD Indikator Test',
+            'is_active' => true,
+            'urutan' => 1,
+        ]);
+
+        $item = IndikatorPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $this->tujuanPupr->id,
+            'sasaran_penilaian_id' => $this->sasaranPupr->id,
+            'opd_id' => $this->puprOpd->id,
+            'sumber_data_id' => $sumber->id,
+            'kode_indikator' => 'IKU-TEST-FORM2B',
+            'indikator' => 'IKU Dipakai di Form 2B',
+            'jenis' => 'IKU',
+            'urutan' => 99,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $konteks = KonteksPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->puprOpd->id,
+            'sumber_data_id' => $sumber->id,
+            'tujuan_penilaian_id' => $this->tujuanPupr->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'target' => '100%',
+            'satuan' => '%',
+            'status' => 'draft',
+            'created_by' => $this->admin->id,
+        ]);
+        $konteks->indikators()->attach($item->id, ['urutan' => 1]);
+
+        // Attempting to delete Indikator while Form 2B exists must return 422
+        $response = $this->actingAs($this->admin)->deleteJson("/api/perencanaan/iku/{$item->id}");
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['indikator']);
+
+        $this->assertDatabaseHas('indikator_penilaians', ['id' => $item->id]);
+
+        // Deleting Form 2B first (bottom up)
+        $delKonteks = $this->actingAs($this->admin)->deleteJson("/api/risiko/konteks-strategis/{$konteks->id}");
+        $delKonteks->assertStatus(200);
+        $this->assertDatabaseMissing('konteks_penilaians', ['id' => $konteks->id]);
+
+        // Now deleting Indikator succeeds
+        $delInd = $this->actingAs($this->admin)->deleteJson("/api/perencanaan/iku/{$item->id}");
+        $delInd->assertStatus(200);
+        $this->assertDatabaseMissing('indikator_penilaians', ['id' => $item->id]);
+    }
+
+    public function test_opd_cannot_update_or_delete_other_opd_indikator(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Kesehatan',
+            'kode' => 'Dinkes',
+            'kategori' => 'Dinas',
+            'urutan' => 2,
+            'is_active' => true,
+        ]);
+
+        $dinkesTujuan = TujuanPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $otherOpd->id,
+            'kode_tujuan' => 'TUJ-01',
+            'tujuan' => 'Meningkatkan derajat kesehatan',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $dinkesSasaran = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-01',
+            'sasaran' => 'Sasaran Dinkes',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $dinkesIndikator = IndikatorPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'sasaran_penilaian_id' => $dinkesSasaran->id,
+            'opd_id' => $otherOpd->id,
+            'kode_indikator' => 'IKU-01',
+            'indikator' => 'Indikator Dinkes',
+            'jenis' => 'IKU',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // PUPR staff tries to update Dinkes Indikator
+        $updateRes = $this->actingAs($this->opdUser)->putJson("/api/perencanaan/iku/{$dinkesIndikator->id}", [
+            'indikator' => 'Diubah oleh PUPR',
+        ]);
+        $updateRes->assertStatus(403);
+
+        // PUPR staff tries to delete Dinkes Indikator
+        $deleteRes = $this->actingAs($this->opdUser)->deleteJson("/api/perencanaan/iku/{$dinkesIndikator->id}");
+        $deleteRes->assertStatus(403);
+    }
+
+    public function test_opd_cannot_reorder_other_opd_indikator(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Kesehatan',
+            'kode' => 'Dinkes',
+            'kategori' => 'Dinas',
+            'urutan' => 2,
+            'is_active' => true,
+        ]);
+
+        $dinkesTujuan = TujuanPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $otherOpd->id,
+            'kode_tujuan' => 'TUJ-01',
+            'tujuan' => 'Meningkatkan derajat kesehatan',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $dinkesSasaran = SasaranPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'opd_id' => $otherOpd->id,
+            'kode_sasaran' => 'SAS-01',
+            'sasaran' => 'Sasaran Dinkes',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $ind1 = IndikatorPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'sasaran_penilaian_id' => $dinkesSasaran->id,
+            'opd_id' => $otherOpd->id,
+            'kode_indikator' => 'IKU-01',
+            'indikator' => 'Indikator 1',
+            'jenis' => 'IKU',
+            'urutan' => 1,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $ind2 = IndikatorPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'tujuan_penilaian_id' => $dinkesTujuan->id,
+            'sasaran_penilaian_id' => $dinkesSasaran->id,
+            'opd_id' => $otherOpd->id,
+            'kode_indikator' => 'IKU-02',
+            'indikator' => 'Indikator 2',
+            'jenis' => 'IKU',
+            'urutan' => 2,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // PUPR staff attempts to reorder Dinkes Indikators
+        $res = $this->actingAs($this->opdUser)->postJson('/api/perencanaan/iku/reorder', [
+            'ids' => [$ind2->id, $ind1->id],
+        ]);
+        $res->assertStatus(403);
     }
 }

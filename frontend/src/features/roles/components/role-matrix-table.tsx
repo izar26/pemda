@@ -4,11 +4,16 @@ import {
   Check,
   CheckCheck,
   ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Edit,
+  KeyRound,
   Loader2,
   Lock,
   RotateCcw,
   Save,
+  Shield,
   ShieldCheck,
   Trash2,
   Users,
@@ -17,7 +22,10 @@ import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import type { Permission, Role } from '@/types/rbac'
 import { rbacService } from '@/services/rbac-service'
-import { getPermissionMetadata, type RiskLevel } from '../data/permission-metadata'
+import {
+  getPermissionMetadata,
+  type RiskLevel,
+} from '../data/permission-metadata'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -40,8 +48,11 @@ interface RoleMatrixTableProps {
   roles: Role[]
   groupedPermissions: Record<string, Permission[]>
   searchQuery: string
-  riskFilter: 'all' | RiskLevel
+  riskFilter: RiskLevel[]
+  selectedRoleIds?: string[]
+  selectedModules?: string[]
   onEditRoleInfo?: (role: Role) => void
+  onManageRolePermissions?: (role: Role) => void
   onDeleteRole?: (role: Role) => void
   onSuccess: () => void
   /** When false, all switch toggles are disabled (read-only mode) */
@@ -53,7 +64,10 @@ export function RoleMatrixTable({
   groupedPermissions,
   searchQuery,
   riskFilter,
+  selectedRoleIds = [],
+  selectedModules = [],
   onEditRoleInfo,
+  onManageRolePermissions,
   onDeleteRole,
   onSuccess,
   canEditPermissions = true,
@@ -65,22 +79,24 @@ export function RoleMatrixTable({
 
   // Reorder roles: If not Superadmin, place current user's role at the very beginning (leftmost)
   const sortedRoles = useMemo(() => {
-    if (isSuperadmin || !currentUser) {
-      return roles
+    let baseRoles = roles
+    if (!isSuperadmin && currentUser) {
+      const ownRoleName = currentUser.role || currentUser.roles?.[0]
+      const ownRole = roles.find(
+        (r) => r.name === ownRoleName || currentUser.roles?.includes(r.name)
+      )
+      if (ownRole) {
+        const otherRoles = roles.filter((r) => r.id !== ownRole.id)
+        baseRoles = [ownRole, ...otherRoles]
+      }
     }
 
-    const ownRoleName = currentUser.role || currentUser.roles?.[0]
-    const ownRole = roles.find(
-      (r) => r.name === ownRoleName || currentUser.roles?.includes(r.name)
-    )
-
-    if (!ownRole) {
-      return roles
+    if (selectedRoleIds.length > 0) {
+      return baseRoles.filter((r) => selectedRoleIds.includes(r.id))
     }
 
-    const otherRoles = roles.filter((r) => r.id !== ownRole.id)
-    return [ownRole, ...otherRoles]
-  }, [roles, isSuperadmin, currentUser])
+    return baseRoles
+  }, [roles, isSuperadmin, currentUser, selectedRoleIds])
 
   // Helper to determine if a specific role can be edited by current user
   const isRoleEditable = useCallback(
@@ -104,6 +120,9 @@ export function RoleMatrixTable({
   // matrixState: roleId -> Set of permission names
   const [matrixState, setMatrixState] = useState<Record<string, Set<string>>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [collapsedModules, setCollapsedModules] = useState<Set<string>>(
+    new Set()
+  )
 
   // Sync state from server roles
   useEffect(() => {
@@ -118,7 +137,7 @@ export function RoleMatrixTable({
   // Compute dirty roles (roles with unsaved modifications that are actually editable)
   const dirtyRoleIds = useMemo(() => {
     const dirty = new Set<string>()
-    sortedRoles.forEach((r) => {
+    roles.forEach((r) => {
       if (!isRoleEditable(r)) return
 
       const currentSet = matrixState[r.id]
@@ -139,23 +158,36 @@ export function RoleMatrixTable({
       }
     })
     return dirty
-  }, [sortedRoles, matrixState, isRoleEditable])
+  }, [roles, matrixState, isRoleEditable])
 
-  // Filter permissions based on searchQuery, riskFilter, and delegated admin guardrails
+  // Filter permissions based on searchQuery, riskFilter, selectedModules, and delegated admin guardrails
   const filteredGroupedPermissions = useMemo(() => {
     const result: Record<string, Permission[]> = {}
 
     Object.entries(groupedPermissions).forEach(([groupName, perms]) => {
       // Pagar Pengaman 1: Modul 'Manajemen Peran & Izin' hanya muncul untuk Superadmin atau jika user memiliki canEditPermissions
-      if (groupName === 'Manajemen Peran & Izin' && !isSuperadmin && !canEditPermissions) {
+      if (
+        groupName === 'Manajemen Peran & Izin' &&
+        !isSuperadmin &&
+        !canEditPermissions
+      ) {
+        return
+      }
+
+      // Module filter check
+      if (selectedModules.length > 0 && !selectedModules.includes(groupName)) {
         return
       }
 
       const filtered = perms.filter((perm) => {
+        if (!isSuperadmin && perm.name.startsWith('roles.') && !canEditPermissions) {
+          return false
+        }
+
         const meta = getPermissionMetadata(perm.name)
 
         // Risk filter check
-        if (riskFilter !== 'all' && meta.risk !== riskFilter) {
+        if (riskFilter.length > 0 && !riskFilter.includes(meta.risk)) {
           return false
         }
 
@@ -178,12 +210,49 @@ export function RoleMatrixTable({
     })
 
     return result
-  }, [groupedPermissions, searchQuery, riskFilter, isSuperadmin, canEditPermissions])
+  }, [
+    groupedPermissions,
+    searchQuery,
+    riskFilter,
+    selectedModules,
+    isSuperadmin,
+    canEditPermissions,
+  ])
+
+  const visibleModuleNames = useMemo(
+    () => Object.keys(filteredGroupedPermissions),
+    [filteredGroupedPermissions]
+  )
+
+  const areAllCollapsed =
+    visibleModuleNames.length > 0 &&
+    visibleModuleNames.every((mod) => collapsedModules.has(mod))
+
+  function toggleModuleCollapse(groupName: string) {
+    setCollapsedModules((prev) => {
+      const next = new Set(prev)
+      if (next.has(groupName)) {
+        next.delete(groupName)
+      } else {
+        next.add(groupName)
+      }
+      return next
+    })
+  }
+
+  function toggleCollapseAll() {
+    if (areAllCollapsed) {
+      setCollapsedModules(new Set())
+    } else {
+      setCollapsedModules(new Set(visibleModuleNames))
+    }
+  }
 
   // Toggle single cell permission
   function togglePermission(roleId: string, permName: string) {
-    const role = sortedRoles.find((r) => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     if (!role || !isRoleEditable(role)) return
+    if (!isSuperadmin && permName.startsWith('roles.')) return
 
     setMatrixState((prev) => {
       const currentSet = new Set(prev[roleId] || [])
@@ -201,18 +270,20 @@ export function RoleMatrixTable({
 
   // Bulk action: Toggle all permissions in a module for a specific role
   function toggleModulePermissions(roleId: string, modulePerms: Permission[]) {
-    const role = sortedRoles.find((r) => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     if (!role || !isRoleEditable(role)) return
 
-    const modulePermNames = modulePerms.map((p) => p.name)
+    const modulePermNames = modulePerms
+      .map((p) => p.name)
+      .filter((name) => isSuperadmin || !name.startsWith('roles.'))
+    if (modulePermNames.length === 0) return
+
     const currentSet = new Set(matrixState[roleId] || [])
     const allSelected = modulePermNames.every((name) => currentSet.has(name))
 
     if (allSelected) {
-      // Uncheck all in this module
       modulePermNames.forEach((n) => currentSet.delete(n))
     } else {
-      // Check all in this module
       modulePermNames.forEach((n) => currentSet.add(n))
     }
 
@@ -224,12 +295,13 @@ export function RoleMatrixTable({
 
   // Preset shortcut: Grant all permissions to a role
   function handleGrantAll(roleId: string) {
-    const role = sortedRoles.find((r) => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     if (!role || !isRoleEditable(role)) return
 
     const allPermNames = Object.values(groupedPermissions)
       .flat()
       .map((p) => p.name)
+      .filter((name) => isSuperadmin || !name.startsWith('roles.'))
 
     setMatrixState((prev) => ({
       ...prev,
@@ -240,12 +312,16 @@ export function RoleMatrixTable({
 
   // Preset shortcut: Set only read-only permissions (.view)
   function handleSetReadOnly(roleId: string) {
-    const role = sortedRoles.find((r) => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     if (!role || !isRoleEditable(role)) return
 
     const readOnlyPermNames = Object.values(groupedPermissions)
       .flat()
-      .filter((p) => p.name.endsWith('.view'))
+      .filter(
+        (p) =>
+          p.name.endsWith('.view') &&
+          (isSuperadmin || !p.name.startsWith('roles.'))
+      )
       .map((p) => p.name)
 
     setMatrixState((prev) => ({
@@ -257,7 +333,7 @@ export function RoleMatrixTable({
 
   // Preset shortcut: Clear all permissions completely
   function handleClearAll(roleId: string) {
-    const role = sortedRoles.find((r) => r.id === roleId)
+    const role = roles.find((r) => r.id === roleId)
     if (!role || !isRoleEditable(role)) return
 
     setMatrixState((prev) => ({
@@ -284,8 +360,10 @@ export function RoleMatrixTable({
     setIsSaving(true)
     try {
       const promises = Array.from(dirtyRoleIds).map((roleId) => {
-        const role = sortedRoles.find((r) => r.id === roleId)!
-        const perms = Array.from(matrixState[roleId] || [])
+        const role = roles.find((r) => r.id === roleId)!
+        const perms = Array.from(matrixState[roleId] || []).filter(
+          (name) => isSuperadmin || !name.startsWith('roles.')
+        )
 
         return rbacService.updateRole(role.id, {
           name: role.name,
@@ -310,17 +388,23 @@ export function RoleMatrixTable({
     }
   }
 
+  const totalVisiblePermissions = Object.values(
+    filteredGroupedPermissions
+  ).flat().length
+  const totalMasterPermissions = Object.values(groupedPermissions).flat().length
+
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className='relative flex flex-col gap-4'>
+    <TooltipProvider delayDuration={150}>
+      <div className='relative flex flex-col gap-3'>
         {/* Unsaved Changes Banner */}
         {dirtyRoleIds.size > 0 && (
-          <div className='sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-top-2'>
+          <div className='sticky top-2 z-40 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-top-2'>
             <div className='flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-300'>
               <AlertTriangle className='h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400' />
               <span>
-                Terdapat <strong>{dirtyRoleIds.size} peran</strong> yang telah dimodifikasi pada
-                matriks ini. Simpan perubahan untuk menerapkan hak akses ke sistem.
+                Terdapat <strong>{dirtyRoleIds.size} peran</strong> yang telah
+                dimodifikasi pada matriks ini. Simpan perubahan untuk menerapkan
+                hak akses ke sistem.
               </span>
             </div>
 
@@ -357,397 +441,553 @@ export function RoleMatrixTable({
           </div>
         )}
 
-        {/* Matrix Spreadsheet Table */}
-        <div className='overflow-hidden rounded-xl border bg-card shadow-xs'>
-          <div className='overflow-x-auto'>
-            <table className='w-full border-collapse text-left text-xs'>
-              {/* Table Header: Roles Columns */}
-              <thead>
-                <tr className='border-b bg-muted/40'>
-                  {/* Fixed Left Header (Permission Details Column) */}
-                  <th className='sticky left-0 z-20 min-w-[240px] max-w-[280px] bg-muted/80 p-2.5 font-semibold text-foreground backdrop-blur-md border-r'>
-                    <div className='flex items-center justify-between'>
-                      <span className='font-bold uppercase tracking-wider text-[11px] text-muted-foreground'>
-                        Hak Akses Menu
-                      </span>
-                      <span className='text-[10px] text-muted-foreground'>
-                        {Object.values(filteredGroupedPermissions).flat().length} Izin
-                      </span>
-                    </div>
-                  </th>
+        {/* Matrix Info & Collapse Controls Bar */}
+        <div className='flex items-center justify-between gap-2 px-1'>
+          <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+            <span>
+              Menampilkan{' '}
+              <strong className='text-foreground'>{sortedRoles.length}</strong>{' '}
+              peran &{' '}
+              <strong className='text-foreground'>
+                {totalVisiblePermissions}
+              </strong>{' '}
+              izin ({visibleModuleNames.length} modul)
+            </span>
+          </div>
 
-                  {/* Dynamic Columns for each Role */}
-                  {sortedRoles.map((role) => {
-                    const isSuper = role.name === 'Superadmin'
-                    const isSystem = role.is_system
-                    const isOwnRole =
-                      !isSuperadmin &&
-                      (role.name === currentUser?.role ||
-                        currentUser?.roles?.includes(role.name))
-                    const isEditable = isRoleEditable(role)
-                    const isDirty = dirtyRoleIds.has(role.id)
-                    const activeCount = matrixState[role.id]?.size || 0
-                    const totalPermsCount = Object.values(groupedPermissions).flat().length
+          {visibleModuleNames.length > 0 && (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className='h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground'
+              onClick={toggleCollapseAll}
+            >
+              {areAllCollapsed ? (
+                <>
+                  <ChevronsUpDown className='mr-1.5 h-3.5 w-3.5' />
+                  Bentangkan Semua Modul
+                </>
+              ) : (
+                <>
+                  <ChevronsDownUp className='mr-1.5 h-3.5 w-3.5' />
+                  Ringkas Semua Modul
+                </>
+              )}
+            </Button>
+          )}
+        </div>
 
-                    return (
-                      <th
-                        key={role.id}
-                        className={`min-w-[140px] max-w-[170px] py-2 px-2.5 text-center border-r last:border-r-0 transition-colors ${
-                          isOwnRole ? 'bg-primary/5 dark:bg-primary/10' : ''
-                        } ${isDirty ? 'bg-amber-500/5 dark:bg-amber-500/10' : ''}`}
-                      >
-                        <div className='flex flex-col items-center gap-1'>
-                          {/* Role Name & Type Badge */}
-                          <div className='flex items-center gap-1.5'>
-                            <span className='font-bold text-xs text-foreground truncate max-w-[100px]'>
-                              {role.name}
-                            </span>
-                            {isSuper ? (
-                              <Badge
-                                variant='outline'
-                                className='text-[9px] py-0 px-1 text-blue-600 border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30'
-                              >
-                                Penuh
-                              </Badge>
-                            ) : isOwnRole ? (
-                              <Badge
-                                variant='outline'
-                                className='text-[9px] py-0 px-1 font-semibold text-primary border-primary/30 bg-primary/15'
-                              >
-                                Peran Anda
-                              </Badge>
-                            ) : isSystem ? (
-                              <Badge
-                                variant='outline'
-                                className='text-[9px] py-0 px-1 text-blue-600 border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30'
-                              >
-                                Sistem
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant='outline'
-                                className='text-[9px] py-0 px-1 text-emerald-600 border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30'
-                              >
-                                Kustom
-                              </Badge>
-                            )}
-                          </div>
+        {/* Matrix Spreadsheet Table with 2-Axis Freeze Panes */}
+        {sortedRoles.length === 0 || visibleModuleNames.length === 0 ? (
+          <div className='flex flex-col items-center justify-center py-16 rounded-xl border bg-card text-center'>
+            <Shield className='h-9 w-9 text-muted-foreground/40 mb-2' />
+            <p className='text-sm font-medium text-foreground'>
+              Tidak ada data matriks yang sesuai dengan filter.
+            </p>
+            <p className='text-xs text-muted-foreground mt-1'>
+              Coba sesuaikan pencarian atau filter peran, modul, dan tingkat
+              risiko.
+            </p>
+          </div>
+        ) : (
+          <div className='overflow-hidden rounded-xl border bg-card shadow-xs'>
+            <div className='max-h-[calc(100vh-260px)] min-h-[420px] overflow-auto relative'>
+              <table className='w-full border-separate border-spacing-0 text-left text-xs'>
+                {/* Sticky Table Header: Roles Columns */}
+                <thead>
+                  <tr>
+                    {/* Top-Left Freeze Pane Corner Cell */}
+                    <th className='sticky top-0 left-0 z-30 min-w-[260px] max-w-[300px] bg-muted/95 p-3 font-semibold text-foreground backdrop-blur-md border-b border-r shadow-2xs'>
+                      <div className='flex items-center justify-between'>
+                        <span className='font-bold uppercase tracking-wider text-[11px] text-muted-foreground'>
+                          Modul & Hak Akses
+                        </span>
+                        <Badge
+                          variant='secondary'
+                          className='text-[10px] font-mono px-1.5 py-0'
+                        >
+                          {totalVisiblePermissions} Izin
+                        </Badge>
+                      </div>
+                    </th>
 
-                          {/* Quick Info & User Counts */}
-                          <div className='flex items-center gap-1 text-[10px] text-muted-foreground'>
-                            <span className='flex items-center gap-0.5'>
-                              <Users className='h-2.5 w-2.5' />
-                              {role.users_count} Pegawai
-                            </span>
-                            <span>•</span>
-                            <span className='font-mono'>
-                              {isSuper ? 'Semua' : `${activeCount}/${totalPermsCount}`}
-                            </span>
-                          </div>
-
-                          {/* Dirty State Indicator */}
-                          {isDirty && (
-                            <span className='inline-flex items-center text-[9px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-1 rounded'>
-                              Belum disimpan
-                            </span>
-                          )}
-
-                          {/* Role Column Actions Menu */}
-                          <div className='pt-0.5'>
-                            {isSuper ? (
-                              <div className='flex items-center gap-1 text-[10px] text-muted-foreground font-medium'>
-                                <Lock className='h-2.5 w-2.5' />
-                                Akses Penuh
-                              </div>
-                            ) : isOwnRole ? (
-                              <div className='flex items-center gap-1 text-[10px] text-primary/80 font-medium'>
-                                <Lock className='h-2.5 w-2.5' />
-                                Akun Anda
-                              </div>
-                            ) : isEditable ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant='ghost'
-                                    size='sm'
-                                    className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-0.5'
-                                  >
-                                    Atur Peran
-                                    <ChevronDown className='h-2.5 w-2.5' />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align='center' className='w-44 text-xs'>
-                                  <DropdownMenuItem onClick={() => handleGrantAll(role.id)}>
-                                    <CheckCheck className='mr-2 h-3.5 w-3.5 text-primary' />
-                                    Beri Semua Izin
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleSetReadOnly(role.id)}>
-                                    <ShieldCheck className='mr-2 h-3.5 w-3.5 text-blue-600' />
-                                    Setel Hanya-Lihat
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleClearAll(role.id)}>
-                                    <RotateCcw className='mr-2 h-3.5 w-3.5 text-muted-foreground' />
-                                    Kosongkan Izin
-                                  </DropdownMenuItem>
-
-                                  {(onEditRoleInfo || onDeleteRole) && (
-                                    <DropdownMenuSeparator />
-                                  )}
-
-                                  {onEditRoleInfo && (
-                                    <DropdownMenuItem onClick={() => onEditRoleInfo(role)}>
-                                      <Edit className='mr-2 h-3.5 w-3.5' />
-                                      Edit Informasi Peran
-                                    </DropdownMenuItem>
-                                  )}
-
-                                  {!isSystem && onDeleteRole && (
-                                    <DropdownMenuItem
-                                      onClick={() => onDeleteRole(role)}
-                                      className='text-destructive focus:text-destructive'
-                                    >
-                                      <Trash2 className='mr-2 h-3.5 w-3.5' />
-                                      Hapus Peran
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : onEditRoleInfo ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant='ghost'
-                                    size='sm'
-                                    className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-0.5'
-                                  >
-                                    Info
-                                    <ChevronDown className='h-2.5 w-2.5' />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align='center' className='w-44 text-xs'>
-                                  <DropdownMenuItem onClick={() => onEditRoleInfo(role)}>
-                                    <Edit className='mr-2 h-3.5 w-3.5' />
-                                    Lihat Detail Peran
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : (
-                              <span className='text-[10px] text-muted-foreground font-mono select-none'>
-                                —
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </th>
-                    )
-                  })}
-                </tr>
-              </thead>
-
-              {/* Table Body: Grouped Permissions by Module */}
-              <tbody>
-                {Object.entries(filteredGroupedPermissions).map(([groupName, groupPerms]) => (
-                  <Fragment key={groupName}>
-                    {/* Module Section Header Row spanning across all columns */}
-                    <tr className='border-y bg-muted/40'>
-                      <td className='sticky left-0 z-20 bg-muted/80 backdrop-blur-md py-1.5 px-3 font-semibold text-xs text-foreground border-r'>
-                        <div className='flex items-center gap-1.5'>
-                          <div className='h-2 w-2 rounded-full bg-primary' />
-                          <span className='uppercase tracking-wide text-[11px]'>{groupName}</span>
-                          <span className='text-[10px] text-muted-foreground font-normal'>
-                            ({groupPerms.length})
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Bulk action or summary for each role in this module */}
-                      {sortedRoles.map((role) => {
-                        const isSuper = role.name === 'Superadmin'
-                        const isEditable = isRoleEditable(role)
-
-                        if (isSuper) {
-                          return (
-                            <td
-                              key={`mod-${groupName}-${role.id}`}
-                              className='py-1 px-2 text-center border-r last:border-r-0 bg-muted/20 text-[10px] text-muted-foreground font-medium'
-                            >
-                              Aktif
-                            </td>
-                          )
-                        }
-
-                        const modulePermNames = groupPerms.map((p) => p.name)
-                        const rolePerms = matrixState[role.id] || new Set()
-                        const activeCountInModule = modulePermNames.filter((n) => rolePerms.has(n)).length
-                        const allSelected = modulePermNames.length > 0 && activeCountInModule === modulePermNames.length
-
-                        if (!isEditable) {
-                          return (
-                            <td
-                              key={`mod-${groupName}-${role.id}`}
-                              className='py-1 px-2 text-center border-r last:border-r-0 bg-muted/20 text-[10px] text-muted-foreground font-mono'
-                            >
-                              {activeCountInModule === 0 ? (
-                                <span className='text-muted-foreground/40'>—</span>
-                              ) : (
-                                <span className='font-medium text-foreground/70'>
-                                  {activeCountInModule}/{modulePermNames.length}
-                                </span>
-                              )}
-                            </td>
-                          )
-                        }
-
-                        return (
-                          <td
-                            key={`mod-${groupName}-${role.id}`}
-                            className='py-1 px-2 text-center border-r last:border-r-0 bg-muted/20'
-                          >
-                            <Button
-                              type='button'
-                              variant='ghost'
-                              size='sm'
-                              className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground'
-                              onClick={() => toggleModulePermissions(role.id, groupPerms)}
-                            >
-                              {allSelected ? 'Batal' : 'Pilih Semua'}
-                            </Button>
-                          </td>
-                        )
-                      })}
-                    </tr>
-
-                    {/* Permission Rows under this Module */}
-                    {groupPerms.map((perm) => {
-                      const meta = getPermissionMetadata(perm.name)
-                      const isCritical = meta.risk === 'critical'
+                    {/* Sticky Top Header Columns for each Role */}
+                    {sortedRoles.map((role) => {
+                      const isSuper = role.name === 'Superadmin'
+                      const isSystem = role.is_system
+                      const isOwnRole =
+                        !isSuperadmin &&
+                        (role.name === currentUser?.role ||
+                          currentUser?.roles?.includes(role.name))
+                      const isEditable = isRoleEditable(role)
+                      const isDirty = dirtyRoleIds.has(role.id)
+                      const activeCount = matrixState[role.id]?.size || 0
 
                       return (
-                        <tr
-                          key={perm.name}
-                          className='border-b hover:bg-muted/15 transition-colors h-9'
+                        <th
+                          key={role.id}
+                          className={`sticky top-0 z-20 min-w-[148px] max-w-[180px] py-2.5 px-2.5 text-center border-b border-r last:border-r-0 backdrop-blur-md transition-colors ${
+                            isDirty
+                              ? 'bg-amber-50/95 dark:bg-amber-950/90'
+                              : isOwnRole
+                                ? 'bg-primary/10 dark:bg-primary/20'
+                                : 'bg-muted/95'
+                          }`}
                         >
-                          {/* Sticky Left: Permission Title & Tooltip */}
-                          <td className='sticky left-0 z-10 bg-card py-1.5 px-3 border-r backdrop-blur-md'>
-                            <div className='flex items-center justify-between gap-2'>
-                              <div className='flex items-center gap-1.5 min-w-0'>
-                                <span className='font-medium text-xs text-foreground truncate'>
-                                  {meta.label}
-                                </span>
-                                {isCritical && (
-                                  <span className='inline-flex items-center px-1 rounded text-[9px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0'>
-                                    Kritis
-                                  </span>
-                                )}
-                              </div>
-
+                          <div className='flex flex-col items-center gap-1'>
+                            {/* Role Name & Type Badge */}
+                            <div className='flex items-center gap-1.5 max-w-full'>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className='cursor-help font-mono text-[9px] text-muted-foreground/60 hover:text-muted-foreground hidden sm:inline shrink-0 select-none'>
-                                    {perm.name}
+                                  <span className='font-bold text-xs text-foreground truncate max-w-[105px] cursor-default'>
+                                    {role.name}
                                   </span>
                                 </TooltipTrigger>
-                                <TooltipContent side='right' className='text-xs max-w-xs'>
-                                  <p className='font-semibold'>{meta.label} ({perm.name})</p>
-                                  <p className='text-muted-foreground mt-0.5'>{meta.description}</p>
+                                <TooltipContent>
+                                  <p className='font-semibold text-xs'>
+                                    {role.name}
+                                  </p>
+                                  {role.description && (
+                                    <p className='text-[11px] text-muted-foreground max-w-xs'>
+                                      {role.description}
+                                    </p>
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
+
+                              {isSuper ? (
+                                <Badge
+                                  variant='outline'
+                                  className='text-[9px] py-0 px-1 text-blue-600 border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30 shrink-0'
+                                >
+                                  Penuh
+                                </Badge>
+                              ) : isOwnRole ? (
+                                <Badge
+                                  variant='outline'
+                                  className='text-[9px] py-0 px-1 font-semibold text-primary border-primary/30 bg-primary/15 shrink-0'
+                                >
+                                  Anda
+                                </Badge>
+                              ) : isSystem ? (
+                                <Badge
+                                  variant='outline'
+                                  className='text-[9px] py-0 px-1 text-blue-600 border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30 shrink-0'
+                                >
+                                  Sistem
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant='outline'
+                                  className='text-[9px] py-0 px-1 text-emerald-600 border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30 shrink-0'
+                                >
+                                  Kustom
+                                </Badge>
+                              )}
                             </div>
-                          </td>
 
-                          {/* Role Toggle / Checkmark Cells */}
-                          {sortedRoles.map((role) => {
-                            const isSuper = role.name === 'Superadmin'
-                            const isEditable = isRoleEditable(role)
-                            const isOwnRole =
-                              !isSuperadmin &&
-                              (role.name === currentUser?.role ||
-                                currentUser?.roles?.includes(role.name))
-                            const isChecked = isSuper
-                              ? true
-                              : matrixState[role.id]?.has(perm.name) || false
+                            {/* Quick Info & User Counts */}
+                            <div className='flex items-center gap-1 text-[10px] text-muted-foreground'>
+                              <span className='flex items-center gap-0.5'>
+                                <Users className='h-2.5 w-2.5' />
+                                {role.users_count ?? 0}
+                              </span>
+                              <span>•</span>
+                              <span className='font-mono'>
+                                {isSuper
+                                  ? 'Semua'
+                                  : `${activeCount}/${totalMasterPermissions}`}
+                              </span>
+                            </div>
 
-                            // Check if cell is changed compared to server
-                            const serverHasPerm = (role.permissions || []).some(
-                              (p) => p.name === perm.name
-                            )
-                            const isCellDirty = !isSuper && isEditable && isChecked !== serverHasPerm
+                            {/* Dirty State Indicator */}
+                            {isDirty && (
+                              <span className='inline-flex items-center text-[9px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-1.5 rounded'>
+                                Belum disimpan
+                              </span>
+                            )}
 
-                            return (
-                              <td
-                                key={`${role.id}-${perm.name}`}
-                                className={`py-1.5 px-2 text-center border-r last:border-r-0 transition-colors ${
-                                  isOwnRole ? 'bg-primary/2 dark:bg-primary/5' : ''
-                                } ${isCellDirty ? 'bg-amber-500/10' : ''}`}
+                            {/* Role Column Actions Menu */}
+                            <div className='pt-0.5'>
+                              {isSuper ? (
+                                <div className='flex items-center gap-1 text-[10px] text-muted-foreground font-medium'>
+                                  <Lock className='h-2.5 w-2.5' />
+                                  Akses Penuh
+                                </div>
+                              ) : isOwnRole ? (
+                                <div className='flex items-center gap-1 text-[10px] text-primary/80 font-medium'>
+                                  <Lock className='h-2.5 w-2.5' />
+                                  Akun Anda
+                                </div>
+                              ) : isEditable ? (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant='ghost'
+                                      size='sm'
+                                      className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-0.5'
+                                    >
+                                      Atur Peran
+                                      <ChevronDown className='h-2.5 w-2.5' />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align='center'
+                                    className='w-48 text-xs'
+                                  >
+                                    {onManageRolePermissions && (
+                                      <>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            onManageRolePermissions(role)
+                                          }
+                                        >
+                                          <KeyRound className='mr-2 h-3.5 w-3.5 text-primary' />
+                                          Hak Akses
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                      </>
+                                    )}
+                                    <DropdownMenuItem
+                                      onClick={() => handleGrantAll(role.id)}
+                                    >
+                                      <CheckCheck className='mr-2 h-3.5 w-3.5 text-primary' />
+                                      Beri Semua Izin
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleSetReadOnly(role.id)}
+                                    >
+                                      <ShieldCheck className='mr-2 h-3.5 w-3.5 text-blue-600' />
+                                      Setel Hanya-Lihat
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleClearAll(role.id)}
+                                    >
+                                      <RotateCcw className='mr-2 h-3.5 w-3.5 text-muted-foreground' />
+                                      Kosongkan Izin
+                                    </DropdownMenuItem>
+
+                                    {(onEditRoleInfo || onDeleteRole) && (
+                                      <DropdownMenuSeparator />
+                                    )}
+
+                                    {onEditRoleInfo && (
+                                      <DropdownMenuItem
+                                        onClick={() => onEditRoleInfo(role)}
+                                      >
+                                        <Edit className='mr-2 h-3.5 w-3.5' />
+                                        Ubah Peran
+                                      </DropdownMenuItem>
+                                    )}
+
+                                    {!isSystem && onDeleteRole && (
+                                      <DropdownMenuItem
+                                        onClick={() => onDeleteRole(role)}
+                                        className='text-destructive focus:text-destructive'
+                                      >
+                                        <Trash2 className='mr-2 h-3.5 w-3.5' />
+                                        Hapus Peran
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              ) : onManageRolePermissions ? (
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-0.5'
+                                  onClick={() => onManageRolePermissions(role)}
+                                >
+                                  Lihat Detail
+                                </Button>
+                              ) : (
+                                <span className='text-[10px] text-muted-foreground font-mono select-none'>
+                                  —
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </th>
+                      )
+                    })}
+                  </tr>
+                </thead>
+
+                {/* Table Body: Grouped Permissions by Module */}
+                <tbody>
+                  {Object.entries(filteredGroupedPermissions).map(
+                    ([groupName, groupPerms]) => {
+                      const isCollapsed = collapsedModules.has(groupName)
+
+                      return (
+                        <Fragment key={groupName}>
+                          {/* Module Section Header Row */}
+                          <tr className='bg-muted/50'>
+                            <td className='sticky left-0 z-10 bg-muted/95 backdrop-blur-md py-2 px-3 font-semibold text-xs text-foreground border-b border-r'>
+                              <button
+                                type='button'
+                                onClick={() => toggleModuleCollapse(groupName)}
+                                className='flex items-center gap-1.5 w-full text-left group'
                               >
-                                <div className='flex items-center justify-center'>
-                                  {isSuper ? (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className='inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400'>
-                                          <Check className='h-4 w-4 stroke-[2.5]' />
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p className='text-xs'>Superadmin selalu memiliki akses penuh.</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : !isEditable ? (
-                                    isChecked ? (
+                                {isCollapsed ? (
+                                  <ChevronRight className='h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0' />
+                                ) : (
+                                  <ChevronDown className='h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0' />
+                                )}
+                                <div className='h-2 w-2 rounded-full bg-primary shrink-0' />
+                                <span className='uppercase tracking-wide text-[11px] truncate'>
+                                  {groupName}
+                                </span>
+                                <span className='text-[10px] text-muted-foreground font-normal shrink-0'>
+                                  ({groupPerms.length})
+                                </span>
+                              </button>
+                            </td>
+
+                            {/* Bulk action or summary for each role in this module */}
+                            {sortedRoles.map((role) => {
+                              const isSuper = role.name === 'Superadmin'
+                              const isEditable = isRoleEditable(role)
+
+                              if (isSuper) {
+                                return (
+                                  <td
+                                    key={`mod-${groupName}-${role.id}`}
+                                    className='py-1.5 px-2 text-center border-b border-r last:border-r-0 bg-muted/30 text-[10px] text-muted-foreground font-medium'
+                                  >
+                                    Semua ({groupPerms.length})
+                                  </td>
+                                )
+                              }
+
+                              const modulePermNames = groupPerms.map(
+                                (p) => p.name
+                              )
+                              const rolePerms =
+                                matrixState[role.id] || new Set()
+                              const activeCountInModule =
+                                modulePermNames.filter((n) =>
+                                  rolePerms.has(n)
+                                ).length
+                              const allSelected =
+                                modulePermNames.length > 0 &&
+                                activeCountInModule === modulePermNames.length
+
+                              if (!isEditable) {
+                                return (
+                                  <td
+                                    key={`mod-${groupName}-${role.id}`}
+                                    className='py-1.5 px-2 text-center border-b border-r last:border-r-0 bg-muted/30 text-[10px] text-muted-foreground font-mono'
+                                  >
+                                    {activeCountInModule === 0 ? (
+                                      <span className='text-muted-foreground/40'>
+                                        —
+                                      </span>
+                                    ) : (
+                                      <span className='font-medium text-foreground/80'>
+                                        {activeCountInModule}/
+                                        {modulePermNames.length}
+                                      </span>
+                                    )}
+                                  </td>
+                                )
+                              }
+
+                              return (
+                                <td
+                                  key={`mod-${groupName}-${role.id}`}
+                                  className='py-1 px-2 text-center border-b border-r last:border-r-0 bg-muted/30'
+                                >
+                                  <div className='flex items-center justify-center gap-1'>
+                                    <Button
+                                      type='button'
+                                      variant='ghost'
+                                      size='sm'
+                                      className='h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground'
+                                      onClick={() =>
+                                        toggleModulePermissions(
+                                          role.id,
+                                          groupPerms
+                                        )
+                                      }
+                                    >
+                                      {allSelected
+                                        ? `Batal (${activeCountInModule}/${modulePermNames.length})`
+                                        : activeCountInModule > 0
+                                          ? `Pilih Semua (${activeCountInModule}/${modulePermNames.length})`
+                                          : 'Pilih Semua'}
+                                    </Button>
+                                  </div>
+                                </td>
+                              )
+                            })}
+                          </tr>
+
+                          {/* Permission Rows under this Module (when expanded) */}
+                          {!isCollapsed &&
+                            groupPerms.map((perm) => {
+                              const meta = getPermissionMetadata(perm.name)
+                              const isCritical = meta.risk === 'critical'
+
+                              return (
+                                <tr
+                                  key={perm.name}
+                                  className='group/matrix-row hover:bg-muted/25 transition-colors h-9'
+                                >
+                                  {/* Sticky Left: Permission Title & Tooltip */}
+                                  <td className='sticky left-0 z-10 bg-card group-hover/matrix-row:bg-muted/60 py-1.5 px-3 border-b border-r backdrop-blur-md transition-colors'>
+                                    <div className='flex items-center justify-between gap-2'>
+                                      <div className='flex items-center gap-1.5 min-w-0'>
+                                        <span className='font-medium text-xs text-foreground truncate'>
+                                          {meta.label}
+                                        </span>
+                                        {isCritical && (
+                                          <span className='inline-flex items-center px-1 rounded text-[9px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0'>
+                                            Kritis
+                                          </span>
+                                        )}
+                                      </div>
+
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <div className='inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400 p-0.5 rounded'>
-                                            <Check className='h-4 w-4 stroke-[2.5]' />
-                                          </div>
+                                          <span className='cursor-help font-mono text-[9px] text-muted-foreground/60 hover:text-muted-foreground hidden sm:inline shrink-0 select-none'>
+                                            {perm.name}
+                                          </span>
                                         </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p className='text-xs'>
-                                            {isOwnRole
-                                              ? 'Izin aktif pada akun Anda'
-                                              : `Izin aktif untuk ${role.name}`}
+                                        <TooltipContent
+                                          side='right'
+                                          className='text-xs max-w-xs'
+                                        >
+                                          <p className='font-semibold'>
+                                            {meta.label} ({perm.name})
+                                          </p>
+                                          <p className='text-muted-foreground mt-0.5'>
+                                            {meta.description}
                                           </p>
                                         </TooltipContent>
                                       </Tooltip>
-                                    ) : (
-                                      <span className='text-muted-foreground/30 text-xs font-mono select-none leading-none'>
-                                        —
-                                      </span>
-                                    )
-                                  ) : (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div>
-                                          <Switch
-                                            checked={isChecked}
-                                            onCheckedChange={() =>
-                                              togglePermission(role.id, perm.name)
-                                            }
-                                            className={`${
-                                              isCellDirty ? 'ring-2 ring-amber-500' : ''
-                                            }`}
-                                          />
+                                    </div>
+                                  </td>
+
+                                  {/* Role Toggle / Checkmark Cells */}
+                                  {sortedRoles.map((role) => {
+                                    const isSuper = role.name === 'Superadmin'
+                                    const isEditable = isRoleEditable(role)
+                                    const isOwnRole =
+                                      !isSuperadmin &&
+                                      (role.name === currentUser?.role ||
+                                        currentUser?.roles?.includes(role.name))
+                                    const isChecked = isSuper
+                                      ? true
+                                      : matrixState[role.id]?.has(perm.name) ||
+                                        false
+
+                                    // Check if cell is changed compared to server
+                                    const serverHasPerm = (
+                                      role.permissions || []
+                                    ).some((p) => p.name === perm.name)
+                                    const isCellDirty =
+                                      !isSuper &&
+                                      isEditable &&
+                                      isChecked !== serverHasPerm
+
+                                    return (
+                                      <td
+                                        key={`${role.id}-${perm.name}`}
+                                        className={`py-1.5 px-2 text-center border-b border-r last:border-r-0 transition-colors ${
+                                          isOwnRole
+                                            ? 'bg-primary/2 dark:bg-primary/5'
+                                            : ''
+                                        } ${
+                                          isCellDirty ? 'bg-amber-500/10' : ''
+                                        }`}
+                                      >
+                                        <div className='flex items-center justify-center'>
+                                          {isSuper ? (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div className='inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400'>
+                                                  <Check className='h-4 w-4 stroke-[2.5]' />
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p className='text-xs'>
+                                                  <strong>{role.name}</strong> —{' '}
+                                                  {meta.label} (Akses Penuh)
+                                                </p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          ) : !isEditable ? (
+                                            isChecked ? (
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <div className='inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400 p-0.5 rounded'>
+                                                    <Check className='h-4 w-4 stroke-[2.5]' />
+                                                  </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                  <p className='text-xs'>
+                                                    <strong>{role.name}</strong>{' '}
+                                                    — {meta.label} (Aktif)
+                                                  </p>
+                                                </TooltipContent>
+                                              </Tooltip>
+                                            ) : (
+                                              <span className='text-muted-foreground/30 text-xs font-mono select-none leading-none'>
+                                                —
+                                              </span>
+                                            )
+                                          ) : (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div>
+                                                  <Switch
+                                                    checked={isChecked}
+                                                    onCheckedChange={() =>
+                                                      togglePermission(
+                                                        role.id,
+                                                        perm.name
+                                                      )
+                                                    }
+                                                    className={`${
+                                                      isCellDirty
+                                                        ? 'ring-2 ring-amber-500'
+                                                        : ''
+                                                    }`}
+                                                  />
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p className='text-xs font-medium'>
+                                                  {role.name} • {meta.label}
+                                                </p>
+                                                <p className='text-[11px] text-muted-foreground'>
+                                                  {isCellDirty
+                                                    ? 'Perubahan belum disimpan'
+                                                    : isChecked
+                                                      ? 'Izin aktif'
+                                                      : 'Izin nonaktif'}
+                                                </p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          )}
                                         </div>
-                                      </TooltipTrigger>
-                                      {isCellDirty && (
-                                        <TooltipContent>
-                                          <p className='text-xs'>Perubahan belum disimpan</p>
-                                        </TooltipContent>
-                                      )}
-                                    </Tooltip>
-                                  )}
-                                </div>
-                              </td>
-                            )
-                          })}
-                        </tr>
+                                      </td>
+                                    )
+                                  })}
+                                </tr>
+                              )
+                            })}
+                        </Fragment>
                       )
-                    })}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+                    }
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </TooltipProvider>
   )

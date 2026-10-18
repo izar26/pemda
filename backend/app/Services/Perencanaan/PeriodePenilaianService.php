@@ -255,6 +255,42 @@ class PeriodePenilaianService
             ]);
         }
 
+        $tujuanCount = $periode->tujuanPenilaians()->count();
+        $sasaranCount = $periode->sasaranPenilaians()->count();
+        $indikatorCount = $periode->indikatorPenilaians()->count();
+        $konteksCount = $periode->konteksPenilaians()->count();
+        $operasionalCount = $periode->konteksOperasionals()->count();
+
+        if (
+            $tujuanCount > 0 ||
+            $sasaranCount > 0 ||
+            $indikatorCount > 0 ||
+            $konteksCount > 0 ||
+            $operasionalCount > 0
+        ) {
+            $usages = [];
+            if ($tujuanCount > 0) {
+                $usages[] = "{$tujuanCount} Tujuan";
+            }
+            if ($sasaranCount > 0) {
+                $usages[] = "{$sasaranCount} Sasaran";
+            }
+            if ($indikatorCount > 0) {
+                $usages[] = "{$indikatorCount} Indikator";
+            }
+            if ($konteksCount > 0) {
+                $usages[] = "{$konteksCount} Konteks Strategis";
+            }
+            if ($operasionalCount > 0) {
+                $usages[] = "{$operasionalCount} Konteks Operasional";
+            }
+            $usageText = implode(', ', $usages);
+
+            throw ValidationException::withMessages([
+                'periode' => "Tidak dapat menghapus Periode Penilaian '{$periode->nama_periode}' karena masih memiliki data terkait ({$usageText}). Bersihkan data turunannya terlebih dahulu dari bawah.",
+            ]);
+        }
+
         $periode->delete();
     }
 

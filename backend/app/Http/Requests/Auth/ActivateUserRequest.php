@@ -33,7 +33,12 @@ class ActivateUserRequest extends FormRequest
             'phone' => ['required', 'string', 'max:20'],
             'pangkat_gol' => ['required', 'string', 'max:60'],
             'jabatan' => ['required', 'string', 'max:150'],
-            'opd_id' => ['required', 'string', 'uuid', 'exists:opds,id'],
+            'opd_id' => [
+                'required',
+                'string',
+                'uuid',
+                Rule::exists('opds', 'id')->where('is_active', true),
+            ],
             'password' => [
                 'required',
                 'string',

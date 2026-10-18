@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\HasUuid7;
+use App\Models\Perencanaan\IndikatorPenilaian;
+use App\Models\Perencanaan\SasaranPenilaian;
+use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\KonteksOperasional;
+use App\Models\Risiko\KonteksPenilaian;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,4 +44,45 @@ class Opd extends Model
     {
         return $this->hasMany(User::class, 'opd_id');
     }
+
+    /**
+     * @return HasMany<TujuanPenilaian, $this>
+     */
+    public function tujuanPenilaians(): HasMany
+    {
+        return $this->hasMany(TujuanPenilaian::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<SasaranPenilaian, $this>
+     */
+    public function sasaranPenilaians(): HasMany
+    {
+        return $this->hasMany(SasaranPenilaian::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<IndikatorPenilaian, $this>
+     */
+    public function indikatorPenilaians(): HasMany
+    {
+        return $this->hasMany(IndikatorPenilaian::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<KonteksPenilaian, $this>
+     */
+    public function konteksPenilaians(): HasMany
+    {
+        return $this->hasMany(KonteksPenilaian::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<KonteksOperasional, $this>
+     */
+    public function konteksOperasionals(): HasMany
+    {
+        return $this->hasMany(KonteksOperasional::class, 'opd_id');
+    }
 }
+

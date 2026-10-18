@@ -5,17 +5,29 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, Check, Loader2, Sparkles, UserPlus, UserCheck } from 'lucide-react'
+import {
+  Award,
+  Building2,
+  Check,
+  KeyRound,
+  Loader2,
+  Mail,
+  Phone,
+  Shield,
+  Sparkles,
+  UserCheck,
+  UserPlus,
+  Users,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 import { rbacService } from '@/services/rbac-service'
 import { opdService } from '@/services/opd-service'
 import { userService } from '@/services/user-service'
-import { PANGKAT_GOLONGAN_OPTIONS } from '../data/pangkat-golongan'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SearchableSelect } from '@/components/searchable-select'
-
 import {
   Dialog,
   DialogContent,
@@ -32,7 +44,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
 import {
   Select,
@@ -44,41 +55,15 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { User } from '../data/schema'
 
-const userFormSchema = z
+const userAccountFormSchema = z
   .object({
-    name: z
-      .string()
-      .min(1, 'Nama lengkap beserta gelar wajib diisi.')
-      .min(2, 'Nama lengkap minimal 2 karakter.')
-      .max(100, 'Maksimal 100 karakter.'),
-    email: z
-      .string()
-      .min(1, 'Email resmi / dinas wajib diisi.')
-      .email('Format email dinas tidak valid.')
-      .max(100, 'Maksimal 100 karakter.'),
-    nip: z
-      .string()
-      .min(1, 'NIP (Nomor Induk Pegawai) wajib diisi.')
-      .max(30, 'NIP maksimal 30 karakter.'),
-    phone: z
-      .string()
-      .min(1, 'Nomor WhatsApp / HP wajib diisi.')
-      .max(20, 'Nomor telepon maksimal 20 karakter.'),
-    opd_id: z
-      .string()
-      .min(1, 'Instansi / Perangkat Daerah (OPD) wajib dipilih.'),
-    pangkat_gol: z
-      .string()
-      .min(1, 'Pangkat / Golongan Ruang wajib dipilih.'),
-    jabatan: z
-      .string()
-      .min(1, 'Jabatan kedinasan wajib diisi.')
-      .max(150, 'Jabatan maksimal 150 karakter.'),
+    opd_id: z.string().min(1, 'Instansi / Perangkat Daerah (OPD) wajib dipilih terlebih dahulu.'),
+    pegawai_id: z.string().min(1, 'Pegawai wajib dipilih.'),
     role: z.string().min(1, 'Peran (Role) wajib dipilih.'),
-    status: z.enum(['active', 'inactive', 'suspended', 'pending_activation'], {
-      message: 'Status akun pegawai wajib dipilih.',
-    }),
     password: z.string().optional(),
+    status: z.enum(['active', 'inactive'], {
+      message: 'Status akun wajib dipilih (Aktif atau Nonaktif).',
+    }),
     isEdit: z.boolean(),
   })
   .refine(
@@ -87,7 +72,7 @@ const userFormSchema = z
       return Boolean(data.password && data.password.trim().length > 0)
     },
     {
-      message: 'Kata sandi awal akun wajib diisi.',
+      message: 'Kata sandi akun wajib diisi.',
       path: ['password'],
     }
   )
@@ -108,7 +93,7 @@ const userFormSchema = z
         /[a-z]/.test(data.password) &&
         /[A-Z]/.test(data.password) &&
         /\d/.test(data.password) &&
-        /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(data.password)
+        /[^a-zA-Z0-9]/.test(data.password)
       )
     },
     {
@@ -117,7 +102,7 @@ const userFormSchema = z
     }
   )
 
-type UserFormValues = z.infer<typeof userFormSchema>
+type UserAccountFormValues = z.infer<typeof userAccountFormSchema>
 
 interface UsersActionDialogProps {
   currentRow?: User | null
@@ -135,7 +120,15 @@ export function UsersActionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [copiedPassword, setCopiedPassword] = useState(false)
 
-  // Fetch dynamic roles for the dropdown (only when dialog is opened)
+  // 1. Fetch OPDs
+  const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
+    queryKey: ['opds', 'list'],
+    queryFn: () => opdService.getOpds(),
+    enabled: open && !isEdit,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // 2. Fetch Roles
   const { data: roles = [], isLoading: isLoadingRoles } = useQuery({
     queryKey: ['roles'],
     queryFn: rbacService.getRoles,
@@ -143,13 +136,40 @@ export function UsersActionDialog({
     staleTime: 5 * 60 * 1000,
   })
 
-  // Fetch dynamic OPDs for the dropdown (only when dialog is opened)
-  const { data: opds = [], isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds', 'list'],
-    queryFn: () => opdService.getOpds(),
-    enabled: open,
-    staleTime: 5 * 60 * 1000,
+  const form = useForm<UserAccountFormValues>({
+    resolver: zodResolver(userAccountFormSchema),
+    defaultValues: {
+      opd_id: '',
+      pegawai_id: '',
+      role: '',
+      password: '',
+      status: 'active',
+      isEdit: false,
+    },
+    mode: 'onChange',
   })
+
+  const watchedOpdId = form.watch('opd_id')
+  const watchedPegawaiId = form.watch('pegawai_id')
+  const watchedPassword = form.watch('password') || ''
+
+  // 3. Fetch Pegawai filtered by selected OPD who do NOT yet have an account
+  const { data: pegawaiResponse, isLoading: isLoadingPegawai } = useQuery({
+    queryKey: ['pegawai', 'available-for-account', watchedOpdId],
+    queryFn: () =>
+      userService.getPegawai({
+        opd_id: watchedOpdId,
+        has_account: false,
+        per_page: 200,
+      }),
+    enabled: open && !isEdit && Boolean(watchedOpdId),
+    staleTime: 0,
+  })
+
+  const availablePegawaiList = useMemo(
+    () => pegawaiResponse?.data || [],
+    [pegawaiResponse]
+  )
 
   const opdOptions = useMemo(() => {
     return (Array.isArray(opds) ? opds : []).map((opd) => ({
@@ -161,35 +181,20 @@ export function UsersActionDialog({
     }))
   }, [opds])
 
-  const pangkatOptions = useMemo(() => {
-    return PANGKAT_GOLONGAN_OPTIONS.map((opt) => ({
-      value: opt.value,
-      label: opt.label,
-      group: opt.golongan,
-      badge: opt.golongan,
-      keywords: [opt.golongan],
+  const pegawaiOptions = useMemo(() => {
+    return availablePegawaiList.map((p) => ({
+      value: String(p.id),
+      label: `${p.name}${p.nip ? ` — NIP. ${p.nip}` : ''}`,
+      group: p.jabatan === 'Kepala OPD' ? 'Kepala OPD' : 'Pegawai',
+      badge: p.jabatan || 'Pegawai',
+      keywords: [p.nip || '', p.email || '', p.jabatan || ''],
     }))
-  }, [])
+  }, [availablePegawaiList])
 
-  const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      nip: '',
-      phone: '',
-      opd_id: '',
-      pangkat_gol: '',
-      jabatan: '',
-      role: '',
-      status: 'active',
-      password: '',
-      isEdit: false,
-    },
-    mode: 'onChange',
-  })
-
-  const watchedPassword = form.watch('password') || ''
+  const selectedPegawai = useMemo(() => {
+    if (isEdit && currentRow) return currentRow
+    return availablePegawaiList.find((p) => String(p.id) === String(watchedPegawaiId)) || null
+  }, [isEdit, currentRow, availablePegawaiList, watchedPegawaiId])
 
   const criteria = [
     { id: 'min_length', label: 'Min. 8 Karakter', valid: watchedPassword.length >= 8 },
@@ -206,40 +211,31 @@ export function UsersActionDialog({
   const validCount = criteria.filter((c) => c.valid).length
   const isAllValid = validCount === criteria.length
 
-  // Sync form when dialog opens or currentRow changes
   useEffect(() => {
     if (open) {
       if (currentRow) {
+        const normalizedStatus =
+          currentRow.status === 'inactive' ? 'inactive' : 'active'
         form.reset({
-          name: currentRow.name,
-          email: currentRow.email,
-          nip: currentRow.nip || '',
-          phone: currentRow.phone || '',
-          opd_id: currentRow.opd_id ? String(currentRow.opd_id) : '',
-          pangkat_gol: currentRow.pangkat_gol || '',
-          jabatan: currentRow.jabatan || '',
-          role: currentRow.role,
-          status: currentRow.status,
+          opd_id: currentRow.opd_id ? String(currentRow.opd_id) : 'assigned',
+          pegawai_id: String(currentRow.id),
+          role: currentRow.role || '',
           password: '',
+          status: normalizedStatus,
           isEdit: true,
         })
       } else {
         form.reset({
-          name: '',
-          email: '',
-          nip: '',
-          phone: '',
           opd_id: '',
-          pangkat_gol: '',
-          jabatan: '',
-          role: Array.isArray(roles) && roles[0] ? roles[0].name : '',
-          status: 'active',
+          pegawai_id: '',
+          role: '',
           password: '',
+          status: 'active',
           isEdit: false,
         })
       }
     }
-  }, [open, currentRow, form, roles])
+  }, [open, currentRow, form])
 
   // Generator for strong passwords
   function generateSecurePassword() {
@@ -259,7 +255,10 @@ export function UsersActionDialog({
       pwd += all[Math.floor(Math.random() * all.length)]
     }
 
-    pwd = pwd.split('').sort(() => 0.5 - Math.random()).join('')
+    pwd = pwd
+      .split('')
+      .sort(() => 0.5 - Math.random())
+      .join('')
 
     form.setValue('password', pwd, { shouldValidate: true })
     navigator.clipboard.writeText(pwd)
@@ -268,47 +267,50 @@ export function UsersActionDialog({
     setTimeout(() => setCopiedPassword(false), 3000)
   }
 
-  async function onSubmit(data: UserFormValues) {
+  async function onSubmit(data: UserAccountFormValues) {
     setIsSubmitting(true)
     try {
       if (isEdit && currentRow) {
-        await userService.updateUser(currentRow.id, {
-          name: data.name.trim(),
-          email: data.email.trim(),
-          nip: data.nip.trim(),
-          phone: data.phone.trim(),
-          opd_id: data.opd_id,
-          pangkat_gol: data.pangkat_gol,
-          jabatan: data.jabatan.trim(),
+        await userService.updateUserAccount(currentRow.id, {
           role: data.role,
           status: data.status,
           password: data.password ? data.password : undefined,
         })
-        toast.success(`Data pegawai "${data.name}" berhasil diperbarui.`)
+        toast.success(`Akun user "${currentRow.name}" berhasil diperbarui.`)
       } else {
-        await userService.createUser({
-          name: data.name.trim(),
-          email: data.email.trim(),
-          nip: data.nip.trim(),
-          phone: data.phone.trim(),
-          opd_id: data.opd_id,
-          pangkat_gol: data.pangkat_gol,
-          jabatan: data.jabatan.trim(),
+        await userService.createUserAccount({
+          pegawai_id: data.pegawai_id,
           role: data.role,
-          status: data.status,
           password: data.password!,
+          status: data.status,
         })
-        toast.success(`Pegawai "${data.name}" berhasil ditambahkan.`)
+        toast.success(
+          `Akun login untuk "${selectedPegawai?.name || 'Pegawai'}" berhasil dibuat.`
+        )
       }
 
+      queryClient.invalidateQueries({ queryKey: ['user-accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['pegawai'] })
       queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onOpenChange(false)
     } catch (error) {
-      const msg =
-        isAxiosError(error) && error.response?.data?.message
-          ? error.response.data.message
-          : 'Terjadi kesalahan saat menyimpan data pegawai.'
-      toast.error(msg)
+      if (isAxiosError(error) && error.response?.data) {
+        const errorData = error.response.data as {
+          message?: string
+          errors?: Record<string, string[]>
+        }
+        const firstFieldError = errorData.errors
+          ? Object.values(errorData.errors)[0]?.[0]
+          : undefined
+        toast.error(
+          firstFieldError ||
+            errorData.message ||
+            'Terjadi kesalahan saat menyimpan akun user.'
+        )
+      } else {
+        toast.error('Terjadi kesalahan saat menyimpan akun user.')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -321,16 +323,22 @@ export function UsersActionDialog({
         <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <div className='flex items-center gap-3'>
             <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
-              {isEdit ? <UserCheck className='h-5 w-5' /> : <UserPlus className='h-5 w-5' />}
+              {isEdit ? (
+                <UserCheck className='h-5 w-5' />
+              ) : (
+                <UserPlus className='h-5 w-5' />
+              )}
             </div>
             <div>
               <DialogTitle className='text-lg font-bold text-foreground'>
-                {isEdit ? `Edit Pegawai: ${currentRow?.name}` : 'Tambah Pegawai Baru'}
+                {isEdit
+                  ? `Edit Akun User: ${currentRow?.name}`
+                  : 'Tambah Akun User Pegawai'}
               </DialogTitle>
               <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
                 {isEdit
-                  ? 'Perbarui identitas, instansi, jabatan, dan hak akses akun pegawai.'
-                  : 'Daftarkan akun pegawai resmi ke sistem portal PEMDA. Semua kolom wajib diisi.'}
+                  ? 'Perbarui peran akses (RBAC), kata sandi, atau status aktif akun login pegawai.'
+                  : 'Pilih OPD dan pegawai terlebih dahulu untuk memberikan akses akun login ke sistem.'}
               </DialogDescription>
             </div>
           </div>
@@ -344,282 +352,189 @@ export function UsersActionDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4'
             >
-              {/* Nama Lengkap */}
+              {!isEdit && (
+                <>
+                  {/* 1. Pilih OPD Terlebih Dahulu */}
+                  <FormField
+                    control={form.control}
+                    name='opd_id'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                          <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
+                            1
+                          </span>
+                          <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
+                          Pilih Perangkat Daerah (OPD){' '}
+                          <span className='text-destructive'>*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <SearchableSelect
+                            disabled={isSubmitting || isLoadingOpds}
+                            value={field.value}
+                            onValueChange={(val) => {
+                              field.onChange(val)
+                              form.setValue('pegawai_id', '', {
+                                shouldValidate: false,
+                              })
+                            }}
+                            options={opdOptions}
+                            placeholder={
+                              isLoadingOpds
+                                ? 'Memuat daftar OPD...'
+                                : 'Pilih perangkat daerah untuk memfilter pegawai...'
+                            }
+                            searchPlaceholder='Cari nama atau kode OPD...'
+                            emptyMessage='Tidak ada perangkat daerah yang cocok.'
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 2. Pilih Pegawai */}
+                  <FormField
+                    control={form.control}
+                    name='pegawai_id'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                          <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
+                            2
+                          </span>
+                          <Users className='h-3.5 w-3.5 text-muted-foreground' />
+                          Pilih Pegawai <span className='text-destructive'>*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <SearchableSelect
+                            disabled={
+                              isSubmitting ||
+                              !watchedOpdId ||
+                              isLoadingPegawai
+                            }
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            options={pegawaiOptions}
+                            placeholder={
+                              !watchedOpdId
+                                ? 'Pilih OPD terlebih dahulu di langkah 1...'
+                                : isLoadingPegawai
+                                  ? 'Memuat daftar pegawai OPD...'
+                                  : availablePegawaiList.length === 0
+                                    ? 'Semua pegawai di OPD ini sudah memiliki akun / belum ada data'
+                                    : 'Pilih pegawai yang akan diberikan akun...'
+                            }
+                            searchPlaceholder='Cari nama atau NIP pegawai...'
+                            emptyMessage='Tidak ada pegawai tanpa akun pada OPD ini.'
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {/* Selected Pegawai Summary Card (shown in Edit mode or once Pegawai is chosen) */}
+              {selectedPegawai && (
+                <div className='rounded-lg border bg-muted/20 p-3 text-xs space-y-2'>
+                  <div className='flex items-start justify-between gap-2'>
+                    <div>
+                      <p className='font-semibold text-foreground text-sm'>
+                        {selectedPegawai.name}
+                      </p>
+                      <p className='text-muted-foreground font-mono text-[11px]'>
+                        NIP. {selectedPegawai.nip || '-'}
+                      </p>
+                    </div>
+                    <Badge
+                      variant='outline'
+                      className={cn(
+                        'text-[11px] font-medium gap-1',
+                        selectedPegawai.jabatan === 'Kepala OPD'
+                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                          : 'border-border bg-background text-foreground'
+                      )}
+                    >
+                      {selectedPegawai.jabatan === 'Kepala OPD' && (
+                        <Award className='h-3 w-3' />
+                      )}
+                      {selectedPegawai.jabatan || 'Pegawai'}
+                    </Badge>
+                  </div>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 border-t text-[11px] text-muted-foreground'>
+                    <div className='flex items-center gap-1.5 truncate'>
+                      <Mail className='h-3 w-3 shrink-0' />
+                      <span className='truncate'>{selectedPegawai.email}</span>
+                    </div>
+                    <div className='flex items-center gap-1.5'>
+                      <Phone className='h-3 w-3 shrink-0' />
+                      <span className='font-mono'>
+                        {selectedPegawai.phone || '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Pilih Role */}
               <FormField
                 control={form.control}
-                name='name'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='text-xs font-semibold'>
-                      Nama Lengkap Beserta Gelar <span className='text-destructive'>*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='Contoh: Dr. H. Ahmad Sudrajat, M.Si'
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='text-xs' />
-                  </FormItem>
-                )}
-              />
-
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                {/* Email Dinas */}
-                <FormField
-                  control={form.control}
-                  name='email'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        Email Resmi / Dinas <span className='text-destructive'>*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type='email'
-                          placeholder='ahmad.sudrajat@pemda.go.id'
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-
-                {/* NIP */}
-                <FormField
-                  control={form.control}
-                  name='nip'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        NIP (Nomor Induk Pegawai) <span className='text-destructive'>*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='198503152010011002'
-                          maxLength={30}
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Instansi / OPD */}
-              <FormField
-                control={form.control}
-                name='opd_id'
+                name='role'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                      <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
-                      Instansi / Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
+                      {!isEdit && (
+                        <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
+                          3
+                        </span>
+                      )}
+                      <Shield className='h-3.5 w-3.5 text-muted-foreground' />
+                      Pilih Peran (Role RBAC){' '}
+                      <span className='text-destructive'>*</span>
                     </FormLabel>
-                    <FormControl>
-                      <SearchableSelect
-                        disabled={isSubmitting || isLoadingOpds}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        options={opdOptions}
-                        placeholder={
-                          isLoadingOpds
-                            ? 'Memuat daftar OPD...'
-                            : 'Pilih perangkat daerah...'
-                        }
-                        searchPlaceholder='Cari nama atau singkatan OPD (misal: Disdik, Setda, Bappeda)...'
-                        emptyMessage='Tidak ada perangkat daerah yang cocok.'
-                      />
-                    </FormControl>
+                    <Select
+                      disabled={isSubmitting || isLoadingRoles}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Pilih peran hak akses...' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(Array.isArray(roles) ? roles : []).map((r) => (
+                          <SelectItem key={r.id} value={r.name}>
+                            <div className='flex items-center gap-2'>
+                              <span>{r.name}</span>
+                              {r.is_system && (
+                                <span className='text-[10px] text-blue-600 bg-blue-50 dark:bg-blue-950 px-1 py-0.2 rounded'>
+                                  Sistem
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}
               />
 
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                {/* Jabatan Kedinasan */}
-                <FormField
-                  control={form.control}
-                  name='jabatan'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        Jabatan Kedinasan <span className='text-destructive'>*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='Contoh: Kepala Bidang Informatika'
-                          maxLength={150}
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Pangkat / Golongan */}
-                <FormField
-                  control={form.control}
-                  name='pangkat_gol'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        Pangkat / Golongan Ruang <span className='text-destructive'>*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <SearchableSelect
-                          disabled={isSubmitting}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          options={pangkatOptions}
-                          placeholder='Pilih pangkat / golongan...'
-                          searchPlaceholder='Cari nama pangkat atau ruang (misal: Pembina, III/a, PPPK)...'
-                          emptyMessage='Tidak ada pangkat yang cocok.'
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                {/* No HP / WA */}
-                <FormField
-                  control={form.control}
-                  name='phone'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        No. WhatsApp / HP <span className='text-destructive'>*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='081234567890'
-                          maxLength={20}
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Role Dropdown */}
-                <FormField
-                  control={form.control}
-                  name='role'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-xs font-semibold'>
-                        Peran (Role) <span className='text-destructive'>*</span>
-                      </FormLabel>
-                      <Select
-                        disabled={isSubmitting || isLoadingRoles}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className='w-full'>
-                            <SelectValue placeholder='Pilih peran pegawai...' />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(Array.isArray(roles) ? roles : []).map((r) => (
-                            <SelectItem key={r.id} value={r.name}>
-                              <div className='flex items-center gap-2'>
-                                <span>{r.name}</span>
-                                {r.is_system && (
-                                  <span className='text-[10px] text-blue-600 bg-blue-50 dark:bg-blue-950 px-1 py-0.2 rounded'>
-                                    Sistem
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className='text-xs' />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Status Pegawai */}
-              <FormField
-                control={form.control}
-                name='status'
-                render={({ field }) => (
-                  <FormItem className='space-y-2 pt-1'>
-                    <FormLabel className='text-xs font-semibold'>
-                      Status Akun Pegawai <span className='text-destructive'>*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className={cn(
-                          'grid gap-2',
-                          field.value === 'pending_activation' ? 'grid-cols-4' : 'grid-cols-3'
-                        )}
-                      >
-                        <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
-                          <FormControl>
-                            <RadioGroupItem value='active' />
-                          </FormControl>
-                          <FormLabel className='font-normal cursor-pointer text-xs'>
-                            Aktif
-                          </FormLabel>
-                        </FormItem>
-
-                        {field.value === 'pending_activation' && (
-                          <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-amber-500 [&:has([data-state=checked])]:bg-amber-500/5'>
-                            <FormControl>
-                              <RadioGroupItem value='pending_activation' />
-                            </FormControl>
-                            <FormLabel className='font-normal cursor-pointer text-xs text-amber-700 dark:text-amber-400'>
-                              Menunggu
-                            </FormLabel>
-                          </FormItem>
-                        )}
-
-                        <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
-                          <FormControl>
-                            <RadioGroupItem value='inactive' />
-                          </FormControl>
-                          <FormLabel className='font-normal cursor-pointer text-xs'>
-                            Nonaktif
-                          </FormLabel>
-                        </FormItem>
-
-                        <FormItem className='flex items-center space-x-2 space-y-0 rounded-lg border p-2.5 text-xs font-medium cursor-pointer [&:has([data-state=checked])]:border-destructive [&:has([data-state=checked])]:bg-destructive/5'>
-                          <FormControl>
-                            <RadioGroupItem value='suspended' />
-                          </FormControl>
-                          <FormLabel className='font-normal cursor-pointer text-xs'>
-                            Ditangguhkan
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage className='text-xs' />
-                  </FormItem>
-                )}
-              />
-
-              {/* Password Field */}
-              <div className='pt-2 border-t'>
-                <div className='flex items-center justify-between pb-1.5'>
-                  <FormLabel className='text-xs font-semibold'>
-                    {isEdit ? 'Ubah Kata Sandi (Opsional)' : 'Kata Sandi Awal Akun'}{' '}
+              {/* 4. Masukkan Kata Sandi */}
+              <div className='space-y-1.5'>
+                <div className='flex items-center justify-between'>
+                  <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                    {!isEdit && (
+                      <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
+                        4
+                      </span>
+                    )}
+                    <KeyRound className='h-3.5 w-3.5 text-muted-foreground' />
+                    {isEdit ? 'Ubah Kata Sandi (Opsional)' : 'Masukkan Kata Sandi'}{' '}
                     {!isEdit && <span className='text-destructive'>*</span>}
                   </FormLabel>
                   <Button
@@ -644,7 +559,7 @@ export function UsersActionDialog({
                           placeholder={
                             isEdit
                               ? 'Biarkan kosong bila tidak ingin mengganti sandi'
-                              : 'Masukkan kata sandi awal pegawai...'
+                              : 'Masukkan kata sandi login...'
                           }
                           disabled={isSubmitting}
                           {...field}
@@ -655,11 +570,10 @@ export function UsersActionDialog({
                   )}
                 />
 
-                {/* Password Strength Checklist */}
                 {watchedPassword.length > 0 && (
-                  <div className='mt-2.5 p-2.5 rounded-lg border bg-muted/20 text-xs space-y-1.5'>
+                  <div className='mt-2 p-2.5 rounded-lg border bg-muted/20 text-xs space-y-1.5'>
                     <div className='flex items-center justify-between font-medium text-[11px] text-muted-foreground mb-1'>
-                      <span>Standar Keamanan Sandi Sandi:</span>
+                      <span>Standar Keamanan Kata Sandi:</span>
                       <span
                         className={cn(
                           'font-semibold',
@@ -697,6 +611,50 @@ export function UsersActionDialog({
                   </div>
                 )}
               </div>
+
+              {/* 5. Status Akun (Strictly 2 Options: Aktif / Nonaktif) */}
+              <FormField
+                control={form.control}
+                name='status'
+                render={({ field }) => (
+                  <FormItem className='space-y-2 pt-1'>
+                    <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
+                      {!isEdit && (
+                        <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
+                          5
+                        </span>
+                      )}
+                      Status Akun <span className='text-destructive'>*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className='grid grid-cols-2 gap-3'
+                      >
+                        <FormItem className='flex items-center space-x-2.5 space-y-0 rounded-lg border p-3 text-xs font-medium cursor-pointer transition-colors [&:has([data-state=checked])]:border-emerald-500 [&:has([data-state=checked])]:bg-emerald-500/5'>
+                          <FormControl>
+                            <RadioGroupItem value='active' />
+                          </FormControl>
+                          <FormLabel className='font-semibold cursor-pointer text-xs text-emerald-700 dark:text-emerald-400'>
+                            Aktif (Dapat Login)
+                          </FormLabel>
+                        </FormItem>
+
+                        <FormItem className='flex items-center space-x-2.5 space-y-0 rounded-lg border p-3 text-xs font-medium cursor-pointer transition-colors [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5'>
+                          <FormControl>
+                            <RadioGroupItem value='inactive' />
+                          </FormControl>
+                          <FormLabel className='font-semibold cursor-pointer text-xs text-muted-foreground'>
+                            Nonaktif (Akses Diblokir)
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage className='text-xs' />
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
         </div>
@@ -727,7 +685,7 @@ export function UsersActionDialog({
             ) : isEdit ? (
               'Simpan Perubahan'
             ) : (
-              'Tambah Pegawai'
+              'Buat Akun User'
             )}
           </Button>
         </DialogFooter>
