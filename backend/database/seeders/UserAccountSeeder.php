@@ -15,14 +15,14 @@ class UserAccountSeeder extends Seeder
      */
     public function run(): void
     {
-        // Credentials for demonstration accounts
+        // 10 Official Demonstration Accounts matching the specification
         // Password for all demo accounts is standardized to: Password@123
         $accounts = [
-            'admin@pemda.go.id' => [
+            'administrator@pemda.go.id' => [
                 'role' => 'Superadmin',
                 'status' => 'active',
             ],
-            'admin.office@pemda.go.id' => [
+            'admin@pemda.go.id' => [
                 'role' => 'Admin Office',
                 'status' => 'active',
             ],
@@ -30,7 +30,7 @@ class UserAccountSeeder extends Seeder
                 'role' => 'Bapperida',
                 'status' => 'active',
             ],
-            'inspektorat@pemda.go.id' => [
+            'pengawas@pemda.go.id' => [
                 'role' => 'Inspektorat',
                 'status' => 'active',
             ],
@@ -38,29 +38,41 @@ class UserAccountSeeder extends Seeder
                 'role' => 'Auditor',
                 'status' => 'active',
             ],
-            'opd.dputr@pemda.go.id' => [
+            'opputr@pemda.go.id' => [
                 'role' => 'OPD',
                 'status' => 'active',
             ],
-            'opd.dinkes@pemda.go.id' => [
-                'role' => 'OPD',
+            'bapperida2@pemda.go.id' => [
+                'role' => 'Bapperida',
                 'status' => 'active',
             ],
-            'opd.disdik@pemda.go.id' => [
-                'role' => 'OPD',
+            'pengawas2@pemda.go.id' => [
+                'role' => 'Inspektorat',
                 'status' => 'active',
             ],
-            'opd.diskominfo@pemda.go.id' => [
-                'role' => 'OPD',
+            'auditor2@pemda.go.id' => [
+                'role' => 'Auditor',
                 'status' => 'active',
             ],
-            'bupati@pemda.go.id' => [
-                'role' => 'Executive',
+            'opperkim@pemda.go.id' => [
+                'role' => 'OPD',
                 'status' => 'active',
             ],
         ];
 
         $defaultPassword = Hash::make('Password@123');
+
+        // Detach roles & deactivate any obsolete prototype accounts not in the 10 official accounts
+        $activeAccountEmails = array_keys($accounts);
+        $obsoleteUsers = User::whereNotIn('email', $activeAccountEmails)->whereNotNull('password')->get();
+        foreach ($obsoleteUsers as $obs) {
+            $obs->syncRoles([]);
+            $obs->update([
+                'password' => null,
+                'status' => null,
+                'role' => null,
+            ]);
+        }
 
         foreach ($accounts as $email => $config) {
             $user = User::where('email', $email)->first();
@@ -68,7 +80,7 @@ class UserAccountSeeder extends Seeder
                 $user->update([
                     'password' => $defaultPassword,
                     'status' => $config['status'],
-                    'role' => strtolower(str_replace(' ', '_', $config['role'])),
+                    'role' => $config['role'],
                     'failed_login_attempts' => 0,
                     'lockout_until' => null,
                 ]);

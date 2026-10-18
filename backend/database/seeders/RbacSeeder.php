@@ -23,10 +23,6 @@ class RbacSeeder extends Seeder
         // 1. Define Master Permissions strictly per active menu in application (100% clean)
         // Group name matches the navigation menu structure
         $permissionGroups = [
-            'Dashboard' => [
-                ['name' => 'dashboard.view', 'description' => 'Melihat ringkasan eksekutif dan statistik dashboard (Fitur 1 & 6)'],
-                ['name' => 'dashboard.export', 'description' => 'Mengekspor laporan ringkasan dashboard ke Excel (Fitur 31)'],
-            ],
             'Perangkat Daerah (OPD)' => [
                 ['name' => 'opd.view', 'description' => 'Melihat direktori instansi perangkat daerah (Fitur 11)'],
                 ['name' => 'opd.create', 'description' => 'Menambahkan data instansi perangkat daerah baru (Fitur 11)'],
@@ -130,7 +126,6 @@ class RbacSeeder extends Seeder
                 'description' => 'Pengelola operasional data induk, pegawai, master data, dan pemantauan menyeluruh.',
                 'is_system' => false,
                 'permissions' => [
-                    'dashboard.view', 'dashboard.export',
                     'opd.view', 'opd.create', 'opd.edit', 'opd.delete',
                     'pegawai.view', 'pegawai.create', 'pegawai.edit', 'pegawai.delete',
                     'users.view', 'users.create', 'users.edit', 'users.delete', 'users.reset_2fa',
@@ -148,7 +143,6 @@ class RbacSeeder extends Seeder
                 'description' => 'Badan Perencanaan yang mengelola Periode Penilaian (Fitur 13) dan Cascading Makro Kinerja (Fitur 14-17).',
                 'is_system' => false,
                 'permissions' => [
-                    'dashboard.view', 'dashboard.export',
                     'periode.view', 'periode.create', 'periode.edit', 'periode.delete',
                     'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
                     'konteks_risiko.view', 'konteks_risiko.export',
@@ -159,7 +153,6 @@ class RbacSeeder extends Seeder
                 'description' => 'Organisasi Perangkat Daerah yang mengelola data Renstra dan Risiko pada instansi masing-masing.',
                 'is_system' => false,
                 'permissions' => [
-                    'dashboard.view',
                     'tujuan.view',
                     'konteks_risiko.view', 'konteks_risiko.create', 'konteks_risiko.edit', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.create', 'konteks_operasional.edit', 'konteks_operasional.export',
@@ -169,7 +162,6 @@ class RbacSeeder extends Seeder
                 'description' => 'APIP / Pengawas Daerah yang memantau evaluasi SPIP, survei, wilayah, dan rekap risiko.',
                 'is_system' => false,
                 'permissions' => [
-                    'dashboard.view',
                     'tujuan.view',
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
@@ -180,7 +172,6 @@ class RbacSeeder extends Seeder
                 'description' => 'Fungsional pengawas yang melaksanakan audit, riviu, dan tindak lanjut rekomendasi perbaikan.',
                 'is_system' => false,
                 'permissions' => [
-                    'dashboard.view',
                     'tujuan.view',
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
@@ -191,7 +182,6 @@ class RbacSeeder extends Seeder
                 'description' => 'Pimpinan Daerah (Bupati / Sekda) untuk memantau dashboard eksekutif dan laporan ringkasan.',
                 'is_system' => false,
                 'permissions' => [
-                    'dashboard.view', 'dashboard.export',
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
                 ],
@@ -211,10 +201,11 @@ class RbacSeeder extends Seeder
             $role->syncPermissions($info['permissions'] ?? []);
         }
 
-        // 3. Assign Superadmin to Default Admin User
-        $admin = User::where('email', 'admin@pemda.go.id')->first();
-        if ($admin) {
-            $admin->syncRoles(['Superadmin']);
+        // 3. Assign Superadmin to Default Administrator User
+        $superadmin = User::where('email', 'administrator@pemda.go.id')->first()
+            ?? User::where('email', 'admin@pemda.go.id')->first();
+        if ($superadmin) {
+            $superadmin->syncRoles(['Superadmin']);
         }
 
         // Clear cache again after seeding

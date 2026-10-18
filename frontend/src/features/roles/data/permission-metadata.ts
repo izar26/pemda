@@ -8,21 +8,7 @@ export interface PermissionMetadata {
 }
 
 export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
-  // 1. Dashboard (Fitur 1 & 6)
-  'dashboard.view': {
-    label: 'Lihat Dashboard',
-    description: 'Melihat ringkasan eksekutif, metrik kinerja, dan statistik portal.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-  'dashboard.export': {
-    label: 'Ekspor Dashboard',
-    description: 'Mengekspor laporan ringkasan eksekutif tata kelola ke Excel.',
-    risk: 'low',
-    badgeLabel: 'Aman',
-  },
-
-  // 2. Perangkat Daerah / OPD (Fitur 11)
+  // 1. Perangkat Daerah / OPD (Fitur 11)
   'opd.view': {
     label: 'Lihat Perangkat Daerah',
     description: 'Melihat direktori instansi dinas, badan, sekretariat, dan kecamatan.',

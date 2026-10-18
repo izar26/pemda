@@ -17,31 +17,134 @@ class PegawaiSeeder extends Seeder
     {
         $opds = Opd::all()->keyBy('kode');
 
+        $obsoleteEmails = [
+            'admin.office@pemda.go.id',
+            'opd.dputr@pemda.go.id',
+            'opd.dinkes@pemda.go.id',
+            'opd.disdik@pemda.go.id',
+            'opd.diskominfo@pemda.go.id',
+            'bupati@pemda.go.id',
+            'inspektorat@pemda.go.id',
+        ];
+        User::whereIn('email', $obsoleteEmails)->delete();
+
         $dataset = [
             'Sekda' => [
                 [
                     'name' => 'Drs. H. Cecep S. Alamsyah, M.Si.',
                     'nip' => '196805141994031003',
-                    'email' => 'bupati@pemda.go.id',
+                    'email' => 'cecep.alamsyah@pemda.go.id',
                     'phone' => '081220010001',
                     'jabatan' => 'Kepala OPD',
                     'pangkat_gol' => 'Pembina Utama Madya (IV/d)',
                 ],
                 [
-                    'name' => 'Administrator Utama',
-                    'nip' => '198501012010011001',
+                    'name' => 'Ahmad Fauzi, S.STP, M.Si.',
+                    'nip' => '198604122006021002',
+                    'email' => 'ahmad.fauzi@pemda.go.id',
+                    'phone' => '081220010002',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Tingkat I (III/d)',
+                ],
+            ],
+            'Itda' => [
+                [
+                    'name' => 'Endang Suhendar, S.H., M.M.',
+                    'nip' => '196911201994031005',
+                    'email' => 'endang.suhendar@pemda.go.id',
+                    'phone' => '081220070001',
+                    'jabatan' => 'Kepala OPD',
+                    'pangkat_gol' => 'Pembina Utama Muda (IV/c)',
+                ],
+                // 1. Administrator (Role: Superadmin)
+                [
+                    'name' => 'Administrator',
+                    'nip' => '202601012020121001',
+                    'email' => 'administrator@pemda.go.id',
+                    'phone' => '087788990011',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+                // 2. Admin (Role: Admin / Admin Office)
+                [
+                    'name' => 'Admin',
+                    'nip' => '202601012020121002',
                     'email' => 'admin@pemda.go.id',
-                    'phone' => '081234567890',
+                    'phone' => '087788990012',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+                // 4. Pengawas (Role: Pengawas / Inspektorat)
+                [
+                    'name' => 'Pengawas',
+                    'nip' => '202601012020121004',
+                    'email' => 'pengawas@pemda.go.id',
+                    'phone' => '087788990014',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+                // 5. Auditor (Role: Auditor)
+                [
+                    'name' => 'Auditor',
+                    'nip' => '202601012020121005',
+                    'email' => 'auditor@pemda.go.id',
+                    'phone' => '087788990015',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+                // 8. Pengawas2 (Role: Pengawas / Inspektorat)
+                [
+                    'name' => 'Pengawas2',
+                    'nip' => '202601012020121008',
+                    'email' => 'pengawas2@pemda.go.id',
+                    'phone' => '087788990018',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+                // 9. Auditor2 (Role: Auditor)
+                [
+                    'name' => 'Auditor2',
+                    'nip' => '202601012020121009',
+                    'email' => 'auditor2@pemda.go.id',
+                    'phone' => '087788990019',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+            ],
+            'Bapperida' => [
+                [
+                    'name' => 'Dr. Dadan Ginanjar, S.IP., M.Si.',
+                    'nip' => '197306221998031006',
+                    'email' => 'dadan.ginanjar@pemda.go.id',
+                    'phone' => '081220060001',
+                    'jabatan' => 'Kepala OPD',
+                    'pangkat_gol' => 'Pembina Utama Muda (IV/c)',
+                ],
+                // 3. Bapperida (Role: Bapperida)
+                [
+                    'name' => 'Bapperida',
+                    'nip' => '202601012020121003',
+                    'email' => 'bapperida@pemda.go.id',
+                    'phone' => '087788990013',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+                // 7. Bapperida2 (Role: Bapperida)
+                [
+                    'name' => 'Bapperida2',
+                    'nip' => '202601012020121007',
+                    'email' => 'bapperida2@pemda.go.id',
+                    'phone' => '087788990017',
                     'jabatan' => 'Pegawai',
                     'pangkat_gol' => 'Penata Muda (III/a)',
                 ],
                 [
-                    'name' => 'Ahmad Fauzi, S.STP, M.Si.',
-                    'nip' => '198604122006021002',
-                    'email' => 'admin.office@pemda.go.id',
-                    'phone' => '081220010002',
+                    'name' => 'Nita Permatasari, S.E., M.E.',
+                    'nip' => '198904202012012004',
+                    'email' => 'nita.permatasari@pemda.go.id',
+                    'phone' => '081220060003',
                     'jabatan' => 'Pegawai',
-                    'pangkat_gol' => 'Penata Tingkat I (III/d)',
+                    'pangkat_gol' => 'Penata Muda Tingkat I (III/b)',
                 ],
             ],
             'DPUTR' => [
@@ -77,13 +180,33 @@ class PegawaiSeeder extends Seeder
                     'jabatan' => 'Pegawai',
                     'pangkat_gol' => 'Penata (III/c)',
                 ],
+                // 6. OP Putr (Role: Operator OPD)
                 [
-                    'name' => 'Hendra Gunawan, S.T.',
-                    'nip' => '198811122011011005',
-                    'email' => 'opd.dputr@pemda.go.id',
-                    'phone' => '081220020005',
+                    'name' => 'OP Putr',
+                    'nip' => '202601012020121006',
+                    'email' => 'opputr@pemda.go.id',
+                    'phone' => '087788990016',
                     'jabatan' => 'Pegawai',
-                    'pangkat_gol' => 'Penata Muda Tingkat I (III/b)',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
+                ],
+            ],
+            'DPKP' => [
+                [
+                    'name' => 'H. Cepi Rahmat F., S.T., M.T.',
+                    'nip' => '197103121997031004',
+                    'email' => 'cepi.rahmat@pemda.go.id',
+                    'phone' => '081220110001',
+                    'jabatan' => 'Kepala OPD',
+                    'pangkat_gol' => 'Pembina Utama Muda (IV/c)',
+                ],
+                // 10. OP Perkim (Role: Operator OPD)
+                [
+                    'name' => 'OP Perkim',
+                    'nip' => '202601012020121010',
+                    'email' => 'opperkim@pemda.go.id',
+                    'phone' => '087788990020',
+                    'jabatan' => 'Pegawai',
+                    'pangkat_gol' => 'Penata Muda (III/a)',
                 ],
             ],
             'Dinkes' => [
@@ -114,7 +237,7 @@ class PegawaiSeeder extends Seeder
                 [
                     'name' => 'Rina Marlina, SKM, M.KM.',
                     'nip' => '198906152014022001',
-                    'email' => 'opd.dinkes@pemda.go.id',
+                    'email' => 'rina.marlina@pemda.go.id',
                     'phone' => '081220030004',
                     'jabatan' => 'Pegawai',
                     'pangkat_gol' => 'Penata Muda Tingkat I (III/b)',
@@ -148,7 +271,7 @@ class PegawaiSeeder extends Seeder
                 [
                     'name' => 'Dewi Sartika, S.Pd.',
                     'nip' => '199102282015032002',
-                    'email' => 'opd.disdik@pemda.go.id',
+                    'email' => 'dewi.sartika@pemda.go.id',
                     'phone' => '081220040004',
                     'jabatan' => 'Pegawai',
                     'pangkat_gol' => 'Penata Muda (III/a)',
@@ -174,7 +297,7 @@ class PegawaiSeeder extends Seeder
                 [
                     'name' => 'Yudi Pratama, S.Kom.',
                     'nip' => '198709232010011007',
-                    'email' => 'opd.diskominfo@pemda.go.id',
+                    'email' => 'yudi.pratama@pemda.go.id',
                     'phone' => '081220050003',
                     'jabatan' => 'Pegawai',
                     'pangkat_gol' => 'Penata (III/c)',
@@ -186,58 +309,6 @@ class PegawaiSeeder extends Seeder
                     'phone' => '081220050004',
                     'jabatan' => 'Pegawai',
                     'pangkat_gol' => 'Penata Muda (III/a)',
-                ],
-            ],
-            'Bapperida' => [
-                [
-                    'name' => 'Dr. Dadan Ginanjar, S.IP., M.Si.',
-                    'nip' => '197306221998031006',
-                    'email' => 'dadan.ginanjar@pemda.go.id',
-                    'phone' => '081220060001',
-                    'jabatan' => 'Kepala OPD',
-                    'pangkat_gol' => 'Pembina Utama Muda (IV/c)',
-                ],
-                [
-                    'name' => 'Firman Maulana, S.T., M.Sc.',
-                    'nip' => '198401152008011009',
-                    'email' => 'bapperida@pemda.go.id',
-                    'phone' => '081220060002',
-                    'jabatan' => 'Pegawai',
-                    'pangkat_gol' => 'Penata Tingkat I (III/d)',
-                ],
-                [
-                    'name' => 'Nita Permatasari, S.E., M.E.',
-                    'nip' => '198904202012012004',
-                    'email' => 'nita.permatasari@pemda.go.id',
-                    'phone' => '081220060003',
-                    'jabatan' => 'Pegawai',
-                    'pangkat_gol' => 'Penata Muda Tingkat I (III/b)',
-                ],
-            ],
-            'Itda' => [
-                [
-                    'name' => 'Endang Suhendar, S.H., M.M.',
-                    'nip' => '196911201994031005',
-                    'email' => 'endang.suhendar@pemda.go.id',
-                    'phone' => '081220070001',
-                    'jabatan' => 'Kepala OPD',
-                    'pangkat_gol' => 'Pembina Utama Muda (IV/c)',
-                ],
-                [
-                    'name' => 'Drs. Agus Salim, M.Ak., CGCAE',
-                    'nip' => '197412081999031004',
-                    'email' => 'inspektorat@pemda.go.id',
-                    'phone' => '081220070002',
-                    'jabatan' => 'Pegawai',
-                    'pangkat_gol' => 'Pembina (IV/a)',
-                ],
-                [
-                    'name' => 'Taufik Hidayat, S.E., Ak., CA',
-                    'nip' => '198603172010011012',
-                    'email' => 'auditor@pemda.go.id',
-                    'phone' => '081220070003',
-                    'jabatan' => 'Pegawai',
-                    'pangkat_gol' => 'Penata (III/c)',
                 ],
             ],
             'BKAD' => [
@@ -303,17 +374,28 @@ class PegawaiSeeder extends Seeder
             }
 
             foreach ($pegawais as $p) {
-                $user = User::updateOrCreate(
-                    ['nip' => $p['nip']],
-                    [
+                $user = User::where('nip', $p['nip'])->orWhere('email', $p['email'])->first();
+                if ($user) {
+                    $user->update([
                         'name' => $p['name'],
+                        'nip' => $p['nip'],
                         'email' => $p['email'],
                         'phone' => $p['phone'],
                         'opd_id' => $opd?->id,
                         'jabatan' => $p['jabatan'],
                         'pangkat_gol' => $p['pangkat_gol'],
-                    ]
-                );
+                    ]);
+                } else {
+                    $user = User::create([
+                        'name' => $p['name'],
+                        'nip' => $p['nip'],
+                        'email' => $p['email'],
+                        'phone' => $p['phone'],
+                        'opd_id' => $opd?->id,
+                        'jabatan' => $p['jabatan'],
+                        'pangkat_gol' => $p['pangkat_gol'],
+                    ]);
+                }
 
                 // If this is Kepala OPD, ensure the OPD record knows their name
                 if ($p['jabatan'] === 'Kepala OPD' && $opd) {

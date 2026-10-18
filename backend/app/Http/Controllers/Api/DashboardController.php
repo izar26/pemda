@@ -21,8 +21,8 @@ class DashboardController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('dashboard.view')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk melihat dashboard eksekutif.');
+        if (!$user) {
+            abort(401, 'Unauthenticated.');
         }
 
         $totalOpd = Opd::count();
@@ -49,10 +49,6 @@ class DashboardController extends Controller
         $user = $request->user() ?? auth('sanctum')->user();
         if (!$user) {
             abort(401, 'Unauthenticated.');
-        }
-
-        if (!$user->can('dashboard.export') && !$user->can('dashboard.view')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data dashboard.');
         }
 
         $totalOpd = Opd::count();

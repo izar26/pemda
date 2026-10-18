@@ -17,11 +17,11 @@ class AuditLogSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::where('email', 'admin@pemda.go.id')->first();
-        $adminOffice = User::where('email', 'admin.office@pemda.go.id')->first();
+        $admin = User::where('email', 'administrator@pemda.go.id')->first() ?? User::where('email', 'admin@pemda.go.id')->first();
+        $adminOffice = User::where('email', 'admin@pemda.go.id')->first();
         $bapperida = User::where('email', 'bapperida@pemda.go.id')->first();
-        $opdDputr = User::where('email', 'opd.dputr@pemda.go.id')->first();
-        $inspektorat = User::where('email', 'inspektorat@pemda.go.id')->first();
+        $opdDputr = User::where('email', 'opputr@pemda.go.id')->first();
+        $inspektorat = User::where('email', 'pengawas@pemda.go.id')->first();
         $auditor = User::where('email', 'auditor@pemda.go.id')->first();
 
         $now = Carbon::now();
@@ -49,9 +49,9 @@ class AuditLogSeeder extends Seeder
                 'user' => $admin,
                 'action' => 'ASSIGN_ROLE',
                 'module' => 'Peran & Izin',
-                'description' => 'Menetapkan peran Admin Office kepada pengguna Ahmad Fauzi, S.STP, M.Si.',
+                'description' => 'Menetapkan peran Admin kepada pengguna Admin.',
                 'ip' => '192.168.1.10',
-                'context' => ['target_role' => 'Admin Office', 'target_user' => 'admin.office@pemda.go.id'],
+                'context' => ['target_role' => 'Admin', 'target_user' => 'admin@pemda.go.id'],
                 'time' => $now->copy()->subDays(6)->setHour(9)->setMinute(10),
             ],
             [
@@ -76,9 +76,9 @@ class AuditLogSeeder extends Seeder
                 'user' => $adminOffice,
                 'action' => 'CREATE_USER',
                 'module' => 'Manajemen Users',
-                'description' => 'Membuat akun akses login dan menetapkan peran OPD untuk Hendra Gunawan, S.T.',
+                'description' => 'Membuat akun akses login dan menetapkan peran Operator OPD untuk OP Putr.',
                 'ip' => '192.168.1.15',
-                'context' => ['email' => 'opd.dputr@pemda.go.id', 'role' => 'OPD'],
+                'context' => ['email' => 'opputr@pemda.go.id', 'role' => 'Operator OPD'],
                 'time' => $now->copy()->subDays(5)->setHour(10)->setMinute(20),
             ],
             [
@@ -213,9 +213,9 @@ class AuditLogSeeder extends Seeder
             $u = $item['user'];
             AuditLog::create([
                 'user_id' => $u?->id,
-                'user_name' => $u?->name ?? 'Administrator Utama',
-                'user_nip' => $u?->nip ?? '198501012010011001',
-                'user_email' => $u?->email ?? 'admin@pemda.go.id',
+                'user_name' => $u?->name ?? 'Administrator',
+                'user_nip' => $u?->nip ?? '202601012020121001',
+                'user_email' => $u?->email ?? 'administrator@pemda.go.id',
                 'action' => $item['action'],
                 'module' => $item['module'],
                 'description' => $item['description'],
@@ -229,7 +229,7 @@ class AuditLogSeeder extends Seeder
             if ($item['action'] === 'LOGIN') {
                 LoginLog::create([
                     'user_id' => $u?->id,
-                    'identifier' => $u?->email ?? 'admin@pemda.go.id',
+                    'identifier' => $u?->email ?? 'administrator@pemda.go.id',
                     'ip_address' => $item['ip'],
                     'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
                     'status' => 'success',
@@ -252,7 +252,7 @@ class AuditLogSeeder extends Seeder
 
         LoginLog::create([
             'user_id' => $opdDputr?->id,
-            'identifier' => 'opd.dputr@pemda.go.id',
+            'identifier' => $opdDputr?->email ?? 'opputr@pemda.go.id',
             'ip_address' => '10.10.3.12',
             'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             'status' => 'failed',

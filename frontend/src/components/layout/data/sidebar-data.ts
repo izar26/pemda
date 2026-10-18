@@ -40,7 +40,6 @@ export const sidebarData: SidebarData = {
           title: 'Dashboard',
           url: '/',
           icon: LayoutDashboard,
-          requiredPermission: 'dashboard.view',
         },
         {
           title: 'Perangkat Daerah',
