@@ -116,11 +116,43 @@ class MasterDataController extends Controller
     }
 
     /**
+     * Determine whether the user is authorized to read master data reference.
+     * Full access requires 'master.view'.
+     * Operational read-only reference access is granted to users with risk or planning permissions.
+     */
+    protected function authorizeMasterRead(Request $request): bool
+    {
+        $user = $request->user();
+        if (!$user) {
+            return false;
+        }
+
+        // Full management access
+        if ($user->can('master.view')) {
+            return true;
+        }
+
+        // Scoped reference / lookup read access for operational forms
+        return $user->hasAnyPermission([
+            'konteks_risiko.view',
+            'konteks_risiko.create',
+            'konteks_risiko.edit',
+            'konteks_operasional.view',
+            'konteks_operasional.create',
+            'konteks_operasional.edit',
+            'tujuan.view',
+            'tujuan.create',
+            'tujuan.edit',
+        ]);
+    }
+
+    /**
      * List all entities.
      */
     public function index(Request $request, string $entity): JsonResponse
     {
-        if (!$request->user()->can('master.view')) {
+        $user = $request->user();
+        if (!$this->authorizeMasterRead($request)) {
             return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat master data.'], 403);
         }
 
@@ -146,7 +178,12 @@ class MasterDataController extends Controller
             });
         }
 
-        if ($request->has('is_active') && $request->query('is_active') !== 'all') {
+        // Security safeguard:
+        // Operational users without 'master.view' can strictly only access active reference records
+        $hasMasterView = $user?->can('master.view');
+        if (!$hasMasterView) {
+            $query->where('is_active', true);
+        } elseif ($request->has('is_active') && $request->query('is_active') !== 'all') {
             $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
@@ -287,7 +324,8 @@ class MasterDataController extends Controller
      */
     public function show(Request $request, string $entity, string $id): JsonResponse
     {
-        if (!$request->user()->can('master.view')) {
+        $user = $request->user();
+        if (!$this->authorizeMasterRead($request)) {
             return response()->json(['message' => 'Anda tidak memiliki izin untuk melihat master data.'], 403);
         }
 
@@ -296,6 +334,11 @@ class MasterDataController extends Controller
 
         if (isset($config['with'])) {
             $query->with($config['with']);
+        }
+
+        $hasMasterView = $user?->can('master.view');
+        if (!$hasMasterView) {
+            $query->where('is_active', true);
         }
 
         $item = $query->findOrFail($id);

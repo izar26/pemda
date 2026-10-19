@@ -439,4 +439,114 @@ class MasterDataTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonPath('message', 'Semua Sub-Unsur yang diurutkan harus berada di bawah Unsur SPIP yang sama.');
     }
+
+    public function test_opd_user_can_access_active_master_data_for_form_reference(): void
+    {
+        $opd = Opd::firstOrFail();
+        $opdUser = User::factory()->create([
+            'email' => 'opd_staff@pemda.go.id',
+            'opd_id' => $opd->id,
+            'status' => 'active',
+        ]);
+        $opdUser->assignRole('OPD');
+
+        $token = $opdUser->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/master/sumber-data');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('entity.key', 'sumber-data')
+            ->assertJsonStructure(['data', 'entity']);
+    }
+
+    public function test_opd_user_cannot_view_inactive_master_data(): void
+    {
+        $opd = Opd::firstOrFail();
+        $opdUser = User::factory()->create([
+            'email' => 'opd_staff2@pemda.go.id',
+            'opd_id' => $opd->id,
+            'status' => 'active',
+        ]);
+        $opdUser->assignRole('OPD');
+
+        $inactiveSumber = MasterSumberData::create([
+            'nama' => 'Sumber Data Kedaluwarsa',
+            'is_active' => false,
+            'urutan' => 999,
+        ]);
+
+        $token = $opdUser->createToken('test')->plainTextToken;
+
+        // Query listing with ?is_active=all - must still NOT include inactive items for OPD
+        $listResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/master/sumber-data?is_active=all');
+
+        $listResponse->assertStatus(200);
+        $ids = collect($listResponse->json('data'))->pluck('id')->all();
+        $this->assertNotContains($inactiveSumber->id, $ids);
+
+        // Direct show by ID - must return 404 because query scopes to is_active = true
+        $showResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson("/api/master/sumber-data/{$inactiveSumber->id}");
+
+        $showResponse->assertStatus(404);
+    }
+
+    public function test_opd_user_cannot_export_master_data(): void
+    {
+        $opd = Opd::firstOrFail();
+        $opdUser = User::factory()->create([
+            'email' => 'opd_staff3@pemda.go.id',
+            'opd_id' => $opd->id,
+            'status' => 'active',
+        ]);
+        $opdUser->assignRole('OPD');
+
+        $token = $opdUser->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/master/sumber-data/export');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_opd_user_cannot_mutate_master_data(): void
+    {
+        $opd = Opd::firstOrFail();
+        $opdUser = User::factory()->create([
+            'email' => 'opd_staff4@pemda.go.id',
+            'opd_id' => $opd->id,
+            'status' => 'active',
+        ]);
+        $opdUser->assignRole('OPD');
+
+        $sumber = MasterSumberData::firstOrFail();
+        $token = $opdUser->createToken('test')->plainTextToken;
+
+        // Cannot create
+        $createResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/master/sumber-data', ['nama' => 'Hacker Sumber']);
+        $createResponse->assertStatus(403);
+
+        // Cannot update
+        $updateResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->putJson("/api/master/sumber-data/{$sumber->id}", ['nama' => 'Hacked']);
+        $updateResponse->assertStatus(403);
+
+        // Cannot delete
+        $deleteResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson("/api/master/sumber-data/{$sumber->id}");
+        $deleteResponse->assertStatus(403);
+
+        // Cannot toggle
+        $toggleResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson("/api/master/sumber-data/{$sumber->id}/toggle");
+        $toggleResponse->assertStatus(403);
+
+        // Cannot reorder
+        $reorderResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/master/sumber-data/reorder', ['ids' => [$sumber->id]]);
+        $reorderResponse->assertStatus(403);
+    }
 }
