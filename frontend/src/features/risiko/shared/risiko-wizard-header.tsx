@@ -3,10 +3,13 @@ import { Check, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { type ResolvedWizardStep } from './risiko-wizard-store'
+import {
+  type ResolvedWizardStep,
+  type RisikoWizardStepId,
+} from './risiko-wizard-store'
 
 interface RisikoWizardHeaderProps {
-  currentStepId: '2b' | '2c'
+  currentStepId: RisikoWizardStepId | string
   steps: ResolvedWizardStep[]
   completedCount: number
   totalSteps: number
@@ -27,6 +30,12 @@ export function RisikoWizardHeader({
 
   function handleStepClick(step: ResolvedWizardStep) {
     if (step.id === currentStepId) return
+    if (!step.isImplemented) {
+      toast.info(
+        `Langkah ${step.stepNumber} (${step.title}) saat ini masih dalam tahap pengembangan (Coming Soon).`
+      )
+      return
+    }
     if (!step.isUnlocked) {
       toast.warning(
         `Langkah ${step.stepNumber} (${step.title}) masih terkunci. Silakan lengkapi dan simpan langkah sebelumnya terlebih dahulu.`
@@ -82,8 +91,8 @@ export function RisikoWizardHeader({
       </div>
 
       {/* Modern Minimalist Horizontal Stepper Timeline */}
-      <nav aria-label='Progress' className='pt-3.5'>
-        <ol className='flex items-center justify-between w-full'>
+      <nav aria-label='Progress' className='pt-3.5 overflow-x-auto pb-1 scrollbar-thin'>
+        <ol className='flex items-center min-w-max gap-1 sm:gap-2'>
           {steps.map((step, index) => {
             const isCurrent = step.id === currentStepId
             const isCompleted = step.isCompleted
@@ -93,10 +102,7 @@ export function RisikoWizardHeader({
             return (
               <li
                 key={step.id}
-                className={cn(
-                  'flex items-center',
-                  isLast ? 'flex-initial' : 'flex-1'
-                )}
+                className='flex items-center'
               >
                 {/* Step Node Button */}
                 <button
@@ -104,7 +110,7 @@ export function RisikoWizardHeader({
                   onClick={() => handleStepClick(step)}
                   disabled={isLocked}
                   className={cn(
-                    'group flex items-center gap-2.5 text-left transition-all outline-hidden rounded-lg p-1',
+                    'group flex items-center gap-2 text-left transition-all outline-hidden rounded-lg p-1',
                     isLocked
                       ? 'cursor-not-allowed opacity-60'
                       : isCurrent
@@ -135,7 +141,7 @@ export function RisikoWizardHeader({
                   </span>
 
                   {/* Label Text */}
-                  <div className='min-w-0 flex flex-col'>
+                  <div className='min-w-0 flex flex-col pr-1'>
                     <span
                       className={cn(
                         'text-xs font-semibold tracking-tight transition-colors whitespace-nowrap',
@@ -150,11 +156,13 @@ export function RisikoWizardHeader({
                     >
                       {step.shortTitle} ({step.code})
                     </span>
-                    <span className='text-[10px] text-muted-foreground font-mono hidden md:inline'>
+                    <span className='text-[10px] text-muted-foreground font-mono whitespace-nowrap'>
                       {isCurrent
                         ? 'Sedang diisi'
                         : isCompleted
                         ? 'Tersimpan'
+                        : !step.isImplemented
+                        ? 'Tahap Pengembangan'
                         : isLocked
                         ? 'Terkunci'
                         : 'Siap diisi'}
@@ -166,7 +174,7 @@ export function RisikoWizardHeader({
                 {!isLast && (
                   <div
                     aria-hidden='true'
-                    className='flex-1 mx-3 sm:mx-4 h-[2px] transition-all rounded-full overflow-hidden bg-border'
+                    className='w-6 sm:w-8 h-[2px] mx-1 transition-all rounded-full overflow-hidden bg-border shrink-0'
                   >
                     <div
                       className={cn(

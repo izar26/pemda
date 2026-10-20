@@ -14,7 +14,6 @@ import {
   CalendarRange,
   CheckCircle2,
   Database,
-  FileSpreadsheet,
   Info,
   ListChecks,
   Loader2,
@@ -87,8 +86,6 @@ export function KonteksStrategisPage() {
 
   const canEdit =
     hasPermission('konteks_risiko.create') || hasPermission('konteks_risiko.edit')
-  const canExport =
-    hasPermission('konteks_risiko.export') || hasPermission('konteks_risiko.view')
 
   const {
     user,
@@ -108,7 +105,6 @@ export function KonteksStrategisPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitIntent, setSubmitIntent] = useState<'save' | 'save_and_next'>('save')
-  const [isExporting, setIsExporting] = useState(false)
 
   // Crucial Change Impact Confirmation Modal State
   const [pendingCrucialPayload, setPendingCrucialPayload] = useState<{
@@ -395,24 +391,6 @@ export function KonteksStrategisPage() {
     }
   }
 
-  async function handleExportExcel() {
-    if (!konteks2B?.id) return
-    setIsExporting(true)
-    try {
-      const opdCode = konteks2B.opd?.kode || 'OPD'
-      const tahun = konteks2B.periode?.tahun_penilaian || new Date().getFullYear()
-      await risikoService.exportExcel(
-        konteks2B.id,
-        `Form_2B_Konteks_Strategis_${opdCode}_${tahun}.xlsx`
-      )
-      toast.success('File Excel Form 2B berhasil diunduh.')
-    } catch {
-      toast.error('Gagal mengunduh file Excel Form 2B.')
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
   const resolvedOpdName = useMemo(() => {
     if (isOpdRole) {
       return user?.opd?.nama || konteks2B?.opd?.nama || 'Perangkat Daerah Anda'
@@ -453,23 +431,6 @@ export function KonteksStrategisPage() {
             </p>
           </div>
 
-          {konteks2B?.id && canExport && (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={handleExportExcel}
-              disabled={isExporting}
-              className='gap-1.5 shrink-0'
-            >
-              {isExporting ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                <FileSpreadsheet className='h-4 w-4 text-emerald-600' />
-              )}
-              <span>Unduh Excel (2B)</span>
-            </Button>
-          )}
         </div>
 
         {/* Wizard Stepper Header */}

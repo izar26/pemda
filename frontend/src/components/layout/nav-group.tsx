@@ -78,15 +78,14 @@ export function NavGroup({ title, items }: NavGroupProps) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className='flex items-center justify-between pr-1'>
-        <span>{title}</span>
+      <SidebarGroupLabel className='flex items-center justify-between gap-2 pr-1'>
+        <span className='truncate'>{title}</span>
         {isRisikoWizardGroup && state !== 'collapsed' && (
-          <Badge
-            variant='outline'
-            className='text-[9px] font-mono px-1.5 py-0 h-4 border-primary/30 text-primary bg-primary/5'
+          <span
+            className='shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-full border border-sidebar-border/60 bg-sidebar-accent/60 text-sidebar-foreground/80'
           >
-            Tahap {completedCount}/{totalSteps}
-          </Badge>
+            {completedCount}/{totalSteps}
+          </span>
         )}
       </SidebarGroupLabel>
       <SidebarMenu>
@@ -140,10 +139,24 @@ function SidebarWizardMenuLink({
 
   function handleLockedClick(e: React.MouseEvent) {
     e.preventDefault()
+    if (step && !step.isImplemented) {
+      toast.info(
+        `Langkah ${stepNum} (${item.title}) saat ini masih dalam tahap pengembangan (Coming Soon).`
+      )
+      return
+    }
     toast.warning(
       `Langkah ${stepNum} (${item.title}) masih terkunci. Silakan lengkapi dan simpan langkah sebelumnya terlebih dahulu.`
     )
   }
+
+  const tooltipText = isLocked
+    ? step && !step.isImplemented
+      ? `${item.title} (Tahap Lanjutan)`
+      : `${item.title} (Terkunci)`
+    : isCompleted
+    ? `${item.title} (Selesai)`
+    : item.title
 
   return (
     <SidebarMenuItem className='relative'>
@@ -153,7 +166,7 @@ function SidebarWizardMenuLink({
           aria-hidden='true'
           className={cn(
             'pointer-events-none absolute left-[18px] top-7 -bottom-2 w-[1.5px] z-0 transition-colors',
-            isCompleted ? 'bg-emerald-500/50' : 'bg-border'
+            isCompleted ? 'bg-emerald-500/50' : 'bg-sidebar-border'
           )}
         />
       )}
@@ -161,28 +174,22 @@ function SidebarWizardMenuLink({
       {isLocked ? (
         <SidebarMenuButton
           isActive={false}
-          tooltip={`${item.title} (Terkunci)`}
+          tooltip={tooltipText}
           onClick={handleLockedClick}
           className='opacity-60 cursor-not-allowed hover:bg-transparent'
         >
-          <span className='relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-mono text-muted-foreground'>
+          <span className='relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-sidebar-border bg-sidebar-accent/50 text-[10px] font-mono text-sidebar-foreground/60'>
             <Lock className='h-2.5 w-2.5' />
           </span>
-          <span className='truncate whitespace-nowrap flex-1 text-muted-foreground'>
+          <span className='truncate whitespace-nowrap flex-1 text-sidebar-foreground/70'>
             {item.title}
           </span>
-          <Badge
-            variant='secondary'
-            className='rounded-full px-1.5 py-0 text-[9px] h-4 text-muted-foreground font-normal'
-          >
-            Terkunci
-          </Badge>
         </SidebarMenuButton>
       ) : (
         <SidebarMenuButton
           asChild
           isActive={isActive}
-          tooltip={item.title}
+          tooltip={tooltipText}
         >
           <Link to={item.url} onClick={() => setOpenMobile(false)}>
             <span
@@ -191,8 +198,8 @@ function SidebarWizardMenuLink({
                 isActive
                   ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
                   : isCompleted
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
-                  : 'bg-secondary text-secondary-foreground border border-border'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                  : 'bg-sidebar-accent text-sidebar-foreground border border-sidebar-border'
               )}
             >
               {isCompleted ? (
@@ -202,18 +209,6 @@ function SidebarWizardMenuLink({
               )}
             </span>
             <span className='truncate whitespace-nowrap flex-1'>{item.title}</span>
-            {isActive ? (
-              <Badge className='rounded-full px-1.5 py-0 text-[9px] h-4'>
-                Aktif
-              </Badge>
-            ) : isCompleted ? (
-              <Badge
-                variant='outline'
-                className='rounded-full px-1.5 py-0 text-[9px] h-4 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-              >
-                Selesai
-              </Badge>
-            ) : null}
           </Link>
         </SidebarMenuButton>
       )}

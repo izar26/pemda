@@ -16,6 +16,17 @@ import {
   Target,
   ShieldAlert,
   FolderTree,
+  FileSearch,
+  ClipboardList,
+  BarChart3,
+  PieChart,
+  CheckSquare,
+  Activity,
+  AlertTriangle,
+  RefreshCw,
+  FileText,
+  GitFork,
+  ShieldX,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -104,6 +115,61 @@ export const sidebarData: SidebarData = {
           url: '/risiko/konteks-operasional',
           icon: FolderTree,
           requiredPermission: 'konteks_operasional.view',
+        },
+        {
+          title: 'Identifikasi Strategis (3B)',
+          url: '/risiko/identifikasi-strategis',
+          icon: FileSearch,
+        },
+        {
+          title: 'Identifikasi Operasional (3C)',
+          url: '/risiko/identifikasi-operasional',
+          icon: ClipboardList,
+        },
+        {
+          title: 'Analisis Risiko (Form 4)',
+          url: '/risiko/analisis',
+          icon: BarChart3,
+        },
+        {
+          title: 'Evaluasi Risiko (Form 5)',
+          url: '/risiko/evaluasi',
+          icon: PieChart,
+        },
+        {
+          title: 'Rencana Tindak Pengendalian (6)',
+          url: '/risiko/rtp',
+          icon: CheckSquare,
+        },
+        {
+          title: 'Pemantauan RTP (Form 7)',
+          url: '/risiko/pemantauan-rtp',
+          icon: Activity,
+        },
+        {
+          title: 'Kejadian Risiko (Form 8)',
+          url: '/risiko/kejadian-risiko',
+          icon: AlertTriangle,
+        },
+        {
+          title: 'Pemantauan Risiko Berkala (9)',
+          url: '/risiko/pemantauan-risiko',
+          icon: RefreshCw,
+        },
+        {
+          title: 'Laporan Risiko (Form 10)',
+          url: '/risiko/laporan',
+          icon: FileText,
+        },
+        {
+          title: 'Root Cause Analysis (RCA)',
+          url: '/risiko/rca',
+          icon: GitFork,
+        },
+        {
+          title: 'Risiko Kecurangan (Fraud)',
+          url: '/risiko/fraud',
+          icon: ShieldX,
         },
       ],
     },

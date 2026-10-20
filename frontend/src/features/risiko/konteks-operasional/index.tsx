@@ -10,7 +10,6 @@ import {
   CalendarRange,
   CheckCircle2,
   Database,
-  FileSpreadsheet,
   FileText,
   FolderTree,
   Loader2,
@@ -51,9 +50,6 @@ export function KonteksOperasionalPage() {
   const canEdit =
     hasPermission('konteks_operasional.create') ||
     hasPermission('konteks_operasional.edit')
-  const canExport =
-    hasPermission('konteks_operasional.export') ||
-    hasPermission('konteks_operasional.view')
 
   const {
     user,
@@ -84,7 +80,6 @@ export function KonteksOperasionalPage() {
   const [informasiLain, setInformasiLain] = useState<string>('-')
   const [isSavingStep, setIsSavingStep] = useState(false)
   const [saveIntent, setSaveIntent] = useState<'save' | 'save_and_next'>('save')
-  const [isExporting, setIsExporting] = useState(false)
 
   // Sequential Lock Guard: Redirect to Step 1 (2B) if 2B is not completed yet
   useEffect(() => {
@@ -209,27 +204,6 @@ export function KonteksOperasionalPage() {
     }
   }
 
-  async function handleExportExcel() {
-    if (!currentKonteks?.id) return
-    setIsExporting(true)
-    try {
-      const opdCode = currentKonteks.opd?.kode || konteks2B?.opd?.kode || 'OPD'
-      const tahun =
-        currentKonteks.periode?.tahun_penilaian ||
-        activePeriode?.tahun_penilaian ||
-        new Date().getFullYear()
-      await risikoService.exportOperasionalExcel(
-        currentKonteks.id,
-        `Form_2C_Konteks_Operasional_${opdCode}_${tahun}.xlsx`
-      )
-      toast.success('File Excel Form 2C berhasil diunduh.')
-    } catch {
-      toast.error('Gagal mengunduh file Excel Form 2C.')
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
   const resolvedOpdName = useMemo(() => {
     if (isOpdRole) {
       return user?.opd?.nama || konteks2B?.opd?.nama || 'Perangkat Daerah Anda'
@@ -281,23 +255,6 @@ export function KonteksOperasionalPage() {
             </p>
           </div>
 
-          {currentKonteks?.id && canExport && (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={handleExportExcel}
-              disabled={isExporting}
-              className='gap-1.5 shrink-0'
-            >
-              {isExporting ? (
-                <Loader2 className='h-4 w-4 animate-spin' />
-              ) : (
-                <FileSpreadsheet className='h-4 w-4 text-emerald-600' />
-              )}
-              <span>Unduh Excel (2C)</span>
-            </Button>
-          )}
         </div>
 
         {/* Wizard Stepper Header */}

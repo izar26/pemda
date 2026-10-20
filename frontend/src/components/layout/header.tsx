@@ -14,7 +14,11 @@ type HeaderProps = React.HTMLAttributes<HTMLElement> & {
 }
 
 export function Header({ className, fixed = true, children, ...props }: HeaderProps) {
-  const [offset, setOffset] = useState(0)
+  const [offset, setOffset] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+      : 0
+  )
 
   useEffect(() => {
     const onScroll = () => {
@@ -28,10 +32,15 @@ export function Header({ className, fixed = true, children, ...props }: HeaderPr
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const isScrolled = fixed && offset > 0
+
   return (
     <header
       className={cn(
-        'z-40 h-16 w-full dark bg-neutral-950 text-neutral-100 border-b border-neutral-800 shadow-xs group-has-data-[variant=inset]/sidebar-wrapper:md:rounded-t-xl',
+        'z-40 h-16 w-full dark bg-neutral-950 text-neutral-100 border-b border-neutral-800 shadow-xs',
+        !isScrolled
+          ? 'group-has-data-[variant=inset]/sidebar-wrapper:md:rounded-t-xl'
+          : 'rounded-t-none',
         fixed && 'header-fixed peer/header sticky top-0 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/90',
         offset > 10 && 'shadow-sm',
         className

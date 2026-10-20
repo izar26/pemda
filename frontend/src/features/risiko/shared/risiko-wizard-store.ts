@@ -5,21 +5,37 @@ import { opdService } from '@/services/opd-service'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { risikoService } from '@/services/risiko-service'
 
+export type RisikoWizardStepId =
+  | '2b'
+  | '2c'
+  | '3b'
+  | '3c'
+  | '4'
+  | '5'
+  | '6'
+  | '7'
+  | '8'
+  | '9'
+  | '10'
+  | 'rca'
+  | 'fraud'
+
 export interface RisikoWizardStepConfig {
   stepNumber: number
-  id: '2b' | '2c'
+  id: RisikoWizardStepId
   code: string
   title: string
   shortTitle: string
   subtitle: string
-  url: '/risiko/konteks-strategis' | '/risiko/konteks-operasional'
-  requiredPermission: string
+  url: string
+  requiredPermission?: string
+  isImplemented: boolean
 }
 
 /**
  * Scalable Wizard Step Definitions.
- * Future forms (2D, 2E, 3A, etc.) can be appended here and the entire
- * Wizard Header, Progress Bar, and Sidebar Stepper will adapt automatically.
+ * Aligned with Pedoman Pengelolaan Risiko Pemda (SPIP / BPKP):
+ * Form 2B through Form 10, RCA (Root Cause Analysis), and Fraud Risk Assessment.
  */
 export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
   {
@@ -31,6 +47,7 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     subtitle: 'Penetapan Sumber Data, Tujuan, Sasaran & IKU Renstra OPD',
     url: '/risiko/konteks-strategis',
     requiredPermission: 'konteks_risiko.view',
+    isImplemented: true,
   },
   {
     stepNumber: 2,
@@ -41,6 +58,117 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     subtitle: 'Penetapan Program, Kegiatan, Sub-Kegiatan, Indikator & Target',
     url: '/risiko/konteks-operasional',
     requiredPermission: 'konteks_operasional.view',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 3,
+    id: '3b',
+    code: '3B',
+    title: 'Identifikasi Risiko Strategis (3B)',
+    shortTitle: 'Identifikasi Strategis',
+    subtitle: 'Identifikasi Pernyataan Risiko, Penyebab & Dampak Strategis',
+    url: '/risiko/identifikasi-strategis',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 4,
+    id: '3c',
+    code: '3C',
+    title: 'Identifikasi Risiko Operasional (3C)',
+    shortTitle: 'Identifikasi Operasional',
+    subtitle: 'Identifikasi Risiko Program, Kegiatan & Sub-Kegiatan',
+    url: '/risiko/identifikasi-operasional',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 5,
+    id: '4',
+    code: '4',
+    title: 'Analisis Risiko (Form 4)',
+    shortTitle: 'Analisis Risiko',
+    subtitle: 'Penilaian Kriteria Kemungkinan, Dampak & Skoring Risiko',
+    url: '/risiko/analisis',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 6,
+    id: '5',
+    code: '5',
+    title: 'Evaluasi Risiko (Form 5)',
+    shortTitle: 'Evaluasi Risiko',
+    subtitle: 'Penetapan Prioritas Risiko, Profil Risiko & Selera Risiko',
+    url: '/risiko/evaluasi',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 7,
+    id: '6',
+    code: '6',
+    title: 'Rencana Tindak Pengendalian (6)',
+    shortTitle: 'RTP (Form 6)',
+    subtitle: 'Penyusunan Rencana Tindak Pengendalian Risiko Teridentifikasi',
+    url: '/risiko/rtp',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 8,
+    id: '7',
+    code: '7',
+    title: 'Pemantauan Pelaksanaan RTP (7)',
+    shortTitle: 'Pemantauan RTP',
+    subtitle: 'Monitoring Realisasi dan Progres Tindak Pengendalian',
+    url: '/risiko/pemantauan-rtp',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 9,
+    id: '8',
+    code: '8',
+    title: 'Kejadian Risiko (Form 8)',
+    shortTitle: 'Kejadian Risiko',
+    subtitle: 'Pencatatan Peristiwa Gangguan & Deviasi Kejadian Nyata',
+    url: '/risiko/kejadian-risiko',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 10,
+    id: '9',
+    code: '9',
+    title: 'Pemantauan Risiko Berkala (9)',
+    shortTitle: 'Pemantauan Risiko',
+    subtitle: 'Review Dinamika Profil & Level Risiko Secara Periodik',
+    url: '/risiko/pemantauan-risiko',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 11,
+    id: '10',
+    code: '10',
+    title: 'Laporan Pengelolaan Risiko (10)',
+    shortTitle: 'Laporan Risiko',
+    subtitle: 'Kompilasi Laporan Resmi Manajemen Risiko Pemda',
+    url: '/risiko/laporan',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 12,
+    id: 'rca',
+    code: 'RCA',
+    title: 'Root Cause Analysis (RCA)',
+    shortTitle: 'Analisis RCA',
+    subtitle: 'Analisis Mendalam Akar Masalah (Fishbone / 5-Whys)',
+    url: '/risiko/rca',
+    isImplemented: false,
+  },
+  {
+    stepNumber: 13,
+    id: 'fraud',
+    code: 'Fraud',
+    title: 'Risiko Kecurangan (Fraud)',
+    shortTitle: 'Risiko Fraud',
+    subtitle: 'Identifikasi & Pencegahan Potensi Kecurangan / Korupsi',
+    url: '/risiko/fraud',
+    isImplemented: false,
   },
 ]
 
@@ -152,13 +280,22 @@ export function useRisikoWizardProgress(enabled = true) {
       }
     }
 
-    // Step 2C requires Step 2B to be completed
-    const isUnlocked = Boolean(activePeriode) && isStep2BCompleted
+    if (step.id === '2c') {
+      const isUnlocked = Boolean(activePeriode) && isStep2BCompleted
+      return {
+        ...step,
+        isCompleted: isStep2CCompleted,
+        isUnlocked,
+        status: !isUnlocked ? 'locked' : isStep2CCompleted ? 'completed' : 'available',
+      }
+    }
+
+    // Future stages (3B to Fraud) are planned in the roadmap but not yet implemented
     return {
       ...step,
-      isCompleted: isStep2CCompleted,
-      isUnlocked,
-      status: !isUnlocked ? 'locked' : isStep2CCompleted ? 'completed' : 'available',
+      isCompleted: false,
+      isUnlocked: false,
+      status: 'locked' as WizardStepStatus,
     }
   })
 
