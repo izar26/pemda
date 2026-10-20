@@ -266,7 +266,7 @@ export function UserAuthForm({
 
             <Button
               type='submit'
-              className='mt-2 w-full'
+              className='mt-2 w-full rounded-lg shadow-sm transition-all hover:shadow-md'
               disabled={isLoading || (Boolean(turnstileSiteKey) && !turnstileToken)}
             >
               {isLoading ? (
