@@ -34,7 +34,7 @@ import {
   type OpdReviewListItem,
 } from '@/services/pengajuan-risiko-service'
 import { perencanaanService } from '@/services/perencanaan-service'
-import { ReviewDialog } from './components/review-dialog'
+import { ReviewRisikoWizard } from './components/review-risiko-wizard'
 
 type StatusFilter = 'semua' | 'submitted' | 'revision_requested' | 'approved' | 'belum_mengirim'
 
@@ -140,7 +140,19 @@ export function ReviewRisikoManagement() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6'>
-        {/* Sticky Page Header */}
+        {activeReview ? (
+          <ReviewRisikoWizard
+            submissionId={activeReview.submissionId}
+            opdId={activeReview.opdId}
+            periodeId={activeReview.periodeId}
+            onBack={() => setActiveReview(null)}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
+            }}
+          />
+        ) : (
+          <>
+            {/* Sticky Page Header */}
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground flex items-center gap-2'>
@@ -333,21 +345,9 @@ export function ReviewRisikoManagement() {
             </TableBody>
           </Table>
         </div>
+          </>
+        )}
       </Main>
-
-      {/* Review Dialog */}
-      {activeReview && (
-        <ReviewDialog
-          open={Boolean(activeReview)}
-          onOpenChange={(isOpen) => !isOpen && setActiveReview(null)}
-          submissionId={activeReview.submissionId}
-          opdId={activeReview.opdId}
-          periodeId={activeReview.periodeId}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-          }}
-        />
-      )}
     </>
   )
 }
