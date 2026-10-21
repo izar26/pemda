@@ -304,9 +304,17 @@ class PengajuanRisikoService
 
         if (!empty($filters['search'])) {
             $term = trim((string) $filters['search']);
-            $query->where(function ($q) use ($term) {
-                $q->where('nama', 'like', "%{$term}%")
-                    ->orWhere('kode', 'like', "%{$term}%");
+            $lower = strtolower($term);
+            $query->where(function ($q) use ($lower) {
+                $q->whereRaw('LOWER(nama) LIKE ?', ["%{$lower}%"])
+                    ->orWhereRaw('LOWER(kode) LIKE ?', ["%{$lower}%"])
+                    ->orWhereHas('auditorAssignments', function ($aq) use ($lower) {
+                        $aq->where('is_active', true)
+                            ->whereHas('auditor', function ($uq) use ($lower) {
+                                $uq->whereRaw('LOWER(name) LIKE ?', ["%{$lower}%"])
+                                    ->orWhereRaw('LOWER(nip) LIKE ?', ["%{$lower}%"]);
+                            });
+                    });
             });
         }
 
@@ -317,9 +325,9 @@ class PengajuanRisikoService
         }
 
         // Filter by submission status
-        if (!empty($filters['status'])) {
-            $status = $filters['status'];
-            if ($status === 'belum_mengirim') {
+        if (!empty($filters['status']) && !in_array($filters['status'], ['semua', 'all'], true)) {
+            $status = (string) $filters['status'];
+            if (in_array($status, ['belum_mengirim', 'draft'], true)) {
                 $query->where(function ($q) use ($resolvedPeriodeId) {
                     $q->whereDoesntHave('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
                         $sq->where('periode_penilaian_id', $resolvedPeriodeId);
@@ -327,6 +335,24 @@ class PengajuanRisikoService
                         $sq->where('periode_penilaian_id', $resolvedPeriodeId)
                             ->where('status', PengajuanPenilaianRisiko::STATUS_DRAFT);
                     });
+                });
+            } elseif (in_array($status, ['submitted', 'in_review', 'menunggu_review'], true)) {
+                $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                    $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                        ->whereIn('status', [
+                            PengajuanPenilaianRisiko::STATUS_SUBMITTED,
+                            PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
+                        ]);
+                });
+            } elseif (in_array($status, ['revision_requested', 'perlu_revisi'], true)) {
+                $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                    $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                        ->where('status', PengajuanPenilaianRisiko::STATUS_REVISION_REQUESTED);
+                });
+            } elseif (in_array($status, ['approved', 'disetujui'], true)) {
+                $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                    $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                        ->where('status', PengajuanPenilaianRisiko::STATUS_APPROVED);
                 });
             } else {
                 $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId, $status) {

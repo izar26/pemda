@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle2,
@@ -41,7 +41,15 @@ type StatusFilter = 'semua' | 'submitted' | 'revision_requested' | 'approved' | 
 export function ReviewRisikoManagement() {
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('semua')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Review Dialog state
   const [activeReview, setActiveReview] = useState<{
@@ -68,12 +76,12 @@ export function ReviewRisikoManagement() {
       'pengawasan',
       'review-list',
       activePeriode?.id,
-      searchTerm,
+      debouncedSearchTerm,
       statusFilter === 'semua' ? '' : statusFilter,
     ],
     queryFn: () =>
       pengajuanRisikoService.getAuditorReviewList({
-        search: searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
         status: statusFilter === 'semua' ? undefined : statusFilter,
         periode_penilaian_id: activePeriode?.id,
         per_page: 100,

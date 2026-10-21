@@ -470,4 +470,67 @@ class PengajuanDanReviewRisikoTest extends TestCase
 
         $edit2CRes->assertStatus(201);
     }
+
+    public function test_auditor_review_list_status_and_search_filters(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+
+        Sanctum::actingAs($this->opdUser);
+        $this->postJson('/api/risiko/pengajuan/submit', [
+            'opd_id' => $this->opd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+        ])->assertStatus(200);
+
+        $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->first();
+        $this->assertEquals(PengajuanPenilaianRisiko::STATUS_SUBMITTED, $submission->status);
+
+        Sanctum::actingAs($this->auditorUser);
+
+        // 1. Filter 'submitted' should return this OPD
+        $resSubmitted = $this->getJson('/api/pengawasan/review-risiko?status=submitted');
+        $resSubmitted->assertStatus(200);
+        $this->assertCount(1, $resSubmitted->json('data'));
+        $this->assertEquals($this->opd->id, $resSubmitted->json('data.0.id'));
+
+        // 2. Filter 'approved' should NOT return this OPD
+        $resApproved = $this->getJson('/api/pengawasan/review-risiko?status=approved');
+        $resApproved->assertStatus(200);
+        $this->assertCount(0, $resApproved->json('data'));
+
+        // 3. Auditor opens submission (triggers transition to in_review)
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}")->assertStatus(200);
+        $submission->refresh();
+        $this->assertEquals(PengajuanPenilaianRisiko::STATUS_IN_REVIEW, $submission->status);
+
+        // Filter 'submitted' (Menunggu Review tab) MUST still include in_review
+        $resInReview = $this->getJson('/api/pengawasan/review-risiko?status=submitted');
+        $resInReview->assertStatus(200);
+        $this->assertCount(1, $resInReview->json('data'));
+        $this->assertEquals($this->opd->id, $resInReview->json('data.0.id'));
+
+        // 4. Case-insensitive search
+        $lowerName = strtolower(substr($this->opd->nama, 0, 5));
+        $resSearch = $this->getJson("/api/pengawasan/review-risiko?search={$lowerName}");
+        $resSearch->assertStatus(200);
+        $this->assertCount(1, $resSearch->json('data'));
+
+        // 5. Auditor rejects an item -> status becomes revision_requested
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '2b',
+            'status' => 'rejected',
+            'catatan_revisi' => 'Perlu penyesuaian indikator sasaran.',
+        ])->assertStatus(200);
+
+        // Filter 'revision_requested'
+        $resRev = $this->getJson('/api/pengawasan/review-risiko?status=revision_requested');
+        $resRev->assertStatus(200);
+        $this->assertCount(1, $resRev->json('data'));
+
+        // Filter 'submitted' should now be empty
+        $resSubmittedAfterRev = $this->getJson('/api/pengawasan/review-risiko?status=submitted');
+        $resSubmittedAfterRev->assertStatus(200);
+        $this->assertCount(0, $resSubmittedAfterRev->json('data'));
+    }
 }
