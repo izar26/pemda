@@ -7,7 +7,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 import {
-  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -112,7 +111,6 @@ export function KonteksStrategisPage() {
   } = useRisikoWizardProgress()
 
   const is2BApproved = Boolean(readiness?.is_2b_approved)
-  const rejectionNote2B = readiness?.rejection_notes?.['2b']
 
   const canEdit =
     (hasPermission('konteks_risiko.create') || hasPermission('konteks_risiko.edit')) &&
@@ -459,50 +457,8 @@ export function KonteksStrategisPage() {
           onSubmissionSuccess={refetchWizardProgress}
         />
 
-        {/* Form 2B Approved Banner */}
-        {is2BApproved && (
-          <div className='flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400'>
-            <CheckCircle2 className='h-5 w-5 shrink-0' />
-            <div className='text-xs'>
-              <p className='font-bold text-sm'>
-                Form 2B Telah Disetujui Auditor Pengawas
-              </p>
-              <p className='text-emerald-700/80 dark:text-emerald-400/80'>
-                Konteks risiko strategis ini telah diperiksa dan disetujui (read-only).
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Form 2B Rejection Note Banner */}
-        {!is2BApproved && rejectionNote2B && (
-          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive'>
-            <AlertCircle className='h-5 w-5 shrink-0 mt-0.5' />
-            <div className='text-xs space-y-1'>
-              <p className='font-bold text-sm'>
-                Perlu Revisi dari Auditor Pengawas (Form 2B)
-              </p>
-              <p className='leading-relaxed'>
-                {rejectionNote2B}
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Active Periode Guard */}
-        {!isLoading && !hasAuditor ? (
-          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
-            <ShieldAlert className='h-5 w-5 shrink-0 mt-0.5' />
-            <div className='text-xs space-y-1'>
-              <p className='font-bold text-sm'>
-                Formulir Terkunci: Belum Ada Auditor Pengawas yang Ditugaskan
-              </p>
-              <p className='text-destructive/90 leading-relaxed'>
-                Perangkat Daerah (OPD) ini belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat. Pengisian atau pengubahan Formulir Konteks Risiko Strategis (Form 2B) hanya dapat dilakukan setelah Inspektorat menetapkan Auditor Pengawas pada menu <strong>Pengawasan & Pembinaan &rarr; Penugasan Auditor</strong>.
-              </p>
-            </div>
-          </div>
-        ) : !isLoading && !activePeriode ? (
+        {!isLoading && !activePeriode ? (
           <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
             <AlertTriangle className='h-5 w-5 shrink-0 mt-0.5' />
             <div className='text-xs space-y-1'>

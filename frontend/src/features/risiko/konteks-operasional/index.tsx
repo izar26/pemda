@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import {
-  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -16,7 +15,6 @@ import {
   Loader2,
   Lock,
   Save,
-  ShieldAlert,
   Target,
   UserCheck,
 } from 'lucide-react'
@@ -77,7 +75,6 @@ export function KonteksOperasionalPage() {
   } = useRisikoWizardProgress()
 
   const is2CApproved = Boolean(readiness?.is_2c_approved)
-  const rejectionNote2C = readiness?.rejection_notes?.['2c']
 
   // Item Drawer State (Program / Kegiatan / Sub Kegiatan)
   const canEdit =
@@ -285,49 +282,7 @@ export function KonteksOperasionalPage() {
           onSubmissionSuccess={refetchWizardProgress}
         />
 
-        {/* Form 2C Approved Banner */}
-        {is2CApproved && (
-          <div className='flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400'>
-            <CheckCircle2 className='h-5 w-5 shrink-0' />
-            <div className='text-xs'>
-              <p className='font-bold text-sm'>
-                Form 2C Telah Disetujui Auditor Pengawas
-              </p>
-              <p className='text-emerald-700/80 dark:text-emerald-400/80'>
-                Konteks risiko operasional ini telah diperiksa dan disetujui (read-only).
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Form 2C Rejection Note Banner */}
-        {!is2CApproved && rejectionNote2C && (
-          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive'>
-            <AlertCircle className='h-5 w-5 shrink-0 mt-0.5' />
-            <div className='text-xs space-y-1'>
-              <p className='font-bold text-sm'>
-                Perlu Revisi dari Auditor Pengawas (Form 2C)
-              </p>
-              <p className='leading-relaxed'>
-                {rejectionNote2C}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {!isLoading && !hasAuditor ? (
-          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
-            <ShieldAlert className='h-5 w-5 shrink-0 mt-0.5' />
-            <div className='text-xs space-y-1'>
-              <p className='font-bold text-sm'>
-                Formulir Terkunci: Belum Ada Auditor Pengawas yang Ditugaskan
-              </p>
-              <p className='text-destructive/90 leading-relaxed'>
-                Perangkat Daerah (OPD) ini belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat. Pengisian pohon kinerja Program / Kegiatan / Sub-Kegiatan (Form 2C) baru dapat dilakukan setelah Inspektorat menetapkan Auditor Pengawas pada menu <strong>Pengawasan & Pembinaan &rarr; Penugasan Auditor</strong>.
-              </p>
-            </div>
-          </div>
-        ) : !isLoading && !activePeriode ? (
+        {!isLoading && !activePeriode ? (
           <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
             <AlertTriangle className='h-5 w-5 shrink-0 mt-0.5' />
             <div className='text-xs space-y-1'>
