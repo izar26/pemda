@@ -28,6 +28,7 @@ import {
   FileSpreadsheet,
   GitFork,
   ShieldX,
+  UserCheck,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -99,6 +100,17 @@ export const sidebarData: SidebarData = {
           url: '/perencanaan/tujuan',
           icon: Target,
           requiredPermission: 'tujuan.view',
+        },
+      ],
+    },
+    {
+      title: 'Pengawasan (APIP)',
+      items: [
+        {
+          title: 'Penugasan Auditor',
+          url: '/pengawasan/penugasan-auditor',
+          icon: UserCheck,
+          requiredPermission: 'penugasan_auditor.view',
         },
       ],
     },

@@ -188,6 +188,17 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::delete('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'destroyItem']);
         Route::apiResource('/konteks-operasional', \App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class)->parameters(['konteks-operasional' => 'konteks']);
     });
+
+    // Modul Pengawasan & Pembinaan (Inspektorat / Penugasan Auditor)
+    Route::prefix('pengawasan')->group(function () {
+        Route::get('/penugasan-auditor/stats', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'stats']);
+        Route::get('/penugasan-auditor/auditors', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'auditors']);
+        Route::delete('/penugasan-auditor/auditor/{auditorId}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'destroyAuditor']);
+        Route::get('/penugasan-auditor', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'index']);
+        Route::post('/penugasan-auditor', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'store']);
+        Route::put('/penugasan-auditor/{auditorId}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'update']);
+        Route::delete('/penugasan-auditor/{id}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'destroy']);
+    });
 });
 
 

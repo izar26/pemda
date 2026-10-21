@@ -403,6 +403,32 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     risk: 'low',
     badgeLabel: 'Aman',
   },
+
+  // 12. Penugasan Auditor Pengawas (Inspektorat)
+  'penugasan_auditor.view': {
+    label: 'Lihat Penugasan Auditor',
+    description: 'Melihat direktori penugasan auditor pengawas ke instansi perangkat daerah.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'penugasan_auditor.create': {
+    label: 'Tambah Penugasan Auditor',
+    description: 'Menugaskan auditor pengawas untuk melakukan pembinaan dan persetujuan (approval) OPD.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'penugasan_auditor.edit': {
+    label: 'Edit Penugasan Auditor',
+    description: 'Mengubah cakupan instansi binaan auditor, nomor surat tugas, atau periode penugasan.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'penugasan_auditor.delete': {
+    label: 'Hapus Penugasan Auditor',
+    description: 'Mencabut penugasan pembinaan auditor dari suatu perangkat daerah.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
 }
 
 export function getPermissionMetadata(permName: string): PermissionMetadata {

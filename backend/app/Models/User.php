@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasUuid7;
+use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Traits\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -144,5 +146,23 @@ class User extends Authenticatable
         return !empty($this->activation_token)
             && !is_null($this->activation_token_expires_at)
             && $this->activation_token_expires_at->isFuture();
+    }
+
+    /**
+     * @return HasMany<AuditorOpdAssignment, $this>
+     */
+    public function auditorAssignments(): HasMany
+    {
+        return $this->hasMany(AuditorOpdAssignment::class, 'auditor_id');
+    }
+
+    /**
+     * @return BelongsToMany<Opd, $this>
+     */
+    public function assignedOpds(): BelongsToMany
+    {
+        return $this->belongsToMany(Opd::class, 'auditor_opd_assignments', 'auditor_id', 'opd_id')
+            ->withPivot(['id', 'periode_penilaian_id', 'nomor_surat_tugas', 'tanggal_mulai', 'tanggal_selesai', 'catatan', 'is_active'])
+            ->withTimestamps();
     }
 }

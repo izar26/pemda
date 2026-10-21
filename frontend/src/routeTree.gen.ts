@@ -53,6 +53,7 @@ import { Route as AuthenticatedPerencanaanTujuanIndexRouteImport } from './route
 import { Route as AuthenticatedPerencanaanSasaranIndexRouteImport } from './routes/_authenticated/perencanaan/sasaran/index'
 import { Route as AuthenticatedPerencanaanPeriodeIndexRouteImport } from './routes/_authenticated/perencanaan/periode/index'
 import { Route as AuthenticatedPerencanaanIkuIndexRouteImport } from './routes/_authenticated/perencanaan/iku/index'
+import { Route as AuthenticatedPengawasanPenugasanAuditorIndexRouteImport } from './routes/_authenticated/pengawasan/penugasan-auditor/index'
 import { Route as AuthenticatedContentManagementBannersIndexRouteImport } from './routes/_authenticated/content-management/banners/index'
 
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
@@ -291,6 +292,12 @@ const AuthenticatedPerencanaanIkuIndexRoute =
     path: '/perencanaan/iku/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPengawasanPenugasanAuditorIndexRoute =
+  AuthenticatedPengawasanPenugasanAuditorIndexRouteImport.update({
+    id: '/pengawasan/penugasan-auditor/',
+    path: '/pengawasan/penugasan-auditor/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedContentManagementBannersIndexRoute =
   AuthenticatedContentManagementBannersIndexRouteImport.update({
     id: '/content-management/banners/',
@@ -334,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
   '/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
+  '/pengawasan/penugasan-auditor/': typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
   '/perencanaan/iku/': typeof AuthenticatedPerencanaanIkuIndexRoute
   '/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
@@ -377,6 +385,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/content-management/banners': typeof AuthenticatedContentManagementBannersIndexRoute
+  '/pengawasan/penugasan-auditor': typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
   '/perencanaan/iku': typeof AuthenticatedPerencanaanIkuIndexRoute
   '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/perencanaan/sasaran': typeof AuthenticatedPerencanaanSasaranIndexRoute
@@ -425,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
+  '/_authenticated/pengawasan/penugasan-auditor/': typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
   '/_authenticated/perencanaan/iku/': typeof AuthenticatedPerencanaanIkuIndexRoute
   '/_authenticated/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/_authenticated/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/tasks/'
     | '/users/'
     | '/content-management/banners/'
+    | '/pengawasan/penugasan-auditor/'
     | '/perencanaan/iku/'
     | '/perencanaan/periode/'
     | '/perencanaan/sasaran/'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/users'
     | '/content-management/banners'
+    | '/pengawasan/penugasan-auditor'
     | '/perencanaan/iku'
     | '/perencanaan/periode'
     | '/perencanaan/sasaran'
@@ -561,6 +573,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
     | '/_authenticated/content-management/banners/'
+    | '/_authenticated/pengawasan/penugasan-auditor/'
     | '/_authenticated/perencanaan/iku/'
     | '/_authenticated/perencanaan/periode/'
     | '/_authenticated/perencanaan/sasaran/'
@@ -897,6 +910,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerencanaanIkuIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pengawasan/penugasan-auditor/': {
+      id: '/_authenticated/pengawasan/penugasan-auditor/'
+      path: '/pengawasan/penugasan-auditor'
+      fullPath: '/pengawasan/penugasan-auditor/'
+      preLoaderRoute: typeof AuthenticatedPengawasanPenugasanAuditorIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/content-management/banners/': {
       id: '/_authenticated/content-management/banners/'
       path: '/content-management/banners'
@@ -942,6 +962,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedContentManagementBannersIndexRoute: typeof AuthenticatedContentManagementBannersIndexRoute
+  AuthenticatedPengawasanPenugasanAuditorIndexRoute: typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
   AuthenticatedPerencanaanIkuIndexRoute: typeof AuthenticatedPerencanaanIkuIndexRoute
   AuthenticatedPerencanaanPeriodeIndexRoute: typeof AuthenticatedPerencanaanPeriodeIndexRoute
   AuthenticatedPerencanaanSasaranIndexRoute: typeof AuthenticatedPerencanaanSasaranIndexRoute
@@ -969,6 +990,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedContentManagementBannersIndexRoute:
     AuthenticatedContentManagementBannersIndexRoute,
+  AuthenticatedPengawasanPenugasanAuditorIndexRoute:
+    AuthenticatedPengawasanPenugasanAuditorIndexRoute,
   AuthenticatedPerencanaanIkuIndexRoute: AuthenticatedPerencanaanIkuIndexRoute,
   AuthenticatedPerencanaanPeriodeIndexRoute:
     AuthenticatedPerencanaanPeriodeIndexRoute,
