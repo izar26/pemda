@@ -114,7 +114,7 @@ export const sidebarData: SidebarData = {
           requiredPermission: 'penugasan_auditor.view',
         },
         {
-          title: 'Review & Persetujuan Risiko',
+          title: 'Review',
           url: '/pengawasan/review-risiko',
           icon: ClipboardCheck,
           requiredPermission: 'review_risiko.view',
