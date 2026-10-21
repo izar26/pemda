@@ -18,6 +18,7 @@ import {
   Info,
   ListChecks,
   Loader2,
+  Lock,
   RefreshCw,
   RotateCcw,
   Save,
@@ -115,7 +116,7 @@ export function KonteksStrategisPage() {
 
   const canEdit =
     (hasPermission('konteks_risiko.create') || hasPermission('konteks_risiko.edit')) &&
-    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked && !is2BApproved))
+    hasAuditor && !isLocked && !is2BApproved
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitIntent, setSubmitIntent] = useState<'save' | 'save_and_next'>('save')
@@ -489,7 +490,19 @@ export function KonteksStrategisPage() {
         )}
 
         {/* Active Periode Guard */}
-        {!isLoading && !activePeriode ? (
+        {!isLoading && !hasAuditor ? (
+          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
+            <ShieldAlert className='h-5 w-5 shrink-0 mt-0.5' />
+            <div className='text-xs space-y-1'>
+              <p className='font-bold text-sm'>
+                Formulir Terkunci: Belum Ada Auditor Pengawas yang Ditugaskan
+              </p>
+              <p className='text-destructive/90 leading-relaxed'>
+                Perangkat Daerah (OPD) ini belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat. Pengisian atau pengubahan Formulir Konteks Risiko Strategis (Form 2B) hanya dapat dilakukan setelah Inspektorat menetapkan Auditor Pengawas pada menu <strong>Pengawasan & Pembinaan &rarr; Penugasan Auditor</strong>.
+              </p>
+            </div>
+          </div>
+        ) : !isLoading && !activePeriode ? (
           <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
             <AlertTriangle className='h-5 w-5 shrink-0 mt-0.5' />
             <div className='text-xs space-y-1'>
@@ -718,7 +731,7 @@ export function KonteksStrategisPage() {
                                     }
                                     className={cn(
                                       'flex items-start gap-3 rounded-lg border p-3.5 transition-all select-none',
-                                      canEdit ? 'cursor-pointer' : 'cursor-default opacity-80',
+                                      canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-60 pointer-events-none',
                                       isSelected
                                         ? 'border-primary bg-primary/5 ring-1 ring-primary/25 shadow-2xs'
                                         : 'border-border bg-card hover:bg-muted/40'
@@ -847,7 +860,7 @@ export function KonteksStrategisPage() {
                                     key={sasaran.id}
                                     className={cn(
                                       'flex items-start gap-3 rounded-lg border p-3 transition-all select-none',
-                                      canEdit ? 'cursor-pointer' : 'cursor-default',
+                                      canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-60 pointer-events-none',
                                       isChecked
                                         ? 'border-primary/60 bg-primary/5 shadow-2xs'
                                         : 'border-border bg-card hover:bg-muted/40'
@@ -988,7 +1001,7 @@ export function KonteksStrategisPage() {
                                               key={ind.id}
                                               className={cn(
                                                 'flex items-start gap-3 rounded-md border p-2.5 transition-all select-none',
-                                                canEdit ? 'cursor-pointer' : 'cursor-default',
+                                                canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-60 pointer-events-none',
                                                 isChecked
                                                   ? 'border-primary/60 bg-primary/5'
                                                   : 'border-border bg-card hover:bg-muted/40'
@@ -1093,7 +1106,7 @@ export function KonteksStrategisPage() {
                   </Button>
 
                   <div className='flex items-center justify-end gap-2.5 flex-wrap'>
-                    {canEdit && (
+                    {canEdit ? (
                       <>
                         <Button
                           type='submit'
@@ -1128,6 +1141,17 @@ export function KonteksStrategisPage() {
                           )}
                         </Button>
                       </>
+                    ) : (
+                      <div className='flex items-center gap-2 text-xs text-muted-foreground italic py-1.5 px-3 rounded-lg bg-muted/40 border'>
+                        <Lock className='h-3.5 w-3.5 shrink-0 text-amber-500' />
+                        <span>
+                          {!hasAuditor
+                            ? 'Formulir terkunci: Perangkat Daerah belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat.'
+                            : is2BApproved
+                              ? 'Formulir 2B telah disetujui Auditor Pengawas (read-only).'
+                              : 'Formulir sedang dalam pemeriksaan auditor (read-only).'}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>

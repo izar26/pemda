@@ -14,7 +14,9 @@ import {
   FileText,
   FolderTree,
   Loader2,
+  Lock,
   Save,
+  ShieldAlert,
   Target,
   UserCheck,
 } from 'lucide-react'
@@ -80,7 +82,9 @@ export function KonteksOperasionalPage() {
   // Item Drawer State (Program / Kegiatan / Sub Kegiatan)
   const canEdit =
     (hasPermission('konteks_operasional.create') || hasPermission('konteks_operasional.edit')) &&
-    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked && !is2CApproved))
+    hasAuditor &&
+    !isLocked &&
+    !is2CApproved
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] =
@@ -311,7 +315,19 @@ export function KonteksOperasionalPage() {
           </div>
         )}
 
-        {!isLoading && !activePeriode ? (
+        {!isLoading && !hasAuditor ? (
+          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
+            <ShieldAlert className='h-5 w-5 shrink-0 mt-0.5' />
+            <div className='text-xs space-y-1'>
+              <p className='font-bold text-sm'>
+                Formulir Terkunci: Belum Ada Auditor Pengawas yang Ditugaskan
+              </p>
+              <p className='text-destructive/90 leading-relaxed'>
+                Perangkat Daerah (OPD) ini belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat. Pengisian pohon kinerja Program / Kegiatan / Sub-Kegiatan (Form 2C) baru dapat dilakukan setelah Inspektorat menetapkan Auditor Pengawas pada menu <strong>Pengawasan & Pembinaan &rarr; Penugasan Auditor</strong>.
+              </p>
+            </div>
+          </div>
+        ) : !isLoading && !activePeriode ? (
           <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
             <AlertTriangle className='h-5 w-5 shrink-0 mt-0.5' />
             <div className='text-xs space-y-1'>
@@ -546,7 +562,7 @@ export function KonteksOperasionalPage() {
                 </Button>
 
                 <div className='flex items-center justify-end gap-2.5 flex-wrap'>
-                  {canEdit && (
+                  {canEdit ? (
                     <>
                       <Button
                         type='button'
@@ -582,6 +598,17 @@ export function KonteksOperasionalPage() {
                         )}
                       </Button>
                     </>
+                  ) : (
+                    <div className='flex items-center gap-2 text-xs text-muted-foreground italic py-1.5 px-3 rounded-lg bg-muted/40 border'>
+                      <Lock className='h-3.5 w-3.5 shrink-0 text-amber-500' />
+                      <span>
+                        {!hasAuditor
+                          ? 'Formulir terkunci: Perangkat Daerah belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat.'
+                          : is2CApproved
+                            ? 'Formulir 2C telah disetujui Auditor Pengawas (read-only).'
+                            : 'Formulir sedang dalam pemeriksaan auditor (read-only).'}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>

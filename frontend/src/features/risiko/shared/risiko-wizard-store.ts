@@ -345,7 +345,7 @@ export function useRisikoWizardProgress(enabled = true) {
     readiness,
     isLoadingReadiness,
     refetchReadiness,
-    hasAuditor: readiness ? readiness.has_auditor : true,
+    hasAuditor: Boolean(readiness?.has_auditor),
     isLocked: readiness ? readiness.is_locked : false,
     submissionStatus: readiness ? readiness.status : 'draft',
     isLoading: isLoadingPeriode || (!isOpdRole && isLoadingOpds) || isLoadingKonteks || isLoadingReadiness,

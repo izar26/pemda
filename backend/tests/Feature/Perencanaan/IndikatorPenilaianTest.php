@@ -381,6 +381,12 @@ class IndikatorPenilaianTest extends TestCase
             'created_by' => $this->admin->id,
         ]);
 
+        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+            'auditor_id' => $this->admin->id,
+            'opd_id' => $this->puprOpd->id,
+            'is_active' => true,
+        ]);
+
         $konteks = KonteksPenilaian::create([
             'periode_penilaian_id' => $this->activePeriode->id,
             'opd_id' => $this->puprOpd->id,

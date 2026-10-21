@@ -75,9 +75,11 @@ class PengajuanRisikoService
             ]
         );
 
-        // If auditor assignment updated and submission has no auditor, sync it
+        // If auditor assignment updated, sync it
         if ($assignment && $submission->auditor_id !== $assignment->auditor_id && !$submission->isApproved()) {
             $submission->update(['auditor_id' => $assignment->auditor_id]);
+        } elseif (!$assignment && $submission->auditor_id !== null && !$submission->isApproved()) {
+            $submission->update(['auditor_id' => null]);
         }
 
         // Ensure required items exist
@@ -518,22 +520,17 @@ class PengajuanRisikoService
      */
     public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
     {
-        // Superadmin and Admin Office can bypass
-        if ($user && $user->hasRole(['Superadmin', 'Admin Office'])) {
-            return;
-        }
-
-        $resolvedPeriodeId = $this->resolvePeriodeId($periodeId);
-
-        // 1. Check if OPD has an assigned auditor
+        // 1. Check if OPD has an assigned auditor (Strict: No role can bypass if OPD has no auditor)
         $hasAuditor = AuditorOpdAssignment::where('opd_id', $opdId)
             ->where('is_active', true)
             ->whereHas('auditor')
             ->exists();
 
         if (!$hasAuditor) {
-            abort(403, 'Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat. Pengisian atau pengubahan lembar kerja belum dapat dilakukan.');
+            abort(403, 'Perangkat Daerah (OPD) belum memiliki Auditor Pengawas yang ditugaskan oleh Inspektorat. Pengisian atau pengubahan lembar kerja belum dapat dilakukan.');
         }
+
+        $resolvedPeriodeId = $this->resolvePeriodeId($periodeId);
 
         // 2. Check submission status lock
         $submission = PengajuanPenilaianRisiko::where('opd_id', $opdId)
@@ -542,7 +539,7 @@ class PengajuanRisikoService
 
         if ($submission) {
             if ($submission->isLockedForOpd()) {
-                abort(403, 'Lembar kerja risiko Anda sedang dalam proses pemeriksaan oleh auditor atau telah disetujui (read-only).');
+                abort(403, 'Lembar kerja risiko sedang dalam proses pemeriksaan oleh auditor atau telah disetujui (read-only).');
             }
 
             // If a specific form is requested, ensure that form item was not already approved
