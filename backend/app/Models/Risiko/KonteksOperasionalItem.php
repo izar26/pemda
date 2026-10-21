@@ -7,12 +7,13 @@ namespace App\Models\Risiko;
 use App\Models\Concerns\HasUuid7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KonteksOperasionalItem extends Model
 {
-    use HasFactory, HasUuid7;
+    use Auditable, HasFactory, HasUuid7;
 
     protected $table = 'konteks_operasional_items';
 

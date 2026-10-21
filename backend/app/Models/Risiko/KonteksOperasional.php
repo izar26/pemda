@@ -16,9 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+use App\Traits\Auditable;
+
 class KonteksOperasional extends Model
 {
-    use HasFactory, HasUuid7;
+    use Auditable, HasFactory, HasUuid7;
 
     protected $table = 'konteks_operasionals';
 

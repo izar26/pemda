@@ -198,10 +198,16 @@ export function useRisikoWizardProgress(enabled = true) {
   const user = useAuthStore((state) => state.auth.user)
   const { selectedOpdId, setSelectedOpdId } = useRisikoWizardStore()
 
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles
+    : user?.role
+      ? [user.role]
+      : []
+
   const isOpdRole = Boolean(
-    user?.roles?.includes('OPD') &&
-      !user?.roles?.includes('Superadmin') &&
-      !user?.roles?.includes('Admin Office')
+    userRoles.includes('OPD') &&
+      !userRoles.includes('Superadmin') &&
+      !userRoles.includes('Admin Office')
   )
 
   // Fetch active evaluation period

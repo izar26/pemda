@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   RefreshCw,
   FileText,
+  FileSpreadsheet,
   GitFork,
   ShieldX,
 } from 'lucide-react'
@@ -174,6 +175,17 @@ export const sidebarData: SidebarData = {
       ],
     },
     {
+      title: 'Pelaporan & Dokumen',
+      items: [
+        {
+          title: 'Laporan Risiko OPD',
+          url: '/laporan',
+          icon: FileSpreadsheet,
+          requiredPermission: 'konteks_risiko.view',
+        },
+      ],
+    },
+    {
       title: 'Keamanan & Sistem',
       items: [
         {
@@ -229,3 +241,4 @@ export const sidebarData: SidebarData = {
     },
   ],
 }
+

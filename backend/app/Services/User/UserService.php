@@ -227,10 +227,14 @@ class UserService
         $hasAuthoredRecords = DB::table('tujuan_penilaians')->where('created_by', $user->id)->exists()
             || DB::table('sasaran_penilaians')->where('created_by', $user->id)->exists()
             || DB::table('indikator_penilaians')->where('created_by', $user->id)->exists()
-            || DB::table('konteks_penilaians')->where('created_by', $user->id)->exists()
-            || DB::table('konteks_operasionals')->where('created_by', $user->id)->exists();
+            || DB::table('konteks_penilaians')->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)->orWhere('updated_by', $user->id);
+            })->exists()
+            || DB::table('konteks_operasionals')->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)->orWhere('updated_by', $user->id);
+            })->exists();
 
-        $isKepalaOpd = DB::table('opds')->where('kepala_opd_id', $user->id)->exists();
+        $isKepalaOpd = ($user->jabatan === 'Kepala OPD');
 
         if ($hasAuthoredRecords || $isKepalaOpd) {
             $reasons = [];

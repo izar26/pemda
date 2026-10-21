@@ -92,6 +92,10 @@ class RbacSeeder extends Seeder
                 ['name' => 'content.edit', 'description' => 'Mengubah urutan tampilan dan status aktif banner (CMS)'],
                 ['name' => 'content.delete', 'description' => 'Menghapus materi banner dari portal (CMS)'],
             ],
+            'Pelaporan & Dokumen' => [
+                ['name' => 'laporan.view', 'description' => 'Melihat lembar dan pusat laporan risiko OPD (Fitur 26 & 31)'],
+                ['name' => 'laporan.export', 'description' => 'Mengekspor laporan risiko ke berkas Excel (.xlsx) dan Cetak PDF (Fitur 26 & 31)'],
+            ],
             'Pengaturan Sistem' => [
                 ['name' => 'settings.view', 'description' => 'Melihat konfigurasi parameter sistem dan instansi (Fitur 7)'],
                 ['name' => 'settings.edit', 'description' => 'Mengubah konfigurasi keamanan dan parameter sistem (Fitur 7)'],
@@ -135,6 +139,7 @@ class RbacSeeder extends Seeder
                     'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
                     'konteks_risiko.view', 'konteks_risiko.create', 'konteks_risiko.edit', 'konteks_risiko.delete', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.create', 'konteks_operasional.edit', 'konteks_operasional.delete', 'konteks_operasional.export',
+                    'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
                     'content.view', 'content.create', 'content.edit', 'content.delete',
                 ],
@@ -147,6 +152,7 @@ class RbacSeeder extends Seeder
                     'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
+                    'laporan.view', 'laporan.export',
                 ],
             ],
             'OPD' => [
@@ -156,6 +162,7 @@ class RbacSeeder extends Seeder
                     'tujuan.view',
                     'konteks_risiko.view', 'konteks_risiko.create', 'konteks_risiko.edit', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.create', 'konteks_operasional.edit', 'konteks_operasional.export',
+                    'laporan.view', 'laporan.export',
                 ],
             ],
             'Inspektorat' => [
@@ -165,6 +172,7 @@ class RbacSeeder extends Seeder
                     'tujuan.view',
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
+                    'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
                 ],
             ],
@@ -175,6 +183,7 @@ class RbacSeeder extends Seeder
                     'tujuan.view',
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
+                    'laporan.view', 'laporan.export',
                     'audit.view',
                 ],
             ],
@@ -184,6 +193,7 @@ class RbacSeeder extends Seeder
                 'permissions' => [
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
+                    'laporan.view', 'laporan.export',
                 ],
             ],
         ];
@@ -197,8 +207,12 @@ class RbacSeeder extends Seeder
                 ]
             );
 
-            // Sync permissions for this role
-            $role->syncPermissions($info['permissions'] ?? []);
+            // Sync permissions for freshly created roles; safely grant for existing roles to avoid wiping custom admin edits in live environments
+            if ($role->wasRecentlyCreated) {
+                $role->syncPermissions($info['permissions'] ?? []);
+            } else {
+                $role->givePermissionTo($info['permissions'] ?? []);
+            }
         }
 
         // 3. Assign Superadmin to Default Administrator User

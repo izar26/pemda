@@ -157,6 +157,10 @@ class AuditDiffHelper
             return 'Perencanaan Kinerja';
         }
 
+        if (Str::startsWith($className, 'App\\Models\\Risiko\\')) {
+            return 'Pengelolaan Risiko';
+        }
+
         if (Str::startsWith($className, 'App\\Models\\Master\\')) {
             return 'Master Data';
         }

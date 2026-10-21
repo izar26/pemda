@@ -47,6 +47,27 @@ class PeriodePenilaian extends Model
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var list<string>
+     */
+    protected $appends = [
+        'rentang_tahun',
+    ];
+
+    /**
+     * Get formatted range of years (e.g. "2026 - 2030").
+     */
+    public function getRentangTahunAttribute(): string
+    {
+        if ($this->tahun_mulai && $this->tahun_akhir) {
+            return "{$this->tahun_mulai} - {$this->tahun_akhir}";
+        }
+
+        return (string) ($this->nama_periode ?: '-');
+    }
+
+    /**
      * Scope query to only currently active period.
      *
      * @param Builder<self> $query

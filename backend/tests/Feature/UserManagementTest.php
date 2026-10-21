@@ -401,4 +401,19 @@ class UserManagementTest extends TestCase
         $response->assertStatus(200);
         $this->assertEquals(1, $response->json('total_pegawai'));
     }
+
+    public function test_user_cannot_be_deleted_if_holding_kepala_opd_position(): void
+    {
+        $token = $this->getSuperadminToken();
+
+        $this->staff->update(['jabatan' => 'Kepala OPD']);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson("/api/users/{$this->staff->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['user']);
+
+        $this->assertDatabaseHas('users', ['id' => $this->staff->id]);
+    }
 }

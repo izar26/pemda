@@ -187,3 +187,119 @@
 .dark [data-sonner-toast][data-type='info'] [data-description] {
   color: #7dd3fc !important;
 }
+
+/* ========================================================
+ * Close Button (X) for Sonner Toasts
+ * Always visible, prominent, easily clickable
+ * ======================================================== */
+[data-sonner-toast] [data-close-button] {
+  opacity: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 9999px !important;
+  border: 1px solid currentColor !important;
+  background-color: transparent !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  transform: scale(1.15) !important;
+  filter: brightness(0.95);
+}
+
+[data-sonner-toast][data-type='error'] [data-close-button] {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+[data-sonner-toast][data-type='success'] [data-close-button] {
+  background-color: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+[data-sonner-toast][data-type='warning'] [data-close-button] {
+  background-color: #ffedd5 !important;
+  border-color: #fdba74 !important;
+  color: #9a3412 !important;
+}
+
+[data-sonner-toast][data-type='info'] [data-close-button] {
+  background-color: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+}
+
+/* Dark mode close button */
+.dark [data-sonner-toast][data-type='error'] [data-close-button] {
+  background-color: #7f1d1d !important;
+  border-color: #b91c1c !important;
+  color: #fecaca !important;
+}
+
+.dark [data-sonner-toast][data-type='success'] [data-close-button] {
+  background-color: #14532d !important;
+  border-color: #15803d !important;
+  color: #bbf7d0 !important;
+}
+
+.dark [data-sonner-toast][data-type='warning'] [data-close-button] {
+  background-color: #7c2d12 !important;
+  border-color: #c2410c !important;
+  color: #fed7aa !important;
+}
+
+.dark [data-sonner-toast][data-type='info'] [data-close-button] {
+  background-color: #0c4a6e !important;
+  border-color: #0284c7 !important;
+  color: #bae6fd !important;
+}
+
+
+/* ========================================================
+ * Print Styles for Official Report Sheets (Form 2B, 2C, etc.)
+ * ======================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 1.5cm;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  header,
+  nav,
+  aside,
+  .print\:hidden {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\:border-none {
+    border: none !important;
+  }
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  .print\:m-0 {
+    margin: 0 !important;
+  }
+  .print\:w-full {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

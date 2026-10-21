@@ -8,13 +8,13 @@ export function Toaster({ ...props }: ToasterProps) {
     <Sonner
       theme={theme as ToasterProps['theme']}
       richColors
+      closeButton
       className='toaster group [&_div[data-content]]:w-full'
       toastOptions={{
         classNames: {
           toast: 'group toast border shadow-lg font-sans text-xs sm:text-sm rounded-xl',
           title: 'font-semibold tracking-tight',
           description: 'text-xs opacity-90',
-          closeButton: 'bg-background/80 hover:bg-background border text-foreground',
         },
       }}
       {...props}

@@ -35,6 +35,7 @@ import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPegawaiIndexRouteImport } from './routes/_authenticated/pegawai/index'
 import { Route as AuthenticatedOpdIndexRouteImport } from './routes/_authenticated/opd/index'
 import { Route as AuthenticatedMasterDataIndexRouteImport } from './routes/_authenticated/master-data/index'
+import { Route as AuthenticatedLaporanIndexRouteImport } from './routes/_authenticated/laporan/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
 import { Route as AuthenticatedAuditLogsIndexRouteImport } from './routes/_authenticated/audit-logs/index'
@@ -45,6 +46,7 @@ import { Route as ClerkauthSignInRouteImport } from './routes/clerk/(auth)/sign-
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedRisikoLaporanIndexRouteImport } from './routes/_authenticated/risiko/laporan/index'
 import { Route as AuthenticatedRisikoKonteksStrategisIndexRouteImport } from './routes/_authenticated/risiko/konteks-strategis/index'
 import { Route as AuthenticatedRisikoKonteksOperasionalIndexRouteImport } from './routes/_authenticated/risiko/konteks-operasional/index'
 import { Route as AuthenticatedPerencanaanTujuanIndexRouteImport } from './routes/_authenticated/perencanaan/tujuan/index'
@@ -185,6 +187,12 @@ const AuthenticatedMasterDataIndexRoute =
     path: '/master-data/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedLaporanIndexRoute =
+  AuthenticatedLaporanIndexRouteImport.update({
+    id: '/laporan/',
+    path: '/laporan/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHelpCenterIndexRoute =
   AuthenticatedHelpCenterIndexRouteImport.update({
     id: '/help-center/',
@@ -239,6 +247,12 @@ const AuthenticatedErrorsErrorRoute =
   AuthenticatedErrorsErrorRouteImport.update({
     id: '/errors/$error',
     path: '/errors/$error',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRisikoLaporanIndexRoute =
+  AuthenticatedRisikoLaporanIndexRouteImport.update({
+    id: '/risiko/laporan/',
+    path: '/risiko/laporan/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRisikoKonteksStrategisIndexRoute =
@@ -310,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/audit-logs/': typeof AuthenticatedAuditLogsIndexRoute
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
+  '/laporan/': typeof AuthenticatedLaporanIndexRoute
   '/master-data/': typeof AuthenticatedMasterDataIndexRoute
   '/opd/': typeof AuthenticatedOpdIndexRoute
   '/pegawai/': typeof AuthenticatedPegawaiIndexRoute
@@ -325,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
   '/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
+  '/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
 }
 export interface FileRoutesByTo {
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -351,6 +367,7 @@ export interface FileRoutesByTo {
   '/audit-logs': typeof AuthenticatedAuditLogsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
+  '/laporan': typeof AuthenticatedLaporanIndexRoute
   '/master-data': typeof AuthenticatedMasterDataIndexRoute
   '/opd': typeof AuthenticatedOpdIndexRoute
   '/pegawai': typeof AuthenticatedPegawaiIndexRoute
@@ -366,6 +383,7 @@ export interface FileRoutesByTo {
   '/perencanaan/tujuan': typeof AuthenticatedPerencanaanTujuanIndexRoute
   '/risiko/konteks-operasional': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
+  '/risiko/laporan': typeof AuthenticatedRisikoLaporanIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -397,6 +415,7 @@ export interface FileRoutesById {
   '/_authenticated/audit-logs/': typeof AuthenticatedAuditLogsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
+  '/_authenticated/laporan/': typeof AuthenticatedLaporanIndexRoute
   '/_authenticated/master-data/': typeof AuthenticatedMasterDataIndexRoute
   '/_authenticated/opd/': typeof AuthenticatedOpdIndexRoute
   '/_authenticated/pegawai/': typeof AuthenticatedPegawaiIndexRoute
@@ -412,6 +431,7 @@ export interface FileRoutesById {
   '/_authenticated/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
   '/_authenticated/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/_authenticated/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
+  '/_authenticated/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -441,6 +461,7 @@ export interface FileRouteTypes {
     | '/audit-logs/'
     | '/chats/'
     | '/help-center/'
+    | '/laporan/'
     | '/master-data/'
     | '/opd/'
     | '/pegawai/'
@@ -456,6 +477,7 @@ export interface FileRouteTypes {
     | '/perencanaan/tujuan/'
     | '/risiko/konteks-operasional/'
     | '/risiko/konteks-strategis/'
+    | '/risiko/laporan/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/clerk'
@@ -482,6 +504,7 @@ export interface FileRouteTypes {
     | '/audit-logs'
     | '/chats'
     | '/help-center'
+    | '/laporan'
     | '/master-data'
     | '/opd'
     | '/pegawai'
@@ -497,6 +520,7 @@ export interface FileRouteTypes {
     | '/perencanaan/tujuan'
     | '/risiko/konteks-operasional'
     | '/risiko/konteks-strategis'
+    | '/risiko/laporan'
   id:
     | '__root__'
     | '/_authenticated'
@@ -527,6 +551,7 @@ export interface FileRouteTypes {
     | '/_authenticated/audit-logs/'
     | '/_authenticated/chats/'
     | '/_authenticated/help-center/'
+    | '/_authenticated/laporan/'
     | '/_authenticated/master-data/'
     | '/_authenticated/opd/'
     | '/_authenticated/pegawai/'
@@ -542,6 +567,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perencanaan/tujuan/'
     | '/_authenticated/risiko/konteks-operasional/'
     | '/_authenticated/risiko/konteks-strategis/'
+    | '/_authenticated/risiko/laporan/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -745,6 +771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMasterDataIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/laporan/': {
+      id: '/_authenticated/laporan/'
+      path: '/laporan'
+      fullPath: '/laporan/'
+      preLoaderRoute: typeof AuthenticatedLaporanIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/help-center/': {
       id: '/_authenticated/help-center/'
       path: '/help-center'
@@ -813,6 +846,13 @@ declare module '@tanstack/react-router' {
       path: '/errors/$error'
       fullPath: '/errors/$error'
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risiko/laporan/': {
+      id: '/_authenticated/risiko/laporan/'
+      path: '/risiko/laporan'
+      fullPath: '/risiko/laporan/'
+      preLoaderRoute: typeof AuthenticatedRisikoLaporanIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/risiko/konteks-strategis/': {
@@ -893,6 +933,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditLogsIndexRoute: typeof AuthenticatedAuditLogsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
+  AuthenticatedLaporanIndexRoute: typeof AuthenticatedLaporanIndexRoute
   AuthenticatedMasterDataIndexRoute: typeof AuthenticatedMasterDataIndexRoute
   AuthenticatedOpdIndexRoute: typeof AuthenticatedOpdIndexRoute
   AuthenticatedPegawaiIndexRoute: typeof AuthenticatedPegawaiIndexRoute
@@ -907,6 +948,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerencanaanTujuanIndexRoute: typeof AuthenticatedPerencanaanTujuanIndexRoute
   AuthenticatedRisikoKonteksOperasionalIndexRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   AuthenticatedRisikoKonteksStrategisIndexRoute: typeof AuthenticatedRisikoKonteksStrategisIndexRoute
+  AuthenticatedRisikoLaporanIndexRoute: typeof AuthenticatedRisikoLaporanIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -917,6 +959,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditLogsIndexRoute: AuthenticatedAuditLogsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
+  AuthenticatedLaporanIndexRoute: AuthenticatedLaporanIndexRoute,
   AuthenticatedMasterDataIndexRoute: AuthenticatedMasterDataIndexRoute,
   AuthenticatedOpdIndexRoute: AuthenticatedOpdIndexRoute,
   AuthenticatedPegawaiIndexRoute: AuthenticatedPegawaiIndexRoute,
@@ -937,6 +980,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRisikoKonteksOperasionalIndexRoute,
   AuthenticatedRisikoKonteksStrategisIndexRoute:
     AuthenticatedRisikoKonteksStrategisIndexRoute,
+  AuthenticatedRisikoLaporanIndexRoute: AuthenticatedRisikoLaporanIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

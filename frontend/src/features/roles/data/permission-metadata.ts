@@ -389,6 +389,20 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
+
+  // 11. Pelaporan & Dokumen (Fitur 26 & 31)
+  'laporan.view': {
+    label: 'Lihat Laporan Risiko OPD',
+    description: 'Melihat lembar formulir resmi dan pusat laporan risiko OPD.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'laporan.export': {
+    label: 'Ekspor Laporan Risiko OPD',
+    description: 'Mengekspor laporan risiko ke berkas Excel (.xlsx) dan Cetak PDF.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
 }
 
 export function getPermissionMetadata(permName: string): PermissionMetadata {
@@ -401,3 +415,4 @@ export function getPermissionMetadata(permName: string): PermissionMetadata {
     }
   )
 }
+
