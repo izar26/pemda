@@ -63,7 +63,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   const { data: eligibleAuditors = [], isLoading: isLoadingAuditors } = useQuery({
     queryKey: ['pengawasan', 'eligible-auditors'],
     queryFn: () => penugasanAuditorService.getEligibleAuditors(),
-    enabled: isFormOpen && !isEdit,
+    enabled: isFormOpen,
   })
 
   // 2. Fetch all active OPDs
@@ -80,17 +80,33 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   ])
   const assignedOpdsMap = useMemo(() => {
     const map = new Map<string, { auditorId: string; auditorName: string }>()
+
+    // Priority 1: From eligibleAuditors (always up-to-date and contains all active auditors)
+    for (const auditor of eligibleAuditors) {
+      for (const assignment of auditor.auditor_assignments || []) {
+        if (assignment.is_active !== false) {
+          map.set(String(assignment.opd_id), {
+            auditorId: auditor.id,
+            auditorName: auditor.name,
+          })
+        }
+      }
+    }
+
+    // Priority 2: Also include any from the main table query data
     const list = assignedAuditorsData?.data || []
     for (const auditor of list) {
       for (const assignment of auditor.auditor_assignments || []) {
-        map.set(assignment.opd_id, {
-          auditorId: auditor.id,
-          auditorName: auditor.name,
-        })
+        if (assignment.is_active !== false) {
+          map.set(String(assignment.opd_id), {
+            auditorId: auditor.id,
+            auditorName: auditor.name,
+          })
+        }
       }
     }
     return map
-  }, [assignedAuditorsData])
+  }, [eligibleAuditors, assignedAuditorsData])
 
   const targetAuditorId = isEdit ? currentRow?.id : selectedAuditorId
 
@@ -108,6 +124,34 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     }
   }, [isEdit, currentRow, open])
 
+  // When auditor is changed in add mode, pre-populate if they already have assigned OPDs
+  const handleAuditorChange = (auditorId: string) => {
+    setSelectedAuditorId(auditorId)
+    if (!auditorId) {
+      setSelectedOpdIds([])
+      return
+    }
+
+    // Check if selected auditor already has assigned OPDs
+    const auditor = eligibleAuditors.find((a) => a.id === auditorId)
+    let assignedIds: string[] = []
+    if (auditor?.auditor_assignments && auditor.auditor_assignments.length > 0) {
+      assignedIds = auditor.auditor_assignments
+        .filter((a) => a.is_active !== false)
+        .map((a) => String(a.opd_id))
+    }
+
+    if (assignedIds.length === 0) {
+      assignedOpdsMap.forEach((info, opdId) => {
+        if (info.auditorId === auditorId) {
+          assignedIds.push(opdId)
+        }
+      })
+    }
+
+    setSelectedOpdIds(Array.from(new Set(assignedIds)))
+  }
+
   // Map auditors to SearchableSelect options
   const auditorOptions: SearchableSelectOption[] = useMemo(() => {
     return eligibleAuditors.map((auditor: AuditorUser) => ({
@@ -119,16 +163,39 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     }))
   }, [eligibleAuditors])
 
-  // Filtered OPDs for multi-select
+  // Filtered and sorted OPDs for multi-select
+  // Enabled / available OPDs placed FIRST, disabled OPDs (assigned to another auditor) placed at the BOTTOM!
   const filteredOpds = useMemo(() => {
-    if (!opdSearch.trim()) return opdList
-    const term = opdSearch.toLowerCase()
-    return opdList.filter(
-      (opd) =>
-        opd.nama.toLowerCase().includes(term) ||
-        (opd.kode && opd.kode.toLowerCase().includes(term))
-    )
-  }, [opdList, opdSearch])
+    let list = opdList
+    if (opdSearch.trim()) {
+      const term = opdSearch.toLowerCase()
+      list = opdList.filter(
+        (opd) =>
+          opd.nama.toLowerCase().includes(term) ||
+          (opd.kode && opd.kode.toLowerCase().includes(term))
+      )
+    }
+
+    return [...list].sort((a, b) => {
+      const aInfo = assignedOpdsMap.get(String(a.id))
+      const bInfo = assignedOpdsMap.get(String(b.id))
+      const aIsOther = Boolean(aInfo && aInfo.auditorId !== targetAuditorId)
+      const bIsOther = Boolean(bInfo && bInfo.auditorId !== targetAuditorId)
+
+      // 1. Available OPDs come first, disabled OPDs pushed to the bottom
+      if (aIsOther && !bIsOther) return 1
+      if (!aIsOther && bIsOther) return -1
+
+      // 2. Checked OPDs first among available ones
+      const aChecked = selectedOpdIds.includes(String(a.id))
+      const bChecked = selectedOpdIds.includes(String(b.id))
+      if (aChecked && !bChecked) return -1
+      if (!aChecked && bChecked) return 1
+
+      // 3. Alphabetical order by name
+      return a.nama.localeCompare(b.nama)
+    })
+  }, [opdList, opdSearch, assignedOpdsMap, targetAuditorId, selectedOpdIds])
 
   const handleCloseForm = () => {
     setOpen(null)
@@ -294,28 +361,17 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                 </Label>
 
                 {isEdit && currentRow ? (
-                  <div className='flex items-center gap-3 p-3 rounded-lg border bg-muted/20'>
-                    <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-xs text-primary'>
-                      {currentRow.name.charAt(0)}
-                    </div>
-                    <div className='min-w-0 flex-1'>
-                      <p className='text-sm font-semibold truncate text-foreground'>
-                        {currentRow.name}
-                      </p>
-                      <p className='text-xs text-muted-foreground font-mono'>
-                        {currentRow.nip ? `NIP. ${currentRow.nip}` : currentRow.email}
-                      </p>
-                    </div>
-                    <Badge variant='outline' className='text-[10px] bg-background text-muted-foreground'>
-                      Auditor Terpilih
-                    </Badge>
-                  </div>
+                  <Input
+                    value={`${currentRow.name} (${currentRow.nip ? `NIP. ${currentRow.nip}` : currentRow.email})`}
+                    disabled
+                    className='h-9 text-xs bg-muted/40 font-medium'
+                  />
                 ) : (
                   <div>
                     <SearchableSelect
                       disabled={isSaving || isLoadingAuditors}
                       value={selectedAuditorId}
-                      onValueChange={setSelectedAuditorId}
+                      onValueChange={handleAuditorChange}
                       options={auditorOptions}
                       placeholder={
                         isLoadingAuditors
@@ -337,133 +393,153 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                     Pilih Perangkat Daerah (OPD) Binaan{' '}
                     <span className='text-destructive'>*</span>
                   </Label>
-                  <Badge
-                    variant='secondary'
-                    className='text-[11px] font-semibold text-primary bg-primary/10 border-primary/20'
-                  >
-                    {selectedOpdIds.length} OPD Terpilih
-                  </Badge>
-                </div>
-
-                {/* Selected Pills */}
-                {selectedOpdIds.length > 0 && (
-                  <div className='flex flex-wrap gap-1.5 p-2 bg-muted/20 border rounded-lg max-h-24 overflow-y-auto'>
-                    {selectedOpdIds.map((id) => {
-                      const opd = opdList.find((o) => o.id === id)
-                      return (
-                        <Badge
-                          key={id}
-                          variant='outline'
-                          className='text-[11px] font-normal py-0.5 px-2 gap-1 bg-background text-foreground border-border shadow-2xs'
-                        >
-                          <Building2 className='h-3 w-3 text-primary shrink-0' />
-                          <span className='max-w-[190px] truncate'>
-                            {opd?.nama || id}
-                          </span>
-                          <button
-                            type='button'
-                            onClick={() => handleToggleOpd(id)}
-                            className='ml-0.5 hover:text-destructive focus:outline-none'
-                          >
-                            <X className='h-3 w-3' />
-                          </button>
-                        </Badge>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Search & Bulk Select Toolbar */}
-                <div className='flex items-center gap-2'>
-                  <div className='relative flex-1'>
-                    <Search className='absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground' />
-                    <Input
-                      type='text'
-                      placeholder='Cari nama atau kode dinas OPD...'
-                      className='pl-8 h-8 text-xs'
-                      value={opdSearch}
-                      onChange={(e) => setOpdSearch(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    className='h-8 text-[11px] shrink-0'
-                    onClick={handleSelectAllFiltered}
-                    disabled={filteredOpds.length === 0}
-                  >
-                    Pilih Hasil
-                  </Button>
-                  {selectedOpdIds.length > 0 && (
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      className='h-8 text-[11px] text-destructive shrink-0 hover:bg-destructive/10'
-                      onClick={handleDeselectAll}
+                  {selectedAuditorId && (
+                    <Badge
+                      variant='secondary'
+                      className='text-[11px] font-semibold text-primary bg-primary/10 border-primary/20'
                     >
-                      Reset
-                    </Button>
+                      {selectedOpdIds.length} OPD Terpilih
+                    </Badge>
                   )}
                 </div>
 
-                {/* Scrollable Checkbox Checklist with 1 OPD = 1 Auditor visual indicators */}
-                <div className='border rounded-lg divide-y max-h-56 overflow-y-auto bg-card'>
-                  {isLoadingOpds ? (
-                    <div className='flex items-center justify-center p-6 gap-2 text-xs text-muted-foreground'>
-                      <Loader2 className='h-4 w-4 animate-spin text-primary' />
-                      Memuat daftar OPD...
+                {!selectedAuditorId ? (
+                  <div className='flex flex-col items-center justify-center p-8 rounded-lg border border-dashed bg-muted/20 text-center gap-2'>
+                    <div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground'>
+                      <Building2 className='h-5 w-5' />
                     </div>
-                  ) : filteredOpds.length === 0 ? (
-                    <p className='p-4 text-center text-xs text-muted-foreground'>
-                      Tidak ada OPD yang cocok dengan pencarian.
-                    </p>
-                  ) : (
-                    filteredOpds.map((opd) => {
-                      const opdId = String(opd.id)
-                      const isChecked = selectedOpdIds.includes(opdId)
-                      const assignedInfo = assignedOpdsMap.get(opdId)
-                      const isAssignedToOther =
-                        assignedInfo && assignedInfo.auditorId !== targetAuditorId
+                    <div className='space-y-0.5'>
+                      <p className='text-xs font-semibold text-foreground'>
+                        Pilih Auditor Pengawas Terlebih Dahulu
+                      </p>
+                      <p className='text-[11px] text-muted-foreground max-w-sm'>
+                        Silakan pilih auditor pengawas pada opsi di atas untuk menampilkan dan memilih daftar Perangkat Daerah (OPD) binaan.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Selected Pills */}
+                    {selectedOpdIds.length > 0 && (
+                      <div className='flex flex-wrap gap-1.5 p-2 bg-muted/20 border rounded-lg max-h-24 overflow-y-auto'>
+                        {selectedOpdIds.map((id) => {
+                          const opd = opdList.find((o) => o.id === id)
+                          return (
+                            <Badge
+                              key={id}
+                              variant='outline'
+                              className='text-[11px] font-normal py-0.5 px-2 gap-1 bg-background text-foreground border-border shadow-2xs'
+                            >
+                              <Building2 className='h-3 w-3 text-primary shrink-0' />
+                              <span className='max-w-[190px] truncate'>
+                                {opd?.nama || id}
+                              </span>
+                              <button
+                                type='button'
+                                onClick={() => handleToggleOpd(id)}
+                                className='ml-0.5 hover:text-destructive focus:outline-none'
+                              >
+                                <X className='h-3 w-3' />
+                              </button>
+                            </Badge>
+                          )
+                        })}
+                      </div>
+                    )}
 
-                      return (
-                        <label
-                          key={opdId}
-                          className={`flex items-center gap-3 px-3 py-2 text-xs transition-colors ${
-                            isAssignedToOther
-                              ? 'opacity-55 cursor-not-allowed bg-muted/20 text-muted-foreground'
-                              : isChecked
-                              ? 'bg-primary/5 font-medium text-primary cursor-pointer'
-                              : 'hover:bg-muted/50 text-foreground cursor-pointer'
-                          }`}
+                    {/* Search & Bulk Select Toolbar */}
+                    <div className='flex items-center gap-2'>
+                      <div className='relative flex-1'>
+                        <Search className='absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground' />
+                        <Input
+                          type='text'
+                          placeholder='Cari nama atau kode dinas OPD...'
+                          className='pl-8 h-8 text-xs'
+                          value={opdSearch}
+                          onChange={(e) => setOpdSearch(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        className='h-8 text-[11px] shrink-0'
+                        onClick={handleSelectAllFiltered}
+                        disabled={filteredOpds.length === 0}
+                      >
+                        Pilih Semua yang Tersedia
+                      </Button>
+                      {selectedOpdIds.length > 0 && (
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='sm'
+                          className='h-8 text-[11px] text-destructive shrink-0 hover:bg-destructive/10'
+                          onClick={handleDeselectAll}
                         >
-                          <Checkbox
-                            checked={isChecked}
-                            disabled={Boolean(isAssignedToOther)}
-                            onCheckedChange={() => {
-                              if (!isAssignedToOther) handleToggleOpd(opdId)
-                            }}
-                          />
-                          <div className='flex-1 min-w-0'>
-                            <span className='font-mono text-[10px] text-muted-foreground mr-1.5'>
-                              [{opd.kode || '-'}]
-                            </span>
-                            <span>{opd.nama}</span>
-                          </div>
+                          Reset
+                        </Button>
+                      )}
+                    </div>
 
-                          {isAssignedToOther ? (
-                            <span className='text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground border shrink-0'>
-                              Ditugaskan ke: {assignedInfo.auditorName}
-                            </span>
-                          ) : isChecked ? (
-                            <Check className='h-3.5 w-3.5 text-primary shrink-0' />
-                          ) : null}
-                        </label>
-                      )
-                    })
-                  )}
-                </div>
+                    {/* Scrollable Checkbox Checklist with 1 OPD = 1 Auditor visual indicators */}
+                    <div className='border rounded-lg divide-y max-h-56 overflow-y-auto bg-card'>
+                      {isLoadingOpds ? (
+                        <div className='flex items-center justify-center p-6 gap-2 text-xs text-muted-foreground'>
+                          <Loader2 className='h-4 w-4 animate-spin text-primary' />
+                          Memuat daftar OPD...
+                        </div>
+                      ) : filteredOpds.length === 0 ? (
+                        <p className='p-4 text-center text-xs text-muted-foreground'>
+                          Tidak ada OPD yang cocok dengan pencarian.
+                        </p>
+                      ) : (
+                        filteredOpds.map((opd) => {
+                          const opdId = String(opd.id)
+                          const isChecked = selectedOpdIds.includes(opdId)
+                          const assignedInfo = assignedOpdsMap.get(opdId)
+                          const isAssignedToOther =
+                            assignedInfo && assignedInfo.auditorId !== targetAuditorId
+
+                          return (
+                            <label
+                              key={opdId}
+                              className={`flex items-center gap-3 px-3 py-2 text-xs transition-colors ${
+                                isAssignedToOther
+                                  ? 'opacity-55 cursor-not-allowed bg-muted/20 text-muted-foreground'
+                                  : isChecked
+                                  ? 'bg-primary/5 font-medium text-primary cursor-pointer'
+                                  : 'hover:bg-muted/50 text-foreground cursor-pointer'
+                              }`}
+                            >
+                              <Checkbox
+                                checked={isChecked}
+                                disabled={Boolean(isAssignedToOther)}
+                                onCheckedChange={() => {
+                                  if (!isAssignedToOther) handleToggleOpd(opdId)
+                                }}
+                              />
+                              <div className='flex-1 min-w-0'>
+                                <span className='font-mono text-[10px] text-muted-foreground mr-1.5'>
+                                  [{opd.kode || '-'}]
+                                </span>
+                                <span>{opd.nama}</span>
+                              </div>
+
+                              {isAssignedToOther ? (
+                                <span className='text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground border shrink-0'>
+                                  Ditugaskan ke: {assignedInfo.auditorName}
+                                </span>
+                              ) : isChecked ? (
+                                <Check className='h-3.5 w-3.5 text-primary shrink-0' />
+                              ) : null}
+                            </label>
+                          )
+                        })
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

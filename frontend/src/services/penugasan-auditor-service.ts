@@ -8,6 +8,12 @@ export interface AuditorUser {
   jabatan: string | null
   roles?: { id: string; name: string }[]
   active_opd_count?: number
+  auditor_assignments?: {
+    id: string
+    auditor_id: string
+    opd_id: string
+    is_active?: boolean
+  }[]
 }
 
 export interface AssignedOpdInfo {

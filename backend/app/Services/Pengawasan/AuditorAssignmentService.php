@@ -129,7 +129,12 @@ class AuditorAssignmentService
             $q->whereIn('name', ['Auditor', 'Inspektorat']);
         })
             ->where('status', 'active')
-            ->with(['roles:id,name'])
+            ->with([
+                'roles:id,name',
+                'auditorAssignments' => function ($q) {
+                    $q->select('id', 'auditor_id', 'opd_id', 'is_active');
+                },
+            ])
             ->withCount(['auditorAssignments as active_opd_count' => function ($q) {
                 $q->where('is_active', true);
             }])
@@ -160,6 +165,12 @@ class AuditorAssignmentService
                     'opd_ids' => ["OPD \"{$conflict->opd?->nama}\" sudah ditugaskan kepada auditor {$conflict->auditor?->name}. Satu OPD hanya dapat ditugaskan ke 1 auditor."],
                 ]);
             }
+
+            // Sync: delete assignments for OPDs no longer in the list for this auditor
+            AuditorOpdAssignment::where('auditor_id', $auditor->id)
+                ->whereNotIn('opd_id', $opdIds)
+                ->get()
+                ->each(fn ($obs) => $obs->delete());
 
             $createdAssignments = [];
 

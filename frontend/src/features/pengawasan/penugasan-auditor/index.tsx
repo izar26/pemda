@@ -1,12 +1,8 @@
 import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Building2,
-  CheckCircle2,
   Loader2,
   RefreshCw,
-  ShieldAlert,
-  UserCheck,
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { NavbarStatus } from '@/components/layout/navbar-status'
@@ -17,7 +13,6 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { penugasanAuditorService } from '@/services/penugasan-auditor-service'
 import { PenugasanProvider } from './components/penugasan-provider'
 import { PenugasanPrimaryButtons } from './components/penugasan-primary-buttons'
@@ -40,25 +35,12 @@ function PenugasanContent() {
     staleTime: 60 * 1000,
   })
 
-  // 2. Fetch Coverage Statistics
-  const {
-    data: stats,
-    isLoading: isLoadingStats,
-    isRefetching: isRefetchingStats,
-    refetch: refetchStats,
-  } = useQuery({
-    queryKey: ['pengawasan', 'penugasan-stats'],
-    queryFn: () => penugasanAuditorService.getStats(),
-    staleTime: 60 * 1000,
-  })
-
-  const isLoading = isLoadingList || isLoadingStats
-  const isRefetching = isRefetchingList || isRefetchingStats
+  const isLoading = isLoadingList
+  const isRefetching = isRefetchingList
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
     refetchList()
-    refetchStats()
   }
 
   const auditorsList = useMemo(() => {
@@ -69,38 +51,6 @@ function PenugasanContent() {
   }, [auditorResponse?.data])
 
   const totalAuditors = auditorResponse?.meta?.total ?? auditorsList.length
-
-  // Construct Unified KPI Stat Cards
-  const kpiItems: KpiStatItem[] = [
-    {
-      title: 'Auditor Bertugas',
-      value: stats?.total_auditor_bertugas ?? 0,
-      subtitle: 'Auditor memiliki penugasan aktif',
-      icon: UserCheck,
-      color: 'blue',
-    },
-    {
-      title: 'OPD Tercover',
-      value: stats?.total_opd_tercover ?? 0,
-      subtitle: `Dari total ${stats?.total_opd_aktif ?? 0} perangkat daerah`,
-      icon: Building2,
-      color: 'emerald',
-    },
-    {
-      title: 'OPD Belum Ditugaskan',
-      value: stats?.total_opd_belum_tercover ?? 0,
-      subtitle: 'Belum memiliki auditor pembina',
-      icon: ShieldAlert,
-      color: stats?.total_opd_belum_tercover ? 'amber' : 'gray',
-    },
-    {
-      title: 'Total Penugasan Aktif',
-      value: stats?.total_penugasan_aktif ?? 0,
-      subtitle: 'Akumulasi relasi auditor & OPD',
-      icon: CheckCircle2,
-      color: 'violet',
-    },
-  ]
 
   return (
     <>
@@ -141,9 +91,6 @@ function PenugasanContent() {
             <PenugasanPrimaryButtons />
           </div>
         </PageHeader>
-
-        {/* Coverage KPI Statistics Cards */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoadingStats} />
 
         {/* Standard TanStack Data Table */}
         {isLoadingList ? (
