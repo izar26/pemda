@@ -1,9 +1,7 @@
 import { Logo } from '@/assets/logo'
 import { useAppConfig } from '@/hooks/use-app-config'
-import { cn } from '@/lib/utils'
-import dashboardDark from './assets/dashboard-dark.png'
-import dashboardLight from './assets/dashboard-light.png'
 import { UserAuthForm } from './components/user-auth-form'
+import { LoginBannerCarousel } from './components/login-banner-carousel'
 
 export function SignIn2() {
   const { appName, instanceName, appLogoUrl } = useAppConfig()
@@ -22,7 +20,7 @@ export function SignIn2() {
                 />
               </div>
             ) : (
-              <Logo className='size-8 shrink-0' />
+              <Logo className='size-8 shrink-0 text-primary' />
             )}
             <div className='text-start'>
               <h1 className='text-lg font-bold leading-tight tracking-tight text-foreground'>
@@ -42,27 +40,7 @@ export function SignIn2() {
         </div>
       </div>
 
-      <div
-        className={cn(
-          'relative h-full overflow-hidden bg-muted max-lg:hidden',
-          '[&>img]:absolute [&>img]:top-[15%] [&>img]:left-20 [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>img]:object-top-left [&>img]:select-none'
-        )}
-      >
-        <img
-          src={dashboardLight}
-          className='dark:hidden'
-          width={1024}
-          height={1151}
-          alt={appName}
-        />
-        <img
-          src={dashboardDark}
-          className='hidden dark:block'
-          width={1024}
-          height={1138}
-          alt={appName}
-        />
-      </div>
+      <LoginBannerCarousel />
     </div>
   )
 }
