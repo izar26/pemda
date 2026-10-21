@@ -457,6 +457,7 @@ export function KonteksStrategisPage() {
           progressPercentage={progressPercentage}
           readiness={readiness}
           effectiveOpdId={effectiveOpdId}
+          activePeriodeId={activePeriode?.id}
           onSubmissionSuccess={refetchWizardProgress}
         />
 

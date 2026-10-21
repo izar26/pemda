@@ -41,6 +41,7 @@ interface RisikoWizardHeaderProps {
   actions?: React.ReactNode
   readiness?: ReadinessResponse
   effectiveOpdId?: string
+  activePeriodeId?: string
   onSubmissionSuccess?: () => void
   isSubmitDialogOpen?: boolean
   setIsSubmitDialogOpen?: (open: boolean) => void
@@ -59,6 +60,7 @@ export function RisikoWizardHeader({
   actions,
   readiness,
   effectiveOpdId,
+  activePeriodeId,
   onSubmissionSuccess,
   isSubmitDialogOpen: controlledSubmitDialogOpen,
   setIsSubmitDialogOpen: controlledSetIsSubmitDialogOpen,
@@ -78,17 +80,50 @@ export function RisikoWizardHeader({
     mutationFn: () =>
       pengajuanRisikoService.submitForReview({
         opd_id: effectiveOpdId!,
+        periode_penilaian_id: activePeriodeId,
       }),
-    onSuccess: (res) => {
+    onMutate: async () => {
+      // Optimistic update: hide Kirim ke Auditor button & show top banner immediately
+      queryClient.setQueriesData(
+        { queryKey: ['risiko-pengajuan-readiness'] },
+        (old: any) => {
+          if (!old) return old
+          return {
+            ...old,
+            is_ready_to_submit: false,
+            is_locked: true,
+            status: 'submitted',
+          }
+        }
+      )
+    },
+    onSuccess: async (res) => {
       toast.success(res.message || 'Lembar kerja risiko berhasil dikirimkan ke auditor.')
       setSubmitOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] })
-      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] })
-      queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] })
+
+      try {
+        const freshReadiness = await pengajuanRisikoService.getReadiness({
+          opd_id: effectiveOpdId,
+          periode_penilaian_id: activePeriodeId,
+        })
+        queryClient.setQueriesData(
+          { queryKey: ['risiko-pengajuan-readiness'] },
+          freshReadiness
+        )
+      } catch {
+        // Fallback: retain optimistic status
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+      ])
       onSubmissionSuccess?.()
     },
     onError: (err: any) => {
+      queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] })
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.forms?.[0] ||
@@ -121,6 +156,15 @@ export function RisikoWizardHeader({
     navigate({ to: step.url })
   }
 
+  const showSubmitButton = Boolean(
+    readiness?.is_ready_to_submit &&
+      !readiness?.is_locked &&
+      readiness?.status !== 'submitted' &&
+      readiness?.status !== 'in_review' &&
+      readiness?.status !== 'approved' &&
+      !submitMutation.isPending
+  )
+
   return (
     <div className='rounded-xl border bg-card/80 backdrop-blur-xs shadow-2xs px-4 py-4 sm:px-6 sm:py-5 space-y-4'>
       {/* 1. AUDITOR & SUBMISSION WORKFLOW STATUS BANNERS */}
@@ -143,10 +187,10 @@ export function RisikoWizardHeader({
           <Clock className='h-5 w-5 shrink-0 mt-0.5' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
-              Lembar Kerja Sedang Dalam Pemeriksaan Auditor
+              Formulir Sedang Dalam Pemeriksaan Auditor
             </p>
             <p className='text-muted-foreground leading-relaxed'>
-              Seluruh formulir telah diajukan kepada Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Lembar kerja saat ini dikunci untuk proses review (read-only).
+              Seluruh formulir telah diajukan kepada Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Formulir saat ini berstatus terkunci untuk proses pemeriksaan (read-only).
             </p>
           </div>
         </div>
@@ -244,7 +288,7 @@ export function RisikoWizardHeader({
           </div>
 
           {/* Submit to Auditor Button */}
-          {readiness?.is_ready_to_submit && (
+          {showSubmitButton && (
             <Button
               type='button'
               size='sm'

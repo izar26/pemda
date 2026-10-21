@@ -85,6 +85,15 @@ export function KonteksOperasionalPage() {
     !isLocked &&
     !is2CApproved
 
+  const showFooterSubmitButton = Boolean(
+    canEdit &&
+      readiness?.is_ready_to_submit &&
+      !isLocked &&
+      readiness?.status !== 'submitted' &&
+      readiness?.status !== 'in_review' &&
+      readiness?.status !== 'approved'
+  )
+
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] =
     useState<KonteksOperasionalItemNode | null>(null)
@@ -308,6 +317,7 @@ export function KonteksOperasionalPage() {
           progressPercentage={progressPercentage}
           readiness={readiness}
           effectiveOpdId={effectiveOpdId}
+          activePeriodeId={activePeriode?.id}
           onSubmissionSuccess={refetchWizardProgress}
           isSubmitDialogOpen={isSubmitDialogOpen}
           setIsSubmitDialogOpen={setIsSubmitDialogOpen}
@@ -566,7 +576,7 @@ export function KonteksOperasionalPage() {
                         <span>Simpan</span>
                       </Button>
 
-                      {readiness?.is_ready_to_submit ? (
+                      {showFooterSubmitButton ? (
                         <Button
                           type='button'
                           size='sm'
@@ -577,7 +587,7 @@ export function KonteksOperasionalPage() {
                           <Send className='h-4 w-4' />
                           <span>Kirim ke Auditor</span>
                         </Button>
-                      ) : (
+                      ) : canEdit ? (
                         <Button
                           type='button'
                           size='sm'
@@ -595,7 +605,7 @@ export function KonteksOperasionalPage() {
                             </>
                           )}
                         </Button>
-                      )}
+                      ) : null}
                     </>
                   ) : (
                     <div className='flex items-center gap-2 text-xs text-muted-foreground italic py-1.5 px-3 rounded-lg bg-muted/40 border'>
