@@ -42,6 +42,8 @@ interface RisikoWizardHeaderProps {
   readiness?: ReadinessResponse
   effectiveOpdId?: string
   onSubmissionSuccess?: () => void
+  isSubmitDialogOpen?: boolean
+  setIsSubmitDialogOpen?: (open: boolean) => void
 }
 
 function getCleanStepTitle(title: string) {
@@ -58,10 +60,19 @@ export function RisikoWizardHeader({
   readiness,
   effectiveOpdId,
   onSubmissionSuccess,
+  isSubmitDialogOpen: controlledSubmitDialogOpen,
+  setIsSubmitDialogOpen: controlledSetIsSubmitDialogOpen,
 }: RisikoWizardHeaderProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
+  const [internalSubmitDialogOpen, setInternalSubmitDialogOpen] = useState(false)
+
+  const isSubmitOpen =
+    controlledSubmitDialogOpen !== undefined
+      ? controlledSubmitDialogOpen
+      : internalSubmitDialogOpen
+  const setSubmitOpen =
+    controlledSetIsSubmitDialogOpen || setInternalSubmitDialogOpen
 
   const submitMutation = useMutation({
     mutationFn: () =>
@@ -70,9 +81,11 @@ export function RisikoWizardHeader({
       }),
     onSuccess: (res) => {
       toast.success(res.message || 'Lembar kerja risiko berhasil dikirimkan ke auditor.')
-      setIsSubmitDialogOpen(false)
+      setSubmitOpen(false)
       queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] })
       queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
+      queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] })
+      queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] })
       onSubmissionSuccess?.()
     },
     onError: (err: any) => {
@@ -236,7 +249,7 @@ export function RisikoWizardHeader({
               type='button'
               size='sm'
               className='h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm'
-              onClick={() => setIsSubmitDialogOpen(true)}
+              onClick={() => setSubmitOpen(true)}
             >
               <Send className='h-3.5 w-3.5' />
               Kirim ke Auditor
@@ -477,8 +490,8 @@ export function RisikoWizardHeader({
 
       {/* Submit Confirmation Dialog */}
       <ConfirmDialog
-        open={isSubmitDialogOpen}
-        onOpenChange={setIsSubmitDialogOpen}
+        open={isSubmitOpen}
+        onOpenChange={setSubmitOpen}
         title='Kirim Lembar Kerja Risiko ke Auditor?'
         desc={
           <span>

@@ -15,11 +15,13 @@ import {
   Loader2,
   Lock,
   Save,
+  Send,
   Target,
   UserCheck,
 } from 'lucide-react'
 import { usePermissions } from '@/hooks/use-permissions'
 import { risikoService } from '@/services/risiko-service'
+import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
 import type {
   KonteksOperasionalItemJenis,
   KonteksOperasionalItemNode,
@@ -94,6 +96,7 @@ export function KonteksOperasionalPage() {
   const [informasiLain, setInformasiLain] = useState<string>('-')
   const [isSavingStep, setIsSavingStep] = useState(false)
   const [saveIntent, setSaveIntent] = useState<'save' | 'save_and_next'>('save')
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
 
   // Sequential Lock Guard: Redirect to Step 1 (2B) if 2B is not completed yet
   useEffect(() => {
@@ -148,7 +151,11 @@ export function KonteksOperasionalPage() {
     await Promise.all([
       refetchOperasional(),
       queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+      queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+      queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+      queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
     ])
+    await refetchWizardProgress()
   }
 
   function handleOpenAddProgram() {
@@ -200,12 +207,34 @@ export function KonteksOperasionalPage() {
       await Promise.all([
         refetchOperasional(),
         queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
       ])
 
+      const freshReadiness = await pengajuanRisikoService.getReadiness({
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: activePeriode.id,
+      })
+
+      queryClient.setQueryData(
+        ['risiko-pengajuan-readiness', effectiveOpdId, activePeriode.id],
+        freshReadiness
+      )
+
+      await refetchWizardProgress()
+
       if (intent === 'save_and_next') {
-        toast.success(
-          'Langkah 2 (Form 2C) berhasil disimpan! Progres Penetapan Konteks Risiko (2B & 2C) telah mencapai 100%.'
-        )
+        if (freshReadiness?.is_ready_to_submit) {
+          toast.success(
+            'Langkah 2 (Form 2C) berhasil disimpan! Seluruh lembar kerja telah lengkap.'
+          )
+          setIsSubmitDialogOpen(true)
+        } else {
+          toast.success(
+            'Langkah 2 (Form 2C) berhasil disimpan! Progres Penetapan Konteks Risiko (2B & 2C) telah mencapai 100%.'
+          )
+        }
       } else {
         toast.success(
           'Penetapan Konteks Risiko Operasional OPD (Form 2C) berhasil disimpan.'
@@ -280,6 +309,8 @@ export function KonteksOperasionalPage() {
           readiness={readiness}
           effectiveOpdId={effectiveOpdId}
           onSubmissionSuccess={refetchWizardProgress}
+          isSubmitDialogOpen={isSubmitDialogOpen}
+          setIsSubmitDialogOpen={setIsSubmitDialogOpen}
         />
 
         {!isLoading && !activePeriode ? (
@@ -535,23 +566,36 @@ export function KonteksOperasionalPage() {
                         <span>Simpan</span>
                       </Button>
 
-                      <Button
-                        type='button'
-                        size='sm'
-                        disabled={isSavingStep}
-                        onClick={() => handleSaveStep('save_and_next')}
-                        className='gap-1.5 shadow-2xs'
-                      >
-                        {isSavingStep && saveIntent === 'save_and_next' ? (
-                          <Loader2 className='h-4 w-4 animate-spin' />
-                        ) : (
-                          <>
-                            <CheckCircle2 className='h-4 w-4' />
-                            <span>Simpan dan Lanjutkan</span>
-                            <ArrowRight className='h-4 w-4' />
-                          </>
-                        )}
-                      </Button>
+                      {readiness?.is_ready_to_submit ? (
+                        <Button
+                          type='button'
+                          size='sm'
+                          disabled={isSavingStep}
+                          onClick={() => setIsSubmitDialogOpen(true)}
+                          className='gap-1.5 shadow-2xs bg-emerald-600 hover:bg-emerald-700 text-white'
+                        >
+                          <Send className='h-4 w-4' />
+                          <span>Kirim ke Auditor</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          type='button'
+                          size='sm'
+                          disabled={isSavingStep}
+                          onClick={() => handleSaveStep('save_and_next')}
+                          className='gap-1.5 shadow-2xs'
+                        >
+                          {isSavingStep && saveIntent === 'save_and_next' ? (
+                            <Loader2 className='h-4 w-4 animate-spin' />
+                          ) : (
+                            <>
+                              <CheckCircle2 className='h-4 w-4' />
+                              <span>Simpan dan Lanjutkan</span>
+                              <ArrowRight className='h-4 w-4' />
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <div className='flex items-center gap-2 text-xs text-muted-foreground italic py-1.5 px-3 rounded-lg bg-muted/40 border'>

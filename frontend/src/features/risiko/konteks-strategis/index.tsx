@@ -381,7 +381,10 @@ export function KonteksStrategisPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
         queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
       ])
+      await refetchWizardProgress()
 
       setPendingCrucialPayload(null)
 

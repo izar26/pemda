@@ -275,7 +275,7 @@ export function useRisikoWizardProgress(enabled = true) {
         periode_penilaian_id: activePeriode?.id,
       }),
     enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
-    staleTime: 15_000,
+    staleTime: 0,
   })
 
   const konteks2B = currentKonteksResponse?.data ?? null
@@ -350,9 +350,8 @@ export function useRisikoWizardProgress(enabled = true) {
     submissionStatus: readiness ? readiness.status : 'draft',
     isLoading: isLoadingPeriode || (!isOpdRole && isLoadingOpds) || isLoadingKonteks || isLoadingReadiness,
     isFetching: isFetchingKonteks,
-    refetchWizardProgress: () => {
-      refetchWizardProgress()
-      refetchReadiness()
+    refetchWizardProgress: async () => {
+      await Promise.all([refetchWizardProgress(), refetchReadiness()])
     },
   }
 }
