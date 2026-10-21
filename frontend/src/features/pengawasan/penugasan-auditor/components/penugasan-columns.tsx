@@ -108,7 +108,7 @@ export const penugasanColumns: ColumnDef<AuditorWithAssignments>[] = [
       const matchOpd = row.original.auditor_assignments?.some(
         (a) =>
           a.opd?.nama?.toLowerCase().includes(searchStr) ||
-          a.opd?.kode_opd?.toLowerCase().includes(searchStr)
+          a.opd?.kode?.toLowerCase().includes(searchStr)
       )
       return (
         name.includes(searchStr) ||

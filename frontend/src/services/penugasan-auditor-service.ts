@@ -22,9 +22,9 @@ export interface AssignedOpdInfo {
   is_active: boolean
   opd: {
     id: string
-    kode_opd?: string
+    kode?: string
     nama: string
-    singkatan?: string | null
+    kategori?: string | null
   }
   periode_penilaian?: {
     id: string

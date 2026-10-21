@@ -28,7 +28,7 @@ class AuditorAssignmentService
     {
         $query = AuditorOpdAssignment::with([
             'auditor:id,name,nip,email,jabatan,opd_id',
-            'opd:id,kode_opd,nama,singkatan',
+            'opd:id,kode,nama,kategori',
             'periodePenilaian:id,nama,tahun_mulai,tahun_selesai',
             'assignedBy:id,name',
         ]);
@@ -48,7 +48,7 @@ class AuditorAssignmentService
         $query = User::with([
             'roles:id,name',
             'auditorAssignments' => function ($q) {
-                $q->with(['opd:id,kode_opd,nama,singkatan', 'periodePenilaian:id,nama,tahun_mulai,tahun_selesai'])
+                $q->with(['opd:id,kode,nama,kategori', 'periodePenilaian:id,nama,tahun_mulai,tahun_selesai'])
                     ->orderBy('created_at', 'desc');
             },
         ]);
@@ -68,7 +68,7 @@ class AuditorAssignmentService
                     ->orWhere('email', 'like', "%{$term}%")
                     ->orWhereHas('auditorAssignments.opd', function ($oq) use ($term) {
                         $oq->where('nama', 'like', "%{$term}%")
-                            ->orWhere('kode_opd', 'like', "%{$term}%");
+                            ->orWhere('kode', 'like', "%{$term}%");
                     });
             });
         }
@@ -168,7 +168,7 @@ class AuditorAssignmentService
                     ]
                 );
 
-                $createdAssignments[] = $assignment->load(['opd:id,kode_opd,nama,singkatan']);
+                $createdAssignments[] = $assignment->load(['opd:id,kode,nama,kategori']);
             }
 
             return $createdAssignments;
@@ -215,7 +215,7 @@ class AuditorAssignmentService
                     ]
                 );
 
-                $synced[] = $assignment->load(['opd:id,kode_opd,nama,singkatan']);
+                $synced[] = $assignment->load(['opd:id,kode,nama,kategori']);
             }
 
             return $synced;
@@ -278,7 +278,7 @@ class AuditorAssignmentService
                     })
                     ->orWhereHas('opd', function ($oq) use ($term) {
                         $oq->where('nama', 'like', "%{$term}%")
-                            ->orWhere('kode_opd', 'like', "%{$term}%");
+                            ->orWhere('kode', 'like', "%{$term}%");
                     });
             });
         }
