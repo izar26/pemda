@@ -85,8 +85,9 @@ export function KonteksStrategisPage() {
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
 
-  const canEdit =
-    hasPermission('konteks_risiko.create') || hasPermission('konteks_risiko.edit')
+
+
+
 
   const {
     user,
@@ -102,7 +103,15 @@ export function KonteksStrategisPage() {
     totalSteps,
     progressPercentage,
     isLoading,
+    readiness,
+    hasAuditor,
+    isLocked,
+    refetchWizardProgress,
   } = useRisikoWizardProgress()
+
+  const canEdit =
+    (hasPermission('konteks_risiko.create') || hasPermission('konteks_risiko.edit')) &&
+    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked))
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitIntent, setSubmitIntent] = useState<'save' | 'save_and_next'>('save')
@@ -440,6 +449,9 @@ export function KonteksStrategisPage() {
           completedCount={completedCount}
           totalSteps={totalSteps}
           progressPercentage={progressPercentage}
+          readiness={readiness}
+          effectiveOpdId={effectiveOpdId}
+          onSubmissionSuccess={refetchWizardProgress}
         />
 
         {/* Active Periode Guard */}

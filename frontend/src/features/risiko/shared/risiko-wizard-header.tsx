@@ -1,9 +1,22 @@
+import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Check, ChevronLeft, ChevronRight, Lock } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Lock,
+  Send,
+  ShieldAlert,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   Tooltip,
   TooltipContent,
@@ -14,6 +27,10 @@ import {
   type ResolvedWizardStep,
   type RisikoWizardStepId,
 } from './risiko-wizard-store'
+import {
+  pengajuanRisikoService,
+  type ReadinessResponse,
+} from '@/services/pengajuan-risiko-service'
 
 interface RisikoWizardHeaderProps {
   currentStepId: RisikoWizardStepId | string
@@ -22,6 +39,9 @@ interface RisikoWizardHeaderProps {
   totalSteps: number
   progressPercentage: number
   actions?: React.ReactNode
+  readiness?: ReadinessResponse
+  effectiveOpdId?: string
+  onSubmissionSuccess?: () => void
 }
 
 function getCleanStepTitle(title: string) {
@@ -35,8 +55,36 @@ export function RisikoWizardHeader({
   totalSteps,
   progressPercentage,
   actions,
+  readiness,
+  effectiveOpdId,
+  onSubmissionSuccess,
 }: RisikoWizardHeaderProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
+
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      pengajuanRisikoService.submitForReview({
+        opd_id: effectiveOpdId!,
+      }),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Lembar kerja risiko berhasil dikirimkan ke auditor.')
+      setIsSubmitDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] })
+      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
+      onSubmissionSuccess?.()
+    },
+    onError: (err: any) => {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.forms?.[0] ||
+        err.response?.data?.errors?.auditor?.[0] ||
+        'Gagal mengajukan lembar kerja ke auditor.'
+      toast.error(msg)
+    },
+  })
+
   const currentIndex = steps.findIndex((s) => s.id === currentStepId)
   const activeStep = steps[currentIndex] || steps[0]
   const prevStep = currentIndex > 0 ? steps[currentIndex - 1] : null
@@ -61,9 +109,81 @@ export function RisikoWizardHeader({
   }
 
   return (
-    <div className='rounded-xl border bg-card/80 backdrop-blur-xs shadow-2xs px-4 py-4 sm:px-6 sm:py-5'>
-      {/* Top summary row: Step counter, Clean title & Progress indicator */}
-      <div className='flex items-center justify-between gap-3 pb-3.5 border-b border-border/60'>
+    <div className='rounded-xl border bg-card/80 backdrop-blur-xs shadow-2xs px-4 py-4 sm:px-6 sm:py-5 space-y-4'>
+      {/* 1. AUDITOR & SUBMISSION WORKFLOW STATUS BANNERS */}
+      {readiness && !readiness.has_auditor && (
+        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <ShieldAlert className='h-5 w-5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Belum Ada Auditor Pengawas yang Ditugaskan
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang ditetapkan oleh Inspektorat. Pengisian lembar kerja berstatus <strong>read-only</strong> hingga Inspektorat menetapkan penugasan auditor binaan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {readiness && (readiness.status === 'submitted' || readiness.status === 'in_review') && (
+        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
+          <Clock className='h-5 w-5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Lembar Kerja Sedang Dalam Pemeriksaan Auditor
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Seluruh formulir telah diajukan kepada Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Lembar kerja saat ini dikunci untuk proses review (read-only).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {readiness && readiness.status === 'revision_requested' && (
+        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <AlertCircle className='h-5 w-5 shrink-0 mt-0.5' />
+          <div className='space-y-1.5 text-xs flex-1'>
+            <p className='font-bold text-foreground'>
+              Auditor Meminta Perbaikan (Revisi) Lembar Kerja
+            </p>
+            <div className='space-y-1.5'>
+              {readiness.submission?.items
+                ?.filter((i) => i.status === 'rejected')
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className='p-2.5 rounded-lg bg-background/80 border text-[11px] text-foreground space-y-0.5'
+                  >
+                    <span className='font-bold uppercase text-destructive mr-2'>
+                      Form {item.form_code}:
+                    </span>
+                    <span className='text-muted-foreground'>{item.catatan_revisi || 'Perlu perbaikan.'}</span>
+                  </div>
+                ))}
+            </div>
+            <p className='text-[11px] text-muted-foreground'>
+              Silakan perbaiki form yang ditandai di atas, kemudian klik <strong>Kirim ke Auditor</strong> setelah seluruh perbaikan selesai.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {readiness && readiness.status === 'approved' && (
+        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
+          <CheckCircle2 className='h-5 w-5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Lembar Kerja Resmi Disetujui Auditor Pengawas
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Seluruh lembar kerja pengelolaan risiko periode ini telah disetujui secara resmi oleh Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Data terkunci permanen.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Top summary row: Step counter, Clean title, Progress indicator & Actions */}
+      <div className='flex items-center justify-between gap-3 pb-3.5 border-b border-border/60 flex-wrap sm:flex-nowrap'>
         <div className='flex items-center gap-3'>
           <Badge
             variant='outline'
@@ -84,7 +204,7 @@ export function RisikoWizardHeader({
           </div>
         </div>
 
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-3 ml-auto flex-wrap sm:flex-nowrap'>
           <div className='flex items-center gap-2.5 text-xs'>
             <span className='text-xs font-medium text-muted-foreground hidden sm:inline'>
               Progres ({completedCount}/{totalSteps}):
@@ -109,6 +229,20 @@ export function RisikoWizardHeader({
               {progressPercentage}%
             </span>
           </div>
+
+          {/* Submit to Auditor Button */}
+          {readiness?.is_ready_to_submit && (
+            <Button
+              type='button'
+              size='sm'
+              className='h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm'
+              onClick={() => setIsSubmitDialogOpen(true)}
+            >
+              <Send className='h-3.5 w-3.5' />
+              Kirim ke Auditor
+            </Button>
+          )}
+
           {actions}
         </div>
       </div>
@@ -340,6 +474,22 @@ export function RisikoWizardHeader({
           </Button>
         </div>
       </div>
+
+      {/* Submit Confirmation Dialog */}
+      <ConfirmDialog
+        open={isSubmitDialogOpen}
+        onOpenChange={setIsSubmitDialogOpen}
+        title='Kirim Lembar Kerja Risiko ke Auditor?'
+        desc={
+          <span>
+            Seluruh data lembar kerja risiko (Form 2B dan Form 2C) akan dikirimkan kepada Auditor Pengawas (
+            <strong>{readiness?.assigned_auditor?.name || 'Inspektorat'}</strong>). Selama proses peninjauan, data akan berstatus terkunci (read-only).
+          </span>
+        }
+        confirmText='Ya, Kirim Sekarang'
+        isLoading={submitMutation.isPending}
+        handleConfirm={() => submitMutation.mutate()}
+      />
     </div>
   )
 }

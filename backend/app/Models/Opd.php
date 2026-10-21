@@ -105,5 +105,13 @@ class Opd extends Model
             ->withPivot(['id', 'periode_penilaian_id', 'nomor_surat_tugas', 'tanggal_mulai', 'tanggal_selesai', 'catatan', 'is_active'])
             ->withTimestamps();
     }
+
+    /**
+     * @return HasMany<\App\Models\Risiko\PengajuanPenilaianRisiko, $this>
+     */
+    public function pengajuanRisiko(): HasMany
+    {
+        return $this->hasMany(\App\Models\Risiko\PengajuanPenilaianRisiko::class, 'opd_id');
+    }
 }
 

@@ -187,9 +187,13 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::put('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'updateItem']);
         Route::delete('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'destroyItem']);
         Route::apiResource('/konteks-operasional', \App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class)->parameters(['konteks-operasional' => 'konteks']);
+
+        // Alur Pengajuan & Pemeriksaan Risiko (OPD)
+        Route::get('/pengajuan/status', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'status']);
+        Route::post('/pengajuan/submit', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'submit']);
     });
 
-    // Modul Pengawasan & Pembinaan (Inspektorat / Penugasan Auditor)
+    // Modul Pengawasan & Pembinaan (Inspektorat / Penugasan Auditor & Review Risiko)
     Route::prefix('pengawasan')->group(function () {
         Route::get('/penugasan-auditor/stats', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'stats']);
         Route::get('/penugasan-auditor/auditors', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'auditors']);
@@ -198,6 +202,11 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::post('/penugasan-auditor', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'store']);
         Route::put('/penugasan-auditor/{auditorId}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'update']);
         Route::delete('/penugasan-auditor/{id}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'destroy']);
+
+        // Review & Persetujuan Lembar Kerja Risiko OPD (Auditor)
+        Route::get('/review-risiko', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'indexReviews']);
+        Route::get('/review-risiko/{id}', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'showReview']);
+        Route::post('/review-risiko/{id}/item', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'reviewItem']);
     });
 });
 

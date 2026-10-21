@@ -11,6 +11,7 @@ use App\Http\Resources\Risiko\KonteksOperasionalItemResource;
 use App\Http\Resources\Risiko\KonteksOperasionalResource;
 use App\Models\Risiko\KonteksOperasional;
 use App\Services\Risiko\KonteksOperasionalService;
+use App\Services\Risiko\PengajuanRisikoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,7 +20,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class KonteksOperasionalController extends Controller
 {
     public function __construct(
-        protected KonteksOperasionalService $service
+        protected KonteksOperasionalService $service,
+        protected PengajuanRisikoService $pengajuanService
     ) {}
 
     /**
@@ -92,6 +94,8 @@ class KonteksOperasionalController extends Controller
     public function store(SaveKonteksOperasionalRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $this->pengajuanService->assertOpdCanEdit((string) $data['opd_id'], $data['periode_penilaian_id'] ?? null, $request->user());
+
         $konteks = $this->service->saveKonteks($data, $request->user());
 
         return response()->json([
@@ -135,6 +139,8 @@ class KonteksOperasionalController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+
         $data = $request->validated();
         $data['opd_id'] = $konteks->opd_id;
         $data['periode_penilaian_id'] = $konteks->periode_penilaian_id;
@@ -161,6 +167,8 @@ class KonteksOperasionalController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus konteks risiko operasional OPD lain.');
         }
 
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+
         $this->service->deleteKonteks($konteks);
 
         return response()->json([
@@ -182,6 +190,8 @@ class KonteksOperasionalController extends Controller
         if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
+
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
 
         $validated = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
@@ -215,6 +225,8 @@ class KonteksOperasionalController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+
         $data = $request->validated();
         $item = $this->service->saveItem($konteks, $data);
 
@@ -239,6 +251,8 @@ class KonteksOperasionalController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+
         $data = $request->validated();
         $item = $this->service->saveItem($konteks, $data, $itemId);
 
@@ -262,6 +276,8 @@ class KonteksOperasionalController extends Controller
         if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus rincian operasional OPD lain.');
         }
+
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
 
         $this->service->deleteItem($konteks, $itemId);
 

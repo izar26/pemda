@@ -82,6 +82,21 @@ class KonteksOperasionalTest extends TestCase
             'status' => 'aktif',
         ]);
 
+        $auditor = User::factory()->create(['status' => 'active']);
+        $auditor->assignRole('Auditor');
+        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+            'auditor_id' => $auditor->id,
+            'opd_id' => $this->puprOpd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'is_active' => true,
+        ]);
+        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+            'auditor_id' => $auditor->id,
+            'opd_id' => $this->diskominfoOpd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'is_active' => true,
+        ]);
+
         $this->sumberData = MasterSumberData::create([
             'nama' => 'Renstra SKPD',
             'is_active' => true,

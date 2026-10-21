@@ -29,6 +29,7 @@ import {
   GitFork,
   ShieldX,
   UserCheck,
+  ClipboardCheck,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -111,6 +112,12 @@ export const sidebarData: SidebarData = {
           url: '/pengawasan/penugasan-auditor',
           icon: UserCheck,
           requiredPermission: 'penugasan_auditor.view',
+        },
+        {
+          title: 'Review & Persetujuan Risiko',
+          url: '/pengawasan/review-risiko',
+          icon: ClipboardCheck,
+          requiredPermission: 'review_risiko.view',
         },
       ],
     },

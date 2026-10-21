@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { opdService } from '@/services/opd-service'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { risikoService } from '@/services/risiko-service'
+import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
 
 export type RisikoWizardStepId =
   | '2b'
@@ -261,6 +262,22 @@ export function useRisikoWizardProgress(enabled = true) {
     enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
   })
 
+  // Fetch submission & auditor readiness
+  const {
+    data: readiness,
+    isLoading: isLoadingReadiness,
+    refetch: refetchReadiness,
+  } = useQuery({
+    queryKey: ['risiko-pengajuan-readiness', effectiveOpdId, activePeriode?.id],
+    queryFn: () =>
+      pengajuanRisikoService.getReadiness({
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: activePeriode?.id,
+      }),
+    enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
+    staleTime: 15_000,
+  })
+
   const konteks2B = currentKonteksResponse?.data ?? null
   const opdMeta = currentKonteksResponse?.meta
 
@@ -325,8 +342,17 @@ export function useRisikoWizardProgress(enabled = true) {
     progressPercentage,
     isStep2BCompleted,
     isStep2CCompleted,
-    isLoading: isLoadingPeriode || (!isOpdRole && isLoadingOpds) || isLoadingKonteks,
+    readiness,
+    isLoadingReadiness,
+    refetchReadiness,
+    hasAuditor: readiness ? readiness.has_auditor : true,
+    isLocked: readiness ? readiness.is_locked : false,
+    submissionStatus: readiness ? readiness.status : 'draft',
+    isLoading: isLoadingPeriode || (!isOpdRole && isLoadingOpds) || isLoadingKonteks || isLoadingReadiness,
     isFetching: isFetchingKonteks,
-    refetchWizardProgress,
+    refetchWizardProgress: () => {
+      refetchWizardProgress()
+      refetchReadiness()
+    },
   }
 }

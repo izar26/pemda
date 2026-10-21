@@ -48,9 +48,9 @@ export function KonteksOperasionalPage() {
   const { hasPermission } = usePermissions()
   const hasRedirectedRef = useRef(false)
 
-  const canEdit =
-    hasPermission('konteks_operasional.create') ||
-    hasPermission('konteks_operasional.edit')
+
+
+
 
   const {
     user,
@@ -67,9 +67,17 @@ export function KonteksOperasionalPage() {
     progressPercentage,
     isStep2BCompleted,
     isLoading: isLoadingWizard,
+    readiness,
+    hasAuditor,
+    isLocked,
+    refetchWizardProgress,
   } = useRisikoWizardProgress()
 
   // Item Drawer State (Program / Kegiatan / Sub Kegiatan)
+  const canEdit =
+    (hasPermission('konteks_operasional.create') || hasPermission('konteks_operasional.edit')) &&
+    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked))
+
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] =
     useState<KonteksOperasionalItemNode | null>(null)
@@ -264,6 +272,9 @@ export function KonteksOperasionalPage() {
           completedCount={completedCount}
           totalSteps={totalSteps}
           progressPercentage={progressPercentage}
+          readiness={readiness}
+          effectiveOpdId={effectiveOpdId}
+          onSubmissionSuccess={refetchWizardProgress}
         />
 
         {!isLoading && !activePeriode ? (

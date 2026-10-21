@@ -9,6 +9,7 @@ use App\Http\Requests\Risiko\SaveKonteksPenilaianRequest;
 use App\Http\Resources\Risiko\KonteksPenilaianResource;
 use App\Models\Risiko\KonteksPenilaian;
 use App\Services\Risiko\KonteksPenilaianService;
+use App\Services\Risiko\PengajuanRisikoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,7 +17,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class KonteksPenilaianController extends Controller
 {
     public function __construct(
-        protected KonteksPenilaianService $service
+        protected KonteksPenilaianService $service,
+        protected PengajuanRisikoService $pengajuanService
     ) {}
 
     /**
@@ -92,6 +94,8 @@ class KonteksPenilaianController extends Controller
     public function store(SaveKonteksPenilaianRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $this->pengajuanService->assertOpdCanEdit((string) $data['opd_id'], $data['periode_penilaian_id'] ?? null, $request->user());
+
         $konteks = $this->service->saveKonteks($data, $request->user());
         $meta = $this->service->getOpdMeta((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id);
 
@@ -138,6 +142,8 @@ class KonteksPenilaianController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko OPD lain.');
         }
 
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+
         $data = $request->validated();
         $data['opd_id'] = $konteks->opd_id;
         $data['periode_penilaian_id'] = $konteks->periode_penilaian_id;
@@ -164,6 +170,8 @@ class KonteksPenilaianController extends Controller
         if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus konteks risiko OPD lain.');
         }
+
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
 
         $this->service->deleteKonteks($konteks);
 

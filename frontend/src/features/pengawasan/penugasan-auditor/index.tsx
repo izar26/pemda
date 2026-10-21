@@ -50,8 +50,6 @@ function PenugasanContent() {
     return []
   }, [auditorResponse?.data])
 
-  const totalAuditors = auditorResponse?.meta?.total ?? auditorsList.length
-
   return (
     <>
       <Header fixed>
@@ -67,7 +65,7 @@ function PenugasanContent() {
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Penugasan Auditor (Total: {totalAuditors})
+              Penugasan Auditor
             </h2>
             <p className='text-xs text-muted-foreground'>
               Penetapan dan pembagian instansi perangkat daerah binaan auditor Inspektorat untuk persetujuan (approval) lembar kerja risiko.

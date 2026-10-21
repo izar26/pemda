@@ -165,4 +165,12 @@ class User extends Authenticatable
             ->withPivot(['id', 'periode_penilaian_id', 'nomor_surat_tugas', 'tanggal_mulai', 'tanggal_selesai', 'catatan', 'is_active'])
             ->withTimestamps();
     }
+
+    /**
+     * @return HasMany<\App\Models\Risiko\PengajuanPenilaianRisiko, $this>
+     */
+    public function pengajuanRisikoAssigned(): HasMany
+    {
+        return $this->hasMany(\App\Models\Risiko\PengajuanPenilaianRisiko::class, 'auditor_id');
+    }
 }
