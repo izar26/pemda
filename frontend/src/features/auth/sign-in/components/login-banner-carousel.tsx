@@ -2,20 +2,51 @@ import { useState, useEffect, useCallback } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ShieldCheck, Building2, CheckCircle2 } from 'lucide-react'
 import { bannerService } from '@/services/banner-service'
+import type { Banner } from '@/types/banner'
 import { cn } from '@/lib/utils'
-import dashboardDark from '../assets/dashboard-dark.png'
-import dashboardLight from '../assets/dashboard-light.png'
+
+const BANNERS_STORAGE_KEY = 'manris_public_login_banners'
+
+/**
+ * Synchronously retrieves cached banners from localStorage to eliminate flicker.
+ */
+function getCachedBanners(): Banner[] {
+  try {
+    const raw = localStorage.getItem(BANNERS_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as Banner[]
+      }
+    }
+  } catch {
+    // Ignore cache parse errors
+  }
+  return []
+}
 
 export function LoginBannerCarousel() {
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const initialBanners = getCachedBanners()
 
-  // Fetch active login banners from public API
-  const { data: banners = [], isLoading } = useQuery({
+  // Fetch active login banners from public API with synchronous initialData from cache
+  const { data: banners = initialBanners } = useQuery({
     queryKey: ['public-banners', 'login'],
-    queryFn: () => bannerService.getPublicBanners('login'),
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    queryFn: async () => {
+      const liveData = await bannerService.getPublicBanners('login')
+      try {
+        if (liveData && liveData.length > 0) {
+          localStorage.setItem(BANNERS_STORAGE_KEY, JSON.stringify(liveData))
+        }
+      } catch {
+        // Ignore quota errors
+      }
+      return liveData
+    },
+    initialData: initialBanners,
+    staleTime: 1000 * 60 * 10, // Cache for 10 minutes
     retry: false,
   })
 
@@ -51,29 +82,58 @@ export function LoginBannerCarousel() {
     [emblaApi]
   )
 
-  // FALLBACK: When loading or when no custom banners uploaded
-  if (isLoading || banners.length === 0) {
+  // PRESTIGIOUS GOVERNMENT FALLBACK: When loading on first visit or when no banners uploaded
+  if (banners.length === 0) {
     return (
-      <div
-        className={cn(
-          'relative h-full overflow-hidden bg-muted max-lg:hidden',
-          '[&>img]:absolute [&>img]:top-[15%] [&>img]:left-20 [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>img]:object-top-left [&>img]:select-none'
-        )}
-      >
-        <img
-          src={dashboardLight}
-          className='dark:hidden'
-          width={1024}
-          height={1151}
-          alt='Portal PEMDA'
-        />
-        <img
-          src={dashboardDark}
-          className='hidden dark:block'
-          width={1024}
-          height={1138}
-          alt='Portal PEMDA'
-        />
+      <div className='relative h-full overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white max-lg:hidden select-none flex flex-col justify-between p-12'>
+        {/* Subtle decorative background circles */}
+        <div className='absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl pointer-events-none' />
+        <div className='absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none' />
+
+        {/* Top Header Badge */}
+        <div className='relative z-10 flex items-center gap-2.5'>
+          <div className='flex size-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-sm'>
+            <ShieldCheck className='size-5 text-emerald-400' />
+          </div>
+          <div>
+            <span className='text-xs font-semibold uppercase tracking-wider text-white/80'>
+              Sistem Informasi Manajemen Risiko
+            </span>
+            <p className='text-[11px] text-white/50'>Pemerintah Daerah Terintegrasi</p>
+          </div>
+        </div>
+
+        {/* Center Content / Hero Statement */}
+        <div className='relative z-10 max-w-lg space-y-4 my-auto'>
+          <div className='inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-emerald-300 backdrop-blur-md border border-white/15'>
+            <CheckCircle2 className='size-3.5' />
+            <span>Kepatuhan SPBE & SPIP Terintegrasi</span>
+          </div>
+
+          <h2 className='text-3xl font-extrabold tracking-tight leading-snug drop-shadow-sm text-white'>
+            Tata Kelola Pemerintahan yang Akuntabel, Transparan & Berorientasi Risiko.
+          </h2>
+
+          <p className='text-sm text-slate-300 leading-relaxed'>
+            Platform kolaboratif OPD dan APIP Inspektorat untuk perumusan konteks strategis, penilaian risiko operasional, hingga rencana tindak pengendalian secara terstruktur dan terukur.
+          </p>
+
+          <div className='flex items-center gap-6 pt-3 text-xs text-white/70'>
+            <div className='flex items-center gap-1.5'>
+              <Building2 className='size-4 text-emerald-400' />
+              <span>Seluruh Perangkat Daerah</span>
+            </div>
+            <div className='flex items-center gap-1.5'>
+              <ShieldCheck className='size-4 text-blue-400' />
+              <span>Pengawasan Intern APIP</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Security Note */}
+        <div className='relative z-10 text-[11px] text-white/40'>
+          © {new Date().getFullYear()} Pemerintah Daerah. Hak Cipta Dilindungi Undang-Undang.
+        </div>
       </div>
     )
   }
@@ -97,13 +157,13 @@ export function LoginBannerCarousel() {
               />
 
               {/* Dark subtle gradient overlay at bottom for readability */}
-              <div className='absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none' />
+              <div className='absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none' />
 
               {/* Caption if title or description present */}
               {(banner.title || banner.description) && (
-                <div className='absolute bottom-16 left-8 right-8 z-10 text-white space-y-1.5'>
+                <div className='absolute bottom-16 left-8 right-8 z-10 text-white space-y-2'>
                   {banner.title && (
-                    <h3 className='text-2xl font-bold tracking-tight drop-shadow-md'>
+                    <h3 className='text-2xl font-bold tracking-tight drop-shadow-md text-white'>
                       {banner.title}
                     </h3>
                   )}

@@ -1,12 +1,10 @@
 import { Logo } from '@/assets/logo'
 import { useAppConfig } from '@/hooks/use-app-config'
-import { cn } from '@/lib/utils'
-import dashboardDark from './assets/dashboard-dark.png'
-import dashboardLight from './assets/dashboard-light.png'
 import { UserAuthForm } from './components/user-auth-form'
+import { LoginBannerCarousel } from './components/login-banner-carousel'
 
 export function SignIn2() {
-  const { appName, instanceName, appLogoUrl } = useAppConfig()
+  const { appName, instanceName, appLogoUrl, isLoading } = useAppConfig()
 
   return (
     <div className='relative container grid h-svh flex-col items-center justify-center lg:max-w-none lg:grid-cols-2 lg:px-0'>
@@ -21,8 +19,10 @@ export function SignIn2() {
                   className='h-full w-full object-contain'
                 />
               </div>
+            ) : isLoading ? (
+              <div className='size-11 animate-pulse rounded-xl bg-muted/60 border border-border/40' />
             ) : (
-              <Logo className='size-8 shrink-0' />
+              <Logo className='size-8 shrink-0 text-primary' />
             )}
             <div className='text-start'>
               <h1 className='text-lg font-bold leading-tight tracking-tight text-foreground'>
@@ -42,27 +42,7 @@ export function SignIn2() {
         </div>
       </div>
 
-      <div
-        className={cn(
-          'relative h-full overflow-hidden bg-muted max-lg:hidden',
-          '[&>img]:absolute [&>img]:top-[15%] [&>img]:left-20 [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>img]:object-top-left [&>img]:select-none'
-        )}
-      >
-        <img
-          src={dashboardLight}
-          className='dark:hidden'
-          width={1024}
-          height={1151}
-          alt={appName}
-        />
-        <img
-          src={dashboardDark}
-          className='hidden dark:block'
-          width={1024}
-          height={1138}
-          alt={appName}
-        />
-      </div>
+      <LoginBannerCarousel />
     </div>
   )
 }

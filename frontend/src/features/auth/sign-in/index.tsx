@@ -6,7 +6,7 @@ import { LoginBannerCarousel } from './components/login-banner-carousel'
 
 export function SignIn() {
   const { redirect } = useSearch({ from: '/(auth)/sign-in' })
-  const { appName, instanceName, appLogoUrl } = useAppConfig()
+  const { appName, instanceName, appLogoUrl, isLoading } = useAppConfig()
 
   return (
     <div className='relative container grid min-h-svh flex-col items-center justify-center bg-muted/20 lg:max-w-none lg:grid-cols-2 lg:px-0'>
@@ -22,6 +22,8 @@ export function SignIn() {
                   className='h-full w-full object-contain'
                 />
               </div>
+            ) : isLoading ? (
+              <div className='mb-3 size-12 animate-pulse rounded-xl bg-muted/60 border border-border/40' />
             ) : (
               <div className='mb-3 flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs'>
                 <Logo className='size-7 shrink-0' />
