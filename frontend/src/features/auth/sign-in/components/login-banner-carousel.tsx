@@ -155,8 +155,8 @@ export function LoginBannerCarousel() {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const initialBanners = getCachedBanners()
 
-  // Fetch active login banners from public API with synchronous initialData from cache
-  const { data: banners = initialBanners } = useQuery({
+  // Fetch active login banners from public API using placeholderData so query ALWAYS fires on mount
+  const { data: banners = initialBanners, isLoading } = useQuery({
     queryKey: ['public-banners', 'login'],
     queryFn: async () => {
       const liveData = await bannerService.getPublicBanners('login')
@@ -169,9 +169,9 @@ export function LoginBannerCarousel() {
       }
       return liveData
     },
-    initialData: initialBanners,
-    staleTime: 1000 * 60 * 10, // Cache for 10 minutes
-    retry: false,
+    placeholderData: initialBanners.length > 0 ? initialBanners : undefined,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: 1,
   })
 
   // Initialize Embla with Autoplay
@@ -205,6 +205,18 @@ export function LoginBannerCarousel() {
     },
     [emblaApi]
   )
+
+  // Cold start loading skeleton: When fetching for the first time in a clean browser
+  if (isLoading && banners.length === 0) {
+    return (
+      <div className='relative h-full w-full overflow-hidden bg-muted select-none flex items-center justify-center max-lg:hidden animate-pulse'>
+        <div className='flex flex-col items-center gap-2 text-muted-foreground/50'>
+          <ImageIcon className='h-8 w-8' />
+          <span className='text-xs font-medium'>Memuat visual...</span>
+        </div>
+      </div>
+    )
+  }
 
   // When no custom banners exist, render official government hero panel
   if (banners.length === 0) {

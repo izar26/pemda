@@ -7,7 +7,7 @@ const STORAGE_KEY = 'manris_public_app_config'
 
 const DEFAULT_CONFIG: AppConfig = {
   app_name: 'Manajemen Resiko',
-  instance_name: 'Pemerintah Kabupaten Cianjur',
+  instance_name: 'Kabupaten Cianjur',
   app_logo_url: null,
   app_favicon_url: null,
   contact_email: 'helpdesk@pemda.go.id',
@@ -17,15 +17,15 @@ const DEFAULT_CONFIG: AppConfig = {
 }
 
 /**
- * Synchronously retrieves cached application configuration from localStorage
- * to eliminate initial render flash of default template content.
+ * Synchronously retrieves cached application configuration from localStorage.
+ * Returns null if not cached so useQuery knows it is a cold start.
  */
-function getCachedConfig(): AppConfig {
+function getCachedConfig(): AppConfig | undefined {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppConfig>
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === 'object' && parsed.app_name) {
         return {
           ...DEFAULT_CONFIG,
           ...parsed,
@@ -33,16 +33,16 @@ function getCachedConfig(): AppConfig {
       }
     }
   } catch {
-    // Ignore localStorage parse errors and fallback to DEFAULT_CONFIG
+    // Ignore localStorage parse errors
   }
-  return DEFAULT_CONFIG
+  return undefined
 }
 
 export function useAppConfig() {
-  const initialConfig = getCachedConfig()
+  const cachedConfig = getCachedConfig()
 
   const {
-    data: config = initialConfig,
+    data: config = cachedConfig || DEFAULT_CONFIG,
     isLoading,
     isError,
     refetch,
@@ -57,8 +57,9 @@ export function useAppConfig() {
       }
       return liveData
     },
-    initialData: initialConfig,
-    staleTime: 10 * 60 * 1000,
+    // Use placeholderData so background query ALWAYS fires on mount to get live data from server
+    placeholderData: cachedConfig,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 30 * 60 * 1000,
     retry: 1,
   })
@@ -88,7 +89,7 @@ export function useAppConfig() {
     contactPhone: config.contact_phone,
     sessionLifetimeMinutes: config.session_lifetime_minutes ?? 60,
     maxLoginAttempts: config.max_login_attempts ?? 5,
-    isLoading,
+    isLoading: isLoading && !cachedConfig,
     isError,
     refetch,
   }
