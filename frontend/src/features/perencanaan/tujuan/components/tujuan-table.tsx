@@ -41,6 +41,7 @@ interface TujuanTableProps {
   indikators: IndikatorPenilaianItem[]
   opds: Array<{ id: string | number; nama: string; kode: string }>
   onRefresh: () => void
+  isOpdRole?: boolean
 }
 
 type DragLevel = 'tujuan' | 'sasaran' | 'indikator'
@@ -57,6 +58,7 @@ export function TujuanTable({
   indikators,
   opds,
   onRefresh,
+  isOpdRole = false,
 }: TujuanTableProps) {
   const {
     setOpen,
@@ -259,15 +261,15 @@ export function TujuanTable({
 
   const allExpanded = useMemo(() => {
     if (filteredTujuans.length === 0) return true
-    if (selectedOpdId === 'all') {
+    if (!isOpdRole && selectedOpdId === 'all') {
       return tujuansByOpd.every((g) => expandedOpds[g.opdId])
     }
     return filteredTujuans.every((t) => !collapsedTujuan[t.id])
-  }, [filteredTujuans, selectedOpdId, tujuansByOpd, expandedOpds, collapsedTujuan])
+  }, [filteredTujuans, isOpdRole, selectedOpdId, tujuansByOpd, expandedOpds, collapsedTujuan])
 
   function handleToggleAll() {
     if (allExpanded) {
-      if (selectedOpdId === 'all') {
+      if (!isOpdRole && selectedOpdId === 'all') {
         setExpandedOpds({})
       } else {
         const nextTujuan: Record<string, boolean> = {}
@@ -282,7 +284,7 @@ export function TujuanTable({
         setCollapsedSasaran(nextSasaran)
       }
     } else {
-      if (selectedOpdId === 'all') {
+      if (!isOpdRole && selectedOpdId === 'all') {
         const nextExpanded: Record<string, boolean> = {}
         for (const g of tujuansByOpd) {
           nextExpanded[g.opdId] = true
@@ -431,18 +433,20 @@ export function TujuanTable({
             )}
           </div>
 
-          <div className='w-full sm:w-72'>
-            <SearchableSelect
-              options={opdOptions}
-              value={selectedOpdId}
-              onValueChange={(val) => setSelectedOpdId(val || 'all')}
-              placeholder='Filter Perangkat Daerah (OPD)...'
-              searchPlaceholder='Cari nama atau kode OPD...'
-              emptyMessage='OPD tidak ditemukan.'
-            />
-          </div>
+          {!isOpdRole && (
+            <div className='w-full sm:w-72'>
+              <SearchableSelect
+                options={opdOptions}
+                value={selectedOpdId}
+                onValueChange={(val) => setSelectedOpdId(val || 'all')}
+                placeholder='Filter Perangkat Daerah (OPD)...'
+                searchPlaceholder='Cari nama atau kode OPD...'
+                emptyMessage='OPD tidak ditemukan.'
+              />
+            </div>
+          )}
 
-          {(searchQuery || selectedOpdId !== 'all') && (
+          {(searchQuery || (!isOpdRole && selectedOpdId !== 'all')) && (
             <Button
               variant='ghost'
               size='sm'
@@ -1182,7 +1186,7 @@ export function TujuanTable({
             )
           }
 
-          if (selectedOpdId === 'all') {
+          if (!isOpdRole && selectedOpdId === 'all') {
             return (
               /* MODE 1: PEMBUNGKUS PER OPD KETIKA FILTER "SEMUA OPD" AKTIF */
               <div className='space-y-4'>

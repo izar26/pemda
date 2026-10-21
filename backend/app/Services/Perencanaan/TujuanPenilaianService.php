@@ -116,7 +116,7 @@ class TujuanPenilaianService
      *
      * @return array<string, mixed>
      */
-    public function getStats(?string $periodeId = null): array
+    public function getStats(?string $periodeId = null, ?string $opdId = null): array
     {
         try {
             $resolvedId = $this->resolvePeriodeId($periodeId);
@@ -141,18 +141,22 @@ class TujuanPenilaianService
             ];
         }
 
-        $totalTujuan = TujuanPenilaian::where('periode_penilaian_id', $resolvedId)->count();
-        $totalSasaran = SasaranPenilaian::where('periode_penilaian_id', $resolvedId)->count();
-        $totalIndikator = IndikatorPenilaian::where('periode_penilaian_id', $resolvedId)->count();
-        $totalIku = IndikatorPenilaian::where('periode_penilaian_id', $resolvedId)
-            ->where('jenis', 'IKU')
-            ->count();
-        $totalIndikatorBiasa = IndikatorPenilaian::where('periode_penilaian_id', $resolvedId)
-            ->where('jenis', 'Biasa')
-            ->count();
-        $opdTerpetakan = TujuanPenilaian::where('periode_penilaian_id', $resolvedId)
-            ->distinct('opd_id')
-            ->count('opd_id');
+        $tujuanQuery = TujuanPenilaian::where('periode_penilaian_id', $resolvedId);
+        $sasaranQuery = SasaranPenilaian::where('periode_penilaian_id', $resolvedId);
+        $indikatorQuery = IndikatorPenilaian::where('periode_penilaian_id', $resolvedId);
+
+        if ($opdId) {
+            $tujuanQuery->where('opd_id', $opdId);
+            $sasaranQuery->where('opd_id', $opdId);
+            $indikatorQuery->where('opd_id', $opdId);
+        }
+
+        $totalTujuan = $tujuanQuery->count();
+        $totalSasaran = $sasaranQuery->count();
+        $totalIndikator = $indikatorQuery->count();
+        $totalIku = (clone $indikatorQuery)->where('jenis', 'IKU')->count();
+        $totalIndikatorBiasa = (clone $indikatorQuery)->where('jenis', 'Biasa')->count();
+        $opdTerpetakan = (clone $tujuanQuery)->distinct('opd_id')->count('opd_id');
 
         $persentase = $totalOpd > 0 ? round(($opdTerpetakan / $totalOpd) * 100, 1) : 0;
 

@@ -73,7 +73,13 @@ class TujuanPenilaianController extends Controller
         }
 
         $periodeId = $request->input('periode_penilaian_id');
-        $stats = $this->tujuanService->getStats($periodeId);
+        $opdId = $request->input('opd_id');
+
+        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+            $opdId = (string) $user->opd_id;
+        }
+
+        $stats = $this->tujuanService->getStats($periodeId, $opdId);
 
         return response()->json($stats);
     }

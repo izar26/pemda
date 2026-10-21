@@ -50,7 +50,9 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { SearchableSelect } from '@/components/searchable-select'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuthStore } from '@/stores/auth-store'
 
 // ==========================================
 // 1. FORM TUJUAN (LEVEL 1)
@@ -73,6 +75,7 @@ interface TujuanActionDialogProps {
   currentRow?: TujuanPenilaianItem | null
   defaultOpdId?: string
   onSuccess: () => void
+  isOpdRole?: boolean
 }
 
 export function TujuanActionDialog({
@@ -81,15 +84,23 @@ export function TujuanActionDialog({
   currentRow,
   defaultOpdId,
   onSuccess,
+  isOpdRole = false,
 }: TujuanActionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEdit = Boolean(currentRow)
+  const user = useAuthStore((state) => state.auth.user)
+  const effectiveOpdId =
+    isOpdRole && user?.opd_id
+      ? String(user.opd_id)
+      : defaultOpdId && defaultOpdId !== 'all'
+      ? defaultOpdId
+      : ''
 
   const { data: opdData, isLoading: isLoadingOpd } = useQuery({
     queryKey: ['opds', 'all-for-tujuan'],
     queryFn: () => opdService.getOpds({ all: true }),
     staleTime: 5 * 60 * 1000,
-    enabled: open,
+    enabled: open && !isOpdRole,
   })
 
   const { data: sumberDataResp, isLoading: isLoadingSumber } = useQuery({
@@ -145,13 +156,13 @@ export function TujuanActionDialog({
       })
     } else {
       form.reset({
-        opd_id: defaultOpdId && defaultOpdId !== 'all' ? defaultOpdId : '',
+        opd_id: effectiveOpdId,
         sumber_data_id: defaultSumberId,
         tujuan: '',
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, currentRowId])
+  }, [open, currentRowId, effectiveOpdId])
 
   // Auto-populate default Sumber Data once master data finishes loading if field is still empty
   useEffect(() => {
@@ -218,31 +229,48 @@ export function TujuanActionDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4'
             >
-              <FormField
-                control={form.control}
-                name='opd_id'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='text-xs font-semibold'>
-                      Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
-                    </FormLabel>
-                    <SearchableSelect
-                      options={opdOptions}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder={
-                        isLoadingOpd
-                          ? 'Memuat daftar OPD...'
-                          : 'Pilih perangkat daerah...'
-                      }
-                      searchPlaceholder='Cari nama atau kode OPD...'
-                      emptyMessage='OPD tidak ditemukan.'
-                      disabled={isLoadingOpd || isSubmitting}
-                    />
-                    <FormMessage className='text-xs' />
-                  </FormItem>
-                )}
-              />
+              {isOpdRole ? (
+                <div className='space-y-1.5'>
+                  <label className='text-xs font-semibold text-muted-foreground'>
+                    Perangkat Daerah (OPD)
+                  </label>
+                  <Input
+                    value={
+                      user?.opd?.nama
+                        ? `${user.opd.nama} (${user.opd.kode})`
+                        : 'Perangkat Daerah Anda'
+                    }
+                    disabled
+                    className='h-9 text-xs bg-muted/60 font-semibold text-foreground'
+                  />
+                </div>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name='opd_id'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className='text-xs font-semibold'>
+                        Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
+                      </FormLabel>
+                      <SearchableSelect
+                        options={opdOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder={
+                          isLoadingOpd
+                            ? 'Memuat daftar OPD...'
+                            : 'Pilih perangkat daerah...'
+                        }
+                        searchPlaceholder='Cari nama atau kode OPD...'
+                        emptyMessage='OPD tidak ditemukan.'
+                        disabled={isLoadingOpd || isSubmitting}
+                      />
+                      <FormMessage className='text-xs' />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -811,16 +839,19 @@ interface TujuanCopyDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  isOpdRole?: boolean
 }
 
 export function TujuanCopyDialog({
   open,
   onOpenChange,
   onSuccess,
+  isOpdRole = false,
 }: TujuanCopyDialogProps) {
   const [sourcePeriodeId, setSourcePeriodeId] = useState('')
   const [selectedOpdId, setSelectedOpdId] = useState('all')
   const [isCopying, setIsCopying] = useState(false)
+  const user = useAuthStore((state) => state.auth.user)
 
   const { data: periodesResp, isLoading: isLoadingPeriodes } = useQuery({
     queryKey: ['perencanaan', 'periode', 'all-for-copy'],
@@ -832,7 +863,7 @@ export function TujuanCopyDialog({
     queryKey: ['opds', 'all-for-tujuan-copy'],
     queryFn: () => opdService.getOpds({ all: true }),
     staleTime: 5 * 60 * 1000,
-    enabled: open,
+    enabled: open && !isOpdRole,
   })
 
   const periodes = useMemo(() => periodesResp?.data || [], [periodesResp?.data])
@@ -885,9 +916,17 @@ export function TujuanCopyDialog({
 
     setIsCopying(true)
     try {
+      const targetOpdId = isOpdRole
+        ? user?.opd_id
+          ? String(user.opd_id)
+          : undefined
+        : selectedOpdId !== 'all'
+        ? selectedOpdId
+        : undefined
+
       const res = await perencanaanService.copyTujuan({
         source_periode_id: effectiveSourcePeriodeId,
-        opd_id: selectedOpdId !== 'all' ? selectedOpdId : undefined,
+        opd_id: targetOpdId,
       })
 
       toast.success(res.message)
@@ -970,28 +1009,30 @@ export function TujuanCopyDialog({
             />
           </div>
 
-          <div className='space-y-1.5'>
-            <label className='text-xs font-semibold text-foreground'>
-              Filter Perangkat Daerah (Opsional)
-            </label>
-            <SearchableSelect
-              options={opdOptions}
-              value={selectedOpdId}
-              onValueChange={(val) => setSelectedOpdId(val || 'all')}
-              allowClear={false}
-              placeholder={
-                isLoadingOpd
-                  ? 'Memuat daftar OPD...'
-                  : 'Semua Perangkat Daerah (Salin Massal)'
-              }
-              searchPlaceholder='Cari nama atau kode OPD...'
-              emptyMessage='OPD tidak ditemukan.'
-              disabled={isLoadingOpd || isCopying}
-            />
-            <p className='text-[11px] text-muted-foreground'>
-              Data yang sudah ada tidak akan ditimpa (duplikasi dicegah otomatis).
-            </p>
-          </div>
+          {!isOpdRole && (
+            <div className='space-y-1.5'>
+              <label className='text-xs font-semibold text-foreground'>
+                Filter Perangkat Daerah (Opsional)
+              </label>
+              <SearchableSelect
+                options={opdOptions}
+                value={selectedOpdId}
+                onValueChange={(val) => setSelectedOpdId(val || 'all')}
+                allowClear={false}
+                placeholder={
+                  isLoadingOpd
+                    ? 'Memuat daftar OPD...'
+                    : 'Semua Perangkat Daerah (Salin Massal)'
+                }
+                searchPlaceholder='Cari nama atau kode OPD...'
+                emptyMessage='OPD tidak ditemukan.'
+                disabled={isLoadingOpd || isCopying}
+              />
+              <p className='text-[11px] text-muted-foreground'>
+                Data yang sudah ada tidak akan ditimpa (duplikasi dicegah otomatis).
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className='px-6 py-3.5 border-t bg-muted/10 shrink-0'>
@@ -1034,7 +1075,13 @@ export function TujuanCopyDialog({
 // 5. ORCHESTRATOR DIALOGS (CREATE / EDIT / DELETE / COPY)
 // ==========================================
 
-export function TujuanDialogs({ onSuccess }: { onSuccess: () => void }) {
+export function TujuanDialogs({
+  onSuccess,
+  isOpdRole = false,
+}: {
+  onSuccess: () => void
+  isOpdRole?: boolean
+}) {
   const {
     open,
     setOpen,
@@ -1122,6 +1169,7 @@ export function TujuanDialogs({ onSuccess }: { onSuccess: () => void }) {
         currentRow={open === 'edit' ? currentRow : null}
         defaultOpdId={tableFilters?.opd_id as string | undefined}
         onSuccess={onSuccess}
+        isOpdRole={isOpdRole}
       />
 
       {/* Level 2: Create / Edit Sasaran */}
@@ -1159,6 +1207,7 @@ export function TujuanDialogs({ onSuccess }: { onSuccess: () => void }) {
           if (!val) setOpen(null)
         }}
         onSuccess={onSuccess}
+        isOpdRole={isOpdRole}
       />
 
       {/* Delete Tujuan */}

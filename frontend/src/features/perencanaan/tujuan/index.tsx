@@ -19,6 +19,8 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
 import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { ExportExcelButton } from '@/components/export-excel-button'
+import { useAuthStore } from '@/stores/auth-store'
+import { usePermissions } from '@/hooks/use-permissions'
 import { opdService } from '@/services/opd-service'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { TujuanProvider, useTujuan } from './components/tujuan-provider'
@@ -28,6 +30,18 @@ import { TujuanDialogs } from './components/tujuan-dialogs'
 
 function TujuanContent() {
   const { tableFilters } = useTujuan()
+  const user = useAuthStore((state) => state.auth.user)
+  const { hasRole } = usePermissions()
+
+  // Detect whether current user is an OPD role (scoped strictly to own institution)
+  const isOpdRole = Boolean(
+    (hasRole('OPD') || Boolean(user?.opd_id)) &&
+    !hasRole('Superadmin') &&
+    !hasRole('Admin Office') &&
+    !hasRole('Bapperida') &&
+    !hasRole('Inspektorat') &&
+    !hasRole('Auditor')
+  )
 
   // 1. Fetch Cascading KPI Statistics (Tujuan + Sasaran + Indikator)
   const {
@@ -36,19 +50,25 @@ function TujuanContent() {
     isRefetching: isRefetchingStats,
     refetch: refetchStats,
   } = useQuery({
-    queryKey: ['perencanaan', 'tujuan', 'stats'],
+    queryKey: ['perencanaan', 'tujuan', 'stats', isOpdRole ? user?.opd_id : 'all'],
     queryFn: () => perencanaanService.getTujuanStats(),
     staleTime: 60 * 1000,
   })
 
-  // 2. Fetch OPD list for filter
+  // 2. Fetch OPD list for filter (Only needed for Admin/Bapperida)
   const { data: opdData, isLoading: isLoadingOpds } = useQuery({
     queryKey: ['opds', 'all-for-tujuan-table'],
     queryFn: () => opdService.getOpds({ all: true }),
+    enabled: !isOpdRole,
     staleTime: 5 * 60 * 1000,
   })
 
-  const opdList = useMemo(() => opdData || [], [opdData])
+  const opdList = useMemo(() => {
+    if (isOpdRole && user?.opd) {
+      return [user.opd]
+    }
+    return opdData || []
+  }, [isOpdRole, user?.opd, opdData])
 
   // 3. Fetch Tujuan list
   const {
@@ -109,18 +129,22 @@ function TujuanContent() {
     refetchStats()
   }
 
-  // 6. Construct 4 Unified KPI Stat Cards
+  // 6. Construct Unified KPI Stat Cards (3 Cards for OPD, 4 Cards for Admin)
   const kpiItems: KpiStatItem[] = [
     {
       title: 'Total Tujuan',
       value: stats?.total_tujuan ?? 0,
-      subtitle: 'Rumusan tujuan OPD periode ini',
+      subtitle: isOpdRole
+        ? `Rumusan tujuan ${user?.opd?.nama || 'OPD Anda'}`
+        : 'Rumusan tujuan OPD periode ini',
       icon: Flag,
     },
     {
       title: 'Total Sasaran',
       value: stats?.total_sasaran ?? 0,
-      subtitle: 'Turunan sasaran dari tujuan OPD',
+      subtitle: isOpdRole
+        ? 'Turunan sasaran pada OPD Anda'
+        : 'Turunan sasaran dari tujuan OPD',
       icon: Crosshair,
     },
     {
@@ -129,12 +153,16 @@ function TujuanContent() {
       subtitle: `${stats?.total_iku ?? 0} IKU · ${stats?.total_indikator_biasa ?? 0} Indikator Biasa`,
       icon: Gauge,
     },
-    {
-      title: 'OPD Terpetakan',
-      value: `${stats?.opd_terpetakan ?? 0} / ${stats?.total_opd ?? 0}`,
-      subtitle: `${stats?.persentase_pemetaan ?? 0}% cakupan instansi daerah`,
-      icon: Building2,
-    },
+    ...(!isOpdRole
+      ? [
+          {
+            title: 'OPD Terpetakan',
+            value: `${stats?.opd_terpetakan ?? 0} / ${stats?.total_opd ?? 0}`,
+            subtitle: `${stats?.persentase_pemetaan ?? 0}% cakupan instansi daerah`,
+            icon: Building2,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -155,17 +183,21 @@ function TujuanContent() {
               Tujuan, Sasaran & Indikator
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              {isOpdRole
+                ? `Pohon Kinerja (Cascading) Tujuan, Sasaran, dan Indikator Kinerja Utama ${user?.opd?.nama || 'Perangkat Daerah'}.`
+                : 'Pohon Kinerja (Cascading) Seluruh Perangkat Daerah Kabupaten Cianjur Periode Aktif.'}
             </p>
           </div>
 
           <div className='flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
-            <ExportExcelButton
-              endpoint='/perencanaan/tujuan/export'
-              params={tableFilters}
-              filename='Data_Tujuan_Sasaran_Indikator_OPD.xlsx'
-              label='Ekspor Excel'
-            />
+            {!isOpdRole && (
+              <ExportExcelButton
+                endpoint='/perencanaan/tujuan/export'
+                params={tableFilters}
+                filename='Data_Tujuan_Sasaran_Indikator_OPD.xlsx'
+                label='Ekspor Excel'
+              />
+            )}
 
             <Button
               variant='outline'
@@ -184,8 +216,15 @@ function TujuanContent() {
           </div>
         </PageHeader>
 
-        {/* KPI Summary Cards */}
-        <KpiStatsCards items={kpiItems} isLoading={isLoading} count={4} />
+        {/* KPI Summary Cards (Dihilangkan untuk role OPD) */}
+        {!isOpdRole && (
+          <KpiStatsCards
+            items={kpiItems}
+            isLoading={isLoading}
+            count={4}
+            className='lg:grid-cols-4'
+          />
+        )}
 
         {/* 3-Level Cascading Tree with Drag-and-Drop Reordering */}
         {isLoading ? (
@@ -202,11 +241,12 @@ function TujuanContent() {
             indikators={indikatorItems}
             opds={opdList}
             onRefresh={handleRefreshAll}
+            isOpdRole={isOpdRole}
           />
         )}
 
         {/* Cascading Dialogs Orchestrator */}
-        <TujuanDialogs onSuccess={handleRefreshAll} />
+        <TujuanDialogs onSuccess={handleRefreshAll} isOpdRole={isOpdRole} />
       </Main>
     </>
   )
