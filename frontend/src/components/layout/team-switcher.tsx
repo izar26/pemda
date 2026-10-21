@@ -30,9 +30,9 @@ export function TeamSwitcher({ teams }: TeamSwitcherProps) {
   const [activeTeam, setActiveTeam] = React.useState(teams[0])
   const { appName, instanceName, appLogoUrl } = useAppConfig()
 
-  // Use dynamic app name and instance name if using the default single team
-  const displayName = teams.length <= 1 ? appName : (activeTeam.name === 'Aplikasi ManRis' ? appName : activeTeam.name)
-  const displayPlan = teams.length <= 1 ? instanceName : (activeTeam.plan === 'Manajemen Risiko PEMDA' ? instanceName : activeTeam.plan)
+  // Use dynamic app name and instance name if using the default team
+  const displayName = activeTeam.name === 'Aplikasi ManRis' ? appName : activeTeam.name
+  const displayPlan = activeTeam.plan === 'Manajemen Risiko PEMDA' ? instanceName : activeTeam.plan
 
   if (teams.length <= 1) {
     return (

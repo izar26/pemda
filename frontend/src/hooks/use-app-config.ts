@@ -3,11 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { systemSettingService } from '@/services/system-setting-service'
 import type { AppConfig } from '@/types/system-setting'
 
-const STORAGE_KEY = 'manris_public_app_config'
-
 const DEFAULT_CONFIG: AppConfig = {
-  app_name: 'Manajemen Resiko',
-  instance_name: 'Portal Pemerintah Daerah',
+  app_name: 'Aplikasi ManRis',
+  instance_name: 'Manajemen Risiko PEMDA',
   app_logo_url: null,
   app_favicon_url: null,
   contact_email: 'helpdesk@pemda.go.id',
@@ -16,48 +14,15 @@ const DEFAULT_CONFIG: AppConfig = {
   max_login_attempts: 5,
 }
 
-/**
- * Synchronously retrieves cached application configuration from localStorage
- * to eliminate initial render flash of default template content.
- */
-function getCachedConfig(): AppConfig {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<AppConfig>
-      if (parsed && typeof parsed === 'object') {
-        return {
-          ...DEFAULT_CONFIG,
-          ...parsed,
-        }
-      }
-    }
-  } catch {
-    // Ignore localStorage parse errors and fallback to DEFAULT_CONFIG
-  }
-  return DEFAULT_CONFIG
-}
-
 export function useAppConfig() {
-  const initialConfig = getCachedConfig()
-
   const {
-    data: config = initialConfig,
+    data: config = DEFAULT_CONFIG,
     isLoading,
     isError,
     refetch,
   } = useQuery({
     queryKey: ['app-config'],
-    queryFn: async () => {
-      const liveData = await systemSettingService.getPublicAppConfig()
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(liveData))
-      } catch {
-        // Ignore localStorage quota errors
-      }
-      return liveData
-    },
-    initialData: initialConfig,
+    queryFn: () => systemSettingService.getPublicAppConfig(),
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
@@ -67,12 +32,7 @@ export function useAppConfig() {
   useEffect(() => {
     if (config.app_name) {
       const currentTitle = document.title
-      if (
-        !currentTitle ||
-        currentTitle === 'Aplikasi ManRis' ||
-        currentTitle === 'Manajemen Resiko' ||
-        currentTitle === 'Portal Layanan Terpadu PEMDA'
-      ) {
+      if (!currentTitle || currentTitle === 'Aplikasi ManRis' || currentTitle === 'Portal Layanan Terpadu PEMDA') {
         document.title = config.app_name
       }
     }
