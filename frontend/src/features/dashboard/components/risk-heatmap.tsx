@@ -5,7 +5,7 @@ import { ShieldAlert } from 'lucide-react'
 const riskDistributionData = [
   { name: 'Sangat Tinggi (Critical)', value: 12, color: '#e11d48', desc: 'Perlu Mitigasi Langsung Sekda/Bupati' },
   { name: 'Tinggi (High)', value: 32, color: '#f59e0b', desc: 'Perlu Monitoring Ketat Pimpinan OPD' },
-  { name: 'Sedang (Medium)', value: 67, color: '#eab308', desc: 'Penanganan Rutin Unit Kerja' },
+  { name: 'Sedang (Medium)', value: 67, color: '#3b82f6', desc: 'Penanganan Rutin Unit Kerja' },
   { name: 'Rendah (Low)', value: 37, color: '#10b981', desc: 'Pemantauan Berkala' },
 ]
 

@@ -27,7 +27,17 @@ class DashboardController extends Controller
 
         $totalOpd = Opd::count();
         $activeOpd = Opd::where('is_active', true)->count();
-        $totalUsers = User::whereNotNull('password')->count();
+
+        $userQuery = User::whereNotNull('password');
+        if (!$user->hasRole('Superadmin')) {
+            $userQuery->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Superadmin');
+            })->where(function ($q) {
+                $q->whereNull('role')->orWhere('role', '!=', 'Superadmin');
+            });
+        }
+        $totalUsers = $userQuery->count();
+
         $totalIku = IndikatorPenilaian::where('jenis', 'IKU')->count();
 
         return response()->json([
@@ -53,7 +63,16 @@ class DashboardController extends Controller
 
         $totalOpd = Opd::count();
         $activeOpd = Opd::where('is_active', true)->count();
-        $totalUsers = User::count();
+
+        $userExportQuery = User::whereNotNull('password');
+        if (!$user->hasRole('Superadmin')) {
+            $userExportQuery->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Superadmin');
+            })->where(function ($q) {
+                $q->whereNull('role')->orWhere('role', '!=', 'Superadmin');
+            });
+        }
+        $totalUsers = $userExportQuery->count();
 
         $metadata = [
             'Tahun Anggaran' => (string) date('Y'),

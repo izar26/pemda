@@ -223,6 +223,30 @@ class UserService
             }
         }
 
+        // Safeguard: Check if user has active authored planning/risk assessment records or is active Kepala OPD
+        $hasAuthoredRecords = DB::table('tujuan_penilaians')->where('created_by', $user->id)->exists()
+            || DB::table('sasaran_penilaians')->where('created_by', $user->id)->exists()
+            || DB::table('indikator_penilaians')->where('created_by', $user->id)->exists()
+            || DB::table('konteks_penilaians')->where('created_by', $user->id)->exists()
+            || DB::table('konteks_operasionals')->where('created_by', $user->id)->exists();
+
+        $isKepalaOpd = DB::table('opds')->where('kepala_opd_id', $user->id)->exists();
+
+        if ($hasAuthoredRecords || $isKepalaOpd) {
+            $reasons = [];
+            if ($isKepalaOpd) {
+                $reasons[] = 'sedang menjabat sebagai Kepala OPD aktif';
+            }
+            if ($hasAuthoredRecords) {
+                $reasons[] = 'memiliki riwayat pembuatan dokumen perencanaan/penilaian risiko';
+            }
+            $reasonText = implode(' dan ', $reasons);
+
+            throw ValidationException::withMessages([
+                'user' => "Pengguna tidak dapat dihapus permanen karena {$reasonText}. Demi menjaga keutuhan riwayat dokumen dan integritas audit, silakan ubah status pengguna menjadi 'Nonaktif' alih-alih menghapusnya.",
+            ]);
+        }
+
         DB::transaction(function () use ($user) {
             // Revoke all Sanctum tokens
             $user->tokens()->delete();

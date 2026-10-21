@@ -33,6 +33,7 @@ import type { KonteksPenilaianFormData } from '@/types/risiko'
 import { Header } from '@/components/layout/header'
 import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
+import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -415,23 +416,22 @@ export function KonteksStrategisPage() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6 pb-12'>
-        {/* Page Title */}
-        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-          <div className='space-y-1'>
+        {/* Page Title (Sticky) */}
+        <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+          <div className='space-y-1 min-w-0 flex-1'>
             <div className='flex items-center gap-2 flex-wrap'>
-              <h2 className='text-2xl font-bold tracking-tight'>
+              <h2 className='text-2xl font-bold tracking-tight text-foreground'>
                 Penetapan Konteks Risiko Strategis OPD
               </h2>
               <Badge variant='outline' className='font-mono text-xs border-primary/30 text-primary bg-primary/5'>
                 Form 2B • Langkah 1
               </Badge>
             </div>
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-xs text-muted-foreground'>
               Tetapkan Sumber Data, 1 Tujuan Strategis, Sasaran Strategis, serta IKU Renstra OPD yang akan dinilai.
             </p>
           </div>
-
-        </div>
+        </PageHeader>
 
         {/* Wizard Stepper Header */}
         <RisikoWizardHeader

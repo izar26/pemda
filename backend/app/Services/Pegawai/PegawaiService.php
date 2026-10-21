@@ -301,6 +301,30 @@ class PegawaiService
             }
         }
 
+        // Safeguard: Check if employee has active authored records or is active Kepala OPD
+        $hasAuthoredRecords = DB::table('tujuan_penilaians')->where('created_by', $pegawai->id)->exists()
+            || DB::table('sasaran_penilaians')->where('created_by', $pegawai->id)->exists()
+            || DB::table('indikator_penilaians')->where('created_by', $pegawai->id)->exists()
+            || DB::table('konteks_penilaians')->where('created_by', $pegawai->id)->exists()
+            || DB::table('konteks_operasionals')->where('created_by', $pegawai->id)->exists();
+
+        $isKepalaOpd = DB::table('opds')->where('kepala_opd_id', $pegawai->id)->exists();
+
+        if ($hasAuthoredRecords || $isKepalaOpd) {
+            $reasons = [];
+            if ($isKepalaOpd) {
+                $reasons[] = 'sedang menjabat sebagai Kepala OPD aktif';
+            }
+            if ($hasAuthoredRecords) {
+                $reasons[] = 'memiliki riwayat pembuatan dokumen perencanaan/penilaian risiko';
+            }
+            $reasonText = implode(' dan ', $reasons);
+
+            throw ValidationException::withMessages([
+                'pegawai' => ["Data pegawai tidak dapat dihapus karena {$reasonText}. Demi menjaga keutuhan riwayat dokumen dan integritas audit, silakan nonaktifkan akun terkait."],
+            ]);
+        }
+
         DB::transaction(function () use ($pegawai) {
             $oldOpdId = $pegawai->opd_id;
             $pegawai->tokens()->delete();

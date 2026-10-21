@@ -348,4 +348,57 @@ class UserManagementTest extends TestCase
         ]);
         $responseInvite->assertStatus(422)->assertJsonValidationErrors(['role']);
     }
+
+    public function test_user_cannot_be_deleted_if_owning_planning_records(): void
+    {
+        $token = $this->getSuperadminToken();
+
+        // Create a period and planning goal authored by $this->staff
+        $periode = \App\Models\Perencanaan\PeriodePenilaian::create([
+            'nama_periode' => 'Periode 2026-2030',
+            'tahun_mulai' => 2026,
+            'tahun_akhir' => 2030,
+            'tahun_penilaian' => 2026,
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_akhir' => '2030-12-31',
+            'is_active' => true,
+            'status' => 'Aktif',
+        ]);
+
+        \App\Models\Perencanaan\TujuanPenilaian::create([
+            'periode_penilaian_id' => $periode->id,
+            'opd_id' => $this->opd->id,
+            'tujuan' => 'Meningkatkan Kualitas Layanan Publik',
+            'urutan' => 1,
+            'created_by' => $this->staff->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson("/api/users/{$this->staff->id}");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['user']);
+
+        $this->assertDatabaseHas('users', ['id' => $this->staff->id]);
+    }
+
+    public function test_superadmin_sees_all_users_in_dashboard_stats(): void
+    {
+        $superadminToken = $this->getSuperadminToken();
+        $response = $this->withHeader('Authorization', 'Bearer ' . $superadminToken)
+            ->getJson('/api/dashboard/stats');
+
+        $response->assertStatus(200);
+        $this->assertEquals(2, $response->json('total_pegawai'));
+    }
+
+    public function test_non_superadmin_excludes_superadmin_in_dashboard_stats(): void
+    {
+        $staffToken = $this->getStaffToken();
+        $response = $this->withHeader('Authorization', 'Bearer ' . $staffToken)
+            ->getJson('/api/dashboard/stats');
+
+        $response->assertStatus(200);
+        $this->assertEquals(1, $response->json('total_pegawai'));
+    }
 }
