@@ -12,7 +12,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { CheckCircle2, CircleDashed } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -28,19 +27,6 @@ import { penugasanColumns as columns } from './penugasan-columns'
 interface PenugasanTableProps {
   data: AuditorWithAssignments[]
 }
-
-const statusFilterOptions = [
-  {
-    label: 'Aktif Bertugas',
-    value: 'aktif',
-    icon: CheckCircle2,
-  },
-  {
-    label: 'Belum Ditugaskan',
-    value: 'belum',
-    icon: CircleDashed,
-  },
-]
 
 export function PenugasanTable({ data }: PenugasanTableProps) {
   const [rowSelection, setRowSelection] = useState({})
@@ -78,13 +64,6 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
         table={table}
         searchKey='name'
         searchPlaceholder='Cari nama auditor, NIP, atau OPD binaan...'
-        filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: statusFilterOptions,
-          },
-        ]}
       />
 
       <div className='rounded-md border bg-card'>
@@ -137,9 +116,11 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className='h-32 text-center text-xs text-muted-foreground'
+                  className='h-36 text-center text-xs text-muted-foreground'
                 >
-                  Tidak ada data penugasan auditor yang ditemukan.
+                  Belum ada penugasan auditor yang aktif. Klik tombol{' '}
+                  <strong>Tambah Penugasan</strong> di atas untuk menetapkan
+                  auditor ke OPD binaannya.
                 </TableCell>
               </TableRow>
             )}

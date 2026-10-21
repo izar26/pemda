@@ -53,16 +53,11 @@ class AuditorAssignmentService
             },
         ]);
 
-        // Restrict if current user is an Auditor without elevated permissions
+        // Only display auditors who currently have OPD assignments
         if ($currentUser && $currentUser->hasRole('Auditor') && !$currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
-            $query->where('id', $currentUser->id);
+            $query->where('id', $currentUser->id)->has('auditorAssignments');
         } else {
-            // Include users who have role Auditor or Inspektorat, or who already have assignments
-            $query->where(function ($q) {
-                $q->whereHas('roles', function ($rq) {
-                    $rq->whereIn('name', ['Auditor', 'Inspektorat']);
-                })->orWhereHas('auditorAssignments');
-            });
+            $query->has('auditorAssignments');
         }
 
         if (!empty($filters['search'])) {
