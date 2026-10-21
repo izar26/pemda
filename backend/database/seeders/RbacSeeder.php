@@ -155,6 +155,7 @@ class RbacSeeder extends Seeder
                     'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
                     'content.view', 'content.create', 'content.edit', 'content.delete',
+                    'settings.view', 'settings.edit',
                 ],
             ],
             'Bapperida' => [
