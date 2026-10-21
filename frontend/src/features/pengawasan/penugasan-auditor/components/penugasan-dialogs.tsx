@@ -39,18 +39,16 @@ interface PenugasanDialogsProps {
 export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   const queryClient = useQueryClient()
   const {
-    isAddOpen,
-    setIsAddOpen,
-    editAuditor,
-    setEditAuditor,
-    deleteAuditor,
-    setDeleteAuditor,
-    deleteAssignment,
-    setDeleteAssignment,
+    open,
+    setOpen,
+    currentRow,
+    setCurrentRow,
+    selectedAssignment,
+    setSelectedAssignment,
   } = usePenugasan()
 
-  const isFormOpen = isAddOpen || Boolean(editAuditor)
-  const isEditing = Boolean(editAuditor)
+  const isFormOpen = open === 'add' || open === 'edit'
+  const isEditing = open === 'edit' && Boolean(currentRow)
 
   // Form states
   const [selectedAuditorId, setSelectedAuditorId] = useState<string>('')
@@ -77,18 +75,18 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
 
   // Populate form on edit
   useEffect(() => {
-    if (editAuditor) {
-      setSelectedAuditorId(editAuditor.id)
-      const opdIds = editAuditor.auditor_assignments?.map((a) => a.opd_id) || []
+    if (isEditing && currentRow) {
+      setSelectedAuditorId(currentRow.id)
+      const opdIds = currentRow.auditor_assignments?.map((a) => a.opd_id) || []
       setSelectedOpdIds(opdIds)
 
-      const first = editAuditor.auditor_assignments?.[0]
+      const first = currentRow.auditor_assignments?.[0]
       setNomorSuratTugas(first?.nomor_surat_tugas || '')
       setTanggalMulai(first?.tanggal_mulai ? first.tanggal_mulai.substring(0, 10) : '')
       setTanggalSelesai(first?.tanggal_selesai ? first.tanggal_selesai.substring(0, 10) : '')
       setCatatan(first?.catatan || '')
       setOpdSearch('')
-    } else if (isAddOpen) {
+    } else if (open === 'add') {
       setSelectedAuditorId('')
       setSelectedOpdIds([])
       setNomorSuratTugas('')
@@ -97,7 +95,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       setCatatan('')
       setOpdSearch('')
     }
-  }, [editAuditor, isAddOpen])
+  }, [isEditing, currentRow, open])
 
   // Filtered OPDs for multi-select
   const filteredOpds = useMemo(() => {
@@ -111,8 +109,8 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   }, [opdList, opdSearch])
 
   const handleCloseForm = () => {
-    setIsAddOpen(false)
-    setEditAuditor(null)
+    setOpen(null)
+    setTimeout(() => setCurrentRow(null), 200)
   }
 
   // Toggle OPD selection
@@ -185,7 +183,8 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     onSuccess: (res) => {
       toast.success(res.message || 'Penugasan OPD berhasil dicabut.')
       queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      setDeleteAssignment(null)
+      setOpen(null)
+      setSelectedAssignment(null)
       onSuccess?.()
     },
     onError: (err: any) => {
@@ -200,7 +199,8 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     onSuccess: (res) => {
       toast.success(res.message || 'Seluruh penugasan auditor berhasil dicabut.')
       queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      setDeleteAuditor(null)
+      setOpen(null)
+      setCurrentRow(null)
       onSuccess?.()
     },
     onError: (err: any) => {
@@ -229,8 +229,8 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       catatan: catatan.trim() || undefined,
     }
 
-    if (isEditing && editAuditor) {
-      updateMutation.mutate({ auditorId: editAuditor.id, payload })
+    if (isEditing && currentRow) {
+      updateMutation.mutate({ auditorId: currentRow.id, payload })
     } else {
       createMutation.mutate({
         auditor_id: selectedAuditorId,
@@ -244,13 +244,13 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   return (
     <>
       {/* 1. Modal Tambah / Edit Penugasan */}
-      <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
+      <Dialog open={isFormOpen} onOpenChange={(isOpen) => !isOpen && handleCloseForm()}>
         <DialogContent className='max-w-2xl max-h-[90vh] flex flex-col p-0'>
           <DialogHeader className='px-6 pt-6 pb-2 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-lg font-bold'>
               <UserCheck className='h-5 w-5 text-primary' />
               {isEditing
-                ? `Kelola OPD Binaan: ${editAuditor?.name}`
+                ? `Kelola OPD Binaan: ${currentRow?.name}`
                 : 'Tambah Penugasan Auditor Pengawas'}
             </DialogTitle>
             <DialogDescription className='text-xs text-muted-foreground'>
@@ -271,14 +271,14 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                   {isEditing ? (
                     <div className='flex items-center gap-3 p-3 rounded-lg border bg-muted/40'>
                       <div className='h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm'>
-                        {editAuditor?.name?.charAt(0) || 'A'}
+                        {currentRow?.name?.charAt(0) || 'A'}
                       </div>
                       <div className='min-w-0 flex-1'>
                         <p className='text-sm font-semibold truncate text-foreground'>
-                          {editAuditor?.name}
+                          {currentRow?.name}
                         </p>
                         <p className='text-xs text-muted-foreground'>
-                          NIP. {editAuditor?.nip || '-'} • {editAuditor?.jabatan || 'Auditor'}
+                          NIP. {currentRow?.nip || '-'} • {currentRow?.jabatan || 'Auditor'}
                         </p>
                       </div>
                       <Badge variant='outline' className='text-[10px] bg-primary/5 text-primary border-primary/20'>
@@ -505,14 +505,19 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
 
       {/* 2. Dialog Konfirmasi Cabut Single Assignment */}
       <ConfirmDialog
-        open={Boolean(deleteAssignment)}
-        onOpenChange={(open) => !open && setDeleteAssignment(null)}
+        open={open === 'delete-single' && Boolean(selectedAssignment)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            setSelectedAssignment(null)
+          }
+        }}
         title='Cabut Penugasan OPD'
         desc={
-          deleteAssignment ? (
+          selectedAssignment ? (
             <span>
               Apakah Anda yakin ingin mencabut penugasan dari perangkat daerah{' '}
-              <strong>{deleteAssignment.opd?.nama}</strong>? Auditor tidak akan
+              <strong>{selectedAssignment.opd?.nama}</strong>? Auditor tidak akan
               dapat melakukan approval form untuk OPD ini lagi.
             </span>
           ) : (
@@ -523,23 +528,28 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
         destructive
         isLoading={deleteSingleMutation.isPending}
         handleConfirm={() => {
-          if (deleteAssignment) {
-            deleteSingleMutation.mutate(deleteAssignment.id)
+          if (selectedAssignment) {
+            deleteSingleMutation.mutate(selectedAssignment.id)
           }
         }}
       />
 
       {/* 3. Dialog Konfirmasi Cabut Semua Assignment Auditor */}
       <ConfirmDialog
-        open={Boolean(deleteAuditor)}
-        onOpenChange={(open) => !open && setDeleteAuditor(null)}
+        open={open === 'delete' && Boolean(currentRow)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setOpen(null)
+            setCurrentRow(null)
+          }
+        }}
         title='Cabut Seluruh Penugasan Auditor'
         desc={
-          deleteAuditor ? (
+          currentRow ? (
             <span>
               Apakah Anda yakin ingin mencabut seluruh penugasan (
-              <strong>{deleteAuditor.auditor_assignments?.length ?? 0} OPD</strong>)
-              dari auditor <strong>{deleteAuditor.name}</strong>?
+              <strong>{currentRow.auditor_assignments?.length ?? 0} OPD</strong>)
+              dari auditor <strong>{currentRow.name}</strong>?
             </span>
           ) : (
             ''
@@ -549,8 +559,8 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
         destructive
         isLoading={deleteAllMutation.isPending}
         handleConfirm={() => {
-          if (deleteAuditor) {
-            deleteAllMutation.mutate(deleteAuditor.id)
+          if (currentRow) {
+            deleteAllMutation.mutate(currentRow.id)
           }
         }}
       />

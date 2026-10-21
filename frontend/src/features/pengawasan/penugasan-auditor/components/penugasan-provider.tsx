@@ -4,46 +4,33 @@ import type {
   AssignedOpdInfo,
 } from '@/services/penugasan-auditor-service'
 
+export type PenugasanDialogType = 'add' | 'edit' | 'delete' | 'delete-single' | null
+
 interface PenugasanContextType {
-  search: string
-  setSearch: (search: string) => void
-  filterStatus: 'all' | 'assigned' | 'unassigned'
-  setFilterStatus: (status: 'all' | 'assigned' | 'unassigned') => void
-  isAddOpen: boolean
-  setIsAddOpen: (open: boolean) => void
-  editAuditor: AuditorWithAssignments | null
-  setEditAuditor: (auditor: AuditorWithAssignments | null) => void
-  deleteAuditor: AuditorWithAssignments | null
-  setDeleteAuditor: (auditor: AuditorWithAssignments | null) => void
-  deleteAssignment: AssignedOpdInfo | null
-  setDeleteAssignment: (assignment: AssignedOpdInfo | null) => void
+  open: PenugasanDialogType
+  setOpen: (type: PenugasanDialogType) => void
+  currentRow: AuditorWithAssignments | null
+  setCurrentRow: (row: AuditorWithAssignments | null) => void
+  selectedAssignment: AssignedOpdInfo | null
+  setSelectedAssignment: (assignment: AssignedOpdInfo | null) => void
 }
 
 const PenugasanContext = createContext<PenugasanContextType | null>(null)
 
 export function PenugasanProvider({ children }: { children: ReactNode }) {
-  const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'unassigned'>('all')
-  const [isAddOpen, setIsAddOpen] = useState(false)
-  const [editAuditor, setEditAuditor] = useState<AuditorWithAssignments | null>(null)
-  const [deleteAuditor, setDeleteAuditor] = useState<AuditorWithAssignments | null>(null)
-  const [deleteAssignment, setDeleteAssignment] = useState<AssignedOpdInfo | null>(null)
+  const [open, setOpen] = useState<PenugasanDialogType>(null)
+  const [currentRow, setCurrentRow] = useState<AuditorWithAssignments | null>(null)
+  const [selectedAssignment, setSelectedAssignment] = useState<AssignedOpdInfo | null>(null)
 
   return (
     <PenugasanContext.Provider
       value={{
-        search,
-        setSearch,
-        filterStatus,
-        setFilterStatus,
-        isAddOpen,
-        setIsAddOpen,
-        editAuditor,
-        setEditAuditor,
-        deleteAuditor,
-        setDeleteAuditor,
-        deleteAssignment,
-        setDeleteAssignment,
+        open,
+        setOpen,
+        currentRow,
+        setCurrentRow,
+        selectedAssignment,
+        setSelectedAssignment,
       }}
     >
       {children}
