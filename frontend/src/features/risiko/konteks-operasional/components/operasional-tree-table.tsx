@@ -417,18 +417,24 @@ export function OperasionalTreeTable({
 
                       {/* Indikator & Target Program */}
                       {program.indikators?.[0] && (
-                        <div className='pt-0.5 flex flex-wrap items-center gap-2'>
-                          <div className='inline-flex items-center gap-1.5 rounded-md border bg-background/80 px-2.5 py-1 text-xs shadow-2xs'>
-                            <Target className='h-3 w-3 text-primary shrink-0' />
-                            <span className='text-muted-foreground font-medium'>
-                              {program.indikators[0].indikator}:
-                            </span>
-                            <Badge
-                              variant='secondary'
-                              className='font-mono font-bold text-xs h-4 px-1.5 text-primary bg-primary/10'
-                            >
-                              {program.indikators[0].target}
-                            </Badge>
+                        <div className='pt-0.5'>
+                          <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 rounded-md border border-primary/20 bg-primary/[0.04] px-2.5 py-1 text-xs'>
+                            <div className='flex items-start gap-1.5 min-w-0 flex-1'>
+                              <Target className='h-3.5 w-3.5 text-primary shrink-0 mt-0.5' />
+                              <span className='text-[11px] text-muted-foreground leading-relaxed break-words'>
+                                <strong className='font-medium text-foreground mr-1'>Indikator:</strong>
+                                {program.indikators[0].indikator}
+                              </span>
+                            </div>
+                            <div className='flex items-center gap-1.5 shrink-0 self-start sm:self-center pl-4 sm:pl-0'>
+                              <span className='text-[10px] text-muted-foreground font-semibold'>Target:</span>
+                              <Badge
+                                variant='secondary'
+                                className='font-mono font-bold text-xs h-5 px-2 text-primary bg-primary/15 border-primary/20'
+                              >
+                                {program.indikators[0].target}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -436,7 +442,7 @@ export function OperasionalTreeTable({
                   </div>
 
                   {/* Level 1 Actions */}
-                  <div className='flex items-center gap-1.5 shrink-0 self-end sm:self-center'>
+                  <div className='flex items-center gap-1.5 shrink-0 self-end sm:self-start sm:pt-0.5'>
                     {canEdit && (
                       <Button
                         type='button'
@@ -489,7 +495,7 @@ export function OperasionalTreeTable({
 
                 {/* LEVEL 2: DAFTAR KEGIATAN */}
                 {!isProgCollapsed && (
-                  <div className='border-t bg-muted/[0.15] px-4 py-3 pl-6 sm:pl-12 space-y-2.5'>
+                  <div className='border-t bg-muted/[0.12] px-3 py-3 sm:px-4 sm:pl-8 space-y-2.5'>
                     {childKegiatans.length === 0 ? (
                       <div className='flex items-center justify-between rounded-lg border border-dashed bg-background/60 px-3.5 py-2.5 text-xs text-muted-foreground'>
                         <span>Belum ada Kegiatan pada program ini.</span>
@@ -515,10 +521,10 @@ export function OperasionalTreeTable({
                         return (
                           <div
                             key={kegiatan.id}
-                            className='rounded-lg border bg-background hover:border-primary/30 transition-all overflow-hidden'
+                            className='rounded-lg border bg-background hover:border-emerald-500/40 transition-all overflow-hidden border-l-4 border-l-emerald-500/70'
                           >
                             {/* Header Kegiatan */}
-                            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5'>
+                            <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 px-3.5 py-2.5'>
                               <div className='flex items-start gap-2 min-w-0 flex-1'>
                                 {/* Reorder Buttons for Kegiatan */}
                                 {canEdit && childKegiatans.length > 1 && (
@@ -564,13 +570,13 @@ export function OperasionalTreeTable({
                                 </span>
 
                                 {/* Kegiatan Content */}
-                                <div className='space-y-1 min-w-0 flex-1'>
+                                <div className='space-y-1.5 min-w-0 flex-1'>
                                   <div className='flex items-start gap-2'>
                                     <span className='inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0 mt-0.5'>
                                       <Target className='h-2.5 w-2.5' />
                                       Kegiatan
                                     </span>
-                                    <p className='text-xs sm:text-sm font-medium text-foreground leading-relaxed flex-1'>
+                                    <p className='text-xs sm:text-sm font-semibold text-foreground leading-relaxed break-words flex-1'>
                                       {kegiatan.nama}
                                     </p>
                                     <Badge variant='outline' className='text-[10px] text-muted-foreground shrink-0'>
@@ -580,17 +586,24 @@ export function OperasionalTreeTable({
 
                                   {/* Indikator & Target Kegiatan */}
                                   {kegiatan.indikators?.[0] && (
-                                    <div className='flex flex-wrap items-center gap-2 pt-0.5'>
-                                      <div className='inline-flex items-center gap-1.5 rounded border bg-muted/20 px-2 py-0.5 text-xs'>
-                                        <span className='text-muted-foreground text-[11px]'>
-                                          {kegiatan.indikators[0].indikator}:
-                                        </span>
-                                        <Badge
-                                          variant='outline'
-                                          className='font-mono font-semibold text-[10px] h-4 px-1 text-foreground bg-background'
-                                        >
-                                          {kegiatan.indikators[0].target}
-                                        </Badge>
+                                    <div className='pt-0.5'>
+                                      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/[0.04] px-2.5 py-1 text-xs'>
+                                        <div className='flex items-start gap-1.5 min-w-0 flex-1'>
+                                          <Target className='h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5' />
+                                          <span className='text-[11px] text-muted-foreground leading-relaxed break-words'>
+                                            <strong className='font-medium text-foreground mr-1'>Indikator:</strong>
+                                            {kegiatan.indikators[0].indikator}
+                                          </span>
+                                        </div>
+                                        <div className='flex items-center gap-1.5 shrink-0 self-start sm:self-center pl-4 sm:pl-0'>
+                                          <span className='text-[10px] text-muted-foreground font-semibold'>Target:</span>
+                                          <Badge
+                                            variant='outline'
+                                            className='font-mono font-bold text-[10px] h-4.5 px-1.5 text-foreground bg-background border-emerald-500/30'
+                                          >
+                                            {kegiatan.indikators[0].target}
+                                          </Badge>
+                                        </div>
                                       </div>
                                     </div>
                                   )}
@@ -598,7 +611,7 @@ export function OperasionalTreeTable({
                               </div>
 
                               {/* Level 2 Actions */}
-                              <div className='flex items-center gap-1 shrink-0 self-end sm:self-center'>
+                              <div className='flex items-center gap-1 shrink-0 self-start pt-0.5'>
                                 {canEdit && (
                                   <Button
                                     type='button'
@@ -651,7 +664,7 @@ export function OperasionalTreeTable({
 
                             {/* LEVEL 3: DAFTAR SUB KEGIATAN */}
                             {!isKegCollapsed && (
-                              <div className='border-t bg-muted/20 px-3.5 py-2.5 pl-6 sm:pl-11 space-y-1.5'>
+                              <div className='border-t bg-muted/[0.18] px-2.5 py-2.5 sm:px-3 sm:pl-6 space-y-2'>
                                 {childSubKegiatans.length === 0 ? (
                                   <div className='flex items-center justify-between rounded-md border border-dashed bg-background/60 px-3 py-2 text-[11px] text-muted-foreground'>
                                     <span>Belum ada Sub Kegiatan pada kegiatan ini.</span>
@@ -673,95 +686,110 @@ export function OperasionalTreeTable({
                                     return (
                                       <div
                                         key={subKegiatan.id}
-                                        className='flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-md border bg-background px-3 py-2 hover:border-primary/30 transition-all'
+                                        className='group/sub rounded-md border bg-card hover:bg-background hover:border-sky-500/40 transition-all p-2.5 space-y-2 border-l-4 border-l-sky-500/70'
                                       >
-                                        <div className='flex items-start gap-2 min-w-0 flex-1'>
-                                          {/* Reorder Buttons for Sub Kegiatan */}
-                                          {canEdit && childSubKegiatans.length > 1 && (
-                                            <div className='flex flex-col pt-0.5 shrink-0'>
-                                              <button
-                                                type='button'
-                                                disabled={subIdx === 0}
-                                                onClick={() => handleMoveSubKegiatan(kegiatan, subIdx, 'up')}
-                                                title='Geser Sub Kegiatan ke atas'
-                                                className='text-muted-foreground hover:text-primary disabled:opacity-25 p-0.5'
-                                              >
-                                                <ArrowUp className='h-2 w-2' />
-                                              </button>
-                                              <button
-                                                type='button'
-                                                disabled={subIdx === childSubKegiatans.length - 1}
-                                                onClick={() => handleMoveSubKegiatan(kegiatan, subIdx, 'down')}
-                                                title='Geser Sub Kegiatan ke bawah'
-                                                className='text-muted-foreground hover:text-primary disabled:opacity-25 p-0.5'
-                                              >
-                                                <ArrowDown className='h-2 w-2' />
-                                              </button>
-                                            </div>
-                                          )}
+                                        {/* Baris 1: Header Sub Kegiatan (Reorder, Kode, Label, Nama, Tombol Aksi) */}
+                                        <div className='flex items-start justify-between gap-2.5'>
+                                          <div className='flex items-start gap-2 min-w-0 flex-1'>
+                                            {/* Reorder Buttons for Sub Kegiatan */}
+                                            {canEdit && childSubKegiatans.length > 1 && (
+                                              <div className='flex flex-col pt-0.5 shrink-0'>
+                                                <button
+                                                  type='button'
+                                                  disabled={subIdx === 0}
+                                                  onClick={() => handleMoveSubKegiatan(kegiatan, subIdx, 'up')}
+                                                  title='Geser Sub Kegiatan ke atas'
+                                                  className='text-muted-foreground hover:text-primary disabled:opacity-25 p-0.5'
+                                                >
+                                                  <ArrowUp className='h-2.5 w-2.5' />
+                                                </button>
+                                                <button
+                                                  type='button'
+                                                  disabled={subIdx === childSubKegiatans.length - 1}
+                                                  onClick={() => handleMoveSubKegiatan(kegiatan, subIdx, 'down')}
+                                                  title='Geser Sub Kegiatan ke bawah'
+                                                  className='text-muted-foreground hover:text-primary disabled:opacity-25 p-0.5'
+                                                >
+                                                  <ArrowDown className='h-2.5 w-2.5' />
+                                                </button>
+                                              </div>
+                                            )}
 
-                                          {/* Code Badge (A.1.1, A.1.2...) */}
-                                          <span className='mt-0.5 inline-flex items-center justify-center rounded bg-muted/70 px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted-foreground shrink-0'>
-                                            {subKegiatan.kode}
-                                          </span>
+                                            {/* Code Badge (A.1.1, A.1.2...) */}
+                                            <span className='mt-0.5 inline-flex items-center justify-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono font-semibold text-foreground shrink-0'>
+                                              {subKegiatan.kode}
+                                            </span>
 
-                                          <Badge
-                                            variant='outline'
-                                            className='mt-0.5 text-[10px] px-1.5 py-0 h-5 shrink-0'
-                                          >
-                                            Sub Kegiatan
-                                          </Badge>
+                                            <span className='inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 bg-sky-500/10 px-1.5 py-0.5 rounded shrink-0 mt-0.5'>
+                                              Sub Kegiatan
+                                            </span>
 
-                                          <div className='flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0'>
-                                            <p className='text-xs text-foreground leading-relaxed break-words flex-1 font-medium'>
+                                            {/* Nama Sub Kegiatan (Mendapat lebar penuh, tidak terhimpit lagi!) */}
+                                            <p className='text-xs font-semibold text-foreground leading-relaxed break-words flex-1'>
                                               {subKegiatan.nama}
                                             </p>
+                                          </div>
 
-                                            {/* Indikator & Target Sub Kegiatan */}
-                                            {subKegiatan.indikators?.[0] && (
-                                              <div className='inline-flex items-center gap-1.5 rounded border bg-muted/30 px-2 py-0.5 text-xs shrink-0'>
-                                                <span className='text-muted-foreground text-[11px]'>
-                                                  {subKegiatan.indikators[0].indikator}:
-                                                </span>
-                                                <Badge
-                                                  variant='outline'
-                                                  className='font-mono font-semibold text-[10px] h-4 px-1 text-foreground bg-background'
-                                                >
-                                                  {subKegiatan.indikators[0].target}
-                                                </Badge>
-                                              </div>
+                                          {/* Tombol Aksi (Pin di kanan atas, tidak akan tertumpuk) */}
+                                          <div className='flex items-center gap-0.5 shrink-0 self-start pt-0.5'>
+                                            {canEdit && (
+                                              <Button
+                                                type='button'
+                                                variant='ghost'
+                                                size='icon'
+                                                title='Ubah Sub Kegiatan'
+                                                onClick={() => onEditItem(subKegiatan)}
+                                                className='h-6 w-6 text-muted-foreground hover:text-foreground'
+                                              >
+                                                <Pencil className='h-3 w-3' />
+                                              </Button>
+                                            )}
+
+                                            {canEdit && (
+                                              <Button
+                                                type='button'
+                                                variant='ghost'
+                                                size='icon'
+                                                title='Hapus Sub Kegiatan'
+                                                onClick={() => setDeleteTarget(subKegiatan)}
+                                                className='h-6 w-6 text-muted-foreground hover:text-destructive'
+                                              >
+                                                <Trash2 className='h-3 w-3' />
+                                              </Button>
                                             )}
                                           </div>
                                         </div>
 
-                                        {/* Level 3 Actions */}
-                                        <div className='flex items-center gap-0.5 shrink-0 self-end sm:self-center'>
-                                          {canEdit && (
-                                            <Button
-                                              type='button'
-                                              variant='ghost'
-                                              size='icon'
-                                              title='Ubah Sub Kegiatan'
-                                              onClick={() => onEditItem(subKegiatan)}
-                                              className='h-6 w-6 text-muted-foreground hover:text-foreground'
-                                            >
-                                              <Pencil className='h-3 w-3' />
-                                            </Button>
-                                          )}
+                                        {/* Baris 2: Indikator & Target Sub Kegiatan (Dedicated full-width block) */}
+                                        {subKegiatan.indikators?.[0] && (
+                                          <div className='pl-0 sm:pl-7'>
+                                            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-sky-500/20 bg-sky-500/[0.04] px-2.5 py-1.5 text-xs'>
+                                              <div className='flex items-start gap-1.5 min-w-0 flex-1'>
+                                                <Target className='h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5' />
+                                                <div className='text-[11px] leading-relaxed break-words min-w-0 flex-1'>
+                                                  <span className='font-semibold text-foreground mr-1.5'>
+                                                    Indikator Kinerja:
+                                                  </span>
+                                                  <span className='text-muted-foreground'>
+                                                    {subKegiatan.indikators[0].indikator}
+                                                  </span>
+                                                </div>
+                                              </div>
 
-                                          {canEdit && (
-                                            <Button
-                                              type='button'
-                                              variant='ghost'
-                                              size='icon'
-                                              title='Hapus Sub Kegiatan'
-                                              onClick={() => setDeleteTarget(subKegiatan)}
-                                              className='h-6 w-6 text-muted-foreground hover:text-destructive'
-                                            >
-                                              <Trash2 className='h-3 w-3' />
-                                            </Button>
-                                          )}
-                                        </div>
+                                              <div className='flex items-center gap-1.5 shrink-0 self-start sm:self-center pl-5 sm:pl-0 pt-0.5 sm:pt-0'>
+                                                <span className='text-[10px] uppercase font-bold text-muted-foreground tracking-wider'>
+                                                  Target:
+                                                </span>
+                                                <Badge
+                                                  variant='outline'
+                                                  className='font-mono font-bold text-xs h-5 px-2 text-foreground bg-background border-sky-500/30 shadow-2xs'
+                                                >
+                                                  {subKegiatan.indikators[0].target}
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     )
                                   })
