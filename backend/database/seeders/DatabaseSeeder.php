@@ -40,16 +40,13 @@ class DatabaseSeeder extends Seeder
         // 8. Siklus Perencanaan & Periode Penilaian (Fitur 13 - Periode Penilaian)
         $this->call(PeriodePenilaianSeeder::class);
 
-        // 9-11. Pohon Kinerja: Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)
-        $this->call(TujuanSasaranIndikatorSeeder::class);
-
-        // 12. Penetapan Konteks Risiko Strategis OPD (Fitur 26 - Form 2B)
+        // 9. Penetapan Konteks Risiko Strategis OPD (Fitur 26 - Form 2B)
         $this->call(KonteksPenilaianSeeder::class);
 
-        // 13. Penetapan Konteks Risiko Operasional OPD (Fitur 26 - Form 2C)
+        // 10. Penetapan Konteks Risiko Operasional OPD (Fitur 26 - Form 2C)
         $this->call(KonteksOperasionalSeeder::class);
 
-        // 14. Log Aktivitas & Audit Keamanan Sistem (Fitur 5 - Log Audit Keamanan)
+        // 11. Log Aktivitas & Audit Keamanan Sistem (Fitur 5 - Log Audit Keamanan)
         $this->call(AuditLogSeeder::class);
     }
 }
