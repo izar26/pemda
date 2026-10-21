@@ -394,4 +394,80 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assertNotNull($submission->approved_at);
         $this->assertEquals($this->auditorUser->id, $submission->approved_by);
     }
+
+    public function test_auditor_cannot_review_if_opd_has_not_submitted_yet(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+
+        // OPD only checks readiness, creating draft submission but has NOT submitted
+        Sanctum::actingAs($this->opdUser);
+        $statusRes = $this->getJson("/api/risiko/pengajuan/status?opd_id={$this->opd->id}");
+        $statusRes->assertStatus(200);
+        $submissionId = $statusRes->json('data.submission.id');
+
+        // Auditor attempts to approve early while OPD is in draft
+        Sanctum::actingAs($this->auditorUser);
+        $res = $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/item", [
+            'form_code' => '2b',
+            'status' => 'approved',
+        ]);
+
+        $res->assertStatus(422);
+        $this->assertStringContainsString('belum dikirimkan oleh OPD', $res->json('message'));
+    }
+
+    public function test_opd_cannot_edit_already_approved_form_item_during_revision(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $operasional = $this->completeForm2C();
+
+        Sanctum::actingAs($this->opdUser);
+        $this->postJson('/api/risiko/pengajuan/submit', [
+            'opd_id' => $this->opd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+        ])->assertStatus(200);
+
+        $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->first();
+
+        Sanctum::actingAs($this->auditorUser);
+        // Auditor approves 2B
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '2b',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        // Auditor rejects 2C with note
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '2c',
+            'status' => 'rejected',
+            'catatan_revisi' => 'Target sub kegiatan belum diisi.',
+        ])->assertStatus(200);
+
+        // Now OPD attempts to edit Form 2B (which was already approved)
+        Sanctum::actingAs($this->opdUser);
+        $edit2BRes = $this->postJson('/api/risiko/konteks-strategis', [
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'sumber_data_id' => $this->sumberData->id,
+            'tujuan_penilaian_id' => $this->tujuan->id,
+            'sasaran_ids' => [$this->sasaran->id],
+            'indikator_ids' => [$this->indikator->id],
+        ]);
+
+        $edit2BRes->assertStatus(403);
+        $this->assertStringContainsString('telah disetujui oleh Auditor Pengawas dan tidak dapat diubah lagi', $edit2BRes->json('message'));
+
+        // But OPD CAN edit Form 2C (which was rejected and needs revision)
+        $edit2CRes = $this->postJson("/api/risiko/konteks-operasional/{$operasional->id}/items", [
+            'jenis' => 'program',
+            'kode' => '2',
+            'nama' => 'Program Tambahan Revisi',
+            'urutan' => 2,
+        ]);
+
+        $edit2CRes->assertStatus(201);
+    }
 }

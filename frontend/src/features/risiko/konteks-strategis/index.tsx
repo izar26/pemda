@@ -7,6 +7,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -109,9 +110,12 @@ export function KonteksStrategisPage() {
     refetchWizardProgress,
   } = useRisikoWizardProgress()
 
+  const is2BApproved = Boolean(readiness?.is_2b_approved)
+  const rejectionNote2B = readiness?.rejection_notes?.['2b']
+
   const canEdit =
     (hasPermission('konteks_risiko.create') || hasPermission('konteks_risiko.edit')) &&
-    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked))
+    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked && !is2BApproved))
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitIntent, setSubmitIntent] = useState<'save' | 'save_and_next'>('save')
@@ -453,6 +457,36 @@ export function KonteksStrategisPage() {
           effectiveOpdId={effectiveOpdId}
           onSubmissionSuccess={refetchWizardProgress}
         />
+
+        {/* Form 2B Approved Banner */}
+        {is2BApproved && (
+          <div className='flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400'>
+            <CheckCircle2 className='h-5 w-5 shrink-0' />
+            <div className='text-xs'>
+              <p className='font-bold text-sm'>
+                Form 2B Telah Disetujui Auditor Pengawas
+              </p>
+              <p className='text-emerald-700/80 dark:text-emerald-400/80'>
+                Konteks risiko strategis ini telah diperiksa dan disetujui (read-only).
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Form 2B Rejection Note Banner */}
+        {!is2BApproved && rejectionNote2B && (
+          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive'>
+            <AlertCircle className='h-5 w-5 shrink-0 mt-0.5' />
+            <div className='text-xs space-y-1'>
+              <p className='font-bold text-sm'>
+                Perlu Revisi dari Auditor Pengawas (Form 2B)
+              </p>
+              <p className='leading-relaxed'>
+                {rejectionNote2B}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Active Periode Guard */}
         {!isLoading && !activePeriode ? (

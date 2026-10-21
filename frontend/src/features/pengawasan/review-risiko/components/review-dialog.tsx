@@ -135,6 +135,7 @@ export function ReviewDialog({
 
   const item2b = submission?.items?.find((i) => i.form_code === '2b')
   const item2c = submission?.items?.find((i) => i.form_code === '2c')
+  const isDraftSubmission = !submission || submission.status === 'draft'
 
   const getFormStatusBadge = (item?: typeof item2b) => {
     if (!item) {
@@ -262,6 +263,14 @@ export function ReviewDialog({
 
               {/* TAB 1: FORM EXAMINATION */}
               <TabsContent value='forms' className='flex-1 overflow-y-auto p-6 space-y-6 m-0'>
+                {isDraftSubmission && (
+                  <div className='p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400 text-xs flex items-center gap-2.5'>
+                    <Clock className='h-4 w-4 shrink-0' />
+                    <span>
+                      Perangkat daerah belum mengirimkan lembar kerja risiko kepada auditor (Status: <strong>Draft</strong>). Anda dapat melihat pratinjau data, namun tombol persetujuan baru akan aktif setelah OPD melakukan pengiriman resmi.
+                    </span>
+                  </div>
+                )}
                 {/* Form 2B Review Card */}
                 <div className='rounded-xl border bg-card p-5 space-y-4 shadow-2xs'>
                   <div className='flex items-center justify-between pb-3 border-b'>
@@ -342,7 +351,7 @@ export function ReviewDialog({
                       variant='destructive'
                       size='sm'
                       className='h-8 text-xs'
-                      disabled={reviewMutation.isPending || !konteks2B}
+                      disabled={reviewMutation.isPending || !konteks2B || isDraftSubmission}
                       onClick={() => {
                         setRejectingFormCode('2b')
                         setRejectionNote(item2b?.catatan_revisi || '')
@@ -355,7 +364,7 @@ export function ReviewDialog({
                       type='button'
                       size='sm'
                       className='h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white'
-                      disabled={reviewMutation.isPending || !konteks2B}
+                      disabled={reviewMutation.isPending || !konteks2B || isDraftSubmission}
                       onClick={() => handleApprove('2b')}
                     >
                       {reviewMutation.isPending ? (
@@ -443,7 +452,7 @@ export function ReviewDialog({
                       variant='destructive'
                       size='sm'
                       className='h-8 text-xs'
-                      disabled={reviewMutation.isPending || !konteks2CData}
+                      disabled={reviewMutation.isPending || !konteks2CData || isDraftSubmission}
                       onClick={() => {
                         setRejectingFormCode('2c')
                         setRejectionNote(item2c?.catatan_revisi || '')
@@ -456,7 +465,7 @@ export function ReviewDialog({
                       type='button'
                       size='sm'
                       className='h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white'
-                      disabled={reviewMutation.isPending || !konteks2CData}
+                      disabled={reviewMutation.isPending || !konteks2CData || isDraftSubmission}
                       onClick={() => handleApprove('2c')}
                     >
                       {reviewMutation.isPending ? (

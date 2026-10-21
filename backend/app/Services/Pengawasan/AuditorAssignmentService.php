@@ -29,7 +29,7 @@ class AuditorAssignmentService
         $query = AuditorOpdAssignment::with([
             'auditor:id,name,nip,email,jabatan,opd_id',
             'opd:id,kode,nama,kategori',
-            'periodePenilaian:id,nama,tahun_mulai,tahun_selesai',
+            'periodePenilaian:id,nama_periode,tahun_mulai,tahun_akhir',
             'assignedBy:id,name',
         ]);
 
@@ -48,7 +48,7 @@ class AuditorAssignmentService
         $query = User::with([
             'roles:id,name',
             'auditorAssignments' => function ($q) {
-                $q->with(['opd:id,kode,nama,kategori', 'periodePenilaian:id,nama,tahun_mulai,tahun_selesai'])
+                $q->with(['opd:id,kode,nama,kategori', 'periodePenilaian:id,nama_periode,tahun_mulai,tahun_akhir'])
                     ->orderBy('created_at', 'desc');
             },
         ]);

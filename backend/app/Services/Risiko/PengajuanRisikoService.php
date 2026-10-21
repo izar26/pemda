@@ -32,6 +32,12 @@ class PengajuanRisikoService
     protected function resolvePeriodeId(?string $periodeId = null): string
     {
         if ($periodeId) {
+            $exists = PeriodePenilaian::where('id', $periodeId)->exists();
+            if (!$exists) {
+                throw ValidationException::withMessages([
+                    'periode_penilaian_id' => ['Periode penilaian tidak valid atau tidak ditemukan.'],
+                ]);
+            }
             return $periodeId;
         }
 
@@ -55,6 +61,7 @@ class PengajuanRisikoService
         // Find active assigned auditor for this OPD if any
         $assignment = AuditorOpdAssignment::where('opd_id', $opdId)
             ->where('is_active', true)
+            ->whereHas('auditor')
             ->first();
 
         $submission = PengajuanPenilaianRisiko::firstOrCreate(
@@ -110,6 +117,7 @@ class PengajuanRisikoService
         // 1. Check Auditor Assignment
         $assignment = AuditorOpdAssignment::where('opd_id', $opdId)
             ->where('is_active', true)
+            ->whereHas('auditor')
             ->with(['auditor:id,name,nip,email,jabatan'])
             ->first();
 
@@ -154,6 +162,16 @@ class PengajuanRisikoService
             ];
         }
 
+        $formStatuses = [];
+        $rejectionNotes = [];
+        foreach ($submission->items as $item) {
+            $code = strtolower((string) $item->form_code);
+            $formStatuses[$code] = $item->status;
+            if ($item->status === PengajuanPenilaianRisikoItem::STATUS_REJECTED) {
+                $rejectionNotes[$code] = $item->catatan_revisi;
+            }
+        }
+
         $allFormsComplete = $is2bComplete && $is2cComplete;
         $isReadyToSubmit = $hasAuditor && $allFormsComplete && in_array($submission->status, [
             PengajuanPenilaianRisiko::STATUS_DRAFT,
@@ -166,6 +184,10 @@ class PengajuanRisikoService
             'assigned_auditor' => $assignment?->auditor,
             'is_2b_complete' => $is2bComplete,
             'is_2c_complete' => $is2cComplete,
+            'is_2b_approved' => ($formStatuses['2b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_2c_approved' => ($formStatuses['2c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'form_statuses' => $formStatuses,
+            'rejection_notes' => $rejectionNotes,
             'all_forms_complete' => $allFormsComplete,
             'missing_forms' => $missingForms,
             'is_ready_to_submit' => $isReadyToSubmit,
@@ -205,7 +227,14 @@ class PengajuanRisikoService
         }
 
         return DB::transaction(function () use ($submission, $readiness, $user, $catatan) {
-            $submission->update([
+            $lockedSubmission = PengajuanPenilaianRisiko::lockForUpdate()->find($submission->id);
+            if (!$lockedSubmission || $lockedSubmission->isLockedForOpd()) {
+                throw ValidationException::withMessages([
+                    'status' => ['Lembar kerja risiko Anda sedang dalam proses pemeriksaan oleh auditor atau telah disetujui (read-only).'],
+                ]);
+            }
+
+            $lockedSubmission->update([
                 'auditor_id' => $readiness['assigned_auditor']->id,
                 'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED,
                 'submitted_at' => now(),
@@ -213,7 +242,17 @@ class PengajuanRisikoService
             ]);
 
             // Set all draft or rejected items to submitted
-            foreach ($submission->items as $item) {
+            foreach (self::REQUIRED_FORM_CODES as $code) {
+                $item = PengajuanPenilaianRisikoItem::firstOrCreate(
+                    [
+                        'pengajuan_id' => $lockedSubmission->id,
+                        'form_code' => $code,
+                    ],
+                    [
+                        'status' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
+                    ]
+                );
+
                 if ($item->status !== PengajuanPenilaianRisikoItem::STATUS_APPROVED) {
                     $item->update([
                         'status' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
@@ -223,14 +262,14 @@ class PengajuanRisikoService
 
             // Record in timeline history
             PengajuanPenilaianRisikoHistory::create([
-                'pengajuan_id' => $submission->id,
+                'pengajuan_id' => $lockedSubmission->id,
                 'action' => 'submitted',
                 'catatan' => $catatan ?: 'Lembar kerja risiko lengkap dikirimkan oleh OPD untuk ditinjau auditor.',
                 'user_id' => $user->id,
                 'created_at' => now(),
             ]);
 
-            return $submission->fresh([
+            return $lockedSubmission->fresh([
                 'opd',
                 'periodePenilaian',
                 'auditor',
@@ -310,7 +349,7 @@ class PengajuanRisikoService
     {
         $submission = PengajuanPenilaianRisiko::with([
             'opd:id,kode,nama,kategori',
-            'periodePenilaian:id,nama,tahun_mulai,tahun_selesai',
+            'periodePenilaian:id,nama_periode,tahun_mulai,tahun_akhir',
             'auditor:id,name,nip,email,jabatan',
             'submittedBy:id,name',
             'approvedBy:id,name',
@@ -379,6 +418,12 @@ class PengajuanRisikoService
 
         $submission = PengajuanPenilaianRisiko::with('items')->findOrFail($submissionId);
 
+        if ($submission->isDraft()) {
+            throw ValidationException::withMessages([
+                'submission' => ['Lembar kerja risiko belum dikirimkan oleh OPD untuk ditinjau.'],
+            ]);
+        }
+
         // Authorization check
         $isSpecialAdmin = $auditorUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
         if (!$isSpecialAdmin && $auditorUser->hasRole('Auditor')) {
@@ -393,9 +438,11 @@ class PengajuanRisikoService
         }
 
         return DB::transaction(function () use ($submission, $formCode, $status, $catatanRevisi, $auditorUser) {
+            $lockedSubmission = PengajuanPenilaianRisiko::lockForUpdate()->find($submission->id);
+
             $item = PengajuanPenilaianRisikoItem::firstOrCreate(
                 [
-                    'pengajuan_id' => $submission->id,
+                    'pengajuan_id' => $lockedSubmission->id,
                     'form_code' => $formCode,
                 ],
                 [
@@ -412,7 +459,7 @@ class PengajuanRisikoService
 
             // Add history entry
             PengajuanPenilaianRisikoHistory::create([
-                'pengajuan_id' => $submission->id,
+                'pengajuan_id' => $lockedSubmission->id,
                 'form_code' => $formCode,
                 'action' => $status === PengajuanPenilaianRisikoItem::STATUS_APPROVED ? 'approved_item' : 'rejected_item',
                 'catatan' => $status === PengajuanPenilaianRisikoItem::STATUS_APPROVED
@@ -423,7 +470,7 @@ class PengajuanRisikoService
             ]);
 
             // Re-evaluate parent submission status
-            $allItems = PengajuanPenilaianRisikoItem::where('pengajuan_id', $submission->id)->get();
+            $allItems = PengajuanPenilaianRisikoItem::where('pengajuan_id', $lockedSubmission->id)->get();
             $hasAnyRejected = $allItems->contains('status', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
             
             // Check if all required items are approved
@@ -434,26 +481,30 @@ class PengajuanRisikoService
             $allRequiredApproved = $approvedCount === count(self::REQUIRED_FORM_CODES);
 
             if ($hasAnyRejected) {
-                $submission->update([
+                $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_REVISION_REQUESTED,
+                    'approved_at' => null,
+                    'approved_by' => null,
                 ]);
             } elseif ($allRequiredApproved) {
-                $submission->update([
+                $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_APPROVED,
                     'approved_at' => now(),
                     'approved_by' => $auditorUser->id,
                 ]);
 
                 PengajuanPenilaianRisikoHistory::create([
-                    'pengajuan_id' => $submission->id,
+                    'pengajuan_id' => $lockedSubmission->id,
                     'action' => 'all_approved',
                     'catatan' => 'Seluruh lembar kerja pengelolaan risiko telah disetujui auditor.',
                     'user_id' => $auditorUser->id,
                     'created_at' => now(),
                 ]);
             } else {
-                $submission->update([
+                $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
+                    'approved_at' => null,
+                    'approved_by' => null,
                 ]);
             }
 
@@ -465,7 +516,7 @@ class PengajuanRisikoService
      * Check if a given OPD can edit their forms in the specified period.
      * Throws 403 / ValidationException if not allowed.
      */
-    public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null): void
+    public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
     {
         // Superadmin and Admin Office can bypass
         if ($user && $user->hasRole(['Superadmin', 'Admin Office'])) {
@@ -477,6 +528,7 @@ class PengajuanRisikoService
         // 1. Check if OPD has an assigned auditor
         $hasAuditor = AuditorOpdAssignment::where('opd_id', $opdId)
             ->where('is_active', true)
+            ->whereHas('auditor')
             ->exists();
 
         if (!$hasAuditor) {
@@ -488,8 +540,19 @@ class PengajuanRisikoService
             ->where('periode_penilaian_id', $resolvedPeriodeId)
             ->first();
 
-        if ($submission && $submission->isLockedForOpd()) {
-            abort(403, 'Lembar kerja risiko Anda sedang dalam proses pemeriksaan oleh auditor atau telah disetujui (read-only).');
+        if ($submission) {
+            if ($submission->isLockedForOpd()) {
+                abort(403, 'Lembar kerja risiko Anda sedang dalam proses pemeriksaan oleh auditor atau telah disetujui (read-only).');
+            }
+
+            // If a specific form is requested, ensure that form item was not already approved
+            if ($formCode) {
+                $item = $submission->items()->where('form_code', strtolower($formCode))->first();
+                if ($item && $item->status === PengajuanPenilaianRisikoItem::STATUS_APPROVED) {
+                    $upperCode = strtoupper($formCode);
+                    abort(403, "Lembar kerja Form {$upperCode} telah disetujui oleh Auditor Pengawas dan tidak dapat diubah lagi.");
+                }
+            }
         }
     }
 }

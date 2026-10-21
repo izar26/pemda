@@ -94,7 +94,7 @@ class KonteksPenilaianController extends Controller
     public function store(SaveKonteksPenilaianRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $this->pengajuanService->assertOpdCanEdit((string) $data['opd_id'], $data['periode_penilaian_id'] ?? null, $request->user());
+        $this->pengajuanService->assertOpdCanEdit((string) $data['opd_id'], $data['periode_penilaian_id'] ?? null, $request->user(), '2b');
 
         $konteks = $this->service->saveKonteks($data, $request->user());
         $meta = $this->service->getOpdMeta((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id);
@@ -142,7 +142,7 @@ class KonteksPenilaianController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko OPD lain.');
         }
 
-        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user, '2b');
 
         $data = $request->validated();
         $data['opd_id'] = $konteks->opd_id;
@@ -171,7 +171,7 @@ class KonteksPenilaianController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus konteks risiko OPD lain.');
         }
 
-        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user);
+        $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user, '2b');
 
         $this->service->deleteKonteks($konteks);
 

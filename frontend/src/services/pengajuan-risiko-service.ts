@@ -93,6 +93,10 @@ export interface ReadinessResponse {
   } | null
   is_2b_complete: boolean
   is_2c_complete: boolean
+  is_2b_approved?: boolean
+  is_2c_approved?: boolean
+  form_statuses?: Record<string, ItemStatus>
+  rejection_notes?: Record<string, string | null>
   all_forms_complete: boolean
   missing_forms: MissingFormInfo[]
   is_ready_to_submit: boolean

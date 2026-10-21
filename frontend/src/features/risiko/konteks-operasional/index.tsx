@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -73,10 +74,13 @@ export function KonteksOperasionalPage() {
     refetchWizardProgress,
   } = useRisikoWizardProgress()
 
+  const is2CApproved = Boolean(readiness?.is_2c_approved)
+  const rejectionNote2C = readiness?.rejection_notes?.['2c']
+
   // Item Drawer State (Program / Kegiatan / Sub Kegiatan)
   const canEdit =
     (hasPermission('konteks_operasional.create') || hasPermission('konteks_operasional.edit')) &&
-    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked))
+    (Boolean(user?.roles?.includes('Superadmin') || user?.role === 'Superadmin' || user?.roles?.includes('Admin Office') || user?.role === 'Admin Office') || (hasAuditor && !isLocked && !is2CApproved))
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] =
@@ -276,6 +280,36 @@ export function KonteksOperasionalPage() {
           effectiveOpdId={effectiveOpdId}
           onSubmissionSuccess={refetchWizardProgress}
         />
+
+        {/* Form 2C Approved Banner */}
+        {is2CApproved && (
+          <div className='flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400'>
+            <CheckCircle2 className='h-5 w-5 shrink-0' />
+            <div className='text-xs'>
+              <p className='font-bold text-sm'>
+                Form 2C Telah Disetujui Auditor Pengawas
+              </p>
+              <p className='text-emerald-700/80 dark:text-emerald-400/80'>
+                Konteks risiko operasional ini telah diperiksa dan disetujui (read-only).
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Form 2C Rejection Note Banner */}
+        {!is2CApproved && rejectionNote2C && (
+          <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive'>
+            <AlertCircle className='h-5 w-5 shrink-0 mt-0.5' />
+            <div className='text-xs space-y-1'>
+              <p className='font-bold text-sm'>
+                Perlu Revisi dari Auditor Pengawas (Form 2C)
+              </p>
+              <p className='leading-relaxed'>
+                {rejectionNote2C}
+              </p>
+            </div>
+          </div>
+        )}
 
         {!isLoading && !activePeriode ? (
           <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>
