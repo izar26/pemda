@@ -278,4 +278,47 @@ class AuditorAssignmentTest extends TestCase
         $this->assertCount(1, $data);
         $this->assertEquals($this->auditorUser1->id, $data[0]['id']);
     }
+
+    public function test_cannot_assign_opd_already_assigned_to_another_auditor(): void
+    {
+        // Auditor 1 is assigned to Dinkes
+        AuditorOpdAssignment::create([
+            'auditor_id' => $this->auditorUser1->id,
+            'opd_id' => $this->opdDinkes->id,
+        ]);
+
+        // Auditor 2 tries to be assigned to Dinkes
+        $response = $this->actingAs($this->inspektoratUser, 'sanctum')
+            ->postJson('/api/pengawasan/penugasan-auditor', [
+                'auditor_id' => $this->auditorUser2->id,
+                'opd_ids' => [$this->opdDinkes->id],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['opd_ids']);
+    }
+
+    public function test_cannot_sync_with_opd_assigned_to_another_auditor(): void
+    {
+        // Auditor 1 is assigned to Dinkes
+        AuditorOpdAssignment::create([
+            'auditor_id' => $this->auditorUser1->id,
+            'opd_id' => $this->opdDinkes->id,
+        ]);
+
+        // Auditor 2 is assigned to Disdik
+        AuditorOpdAssignment::create([
+            'auditor_id' => $this->auditorUser2->id,
+            'opd_id' => $this->opdDisdik->id,
+        ]);
+
+        // Auditor 2 tries to update assignments to include Dinkes (owned by Auditor 1)
+        $response = $this->actingAs($this->inspektoratUser, 'sanctum')
+            ->putJson("/api/pengawasan/penugasan-auditor/{$this->auditorUser2->id}", [
+                'opd_ids' => [$this->opdDisdik->id, $this->opdDinkes->id],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['opd_ids']);
+    }
 }

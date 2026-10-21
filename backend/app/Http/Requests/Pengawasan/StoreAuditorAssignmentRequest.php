@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Pengawasan;
 
+use App\Models\Pengawasan\AuditorOpdAssignment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -57,5 +58,32 @@ class StoreAuditorAssignmentRequest extends FormRequest
             'opd_ids.*.exists' => 'Salah satu OPD yang dipilih tidak ditemukan.',
             'tanggal_selesai.after_or_equal' => 'Tanggal selesai penugasan harus sama atau setelah tanggal mulai.',
         ];
+    }
+
+    /**
+     * Validate 1 OPD can only be assigned to 1 Auditor.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $opdIds = (array) $this->input('opd_ids', []);
+            $auditorId = (string) $this->input('auditor_id');
+
+            if (!empty($opdIds)) {
+                $alreadyAssigned = AuditorOpdAssignment::whereIn('opd_id', $opdIds)
+                    ->where('auditor_id', '!=', $auditorId)
+                    ->with(['opd:id,nama', 'auditor:id,name'])
+                    ->first();
+
+                if ($alreadyAssigned) {
+                    $opdName = $alreadyAssigned->opd?->nama ?? 'Perangkat Daerah';
+                    $auditorName = $alreadyAssigned->auditor?->name ?? 'auditor lain';
+                    $validator->errors()->add(
+                        'opd_ids',
+                        "OPD \"{$opdName}\" sudah ditugaskan kepada auditor {$auditorName}. Satu OPD hanya dapat ditugaskan ke 1 auditor."
+                    );
+                }
+            }
+        });
     }
 }

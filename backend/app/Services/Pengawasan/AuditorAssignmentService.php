@@ -149,15 +149,27 @@ class AuditorAssignmentService
         $opdIds = (array) $data['opd_ids'];
 
         return DB::transaction(function () use ($auditor, $opdIds, $data, $assignedBy) {
+            // Guard: 1 OPD can only be assigned to 1 auditor
+            $conflict = AuditorOpdAssignment::whereIn('opd_id', $opdIds)
+                ->where('auditor_id', '!=', $auditor->id)
+                ->with(['opd:id,nama', 'auditor:id,name'])
+                ->first();
+
+            if ($conflict) {
+                throw ValidationException::withMessages([
+                    'opd_ids' => ["OPD \"{$conflict->opd?->nama}\" sudah ditugaskan kepada auditor {$conflict->auditor?->name}. Satu OPD hanya dapat ditugaskan ke 1 auditor."],
+                ]);
+            }
+
             $createdAssignments = [];
 
             foreach ($opdIds as $opdId) {
                 $assignment = AuditorOpdAssignment::updateOrCreate(
                     [
-                        'auditor_id' => $auditor->id,
                         'opd_id' => $opdId,
                     ],
                     [
+                        'auditor_id' => $auditor->id,
                         'periode_penilaian_id' => $data['periode_penilaian_id'] ?? null,
                         'assigned_by' => $assignedBy?->id,
                         'nomor_surat_tugas' => $data['nomor_surat_tugas'] ?? null,
@@ -187,6 +199,18 @@ class AuditorAssignmentService
         $newOpdIds = (array) $data['opd_ids'];
 
         return DB::transaction(function () use ($auditor, $newOpdIds, $data, $assignedBy) {
+            // Guard: 1 OPD can only be assigned to 1 auditor
+            $conflict = AuditorOpdAssignment::whereIn('opd_id', $newOpdIds)
+                ->where('auditor_id', '!=', $auditor->id)
+                ->with(['opd:id,nama', 'auditor:id,name'])
+                ->first();
+
+            if ($conflict) {
+                throw ValidationException::withMessages([
+                    'opd_ids' => ["OPD \"{$conflict->opd?->nama}\" sudah ditugaskan kepada auditor {$conflict->auditor?->name}. Satu OPD hanya dapat ditugaskan ke 1 auditor."],
+                ]);
+            }
+
             // 1. Delete assignments for OPDs no longer in the list
             $obsoleteAssignments = AuditorOpdAssignment::where('auditor_id', $auditor->id)
                 ->whereNotIn('opd_id', $newOpdIds)
@@ -201,10 +225,10 @@ class AuditorAssignmentService
             foreach ($newOpdIds as $opdId) {
                 $assignment = AuditorOpdAssignment::updateOrCreate(
                     [
-                        'auditor_id' => $auditor->id,
                         'opd_id' => $opdId,
                     ],
                     [
+                        'auditor_id' => $auditor->id,
                         'periode_penilaian_id' => $data['periode_penilaian_id'] ?? null,
                         'assigned_by' => $assignedBy?->id,
                         'nomor_surat_tugas' => $data['nomor_surat_tugas'] ?? null,

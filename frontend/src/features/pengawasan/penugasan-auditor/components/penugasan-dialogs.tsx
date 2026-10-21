@@ -73,6 +73,27 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     enabled: isFormOpen,
   })
 
+  // Map of which OPDs are already assigned to which auditor (for 1 OPD = 1 Auditor visual guidance)
+  const assignedAuditorsData = queryClient.getQueryData<{ data: any[] }>([
+    'pengawasan',
+    'penugasan-auditor',
+  ])
+  const assignedOpdsMap = useMemo(() => {
+    const map = new Map<string, { auditorId: string; auditorName: string }>()
+    const list = assignedAuditorsData?.data || []
+    for (const auditor of list) {
+      for (const assignment of auditor.auditor_assignments || []) {
+        map.set(assignment.opd_id, {
+          auditorId: auditor.id,
+          auditorName: auditor.name,
+        })
+      }
+    }
+    return map
+  }, [assignedAuditorsData])
+
+  const targetAuditorId = isEdit ? currentRow?.id : selectedAuditorId
+
   // Populate form on open/edit
   useEffect(() => {
     if (isEdit && currentRow) {
@@ -121,7 +142,12 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   }
 
   const handleSelectAllFiltered = () => {
-    const idsToAdd = filteredOpds.map((o) => String(o.id))
+    const idsToAdd = filteredOpds
+      .filter((o) => {
+        const info = assignedOpdsMap.get(String(o.id))
+        return !info || info.auditorId === targetAuditorId
+      })
+      .map((o) => String(o.id))
     setSelectedOpdIds((prev) => Array.from(new Set([...prev, ...idsToAdd])))
   }
 
@@ -141,7 +167,9 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     },
     onError: (err: any) => {
       const msg =
-        err.response?.data?.message || 'Gagal menyimpan penugasan auditor.'
+        err.response?.data?.message ||
+        err.response?.data?.errors?.opd_ids?.[0] ||
+        'Gagal menyimpan penugasan auditor.'
       toast.error(msg)
     },
   })
@@ -158,7 +186,9 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     },
     onError: (err: any) => {
       const msg =
-        err.response?.data?.message || 'Gagal memperbarui penugasan auditor.'
+        err.response?.data?.message ||
+        err.response?.data?.errors?.opd_ids?.[0] ||
+        'Gagal memperbarui penugasan auditor.'
       toast.error(msg)
     },
   })
@@ -378,7 +408,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                   )}
                 </div>
 
-                {/* Scrollable Checkbox Checklist */}
+                {/* Scrollable Checkbox Checklist with 1 OPD = 1 Auditor visual indicators */}
                 <div className='border rounded-lg divide-y max-h-56 overflow-y-auto bg-card'>
                   {isLoadingOpds ? (
                     <div className='flex items-center justify-center p-6 gap-2 text-xs text-muted-foreground'>
@@ -393,18 +423,27 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                     filteredOpds.map((opd) => {
                       const opdId = String(opd.id)
                       const isChecked = selectedOpdIds.includes(opdId)
+                      const assignedInfo = assignedOpdsMap.get(opdId)
+                      const isAssignedToOther =
+                        assignedInfo && assignedInfo.auditorId !== targetAuditorId
+
                       return (
                         <label
                           key={opdId}
-                          className={`flex items-center gap-3 px-3 py-2 text-xs cursor-pointer transition-colors ${
-                            isChecked
-                              ? 'bg-primary/5 font-medium text-primary'
-                              : 'hover:bg-muted/50 text-foreground'
+                          className={`flex items-center gap-3 px-3 py-2 text-xs transition-colors ${
+                            isAssignedToOther
+                              ? 'opacity-55 cursor-not-allowed bg-muted/20 text-muted-foreground'
+                              : isChecked
+                              ? 'bg-primary/5 font-medium text-primary cursor-pointer'
+                              : 'hover:bg-muted/50 text-foreground cursor-pointer'
                           }`}
                         >
                           <Checkbox
                             checked={isChecked}
-                            onCheckedChange={() => handleToggleOpd(opdId)}
+                            disabled={Boolean(isAssignedToOther)}
+                            onCheckedChange={() => {
+                              if (!isAssignedToOther) handleToggleOpd(opdId)
+                            }}
                           />
                           <div className='flex-1 min-w-0'>
                             <span className='font-mono text-[10px] text-muted-foreground mr-1.5'>
@@ -412,9 +451,14 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                             </span>
                             <span>{opd.nama}</span>
                           </div>
-                          {isChecked && (
+
+                          {isAssignedToOther ? (
+                            <span className='text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground border shrink-0'>
+                              Ditugaskan ke: {assignedInfo.auditorName}
+                            </span>
+                          ) : isChecked ? (
                             <Check className='h-3.5 w-3.5 text-primary shrink-0' />
-                          )}
+                          ) : null}
                         </label>
                       )
                     })
