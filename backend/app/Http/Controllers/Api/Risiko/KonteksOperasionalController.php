@@ -30,7 +30,12 @@ class KonteksOperasionalController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.view')) {
+        $canView = $user?->can('konteks_operasional.view')
+            || $user?->can('review_risiko.view')
+            || $user?->can('laporan.view')
+            || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
+
+        if (!$canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat penetapan konteks risiko operasional.');
         }
 
@@ -76,7 +81,12 @@ class KonteksOperasionalController extends Controller
     public function current(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.view')) {
+        $canView = $user?->can('konteks_operasional.view')
+            || $user?->can('review_risiko.view')
+            || $user?->can('laporan.view')
+            || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
+
+        if (!$canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat penetapan konteks risiko operasional.');
         }
 
@@ -126,7 +136,12 @@ class KonteksOperasionalController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.view')) {
+        $canView = $user?->can('konteks_operasional.view')
+            || $user?->can('review_risiko.view')
+            || $user?->can('laporan.view')
+            || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
+
+        if (!$canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat penetapan konteks risiko operasional.');
         }
 
@@ -311,7 +326,13 @@ class KonteksOperasionalController extends Controller
     public function export(Request $request, string $id): StreamedResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.export') && !$user?->can('konteks_operasional.view')) {
+        $canExport = $user?->can('konteks_operasional.export')
+            || $user?->can('konteks_operasional.view')
+            || $user?->can('laporan.export')
+            || $user?->can('laporan.view')
+            || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
+
+        if (!$canExport) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor penetapan konteks risiko operasional.');
         }
 

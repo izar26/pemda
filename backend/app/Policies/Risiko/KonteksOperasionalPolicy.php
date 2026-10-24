@@ -14,7 +14,10 @@ class KonteksOperasionalPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('konteks_operasional.view');
+        return $user->can('konteks_operasional.view')
+            || $user->can('review_risiko.view')
+            || $user->can('laporan.view')
+            || $user->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
     }
 
     /**
@@ -22,12 +25,12 @@ class KonteksOperasionalPolicy
      */
     public function view(User $user, KonteksOperasional $konteks): bool
     {
-        if (!$user->can('konteks_operasional.view')) {
-            return false;
-        }
-
         if ($user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat', 'Auditor', 'Bapperida', 'Executive'])) {
             return true;
+        }
+
+        if (!$user->can('konteks_operasional.view') && !$user->can('review_risiko.view') && !$user->can('laporan.view')) {
+            return false;
         }
 
         return $konteks->opd_id === $user->opd_id;

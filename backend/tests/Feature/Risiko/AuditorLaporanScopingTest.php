@@ -155,4 +155,38 @@ class AuditorLaporanScopingTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    public function test_auditor_without_direct_konteks_permission_can_still_read_assigned_opd(): void
+    {
+        $opdBare = Opd::create([
+            'nama' => 'Dinas Perhubungan Terbina',
+            'kode' => 'DISHUB',
+            'kategori' => 'Dinas',
+            'urutan' => 3,
+            'is_active' => true,
+        ]);
+
+        $bareAuditor = User::factory()->create([
+            'email' => 'bare_auditor@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $bareAuditor->assignRole('Auditor');
+        // Revoke the direct permission to simulate outdated permission table
+        $bareAuditor->roles()->first()->revokePermissionTo('konteks_operasional.view');
+
+        AuditorOpdAssignment::create([
+            'auditor_id' => $bareAuditor->id,
+            'opd_id' => $opdBare->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'nomor_surat_tugas' => 'ST/002/AUDIT/2026',
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_selesai' => '2026-12-31',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($bareAuditor, 'sanctum')
+            ->getJson('/api/risiko/konteks-operasional/current?opd_id=' . $opdBare->id . '&periode_penilaian_id=' . $this->activePeriode->id);
+
+        $response->assertOk();
+    }
 }
