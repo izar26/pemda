@@ -348,14 +348,36 @@ class KonteksPenilaianService
             }
             $writer->addRow(Row::fromValues(['']));
 
-            // IKU Renstra Section
-            $writer->addRow(Row::fromValues(['IKU / Indikator Renstra OPD yang Dinilai:'], $headerSectionStyle));
+            // IKU Renstra Section (Basis Risiko Strategis)
+            $writer->addRow(Row::fromValues(['Indikator Kinerja Utama (IKU) Renstra OPD (Basis Risiko Strategis):'], $headerSectionStyle));
+
+            $ikuIndikators = $konteks->indikators->filter(function ($ind) {
+                return !empty($ind->jenis) && strtoupper((string) $ind->jenis) === 'IKU';
+            });
+            $nonIkuIndikators = $konteks->indikators->filter(function ($ind) {
+                return empty($ind->jenis) || strtoupper((string) $ind->jenis) !== 'IKU';
+            });
+
+            // Target IKU items
+            $targetIku = $ikuIndikators->isNotEmpty() ? $ikuIndikators : $konteks->indikators;
+
             $no = 1;
-            foreach ($konteks->indikators as $ind) {
+            foreach ($targetIku as $ind) {
                 $kode = $ind->kode_indikator ? "[{$ind->kode_indikator}] " : '';
-                $jenis = "[{$ind->jenis}] ";
-                $writer->addRow(Row::fromValues(["{$no}. {$kode}{$jenis}{$ind->indikator}"]));
+                $writer->addRow(Row::fromValues(["{$no}. {$kode}[IKU] {$ind->indikator}"]));
                 $no++;
+            }
+
+            if ($ikuIndikators->isNotEmpty() && $nonIkuIndikators->isNotEmpty()) {
+                $writer->addRow(Row::fromValues(['']));
+                $writer->addRow(Row::fromValues(['Indikator Kinerja Penunjang (Non-IKU):'], $boldStyle));
+                $subNo = 1;
+                foreach ($nonIkuIndikators as $ind) {
+                    $kode = $ind->kode_indikator ? "[{$ind->kode_indikator}] " : '';
+                    $jenis = $ind->jenis ? "[{$ind->jenis}] " : '';
+                    $writer->addRow(Row::fromValues(["{$subNo}. {$kode}{$jenis}{$ind->indikator}"]));
+                    $subNo++;
+                }
             }
             $writer->addRow(Row::fromValues(['']));
 

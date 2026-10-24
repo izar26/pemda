@@ -1022,14 +1022,14 @@ export function KonteksStrategisPage() {
                                                   )}
                                                 </div>
                                                 <Badge
-                                                  variant={
+                                                  className={cn(
+                                                    'text-[9px] px-1.5 py-0 h-4 shrink-0 font-semibold',
                                                     ind.jenis === 'IKU'
-                                                      ? 'default'
-                                                      : 'secondary'
-                                                  }
-                                                  className='text-[9px] px-1.5 py-0 h-4 shrink-0'
+                                                      ? 'bg-emerald-600 hover:bg-emerald-600 text-white'
+                                                      : 'bg-secondary text-secondary-foreground'
+                                                  )}
                                                 >
-                                                  {ind.jenis}
+                                                  {ind.jenis || 'Indikator'}
                                                 </Badge>
                                               </div>
                                             </label>

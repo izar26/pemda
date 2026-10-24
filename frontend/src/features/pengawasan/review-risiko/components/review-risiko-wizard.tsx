@@ -650,6 +650,15 @@ export function ReviewRisikoWizard({
                                           {ind.kode_indikator}
                                         </Badge>
                                       )}
+                                      {ind.jenis === 'IKU' ? (
+                                        <Badge className='text-[9px] px-1.5 py-0 bg-emerald-600 hover:bg-emerald-600 text-white font-semibold shrink-0'>
+                                          IKU
+                                        </Badge>
+                                      ) : ind.jenis ? (
+                                        <Badge variant='secondary' className='text-[9px] px-1 py-0 shrink-0'>
+                                          {ind.jenis}
+                                        </Badge>
+                                      ) : null}
                                       <p className='font-medium text-foreground'>
                                         {ind.indikator || ind.nama || `Indikator #${iIdx + 1}`}
                                       </p>

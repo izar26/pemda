@@ -140,44 +140,88 @@ export function LaporanSheet2B({ data, meta, opdNama, tahun }: LaporanSheet2BPro
           )}
         </div>
 
-        {/* 3. IKU Renstra */}
-        <div className='space-y-2'>
-          <div className='flex items-center justify-between border-b pb-1'>
-            <div className='flex items-center gap-2 font-bold text-sm text-foreground uppercase tracking-wide'>
-              <span className='flex h-5 w-5 items-center justify-center rounded bg-primary text-primary-foreground text-xs'>3</span>
-              Indikator Kinerja Utama (IKU) Renstra OPD
-            </div>
-            <span className='text-xs text-muted-foreground font-medium'>
-              Total: {data.indikators?.length || 0} Indikator
-            </span>
-          </div>
-          {data.indikators && data.indikators.length > 0 ? (
-            <div className='divide-y rounded-md border'>
-              {data.indikators.map((ind, index) => (
-                <div key={ind.id} className='p-3 flex items-start gap-3 bg-card'>
-                  <span className='font-bold text-muted-foreground text-xs shrink-0 pt-0.5'>{index + 1}.</span>
-                  <div className='space-y-0.5 flex-1'>
-                    <div className='flex items-center gap-2 mb-1'>
-                      {ind.kode_indikator && (
-                        <span className='text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground'>
-                          {ind.kode_indikator}
-                        </span>
-                      )}
-                      <Badge variant={ind.jenis === 'IKU' ? 'default' : 'secondary'} className='text-[10px] px-1.5 py-0'>
-                        {ind.jenis}
-                      </Badge>
+        {/* 3. Indikator Kinerja Utama (IKU) Renstra OPD - Basis Risiko Strategis */}
+        {(() => {
+          const ikuIndikators = (data.indikators || []).filter(
+            (ind) => !ind.jenis || ind.jenis.toUpperCase() === 'IKU'
+          )
+          const nonIkuIndikators = (data.indikators || []).filter(
+            (ind) => ind.jenis && ind.jenis.toUpperCase() !== 'IKU'
+          )
+
+          return (
+            <div className='space-y-2'>
+              <div className='flex items-center justify-between border-b pb-1'>
+                <div className='flex items-center gap-2 font-bold text-sm text-foreground uppercase tracking-wide'>
+                  <span className='flex h-5 w-5 items-center justify-center rounded bg-primary text-primary-foreground text-xs'>3</span>
+                  Indikator Kinerja Utama (IKU) Renstra OPD
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Badge variant='outline' className='text-[10px] font-mono bg-primary/10 text-primary border-primary/20'>
+                    Basis Risiko Strategis
+                  </Badge>
+                  <span className='text-xs text-muted-foreground font-medium'>
+                    {ikuIndikators.length} IKU
+                  </span>
+                </div>
+              </div>
+
+              <p className='text-[11px] text-muted-foreground italic print:text-[10px]'>
+                * Sesuai standar manajemen risiko daerah, penetapan risiko strategis difokuskan pada Indikator Kinerja Utama (IKU).
+              </p>
+
+              {ikuIndikators.length > 0 ? (
+                <div className='divide-y rounded-md border'>
+                  {ikuIndikators.map((ind, index) => (
+                    <div key={ind.id} className='p-3 flex items-start gap-3 bg-card'>
+                      <span className='font-bold text-muted-foreground text-xs shrink-0 pt-0.5'>{index + 1}.</span>
+                      <div className='space-y-0.5 flex-1'>
+                        <div className='flex items-center gap-2 mb-1'>
+                          {ind.kode_indikator && (
+                            <span className='text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground'>
+                              {ind.kode_indikator}
+                            </span>
+                          )}
+                          <Badge className='text-[10px] px-1.5 py-0 bg-emerald-600 hover:bg-emerald-600 text-white font-semibold'>
+                            IKU
+                          </Badge>
+                        </div>
+                        <span className='font-medium text-foreground leading-snug'>{ind.indikator}</span>
+                      </div>
                     </div>
-                    <span className='font-medium text-foreground leading-snug'>{ind.indikator}</span>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-xs italic text-muted-foreground p-3 border rounded-md'>
+                  Tidak ada Indikator Kinerja Utama (IKU) yang dipilih.
+                </p>
+              )}
+
+              {/* Indikator Penunjang / Non-IKU Tambahan (Bila Ada) */}
+              {nonIkuIndikators.length > 0 && (
+                <div className='mt-3 pt-3 border-t border-dashed space-y-2'>
+                  <div className='flex items-center justify-between text-xs text-muted-foreground font-semibold'>
+                    <span>Indikator Kinerja Penunjang (Non-IKU):</span>
+                    <span>{nonIkuIndikators.length} Indikator</span>
+                  </div>
+                  <div className='divide-y rounded-md border bg-muted/10'>
+                    {nonIkuIndikators.map((ind, index) => (
+                      <div key={ind.id} className='p-2.5 flex items-start gap-2.5 text-xs text-muted-foreground'>
+                        <span className='font-mono text-[11px]'>{index + 1}.</span>
+                        <div className='flex-1 flex items-center justify-between gap-2'>
+                          <span>{ind.indikator}</span>
+                          <Badge variant='outline' className='text-[9px] px-1 py-0'>
+                            {ind.jenis || 'Penunjang'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          ) : (
-            <p className='text-xs italic text-muted-foreground p-3 border rounded-md'>
-              Tidak ada IKU/Indikator yang dipilih.
-            </p>
-          )}
-        </div>
+          )
+        })()}
 
         {/* 4. Informasi Lain / Isu Strategis */}
         <div className='space-y-2'>
