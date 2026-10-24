@@ -18,6 +18,7 @@ export function LaporanFeature() {
   const {
     user,
     isOpdRole,
+    isScopedAuditor,
     selectedFormId,
     setSelectedFormId,
     effectiveOpdId,
@@ -70,6 +71,7 @@ export function LaporanFeature() {
           opdOptions={opdOptions}
           isLoadingOpds={isLoadingOpds}
           isOpdRole={isOpdRole}
+          isScopedAuditor={isScopedAuditor}
           userOpdNama={user?.opd?.nama}
           tahunAktif={resolvedTahun}
         />
@@ -80,6 +82,16 @@ export function LaporanFeature() {
             <RefreshCw className='h-8 w-8 animate-spin mx-auto text-primary' />
             <p className='text-xs font-medium text-muted-foreground'>
               Memuat lembar laporan {currentStage.shortTitle} untuk {selectedOpdName}...
+            </p>
+          </div>
+        ) : isScopedAuditor && !isLoadingOpds && opdOptions.length === 0 ? (
+          <div className='p-12 text-center border rounded-lg bg-card text-card-foreground shadow-xs my-4 space-y-2'>
+            <p className='text-sm font-semibold text-foreground'>
+              Belum Ada Penugasan OPD Binaan
+            </p>
+            <p className='text-xs text-muted-foreground max-w-md mx-auto'>
+              Akun Auditor Anda belum memiliki penugasan Perangkat Daerah (OPD) aktif dari Inspektorat.
+              Silakan hubungi administrator Inspektorat untuk menambahkan penugasan pembinaan OPD Anda.
             </p>
           </div>
         ) : (

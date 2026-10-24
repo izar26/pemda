@@ -25,6 +25,11 @@ export function useLaporanData() {
       )
   )
 
+  const isScopedAuditor = Boolean(
+    userRoles.includes('Auditor') &&
+      !userRoles.some((r) => ['Superadmin', 'Admin Office', 'Inspektorat'].includes(r))
+  )
+
   const [selectedFormId, setSelectedFormId] = useState<string>('2b')
   const [selectedOpdId, setSelectedOpdId] = useState<string>(
     user?.opd_id ? String(user.opd_id) : ''
@@ -38,10 +43,14 @@ export function useLaporanData() {
     staleTime: 5 * 60 * 1000,
   })
 
-  // 2. Fetch OPD List
+  // 2. Fetch OPD List (auditor: only OPDs assigned to them)
   const { data: opdListResp, isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds', 'all-for-laporan'],
-    queryFn: () => opdService.getOpds({ all: true }),
+    queryKey: ['opds', 'all-for-laporan', isScopedAuditor],
+    queryFn: () =>
+      opdService.getOpds({
+        all: true,
+        ...(isScopedAuditor ? { assigned_only: true } : {}),
+      }),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -53,7 +62,11 @@ export function useLaporanData() {
     }))
   }, [opdListResp])
 
-  const effectiveOpdId = selectedOpdId || opdOptions[0]?.value || ''
+  // Selected OPD must belong to the (possibly scoped) option list
+  const effectiveOpdId =
+    (selectedOpdId && opdOptions.some((o) => o.value === selectedOpdId)
+      ? selectedOpdId
+      : opdOptions[0]?.value) || ''
   const selectedOpdName =
     opdOptions.find((o) => o.value === effectiveOpdId)?.label ||
     user?.opd?.nama ||
@@ -141,6 +154,7 @@ export function useLaporanData() {
   return {
     user,
     isOpdRole,
+    isScopedAuditor,
     selectedFormId,
     setSelectedFormId,
     effectiveOpdId,

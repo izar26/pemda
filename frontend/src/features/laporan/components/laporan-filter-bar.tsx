@@ -21,6 +21,7 @@ interface LaporanFilterBarProps {
   opdOptions: Array<{ value: string; label: string }>
   isLoadingOpds: boolean
   isOpdRole: boolean
+  isScopedAuditor?: boolean
   userOpdNama?: string
   tahunAktif?: string | number
 }
@@ -33,6 +34,7 @@ export function LaporanFilterBar({
   opdOptions,
   isLoadingOpds,
   isOpdRole,
+  isScopedAuditor,
   userOpdNama,
   tahunAktif,
 }: LaporanFilterBarProps) {
@@ -85,21 +87,30 @@ export function LaporanFilterBar({
                   Instansi Anda
                 </span>
               )}
+              {isScopedAuditor && (
+                <span className='text-[10px] text-blue-600 dark:text-blue-400 font-medium'>
+                  OPD Binaan Anda ({opdOptions.length})
+                </span>
+              )}
             </label>
             {isOpdRole ? (
               <div className='h-9 px-3 flex items-center rounded-md border bg-muted/40 text-xs font-semibold truncate'>
                 {userOpdNama || 'OPD Anda'}
+              </div>
+            ) : isScopedAuditor && !isLoadingOpds && opdOptions.length === 0 ? (
+              <div className='h-9 px-3 flex items-center rounded-md border border-amber-500/30 bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 truncate'>
+                Belum ada penugasan OPD binaan
               </div>
             ) : (
               <SearchableSelect
                 options={opdOptions}
                 value={effectiveOpdId}
                 onValueChange={onSelectOpdId}
-                placeholder='Pilih perangkat daerah...'
+                placeholder={isScopedAuditor ? 'Pilih OPD binaan...' : 'Pilih perangkat daerah...'}
                 searchPlaceholder='Cari OPD...'
                 className='h-9 text-xs font-medium'
                 allowClear={false}
-                disabled={isLoadingOpds}
+                disabled={isLoadingOpds || opdOptions.length === 0}
               />
             )}
           </div>

@@ -91,6 +91,10 @@ class KonteksOperasionalService
             ->with($this->relations)
             ->filter($filters);
 
+        if (isset($filters['opd_ids']) && is_array($filters['opd_ids'])) {
+            $query->whereIn('opd_id', $filters['opd_ids']);
+        }
+
         $direction = strtolower($sortDirection) === 'asc' ? 'asc' : 'desc';
 
         return $query->orderBy($sortBy, $direction)->paginate($perPage);

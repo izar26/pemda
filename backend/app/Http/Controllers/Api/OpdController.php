@@ -112,6 +112,11 @@ class OpdController extends Controller
         if ($isAll || ($isPublic && !$request->has('per_page') && !$request->has('page'))) {
             $query = Opd::query()->where('is_active', true);
 
+            // Auditor-scoped dropdown: only OPDs actively assigned to the logged-in auditor
+            if ($user && $request->boolean('assigned_only') && $user->isScopedAuditor()) {
+                $query->whereIn('id', $user->activeAssignedOpdIds());
+            }
+
             if ($request->has('kategori') && $request->input('kategori') !== 'all') {
                 $query->where('kategori', $request->query('kategori'));
             }

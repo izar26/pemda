@@ -157,6 +157,43 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user is an Auditor whose data access must be limited to the
+     * OPDs they are assigned to (Superadmin / Admin Office / Inspektorat see all).
+     */
+    public function isScopedAuditor(): bool
+    {
+        return $this->hasRole('Auditor')
+            && !$this->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
+    }
+
+    /**
+     * IDs of OPDs that this auditor is actively assigned to.
+     *
+     * @return array<int, string>
+     */
+    public function activeAssignedOpdIds(): array
+    {
+        return AuditorOpdAssignment::where('auditor_id', $this->id)
+            ->where('is_active', true)
+            ->pluck('opd_id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+    }
+
+    /**
+     * Whether a scoped auditor is allowed to read data of the given OPD.
+     * Always true for users that are not scoped auditors.
+     */
+    public function canReadOpdData(?string $opdId): bool
+    {
+        if (!$this->isScopedAuditor()) {
+            return true;
+        }
+
+        return $opdId !== null && in_array((string) $opdId, $this->activeAssignedOpdIds(), true);
+    }
+
+    /**
      * @return BelongsToMany<Opd, $this>
      */
     public function assignedOpds(): BelongsToMany

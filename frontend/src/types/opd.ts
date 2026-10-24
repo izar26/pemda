@@ -29,6 +29,8 @@ export interface OpdQueryParams {
   sort_by?: string
   sort_direction?: 'asc' | 'desc'
   all?: boolean
+  /** Auditor only: limit list to OPDs the logged-in auditor is assigned to */
+  assigned_only?: boolean
 }
 
 export interface OpdPaginatedResponse {
