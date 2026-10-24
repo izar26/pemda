@@ -97,6 +97,18 @@ class AuditorLaporanScopingTest extends TestCase
         $this->assertEquals($this->opdAssigned->id, $data[0]['id']);
     }
 
+    public function test_opd_dropdown_without_param_automatically_filters_for_scoped_auditor(): void
+    {
+        $response = $this->actingAs($this->auditorUser, 'sanctum')
+            ->getJson('/api/opds?all=true');
+
+        $response->assertOk();
+        $data = $response->json('data');
+
+        $this->assertCount(1, $data);
+        $this->assertEquals($this->opdAssigned->id, $data[0]['id']);
+    }
+
     public function test_opd_dropdown_for_superadmin_and_inspektorat_is_not_restricted(): void
     {
         $responseAdmin = $this->actingAs($this->superadmin, 'sanctum')

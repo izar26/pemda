@@ -211,6 +211,11 @@ export function useRisikoWizardProgress(enabled = true) {
       !userRoles.includes('Admin Office')
   )
 
+  const isScopedAuditor = Boolean(
+    userRoles.includes('Auditor') &&
+      !userRoles.some((r) => ['Superadmin', 'Admin Office', 'Inspektorat'].includes(r))
+  )
+
   // Fetch active evaluation period
   const { data: activePeriode, isLoading: isLoadingPeriode } = useQuery({
     queryKey: ['periode-active'],
@@ -219,10 +224,14 @@ export function useRisikoWizardProgress(enabled = true) {
     staleTime: 30_000,
   })
 
-  // Fetch OPD list for Admin / Superadmin selector
+  // Fetch OPD list for Admin / Superadmin / Auditor selector
   const { data: opdResponse, isLoading: isLoadingOpds } = useQuery({
-    queryKey: ['opds-list-active'],
-    queryFn: () => opdService.getOpds({ is_active: '1', per_page: 200 }),
+    queryKey: ['opds-list-active', isScopedAuditor],
+    queryFn: () =>
+      opdService.getOpds({
+        all: true,
+        ...(isScopedAuditor ? { assigned_only: true } : {}),
+      }),
     enabled: Boolean(user) && !isOpdRole && enabled,
     staleTime: 60_000,
   })
@@ -230,16 +239,22 @@ export function useRisikoWizardProgress(enabled = true) {
   const opds = opdResponse || []
 
   const defaultAdminOpdId = (() => {
-    if (selectedOpdId) return selectedOpdId
+    // If selectedOpdId is valid in the loaded OPD list, keep it
+    if (selectedOpdId && opds.some((o) => String(o.id) === String(selectedOpdId))) {
+      return selectedOpdId
+    }
     // If the user has an assigned OPD that exists in the list, prefer it
     if (user?.opd_id && opds.some((o) => String(o.id) === String(user.opd_id))) {
       return String(user.opd_id)
     }
-    // Prefer prominent OPD with data (e.g. DPUTR, Dinkes, Diskominfo) before first index
-    const prioritizedOpd = opds.find((o) =>
-      ['DPUTR', 'Dinkes', 'Diskominfo', 'Disdik'].includes(o.kode)
-    )
-    return prioritizedOpd ? String(prioritizedOpd.id) : (opds[0]?.id ? String(opds[0].id) : '')
+    // For non-auditors, prefer prominent OPD with data (e.g. DPUTR, Dinkes, Diskominfo) before first index
+    if (!isScopedAuditor) {
+      const prioritizedOpd = opds.find((o) =>
+        ['DPUTR', 'Dinkes', 'Diskominfo', 'Disdik'].includes(o.kode)
+      )
+      if (prioritizedOpd) return String(prioritizedOpd.id)
+    }
+    return opds[0]?.id ? String(opds[0].id) : ''
   })()
 
   const effectiveOpdId = isOpdRole
@@ -330,6 +345,7 @@ export function useRisikoWizardProgress(enabled = true) {
   return {
     user,
     isOpdRole,
+    isScopedAuditor,
     opds,
     effectiveOpdId,
     setSelectedOpdId,

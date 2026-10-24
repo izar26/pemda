@@ -113,7 +113,7 @@ class OpdController extends Controller
             $query = Opd::query()->where('is_active', true);
 
             // Auditor-scoped dropdown: only OPDs actively assigned to the logged-in auditor
-            if ($user && $request->boolean('assigned_only') && $user->isScopedAuditor()) {
+            if ($user && $user->isScopedAuditor()) {
                 $query->whereIn('id', $user->activeAssignedOpdIds());
             }
 

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -58,6 +59,7 @@ export function KonteksOperasionalPage() {
   const {
     user,
     isOpdRole,
+    isScopedAuditor,
     opds,
     effectiveOpdId,
     setSelectedOpdId,
@@ -336,6 +338,19 @@ export function KonteksOperasionalPage() {
               </p>
             </div>
           </div>
+        ) : isScopedAuditor && !isLoading && opds.length === 0 ? (
+          <div className='rounded-xl border border-amber-500/30 bg-amber-500/10 p-6 flex items-start gap-4'>
+            <AlertCircle className='h-6 w-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5' />
+            <div className='space-y-1.5 text-xs text-amber-900 dark:text-amber-200'>
+              <p className='font-bold text-sm'>
+                Belum Ada Penugasan OPD Binaan
+              </p>
+              <p className='leading-relaxed'>
+                Akun Auditor Anda belum memiliki penugasan Perangkat Daerah (OPD) aktif dari Inspektorat pada periode ini.
+                Silakan hubungi administrator Inspektorat untuk menambahkan penugasan pembinaan OPD Anda pada menu <strong>Pengawasan &rarr; Penugasan Auditor</strong>.
+              </p>
+            </div>
+          </div>
         ) : isLoading ? (
           <div className='space-y-4'>
             <Skeleton className='h-48 w-full rounded-xl' />
@@ -404,8 +419,13 @@ export function KonteksOperasionalPage() {
                   </div>
 
                   <div className='space-y-1.5'>
-                    <label className='text-xs font-semibold text-muted-foreground'>
-                      OPD yang Dinilai
+                    <label className='text-xs font-semibold text-muted-foreground flex items-center justify-between'>
+                      <span>OPD yang Dinilai</span>
+                      {isScopedAuditor && (
+                        <span className='text-[10px] text-blue-600 dark:text-blue-400 font-medium'>
+                          OPD Binaan Anda ({opds.length})
+                        </span>
+                      )}
                     </label>
                     {isOpdRole ? (
                       <Input
@@ -413,17 +433,22 @@ export function KonteksOperasionalPage() {
                         disabled
                         className='h-9 text-xs bg-muted/60 font-semibold'
                       />
+                    ) : isScopedAuditor && opds.length === 0 ? (
+                      <div className='h-9 px-3 flex items-center rounded-md border border-amber-500/30 bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 truncate'>
+                        Belum ada penugasan OPD binaan
+                      </div>
                     ) : (
                       <SearchableSelect
                         value={effectiveOpdId}
                         onValueChange={(val: string) => setSelectedOpdId(val)}
-                        placeholder='Pilih Perangkat Daerah...'
+                        placeholder={isScopedAuditor ? 'Pilih OPD binaan...' : 'Pilih Perangkat Daerah...'}
                         searchPlaceholder='Cari kode atau nama OPD...'
                         emptyMessage='Perangkat daerah tidak ditemukan.'
                         options={opds.map((opd) => ({
                           value: String(opd.id),
                           label: `${opd.kode} - ${opd.nama}`,
                         }))}
+                        disabled={opds.length === 0}
                       />
                     )}
                   </div>
