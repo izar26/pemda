@@ -171,6 +171,7 @@ export function ReviewRisikoWizard({
 
   const isCurrentApproved = currentItem?.status === 'approved'
   const isCurrentRejected = currentItem?.status === 'rejected'
+  const isDraftSubmission = submission?.status === 'draft'
 
   function handleApprove(formCode: string) {
     reviewMutation.mutate({ formCode, status: 'approved' })
@@ -502,7 +503,7 @@ export function ReviewRisikoWizard({
               type='button'
               variant={isCurrentRejected ? 'secondary' : 'destructive'}
               size='sm'
-              disabled={reviewMutation.isPending}
+              disabled={reviewMutation.isPending || isDraftSubmission}
               onClick={() => handleOpenReject(currentStep.id)}
               className='h-8.5 text-xs gap-1.5'
             >
@@ -513,7 +514,7 @@ export function ReviewRisikoWizard({
             <Button
               type='button'
               size='sm'
-              disabled={reviewMutation.isPending || isCurrentApproved}
+              disabled={reviewMutation.isPending || isCurrentApproved || isDraftSubmission}
               onClick={() => handleApprove(currentStep.id)}
               className='h-8.5 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold'
             >
@@ -526,6 +527,16 @@ export function ReviewRisikoWizard({
             </Button>
           </div>
         </div>
+
+        {/* Draft Notice if OPD has not submitted */}
+        {isDraftSubmission && (
+          <div className='p-3.5 mx-5 sm:mx-6 mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400 text-xs flex items-center gap-2.5'>
+            <Clock className='h-4 w-4 shrink-0 text-amber-600' />
+            <span>
+              Perangkat daerah belum mengirimkan lembar kerja risiko secara resmi (Status: <strong>Draft</strong>). Anda dapat melihat pratinjau data, namun tombol persetujuan baru akan aktif setelah OPD melakukan pengajuan resmi.
+            </span>
+          </div>
+        )}
 
         {/* Existing Auditor Revision Note Alert if Rejected */}
         {isCurrentRejected && currentItem?.catatan_revisi && (
@@ -741,62 +752,90 @@ export function ReviewRisikoWizard({
                   </div>
                 ) : (konteks2C?.programs?.length || 0) > 0 ? (
                   <div className='space-y-3.5'>
-                    {konteks2C?.programs?.map((program: any) => (
-                      <div key={program.id} className='rounded-xl border bg-card p-4 space-y-3 shadow-2xs'>
-                        <div className='flex items-start justify-between gap-3'>
-                          <div className='space-y-0.5'>
-                            <div className='flex items-center gap-2'>
-                              <Badge className='font-mono text-xs bg-primary text-primary-foreground font-semibold'>
-                                NO: {program.kode}
-                              </Badge>
-                              <span className='text-xs font-bold text-foreground'>
-                                PROGRAM: {program.nama}
-                              </span>
-                            </div>
-                            <p className='text-[11px] text-muted-foreground font-mono pl-1'>
-                              Indikator: {program.indikator || '-'} • Target: {program.target || '-'} {program.satuan || ''}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Kegiatan Children */}
-                        {(program.children?.length || 0) > 0 && (
-                          <div className='pl-4 space-y-2.5 border-l-2 border-primary/20'>
-                            {program.children?.map((kegiatan: any) => (
-                              <div key={kegiatan.id} className='p-3 rounded-lg bg-muted/30 border space-y-2'>
-                                <div className='flex items-center justify-between gap-2'>
-                                  <div className='flex items-center gap-2'>
-                                    <Badge variant='outline' className='font-mono text-[11px] bg-background font-semibold'>
-                                      {kegiatan.kode}
-                                    </Badge>
-                                    <span className='text-xs font-semibold text-foreground'>
-                                      KEGIATAN: {kegiatan.nama}
-                                    </span>
-                                  </div>
+                    {konteks2C?.programs?.map((program: any) => {
+                      const pIndikators = program.indikators || []
+                      return (
+                        <div key={program.id} className='rounded-xl border bg-card p-4 space-y-3 shadow-2xs'>
+                          <div className='flex items-start justify-between gap-3'>
+                            <div className='space-y-1 w-full'>
+                              <div className='flex items-center gap-2'>
+                                <Badge className='font-mono text-xs bg-primary text-primary-foreground font-semibold'>
+                                  NO: {program.kode}
+                                </Badge>
+                                <span className='text-xs font-bold text-foreground'>
+                                  PROGRAM: {program.nama}
+                                </span>
+                              </div>
+                              {pIndikators.length > 0 ? (
+                                <div className='space-y-0.5 pl-1'>
+                                  {pIndikators.map((ind: any, indIdx: number) => (
+                                    <p key={ind.id || indIdx} className='text-[11px] text-muted-foreground font-mono'>
+                                      Indikator: <span className='text-foreground font-medium'>{ind.indikator}</span> • Target: <span className='text-foreground font-semibold'>{ind.target} {ind.satuan || ''}</span>
+                                    </p>
+                                  ))}
                                 </div>
+                              ) : (
+                                <p className='text-[11px] text-muted-foreground font-mono pl-1'>
+                                  Indikator: {program.indikator || '-'} • Target: {program.target || '-'} {program.satuan || ''}
+                                </p>
+                              )}
+                            </div>
+                          </div>
 
-                                {/* Sub-kegiatans */}
-                                {(kegiatan.children?.length || 0) > 0 && (
-                                  <div className='pl-3 space-y-1.5 border-l border-border'>
-                                    {kegiatan.children?.map((sub: any) => (
-                                      <div key={sub.id} className='p-2 rounded bg-background border text-[11px] flex items-center justify-between gap-2 shadow-2xs'>
-                                        <div className='flex items-center gap-1.5'>
-                                          <span className='font-mono font-bold text-primary'>{sub.kode}</span>
-                                          <span>{sub.nama}</span>
-                                        </div>
-                                        <span className='text-muted-foreground font-mono text-[10px]'>
-                                          Target: {sub.target || '100'} {sub.satuan || '%'}
+                          {/* Kegiatan Children */}
+                          {(program.children?.length || 0) > 0 && (
+                            <div className='pl-4 space-y-2.5 border-l-2 border-primary/20'>
+                              {program.children?.map((kegiatan: any) => {
+                                const kIndikators = kegiatan.indikators || []
+                                return (
+                                  <div key={kegiatan.id} className='p-3 rounded-lg bg-muted/30 border space-y-2'>
+                                    <div className='flex items-center justify-between gap-2'>
+                                      <div className='flex items-center gap-2'>
+                                        <Badge variant='outline' className='font-mono text-[11px] bg-background font-semibold'>
+                                          {kegiatan.kode}
+                                        </Badge>
+                                        <span className='text-xs font-semibold text-foreground'>
+                                          KEGIATAN: {kegiatan.nama}
                                         </span>
                                       </div>
-                                    ))}
+                                    </div>
+                                    {kIndikators.length > 0 && (
+                                      <div className='space-y-0.5 pl-2 border-l border-muted-foreground/30'>
+                                        {kIndikators.map((ind: any, indIdx: number) => (
+                                          <p key={ind.id || indIdx} className='text-[10px] text-muted-foreground font-mono'>
+                                            Indikator: <span className='text-foreground font-medium'>{ind.indikator}</span> • Target: <span className='text-foreground font-semibold'>{ind.target} {ind.satuan || ''}</span>
+                                          </p>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* Sub-kegiatans */}
+                                    {(kegiatan.children?.length || 0) > 0 && (
+                                      <div className='pl-3 space-y-1.5 border-l border-border'>
+                                        {kegiatan.children?.map((sub: any) => {
+                                          const subInd = sub.indikators?.[0]
+                                          return (
+                                            <div key={sub.id} className='p-2 rounded bg-background border text-[11px] flex items-center justify-between gap-2 shadow-2xs'>
+                                              <div className='flex items-center gap-1.5'>
+                                                <span className='font-mono font-bold text-primary'>{sub.kode}</span>
+                                                <span>{sub.nama}</span>
+                                              </div>
+                                              <span className='text-muted-foreground font-mono text-[10px]'>
+                                                {subInd ? `Target: ${subInd.target} ${subInd.satuan || ''}` : (sub.target ? `Target: ${sub.target} ${sub.satuan || ''}` : '')}
+                                              </span>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className='p-6 rounded-xl border border-dashed text-center text-xs text-muted-foreground'>

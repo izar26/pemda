@@ -28,6 +28,11 @@ class PengajuanRisikoController extends Controller
             $targetOpdId = $user->opd_id;
         }
 
+        // Auditor can only check OPDs they are assigned to
+        if ($user && $user->isScopedAuditor() && !empty($targetOpdId) && !$user->canReadOpdData((string) $targetOpdId)) {
+            abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
+        }
+
         if (empty($targetOpdId)) {
             return response()->json([
                 'data' => null,
