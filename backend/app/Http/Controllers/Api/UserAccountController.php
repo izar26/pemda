@@ -150,11 +150,18 @@ class UserAccountController extends Controller
     }
 
     /**
-     * Assign a new user account to an existing Pegawai.
+     * Assign a new user account to an existing Pegawai or create direct leader/executive account.
      */
     public function store(StoreUserAccountRequest $request): JsonResponse
     {
-        $user = $this->userService->assignUserAccount($request->validated(), $request->user());
+        $validated = $request->validated();
+        $accountType = $validated['account_type'] ?? (!empty($validated['pegawai_id']) ? 'pegawai' : 'direct');
+
+        if ($accountType === 'pegawai' && !empty($validated['pegawai_id'])) {
+            $user = $this->userService->assignUserAccount($validated, $request->user());
+        } else {
+            $user = $this->userService->createDirectUserAccount($validated, $request->user());
+        }
 
         return (new UserResource($user))
             ->response()

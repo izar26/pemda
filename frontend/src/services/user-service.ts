@@ -42,7 +42,15 @@ export interface CheckKepalaOpdResponse {
 }
 
 export interface CreateUserAccountPayload {
-  pegawai_id: string
+  account_type?: 'pegawai' | 'direct'
+  pegawai_id?: string
+  name?: string
+  email?: string
+  nip?: string
+  phone?: string
+  jabatan?: string
+  opd_id?: string
+  pangkat_gol?: string
   role: string
   password: string
   status: 'active' | 'inactive'

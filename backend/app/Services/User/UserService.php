@@ -313,6 +313,61 @@ class UserService
     }
 
     /**
+     * Create a direct user account (e.g. Bupati, Sekda, Executive, or outside civil service registry).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createDirectUserAccount(array $data, ?User $currentUser = null): User
+    {
+        $actor = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+
+        if (($data['role'] ?? '') === 'Superadmin' && !$actor?->hasRole('Superadmin')) {
+            throw ValidationException::withMessages([
+                'role' => ['Peran yang dipilih tidak valid.'],
+            ]);
+        }
+
+        return DB::transaction(function () use ($data, $actor) {
+            $user = User::create([
+                'name' => trim((string) $data['name']),
+                'email' => strtolower(trim((string) $data['email'])),
+                'nip' => !empty($data['nip']) ? preg_replace('/\s+/', '', trim((string) $data['nip'])) : null,
+                'phone' => !empty($data['phone']) ? trim((string) $data['phone']) : null,
+                'opd_id' => !empty($data['opd_id']) ? $data['opd_id'] : null,
+                'pangkat_gol' => !empty($data['pangkat_gol']) ? trim((string) $data['pangkat_gol']) : null,
+                'jabatan' => !empty($data['jabatan']) ? trim((string) $data['jabatan']) : 'Pimpinan Daerah',
+                'role' => $data['role'],
+                'status' => $data['status'] ?? 'active',
+                'password' => Hash::make($data['password']),
+                'email_verified_at' => now(),
+                'failed_login_attempts' => 0,
+                'lockout_until' => null,
+            ]);
+
+            $user->syncRoles([$data['role']]);
+
+            $this->auditLogService->log(
+                action: 'USER_ACCOUNT_CREATED',
+                module: 'Manajemen Users',
+                description: "Membuat akun pengguna langsung ({$user->jabatan}) {$user->name} ({$user->email}) dengan peran {$data['role']}",
+                user: $actor,
+                context: [
+                    'account_type' => 'direct',
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'jabatan' => $user->jabatan,
+                    'role' => $data['role'],
+                    'status' => $data['status'] ?? 'active',
+                ],
+                auditableType: User::class,
+                auditableId: $user->id
+            );
+
+            return $user->load(['roles', 'roles.permissions', 'opd']);
+        });
+    }
+
+    /**
      * Update an existing user account's role, password, and status (active/inactive).
      *
      * @param  array{role: string, status: string, password?: string|null}  $data

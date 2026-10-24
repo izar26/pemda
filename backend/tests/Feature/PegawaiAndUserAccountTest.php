@@ -297,4 +297,64 @@ class PegawaiAndUserAccountTest extends TestCase
             'status' => null,
         ]);
     }
+
+    public function test_can_create_direct_user_account_for_bupati_without_nip(): void
+    {
+        $token = $this->getToken();
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Bupati H. Syamsuddin, S.E., M.Si.',
+                'email' => 'bupati@pemda.go.id',
+                'jabatan' => 'Bupati',
+                'nip' => null,
+                'role' => 'Executive',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.name', 'Bupati H. Syamsuddin, S.E., M.Si.')
+            ->assertJsonPath('data.email', 'bupati@pemda.go.id')
+            ->assertJsonPath('data.jabatan', 'Bupati')
+            ->assertJsonPath('data.nip', null)
+            ->assertJsonPath('data.role', 'Executive')
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.has_account', true);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'bupati@pemda.go.id',
+            'jabatan' => 'Bupati',
+            'nip' => null,
+            'role' => 'Executive',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_can_create_direct_user_account_for_sekda_with_nip(): void
+    {
+        $token = $this->getToken();
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Drs. H. Hendra Wijaya, M.Si.',
+                'email' => 'sekda@pemda.go.id',
+                'jabatan' => 'Sekretaris Daerah',
+                'nip' => '196803151992031004',
+                'opd_id' => $this->opdA->id,
+                'role' => 'Executive',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.name', 'Drs. H. Hendra Wijaya, M.Si.')
+            ->assertJsonPath('data.email', 'sekda@pemda.go.id')
+            ->assertJsonPath('data.jabatan', 'Sekretaris Daerah')
+            ->assertJsonPath('data.nip', '196803151992031004')
+            ->assertJsonPath('data.role', 'Executive')
+            ->assertJsonPath('data.status', 'active');
+    }
 }
