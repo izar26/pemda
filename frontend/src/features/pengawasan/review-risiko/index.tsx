@@ -595,8 +595,8 @@ export function ReviewRisikoManagement() {
                                         if (submission?.id) {
                                           setActiveReview({
                                             submissionId: submission.id,
-                                            opdId: opd.id,
-                                            periodeId: activePeriode?.id || '',
+                                            opdId: submission.opd_id || opd.id,
+                                            periodeId: submission.periode_penilaian_id || activePeriode?.id || '',
                                           })
                                         }
                                       }}

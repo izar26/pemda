@@ -98,24 +98,29 @@ export function ReviewRisikoWizard({
     staleTime: 5_000,
   })
 
+  const effectiveOpdId = submission?.opd_id || opdId
+  const effectivePeriodeId = submission?.periode_penilaian_id || periodeId
+
   // 2. Fetch Form 2B detail
   const { data: konteks2BData, isLoading: isLoading2B } = useQuery({
-    queryKey: ['risiko-2b-detail', opdId, periodeId],
+    queryKey: ['risiko-2b-detail', effectiveOpdId, effectivePeriodeId],
     queryFn: () =>
       risikoService.getCurrentKonteksWithMeta({
-        opd_id: opdId,
-        periode_penilaian_id: periodeId,
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: effectivePeriodeId,
       }),
+    enabled: Boolean(effectiveOpdId),
   })
 
   // 3. Fetch Form 2C detail
   const { data: konteks2CData, isLoading: isLoading2C } = useQuery({
-    queryKey: ['risiko-2c-detail', opdId, periodeId],
+    queryKey: ['risiko-2c-detail', effectiveOpdId, effectivePeriodeId],
     queryFn: () =>
       risikoService.getCurrentKonteksOperasional({
-        opd_id: opdId,
-        periode_penilaian_id: periodeId,
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: effectivePeriodeId,
       }),
+    enabled: Boolean(effectiveOpdId),
   })
 
   // Review mutation (Approve / Reject item)
@@ -569,13 +574,29 @@ export function ReviewRisikoWizard({
                 <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Sumber Dokumen Data:</span>
                   <p className='font-bold text-xs text-foreground'>
-                    {konteks2B?.sumber_data?.nama || 'Renstra OPD (2026-2030)'}
+                    {isLoading2B ? (
+                      <span className='flex items-center gap-1.5 text-muted-foreground'>
+                        <Loader2 className='h-3.5 w-3.5 animate-spin text-primary' />
+                        Memuat...
+                      </span>
+                    ) : (
+                      konteks2B?.sumber_data?.nama || '-'
+                    )}
                   </p>
                 </div>
                 <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1 sm:col-span-2'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Tujuan Penilaian Risiko:</span>
                   <p className='font-bold text-xs text-foreground'>
-                    {konteks2B?.tujuan?.tujuan || 'Pencapaian Target Sasaran Strategis Daerah secara Akuntabel'}
+                    {isLoading2B ? (
+                      <span className='flex items-center gap-1.5 text-muted-foreground'>
+                        <Loader2 className='h-3.5 w-3.5 animate-spin text-primary' />
+                        Memuat...
+                      </span>
+                    ) : konteks2B?.tujuan ? (
+                      `${konteks2B.tujuan.kode_tujuan ? `[${konteks2B.tujuan.kode_tujuan}] ` : ''}${konteks2B.tujuan.tujuan}`
+                    ) : (
+                      '-'
+                    )}
                   </p>
                 </div>
               </div>
@@ -594,40 +615,65 @@ export function ReviewRisikoWizard({
                   </div>
                 ) : (konteks2B?.sasarans?.length || 0) > 0 ? (
                   <div className='space-y-3'>
-                    {konteks2B?.sasarans?.map((sasaran: any, sIdx: number) => (
-                      <div key={sasaran.id || sIdx} className='rounded-xl border bg-muted/10 p-4 space-y-3'>
-                        <div className='flex items-start justify-between gap-3'>
-                          <div className='space-y-0.5'>
-                            <span className='text-[10px] font-mono font-bold text-primary'>
-                              SASARAN #{sIdx + 1}
-                            </span>
-                            <p className='text-xs font-bold text-foreground'>
-                              {sasaran.sasaran?.sasaran || sasaran.nama || 'Peningkatan Kualitas dan Pelayanan OPD'}
-                            </p>
-                          </div>
-                        </div>
+                    {konteks2B?.sasarans?.map((sasaran: any, sIdx: number) => {
+                      const sasaranIndikators = (konteks2B?.indikators || []).filter(
+                        (ind: any) =>
+                          ind.sasaran_penilaian_id === sasaran.id ||
+                          ind.sasaran_id === sasaran.id
+                      )
 
-                        {/* Indikator Sub-table */}
-                        <div className='space-y-1.5 pl-3 border-l-2 border-primary/30'>
-                          <span className='text-[11px] font-semibold text-muted-foreground block'>
-                            Indikator Kinerja Sasaran:
-                          </span>
-                          <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs'>
-                            {konteks2B?.indikators
-                              ?.filter((ind: any) => ind.sasaran_id === sasaran.id)
-                              .map((ind: any, iIdx: number) => (
-                                <div key={ind.id || iIdx} className='p-2.5 rounded-lg bg-background border text-[11px] space-y-1 shadow-2xs'>
-                                  <p className='font-medium text-foreground'>{ind.indikator?.indikator || ind.nama || `Indikator #${iIdx + 1}`}</p>
-                                  <div className='flex items-center justify-between text-muted-foreground font-mono text-[10px] pt-1 border-t'>
-                                    <span>Target: <strong className='text-foreground'>{ind.target || '100%'} {ind.satuan || ''}</strong></span>
-                                    <span>Polaritas: <strong className='text-foreground'>{ind.polaritas || 'Positif'}</strong></span>
+                      return (
+                        <div key={sasaran.id || sIdx} className='rounded-xl border bg-muted/10 p-4 space-y-3'>
+                          <div className='flex items-start justify-between gap-3'>
+                            <div className='space-y-0.5'>
+                              <span className='text-[10px] font-mono font-bold text-primary'>
+                                {sasaran.kode_sasaran || `SASARAN #${sIdx + 1}`}
+                              </span>
+                              <p className='text-xs font-bold text-foreground'>
+                                {sasaran.sasaran || sasaran.nama || '-'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Indikator Sub-table */}
+                          <div className='space-y-1.5 pl-3 border-l-2 border-primary/30'>
+                            <span className='text-[11px] font-semibold text-muted-foreground block'>
+                              Indikator Kinerja Sasaran:
+                            </span>
+                            {sasaranIndikators.length > 0 ? (
+                              <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs'>
+                                {sasaranIndikators.map((ind: any, iIdx: number) => (
+                                  <div key={ind.id || iIdx} className='p-2.5 rounded-lg bg-background border text-[11px] space-y-1 shadow-2xs'>
+                                    <div className='flex items-center gap-1.5'>
+                                      {ind.kode_indikator && (
+                                        <Badge variant='outline' className='font-mono text-[9px] px-1 py-0 bg-muted/30'>
+                                          {ind.kode_indikator}
+                                        </Badge>
+                                      )}
+                                      <p className='font-medium text-foreground'>
+                                        {ind.indikator || ind.nama || `Indikator #${iIdx + 1}`}
+                                      </p>
+                                    </div>
+                                    <div className='flex items-center justify-between text-muted-foreground font-mono text-[10px] pt-1 border-t'>
+                                      <span>Target: <strong className='text-foreground'>{ind.target || '-'} {ind.satuan || ''}</strong></span>
+                                      {ind.jenis ? (
+                                        <span>Jenis: <strong className='text-foreground'>{ind.jenis}</strong></span>
+                                      ) : ind.polaritas ? (
+                                        <span>Polaritas: <strong className='text-foreground'>{ind.polaritas}</strong></span>
+                                      ) : null}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
+                            ) : (
+                              <p className='text-[11px] text-muted-foreground italic'>
+                                Belum ada indikator yang terhubung dengan sasaran ini.
+                              </p>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className='p-6 rounded-xl border border-dashed text-center text-xs text-muted-foreground'>

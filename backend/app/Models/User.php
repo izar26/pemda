@@ -173,11 +173,18 @@ class User extends Authenticatable
      */
     public function activeAssignedOpdIds(): array
     {
-        return AuditorOpdAssignment::where('auditor_id', $this->id)
+        $fromAssignment = AuditorOpdAssignment::where('auditor_id', $this->id)
             ->where('is_active', true)
             ->pluck('opd_id')
             ->map(fn ($id) => (string) $id)
             ->all();
+
+        $fromSubmission = \App\Models\Risiko\PengajuanPenilaianRisiko::where('auditor_id', $this->id)
+            ->pluck('opd_id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        return array_values(array_unique(array_merge($fromAssignment, $fromSubmission)));
     }
 
     /**

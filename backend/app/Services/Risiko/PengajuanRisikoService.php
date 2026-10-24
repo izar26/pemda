@@ -295,9 +295,7 @@ class PengajuanRisikoService
         // Scope to auditor's assigned OPDs if role is Auditor (and not Superadmin / Inspektorat)
         $isSpecialAdmin = $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
         if (!$isSpecialAdmin && $user->hasRole('Auditor')) {
-            $assignedOpdIds = AuditorOpdAssignment::where('auditor_id', $user->id)
-                ->where('is_active', true)
-                ->pluck('opd_id');
+            $assignedOpdIds = $user->activeAssignedOpdIds();
 
             $query->whereIn('id', $assignedOpdIds);
         }
@@ -391,7 +389,7 @@ class PengajuanRisikoService
             $hasAssignment = AuditorOpdAssignment::where('auditor_id', $user->id)
                 ->where('opd_id', $submission->opd_id)
                 ->where('is_active', true)
-                ->exists();
+                ->exists() || ($submission->auditor_id === $user->id);
 
             if (!$hasAssignment) {
                 abort(403, 'Anda tidak ditugaskan sebagai auditor pengawas untuk perangkat daerah ini.');
@@ -458,7 +456,7 @@ class PengajuanRisikoService
             $hasAssignment = AuditorOpdAssignment::where('auditor_id', $auditorUser->id)
                 ->where('opd_id', $submission->opd_id)
                 ->where('is_active', true)
-                ->exists();
+                ->exists() || ($submission->auditor_id === $auditorUser->id);
 
             if (!$hasAssignment) {
                 abort(403, 'Anda tidak memiliki hak akses untuk memeriksa perangkat daerah ini.');
