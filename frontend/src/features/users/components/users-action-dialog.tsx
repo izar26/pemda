@@ -100,7 +100,7 @@ const userAccountFormSchema = z
       return Boolean(data.name && data.name.trim().length >= 3)
     },
     {
-      message: 'Nama lengkap pimpinan / pengguna wajib diisi (min. 3 karakter).',
+      message: 'Nama lengkap wajib diisi minimal 3 karakter.',
       path: ['name'],
     }
   )
@@ -111,7 +111,7 @@ const userAccountFormSchema = z
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)
     },
     {
-      message: 'Email dinas / login yang valid wajib diisi.',
+      message: 'Email yang valid wajib diisi.',
       path: ['email'],
     }
   )
@@ -121,7 +121,7 @@ const userAccountFormSchema = z
       return Boolean(data.jabatan && data.jabatan.trim().length > 0)
     },
     {
-      message: 'Jabatan wajib diisi (contoh: Bupati, Wakil Bupati, Sekretaris Daerah).',
+      message: 'Jabatan wajib diisi (contoh: Bupati, Sekda).',
       path: ['jabatan'],
     }
   )
@@ -364,14 +364,11 @@ export function UsersActionDialog({
           nip: data.nip || undefined,
           phone: data.phone || undefined,
           jabatan: data.jabatan,
-          opd_id: data.opd_id && data.opd_id !== 'all' ? data.opd_id : undefined,
           role: data.role,
           password: data.password!,
           status: data.status,
         })
-        toast.success(
-          `Akun pimpinan "${createdUser.name}" (${data.jabatan || 'Executive'}) berhasil dibuat.`
-        )
+        toast.success(`Akun "${createdUser.name}" berhasil dibuat.`)
       } else {
         await userService.createUserAccount({
           account_type: 'pegawai',
@@ -414,7 +411,7 @@ export function UsersActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+      <DialogContent className='sm:max-w-lg max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
         {/* Pinned Header */}
         <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <div className='flex items-center gap-3'>
@@ -422,7 +419,7 @@ export function UsersActionDialog({
               {isEdit ? (
                 <UserCheck className='h-5 w-5' />
               ) : watchedAccountType === 'direct' ? (
-                <Crown className='h-5 w-5 text-amber-600 dark:text-amber-400' />
+                <Crown className='h-5 w-5 text-primary' />
               ) : (
                 <UserPlus className='h-5 w-5' />
               )}
@@ -432,15 +429,15 @@ export function UsersActionDialog({
                 {isEdit
                   ? `Edit Akun User: ${currentRow?.name}`
                   : watchedAccountType === 'direct'
-                  ? 'Tambah Akun Eksekutif / Pimpinan Daerah'
-                  : 'Tambah Akun User Pegawai'}
+                  ? 'Tambah Akun Pimpinan Daerah'
+                  : 'Tambah Akun Pegawai'}
               </DialogTitle>
               <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
                 {isEdit
-                  ? 'Perbarui peran akses (RBAC), kata sandi, atau status aktif akun login pegawai.'
+                  ? 'Perbarui peran akses (RBAC), kata sandi, atau status aktif akun.'
                   : watchedAccountType === 'direct'
-                  ? 'Buat akun langsung untuk Bupati, Wakil Bupati, Sekda, atau pimpinan daerah tanpa terikat data pegawai ASN.'
-                  : 'Pilih OPD dan pegawai terlebih dahulu untuk memberikan akses akun login ke sistem.'}
+                  ? 'Form akun untuk Bupati, Wakil Bupati, Sekda, dll.'
+                  : 'Pilih OPD dan pegawai untuk memberikan akses akun login.'}
               </DialogDescription>
             </div>
           </div>
@@ -454,9 +451,9 @@ export function UsersActionDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4'
             >
-              {/* Selector Mode Pembuatan Akun (Hanya di mode Tambah) */}
+              {/* Selector Mode Pembuatan Akun */}
               {!isEdit && (
-                <div className='p-1 bg-muted/60 rounded-xl grid grid-cols-2 gap-1 border text-xs'>
+                <div className='p-1 bg-muted/60 rounded-lg grid grid-cols-2 gap-1 border text-xs'>
                   <button
                     type='button'
                     onClick={() => {
@@ -464,14 +461,14 @@ export function UsersActionDialog({
                       form.clearErrors()
                     }}
                     className={cn(
-                      'flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-all text-xs cursor-pointer',
+                      'flex items-center justify-center gap-2 py-1.5 px-3 rounded-md font-medium transition-all text-xs cursor-pointer',
                       watchedAccountType === 'pegawai'
                         ? 'bg-background text-foreground shadow-2xs font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
                     <Users className='h-3.5 w-3.5' />
-                    <span>Dari Pegawai OPD (ASN)</span>
+                    <span>Pegawai OPD</span>
                   </button>
                   <button
                     type='button'
@@ -480,34 +477,30 @@ export function UsersActionDialog({
                       form.clearErrors()
                     }}
                     className={cn(
-                      'flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-all text-xs cursor-pointer',
+                      'flex items-center justify-center gap-2 py-1.5 px-3 rounded-md font-medium transition-all text-xs cursor-pointer',
                       watchedAccountType === 'direct'
                         ? 'bg-background text-foreground shadow-2xs font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <Crown className='h-3.5 w-3.5 text-amber-600 dark:text-amber-400' />
-                    <span>Akun Eksekutif / Pimpinan</span>
+                    <Crown className='h-3.5 w-3.5 text-primary' />
+                    <span>Pimpinan Daerah</span>
                   </button>
                 </div>
               )}
 
-              {/* JIKA MODE 1: DARI PEGAWAI OPD (ASN) */}
+              {/* JIKA MODE 1: PEGAWAI OPD */}
               {!isEdit && watchedAccountType === 'pegawai' && (
                 <>
-                  {/* 1. Pilih OPD Terlebih Dahulu */}
+                  {/* Pilih OPD */}
                   <FormField
                     control={form.control}
                     name='opd_id'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                          <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
-                            1
-                          </span>
                           <Building2 className='h-3.5 w-3.5 text-muted-foreground' />
-                          Pilih Perangkat Daerah (OPD){' '}
-                          <span className='text-destructive'>*</span>
+                          Perangkat Daerah (OPD) <span className='text-destructive'>*</span>
                         </FormLabel>
                         <FormControl>
                           <SearchableSelect
@@ -523,7 +516,7 @@ export function UsersActionDialog({
                             placeholder={
                               isLoadingOpds
                                 ? 'Memuat daftar OPD...'
-                                : 'Pilih perangkat daerah untuk memfilter pegawai...'
+                                : 'Pilih perangkat daerah...'
                             }
                             searchPlaceholder='Cari nama atau kode OPD...'
                             emptyMessage='Tidak ada perangkat daerah yang cocok.'
@@ -534,16 +527,13 @@ export function UsersActionDialog({
                     )}
                   />
 
-                  {/* 2. Pilih Pegawai */}
+                  {/* Pilih Pegawai */}
                   <FormField
                     control={form.control}
                     name='pegawai_id'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                          <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
-                            2
-                          </span>
                           <Users className='h-3.5 w-3.5 text-muted-foreground' />
                           Pilih Pegawai <span className='text-destructive'>*</span>
                         </FormLabel>
@@ -559,12 +549,12 @@ export function UsersActionDialog({
                             options={pegawaiOptions}
                             placeholder={
                               !watchedOpdId
-                                ? 'Pilih OPD terlebih dahulu di langkah 1...'
+                                ? 'Pilih OPD terlebih dahulu...'
                                 : isLoadingPegawai
-                                  ? 'Memuat daftar pegawai OPD...'
+                                  ? 'Memuat daftar pegawai...'
                                   : availablePegawaiList.length === 0
-                                    ? 'Semua pegawai di OPD ini sudah memiliki akun / belum ada data'
-                                    : 'Pilih pegawai yang akan diberikan akun...'
+                                    ? 'Semua pegawai di OPD ini sudah memiliki akun'
+                                    : 'Pilih pegawai...'
                             }
                             searchPlaceholder='Cari nama atau NIP pegawai...'
                             emptyMessage='Tidak ada pegawai tanpa akun pada OPD ini.'
@@ -577,52 +567,42 @@ export function UsersActionDialog({
                 </>
               )}
 
-              {/* JIKA MODE 2: AKUN EKSEKUTIF / PIMPINAN (Bupati / Sekda) */}
+              {/* JIKA MODE 2: PIMPINAN DAERAH (Bupati / Sekda) */}
               {!isEdit && watchedAccountType === 'direct' && (
-                <div className='space-y-3.5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 text-xs'>
-                  <div className='flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300'>
-                    <Crown className='h-4 w-4 text-amber-600 shrink-0' />
-                    <span>Profil Pimpinan Daerah / Akun Eksekutif</span>
-                  </div>
-                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
-                    Akun ini ditujukan untuk Kepala Daerah (Bupati/Wakil Bupati) atau Pejabat Utama (Sekda) tanpa perlu mendaftarkan ke data pegawai ASN dinas terlebih dahulu.
-                  </p>
+                <div className='space-y-3.5'>
+                  <FormField
+                    control={form.control}
+                    name='name'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-semibold'>
+                          Nama Lengkap <span className='text-destructive'>*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder='Nama lengkap pimpinan...'
+                            disabled={isSubmitting}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
 
-                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1'>
-                    {/* Nama Lengkap */}
-                    <FormField
-                      control={form.control}
-                      name='name'
-                      render={({ field }) => (
-                        <FormItem className='sm:col-span-2'>
-                          <FormLabel className='text-xs font-semibold'>
-                            Nama Lengkap Pimpinan <span className='text-destructive'>*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='contoh: H. Syamsuddin, S.E., M.Si (atau Bupati ...)'
-                              disabled={isSubmitting}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className='text-xs' />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Email Login */}
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                     <FormField
                       control={form.control}
                       name='email'
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className='text-xs font-semibold'>
-                            Email Login Resmi <span className='text-destructive'>*</span>
+                            Email <span className='text-destructive'>*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
                               type='email'
-                              placeholder='contoh: bupati@pemda.go.id'
+                              placeholder='email@pemda.go.id'
                               disabled={isSubmitting}
                               {...field}
                             />
@@ -632,53 +612,39 @@ export function UsersActionDialog({
                       )}
                     />
 
-                    {/* Jabatan */}
                     <FormField
                       control={form.control}
                       name='jabatan'
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className='text-xs font-semibold'>
-                            Jabatan Resmi <span className='text-destructive'>*</span>
+                            Jabatan <span className='text-destructive'>*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder='contoh: Bupati / Sekda / Wakil Bupati'
+                              placeholder='Bupati, Sekda, dll.'
                               disabled={isSubmitting}
                               {...field}
                             />
                           </FormControl>
-                          <div className='flex items-center gap-1 flex-wrap pt-1'>
-                            <span className='text-[10px] text-muted-foreground'>Cepat:</span>
-                            {['Bupati', 'Wakil Bupati', 'Sekretaris Daerah'].map((item) => (
-                              <button
-                                key={item}
-                                type='button'
-                                onClick={() => form.setValue('jabatan', item, { shouldValidate: true })}
-                                className='text-[10px] px-1.5 py-0.5 rounded border bg-background hover:bg-muted text-muted-foreground hover:text-foreground font-medium cursor-pointer transition-colors'
-                              >
-                                {item}
-                              </button>
-                            ))}
-                          </div>
                           <FormMessage className='text-xs' />
                         </FormItem>
                       )}
                     />
+                  </div>
 
-                    {/* NIP (Opsional) */}
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                     <FormField
                       control={form.control}
                       name='nip'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className='text-xs font-semibold flex items-center justify-between'>
-                            <span>NIP (Nomor Induk Pegawai)</span>
-                            <span className='text-[10px] font-normal text-muted-foreground font-mono'>Opsional</span>
+                          <FormLabel className='text-xs font-semibold'>
+                            NIP <span className='text-muted-foreground font-normal'>(Opsional)</span>
                           </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder='Kosongkan jika non-ASN (Bupati/Wabup)'
+                              placeholder='Nomor Induk Pegawai...'
                               disabled={isSubmitting}
                               {...field}
                             />
@@ -688,15 +654,13 @@ export function UsersActionDialog({
                       )}
                     />
 
-                    {/* Nomor Telepon (Opsional) */}
                     <FormField
                       control={form.control}
                       name='phone'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className='text-xs font-semibold flex items-center justify-between'>
-                            <span>Nomor Telepon / WhatsApp</span>
-                            <span className='text-[10px] font-normal text-muted-foreground font-mono'>Opsional</span>
+                          <FormLabel className='text-xs font-semibold'>
+                            No. Telepon <span className='text-muted-foreground font-normal'>(Opsional)</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -705,43 +669,6 @@ export function UsersActionDialog({
                               {...field}
                             />
                           </FormControl>
-                          <FormMessage className='text-xs' />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Unit Kerja / Instansi Naungan (Opsional) */}
-                    <FormField
-                      control={form.control}
-                      name='opd_id'
-                      render={({ field }) => (
-                        <FormItem className='sm:col-span-2'>
-                          <FormLabel className='text-xs font-semibold flex items-center justify-between'>
-                            <span>Unit Kerja / Instansi Naungan</span>
-                            <span className='text-[10px] font-normal text-muted-foreground font-mono'>Opsional</span>
-                          </FormLabel>
-                          <FormControl>
-                            <SearchableSelect
-                              disabled={isSubmitting || isLoadingOpds}
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              options={[
-                                {
-                                  value: 'all',
-                                  label: 'Pemerintah Daerah (Seluruh Wilayah Pemda / Tanpa Batas OPD)',
-                                  group: 'Tingkat Daerah',
-                                  badge: 'Pemda',
-                                },
-                                ...opdOptions,
-                              ]}
-                              placeholder='Pilih instansi (contoh: Sekretariat Daerah) atau biarkan kosong...'
-                              searchPlaceholder='Cari OPD...'
-                              emptyMessage='Tidak ada perangkat daerah yang cocok.'
-                            />
-                          </FormControl>
-                          <p className='text-[10px] text-muted-foreground'>
-                            Untuk Bupati, biarkan default/kosong (Tingkat Daerah). Untuk Sekda, dapat memilih <strong>Sekretariat Daerah</strong>.
-                          </p>
                           <FormMessage className='text-xs' />
                         </FormItem>
                       )}
@@ -799,14 +726,8 @@ export function UsersActionDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                      {!isEdit && (
-                        <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
-                          {watchedAccountType === 'direct' ? '2' : '3'}
-                        </span>
-                      )}
                       <Shield className='h-3.5 w-3.5 text-muted-foreground' />
-                      Pilih Peran (Role RBAC){' '}
-                      <span className='text-destructive'>*</span>
+                      Peran (Role) <span className='text-destructive'>*</span>
                     </FormLabel>
                     <Select
                       disabled={isSubmitting || isLoadingRoles}
@@ -842,13 +763,8 @@ export function UsersActionDialog({
               <div className='space-y-1.5'>
                 <div className='flex items-center justify-between'>
                   <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                    {!isEdit && (
-                      <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
-                        {watchedAccountType === 'direct' ? '3' : '4'}
-                      </span>
-                    )}
                     <KeyRound className='h-3.5 w-3.5 text-muted-foreground' />
-                    {isEdit ? 'Ubah Kata Sandi (Opsional)' : 'Masukkan Kata Sandi'}{' '}
+                    {isEdit ? 'Ubah Kata Sandi (Opsional)' : 'Kata Sandi'}{' '}
                     {!isEdit && <span className='text-destructive'>*</span>}
                   </FormLabel>
                   <Button
@@ -859,7 +775,7 @@ export function UsersActionDialog({
                     className='text-[11px] h-6 text-primary hover:text-primary gap-1 px-1.5'
                   >
                     <Sparkles className='h-3 w-3' />
-                    {copiedPassword ? 'Tersalin!' : 'Acak Kata Sandi Kuat'}
+                    {copiedPassword ? 'Tersalin!' : 'Acak Kata Sandi'}
                   </Button>
                 </div>
 
@@ -932,12 +848,7 @@ export function UsersActionDialog({
                 name='status'
                 render={({ field }) => (
                   <FormItem className='space-y-2 pt-1'>
-                    <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                      {!isEdit && (
-                        <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary'>
-                          {watchedAccountType === 'direct' ? '4' : '5'}
-                        </span>
-                      )}
+                    <FormLabel className='text-xs font-semibold'>
                       Status Akun <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
