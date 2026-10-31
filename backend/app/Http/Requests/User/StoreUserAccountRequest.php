@@ -26,6 +26,13 @@ class StoreUserAccountRequest extends FormRequest
             $merge['account_type'] = !empty($this->pegawai_id) ? 'pegawai' : 'direct';
         }
 
+        $accountType = $merge['account_type'] ?? $this->account_type;
+        if ($accountType === 'direct') {
+            if (!$this->has('role') || empty($this->role)) {
+                $merge['role'] = 'Executive';
+            }
+        }
+
         if ($this->has('email') && is_string($this->email)) {
             $merge['email'] = strtolower(trim($this->email));
         }
@@ -92,7 +99,8 @@ class StoreUserAccountRequest extends FormRequest
             $rules['email'] = ['required', 'string', 'email', 'max:100', 'unique:users,email'];
             $rules['nip'] = ['nullable', 'string', 'max:30', 'unique:users,nip'];
             $rules['phone'] = ['nullable', 'string', 'max:20'];
-            $rules['jabatan'] = ['required', 'string', 'max:150'];
+            $rules['jabatan'] = ['required', 'string', 'in:Bupati,Sekda,Sekretaris Daerah'];
+            $rules['role'] = ['required', 'string', 'in:Executive'];
             $rules['opd_id'] = ['nullable', 'string', 'uuid', Rule::exists('opds', 'id')->where('is_active', true)];
             $rules['pangkat_gol'] = ['nullable', 'string', 'max:60'];
         }
@@ -130,6 +138,8 @@ class StoreUserAccountRequest extends FormRequest
             'email.unique' => 'Email ini sudah terdaftar pada pengguna lain.',
             'nip.unique' => 'NIP ini sudah terdaftar pada pengguna lain.',
             'jabatan.required' => 'Jabatan wajib diisi (contoh: Bupati, Wakil Bupati, Sekretaris Daerah).',
+            'jabatan.in' => 'Jabatan pimpinan daerah hanya boleh dipilih antara Bupati atau Sekda.',
+            'role.in' => 'Peran akun pimpinan daerah harus Executive.',
             'role.required' => 'Peran (Role) wajib dipilih.',
             'role.exists' => 'Peran yang dipilih tidak ditemukan dalam sistem.',
             'status.required' => 'Status akun wajib dipilih.',

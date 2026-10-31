@@ -118,10 +118,10 @@ const userAccountFormSchema = z
   .refine(
     (data) => {
       if (data.isEdit || data.account_type !== 'direct') return true
-      return Boolean(data.jabatan && data.jabatan.trim().length > 0)
+      return Boolean(data.jabatan && ['Bupati', 'Sekda'].includes(data.jabatan))
     },
     {
-      message: 'Jabatan wajib diisi (contoh: Bupati, Sekda).',
+      message: 'Jabatan pimpinan daerah wajib dipilih (Bupati atau Sekda).',
       path: ['jabatan'],
     }
   )
@@ -316,6 +316,22 @@ export function UsersActionDialog({
     }
   }, [open, currentRow, form])
 
+  // Automatically enforce Executive role and default Bupati jabatan for Pemimpin Daerah
+  useEffect(() => {
+    if (open && !isEdit && watchedAccountType === 'direct') {
+      if (form.getValues('role') !== 'Executive') {
+        form.setValue('role', 'Executive', { shouldValidate: true })
+      }
+      const curJabatan = form.getValues('jabatan')
+      if (!curJabatan || !['Bupati', 'Sekda'].includes(curJabatan)) {
+        form.setValue('jabatan', 'Bupati', { shouldValidate: true })
+      }
+      if (form.getValues('nip')) {
+        form.setValue('nip', '')
+      }
+    }
+  }, [open, isEdit, watchedAccountType, form])
+
   // Generator for strong passwords
   function generateSecurePassword() {
     const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
@@ -361,10 +377,9 @@ export function UsersActionDialog({
           account_type: 'direct',
           name: data.name,
           email: data.email,
-          nip: data.nip || undefined,
           phone: data.phone || undefined,
           jabatan: data.jabatan,
-          role: data.role,
+          role: 'Executive',
           password: data.password!,
           status: data.status,
         })
@@ -458,6 +473,10 @@ export function UsersActionDialog({
                     type='button'
                     onClick={() => {
                       form.setValue('account_type', 'pegawai')
+                      if (form.getValues('role') === 'Executive') {
+                        form.setValue('role', '')
+                      }
+                      form.setValue('jabatan', '')
                       form.clearErrors()
                     }}
                     className={cn(
@@ -474,6 +493,11 @@ export function UsersActionDialog({
                     type='button'
                     onClick={() => {
                       form.setValue('account_type', 'direct')
+                      form.setValue('role', 'Executive', { shouldValidate: true })
+                      if (!['Bupati', 'Sekda'].includes(form.getValues('jabatan') || '')) {
+                        form.setValue('jabatan', 'Bupati', { shouldValidate: true })
+                      }
+                      form.setValue('nip', '')
                       form.clearErrors()
                     }}
                     className={cn(
@@ -620,60 +644,56 @@ export function UsersActionDialog({
                           <FormLabel className='text-xs font-semibold'>
                             Jabatan <span className='text-destructive'>*</span>
                           </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='Bupati, Sekda, dll.'
-                              disabled={isSubmitting}
-                              {...field}
-                            />
-                          </FormControl>
+                          <Select
+                            disabled={isSubmitting}
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className='w-full'>
+                                <SelectValue placeholder='Pilih Jabatan (Bupati / Sekda)...' />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value='Bupati'>
+                                <div className='flex items-center gap-2'>
+                                  <Crown className='h-3.5 w-3.5 text-amber-500' />
+                                  <span>Bupati</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value='Sekda'>
+                                <div className='flex items-center gap-2'>
+                                  <Award className='h-3.5 w-3.5 text-blue-500' />
+                                  <span>Sekda</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage className='text-xs' />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                    <FormField
-                      control={form.control}
-                      name='nip'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-xs font-semibold'>
-                            NIP <span className='text-muted-foreground font-normal'>(Opsional)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='Nomor Induk Pegawai...'
-                              disabled={isSubmitting}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className='text-xs' />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name='phone'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className='text-xs font-semibold'>
-                            No. Telepon <span className='text-muted-foreground font-normal'>(Opsional)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder='08xxxxxxxxxx'
-                              disabled={isSubmitting}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className='text-xs' />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name='phone'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-xs font-semibold'>
+                          No. Telepon <span className='text-muted-foreground font-normal'>(Opsional)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder='08xxxxxxxxxx'
+                            disabled={isSubmitting}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='text-xs' />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               )}
 
@@ -719,20 +739,27 @@ export function UsersActionDialog({
                 </div>
               )}
 
-              {/* PILIH ROLE RBAC (Bebas dipilih oleh user, TIDAK otomatis) */}
+              {/* PILIH ROLE RBAC (Bebas dipilih untuk Pegawai, Dikunci ke Executive untuk Pimpinan Daerah) */}
               <FormField
                 control={form.control}
                 name='role'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='text-xs font-semibold flex items-center gap-1.5'>
-                      <Shield className='h-3.5 w-3.5 text-muted-foreground' />
-                      Peran (Role) <span className='text-destructive'>*</span>
+                    <FormLabel className='text-xs font-semibold flex items-center justify-between'>
+                      <div className='flex items-center gap-1.5'>
+                        <Shield className='h-3.5 w-3.5 text-muted-foreground' />
+                        <span>Peran (Role)</span> <span className='text-destructive'>*</span>
+                      </div>
+                      {watchedAccountType === 'direct' && !isEdit && (
+                        <Badge variant='outline' className='text-[10px] font-mono py-0 px-1.5 border-primary/30 bg-primary/10 text-primary'>
+                          Terkunci: Executive
+                        </Badge>
+                      )}
                     </FormLabel>
                     <Select
-                      disabled={isSubmitting || isLoadingRoles}
+                      disabled={isSubmitting || isLoadingRoles || (!isEdit && watchedAccountType === 'direct')}
                       onValueChange={field.onChange}
-                      value={field.value}
+                      value={!isEdit && watchedAccountType === 'direct' ? 'Executive' : field.value}
                     >
                       <FormControl>
                         <SelectTrigger className='w-full'>
@@ -754,6 +781,11 @@ export function UsersActionDialog({
                         ))}
                       </SelectContent>
                     </Select>
+                    {watchedAccountType === 'direct' && !isEdit && (
+                      <p className='text-[11px] text-muted-foreground'>
+                        Peran otomatis dikunci ke <strong>Executive</strong> untuk akun pimpinan daerah.
+                      </p>
+                    )}
                     <FormMessage className='text-xs' />
                   </FormItem>
                 )}

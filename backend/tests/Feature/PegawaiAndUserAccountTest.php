@@ -357,4 +357,61 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonPath('data.role', 'Executive')
             ->assertJsonPath('data.status', 'active');
     }
+
+    public function test_direct_user_account_rejects_invalid_jabatan_or_role(): void
+    {
+        $token = $this->getToken();
+
+        // 1. Invalid Jabatan (must be Bupati or Sekda)
+        $response1 = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Pejabat Non Pemimpin',
+                'email' => 'invalid.jabatan@pemda.go.id',
+                'jabatan' => 'Kepala Seksi',
+                'role' => 'Executive',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+
+        $response1->assertUnprocessable()
+            ->assertJsonValidationErrors(['jabatan']);
+
+        // 2. Invalid Role (must be Executive)
+        $response2 = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Bupati Test Role',
+                'email' => 'invalid.role@pemda.go.id',
+                'jabatan' => 'Bupati',
+                'role' => 'Auditor',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+
+        $response2->assertUnprocessable()
+            ->assertJsonValidationErrors(['role']);
+    }
+
+    public function test_can_create_direct_user_account_for_sekda_without_nip(): void
+    {
+        $token = $this->getToken();
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Sekda Tanpa NIP',
+                'email' => 'sekda.nonip@pemda.go.id',
+                'jabatan' => 'Sekda',
+                'role' => 'Executive',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.name', 'Sekda Tanpa NIP')
+            ->assertJsonPath('data.jabatan', 'Sekda')
+            ->assertJsonPath('data.nip', null)
+            ->assertJsonPath('data.role', 'Executive');
+    }
 }
