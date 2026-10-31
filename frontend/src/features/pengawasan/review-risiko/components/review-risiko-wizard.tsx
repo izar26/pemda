@@ -21,7 +21,6 @@ import {
   Send,
   Shield,
   ShieldAlert,
-  Sparkles,
   Target,
   TrendingUp,
   User,
@@ -64,14 +63,6 @@ interface ReviewRisikoWizardProps {
   onBack: () => void
   onSuccess?: () => void
 }
-
-const PRESET_REJECTION_REASONS = [
-  'Target indikator belum terukur secara numerik / data dukung belum lengkap',
-  'Dokumen sumber data belum dilampirkan atau tidak sesuai dengan Renstra',
-  'Uraian pernyataan risiko operasional kurang spesifik terhadap tupoksi',
-  'Analisis akar masalah (sebab dan dampak) belum memadai',
-  'Rencana tindak pengendalian (RTP) belum realistis atau belum ada PIC',
-]
 
 export function ReviewRisikoWizard({
   submissionId,
@@ -245,8 +236,8 @@ export function ReviewRisikoWizard({
 
   return (
     <div className='flex flex-1 flex-col gap-5 sm:gap-6 pb-20'>
-      {/* 1. TOP HEADER & OPD SUMMARY CARD */}
-      <div className='rounded-2xl border bg-card/95 backdrop-blur-md p-4 sm:p-6 shadow-sm space-y-4'>
+      {/* 1. TOP HEADER & OPD SUMMARY CARD (Sticky - Tidak Ke-scroll) */}
+      <div className='sticky top-16 z-20 rounded-xl border bg-card/95 backdrop-blur-md p-3.5 sm:p-4 shadow-xs space-y-3'>
         {/* Breadcrumb & Back Navigation */}
         <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b pb-3.5'>
           <div className='flex items-center gap-2 text-xs text-muted-foreground'>
@@ -382,9 +373,9 @@ export function ReviewRisikoWizard({
             </span>
           </div>
 
-          {/* Stepper Buttons (Responsive & Scrollable) */}
+          {/* Stepper Buttons (Responsive Grid - Tanpa Scroll Horizontal) */}
           <TooltipProvider delayDuration={150}>
-            <div className='flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-thin'>
+            <div className='grid grid-cols-7 sm:grid-cols-13 gap-1 sm:gap-1.5 pt-0.5'>
               {RISIKO_WIZARD_STEPS.map((step, idx) => {
                 const { status } = getItemStatusForStep(step)
                 const isSelected = idx === currentStepIndex
@@ -398,9 +389,9 @@ export function ReviewRisikoWizard({
                         type='button'
                         onClick={() => setCurrentStepIndex(idx)}
                         className={cn(
-                          'flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all duration-200 cursor-pointer shrink-0 min-w-[76px] sm:min-w-[82px] relative group',
+                          'flex flex-col items-center justify-center py-1.5 px-0.5 sm:px-1 rounded-lg border text-center transition-all duration-150 cursor-pointer w-full relative group',
                           isSelected
-                            ? 'bg-primary/10 border-primary shadow-xs ring-2 ring-primary/30'
+                            ? 'bg-primary/10 border-primary shadow-2xs ring-2 ring-primary/30'
                             : isApproved
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/15'
                               : isRejected
@@ -408,10 +399,10 @@ export function ReviewRisikoWizard({
                                 : 'bg-muted/30 hover:bg-muted/70 border-border/80 text-muted-foreground'
                         )}
                       >
-                        <div className='flex items-center gap-1 mb-1'>
+                        <div className='flex items-center gap-0.5 sm:gap-1 mb-0.5'>
                           <span
                             className={cn(
-                              'text-[10px] font-mono font-bold px-1.5 py-0.2 rounded',
+                              'text-[10px] font-mono font-bold px-1 py-0.2 rounded',
                               isSelected
                                 ? 'bg-primary text-primary-foreground'
                                 : isApproved
@@ -424,16 +415,16 @@ export function ReviewRisikoWizard({
                             {step.code}
                           </span>
                           {isApproved && (
-                            <CheckCircle2 className='h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0' />
+                            <CheckCircle2 className='h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400 shrink-0' />
                           )}
                           {isRejected && (
-                            <XCircle className='h-3 w-3 text-destructive shrink-0' />
+                            <XCircle className='h-2.5 w-2.5 sm:h-3 sm:w-3 text-destructive shrink-0' />
                           )}
                           {!isApproved && !isRejected && (
-                            <Clock className='h-3 w-3 text-amber-500 shrink-0' />
+                            <Clock className='h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-500 shrink-0' />
                           )}
                         </div>
-                        <span className='text-[10px] font-semibold truncate w-full'>
+                        <span className='text-[9px] sm:text-[10px] font-semibold truncate w-full block text-center px-0.5'>
                           {step.shortTitle}
                         </span>
                       </button>
@@ -461,15 +452,15 @@ export function ReviewRisikoWizard({
       </div>
 
       {/* 3. STEP REVIEW CARD & WORKSPACE */}
-      <div className='rounded-2xl border bg-card shadow-xs overflow-hidden'>
+      <div className='rounded-xl border bg-card shadow-xs overflow-hidden'>
         {/* Step Header with Auditor Action Bar */}
-        <div className='p-5 sm:p-6 border-b bg-muted/15 flex flex-col md:flex-row md:items-center justify-between gap-4'>
-          <div className='space-y-1'>
+        <div className='p-4 sm:p-5 border-b bg-muted/20 flex flex-col md:flex-row md:items-center justify-between gap-3'>
+          <div className='space-y-0.5'>
             <div className='flex items-center gap-2 flex-wrap'>
-              <Badge variant='outline' className='font-mono text-xs font-bold px-2.5 py-0.5 border-primary/40 text-primary bg-primary/5'>
+              <Badge variant='outline' className='font-mono text-xs font-bold px-2 py-0.5 border-primary/40 text-primary bg-primary/5'>
                 LANGKAH {currentStep.stepNumber} DARI {totalSteps} • FORM {currentStep.code}
               </Badge>
-              <h3 className='text-lg font-bold text-foreground'>
+              <h3 className='text-base sm:text-lg font-bold text-foreground'>
                 {currentStep.title}
               </h3>
             </div>
@@ -479,7 +470,7 @@ export function ReviewRisikoWizard({
           </div>
 
           {/* Auditor Decision Actions for This Step */}
-          <div className='flex items-center gap-2.5 shrink-0 flex-wrap'>
+          <div className='flex items-center gap-2 shrink-0 flex-wrap'>
             {isCurrentApproved && (
               <Badge className='bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
                 <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400' />
@@ -505,7 +496,7 @@ export function ReviewRisikoWizard({
               size='sm'
               disabled={reviewMutation.isPending || isDraftSubmission}
               onClick={() => handleOpenReject(currentStep.id)}
-              className='h-8.5 text-xs gap-1.5'
+              className='h-8 text-xs gap-1.5 font-medium'
             >
               <XCircle className='h-3.5 w-3.5' />
               <span>{isCurrentRejected ? 'Ubah Catatan Revisi' : 'Tolak / Minta Revisi'}</span>
@@ -516,7 +507,7 @@ export function ReviewRisikoWizard({
               size='sm'
               disabled={reviewMutation.isPending || isCurrentApproved || isDraftSubmission}
               onClick={() => handleApprove(currentStep.id)}
-              className='h-8.5 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold'
+              className='h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold'
             >
               {reviewMutation.isPending ? (
                 <Loader2 className='h-3.5 w-3.5 animate-spin' />
@@ -530,7 +521,7 @@ export function ReviewRisikoWizard({
 
         {/* Draft Notice if OPD has not submitted */}
         {isDraftSubmission && (
-          <div className='p-3.5 mx-5 sm:mx-6 mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400 text-xs flex items-center gap-2.5'>
+          <div className='p-3 mx-4 sm:mx-5 mt-3.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400 text-xs flex items-center gap-2.5'>
             <Clock className='h-4 w-4 shrink-0 text-amber-600' />
             <span>
               Perangkat daerah belum mengirimkan lembar kerja risiko secara resmi (Status: <strong>Draft</strong>). Anda dapat melihat pratinjau data, namun tombol persetujuan baru akan aktif setelah OPD melakukan pengajuan resmi.
@@ -540,7 +531,7 @@ export function ReviewRisikoWizard({
 
         {/* Existing Auditor Revision Note Alert if Rejected */}
         {isCurrentRejected && currentItem?.catatan_revisi && (
-          <div className='m-5 sm:m-6 mb-0 p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-xs space-y-1.5 shadow-2xs'>
+          <div className='m-4 sm:m-5 mb-0 p-3.5 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-xs space-y-1.5 shadow-2xs'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2 font-bold'>
                 <AlertCircle className='h-4 w-4 shrink-0' />
@@ -563,7 +554,7 @@ export function ReviewRisikoWizard({
 
         {/* Approval Banner if Approved */}
         {isCurrentApproved && (
-          <div className='m-5 sm:m-6 mb-0 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-2xs'>
+          <div className='m-4 sm:m-5 mb-0 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-2xs'>
             <div className='flex items-center gap-2 font-medium'>
               <CheckCircle2 className='h-4 w-4 text-emerald-600 shrink-0' />
               <span>
@@ -577,12 +568,12 @@ export function ReviewRisikoWizard({
         )}
 
         {/* 4. STEP SPECIFIC DATA DISPLAY (13 STEPS TO FRAUD) */}
-        <div className='p-5 sm:p-6 space-y-6'>
+        <div className='p-4 sm:p-5 space-y-5'>
           {/* STEP 1: FORM 2B (Konteks Strategis) */}
           {currentStep.id === '2b' && (
             <div className='space-y-5'>
               <div className='grid grid-cols-1 sm:grid-cols-3 gap-3.5'>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Sumber Dokumen Data:</span>
                   <p className='font-bold text-xs text-foreground'>
                     {isLoading2B ? (
@@ -595,7 +586,7 @@ export function ReviewRisikoWizard({
                     )}
                   </p>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1 sm:col-span-2'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1 sm:col-span-2'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Tujuan Penilaian Risiko:</span>
                   <p className='font-bold text-xs text-foreground'>
                     {isLoading2B ? (
@@ -604,7 +595,7 @@ export function ReviewRisikoWizard({
                         Memuat...
                       </span>
                     ) : konteks2B?.tujuan ? (
-                      `${konteks2B.tujuan.kode_tujuan ? `[${konteks2B.tujuan.kode_tujuan}] ` : ''}${konteks2B.tujuan.tujuan}`
+                      konteks2B.tujuan.tujuan
                     ) : (
                       '-'
                     )}
@@ -634,11 +625,11 @@ export function ReviewRisikoWizard({
                       )
 
                       return (
-                        <div key={sasaran.id || sIdx} className='rounded-xl border bg-muted/10 p-4 space-y-3'>
+                        <div key={sasaran.id || sIdx} className='rounded-lg border bg-card p-3.5 space-y-3 shadow-2xs'>
                           <div className='flex items-start justify-between gap-3'>
                             <div className='space-y-0.5'>
                               <span className='text-[10px] font-mono font-bold text-primary'>
-                                {sasaran.kode_sasaran || `SASARAN #${sIdx + 1}`}
+                                SASARAN #{sIdx + 1}
                               </span>
                               <p className='text-xs font-bold text-foreground'>
                                 {sasaran.sasaran || sasaran.nama || '-'}
@@ -654,13 +645,8 @@ export function ReviewRisikoWizard({
                             {sasaranIndikators.length > 0 ? (
                               <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs'>
                                 {sasaranIndikators.map((ind: any, iIdx: number) => (
-                                  <div key={ind.id || iIdx} className='p-2.5 rounded-lg bg-background border text-[11px] space-y-1 shadow-2xs'>
+                                  <div key={ind.id || iIdx} className='p-2.5 rounded-md bg-muted/20 border text-[11px] space-y-1 shadow-2xs'>
                                     <div className='flex items-center gap-1.5'>
-                                      {ind.kode_indikator && (
-                                        <Badge variant='outline' className='font-mono text-[9px] px-1 py-0 bg-muted/30'>
-                                          {ind.kode_indikator}
-                                        </Badge>
-                                      )}
                                       {ind.jenis === 'IKU' ? (
                                         <Badge className='text-[9px] px-1.5 py-0 bg-emerald-600 hover:bg-emerald-600 text-white font-semibold shrink-0'>
                                           IKU
@@ -708,13 +694,13 @@ export function ReviewRisikoWizard({
           {currentStep.id === '2c' && (
             <div className='space-y-5'>
               <div className='grid grid-cols-1 sm:grid-cols-3 gap-3.5'>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Total Program Utama:</span>
                   <p className='font-bold text-sm text-foreground font-mono'>
                     {konteks2C?.programs?.length || 0} Program
                   </p>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Total Kegiatan & Sub:</span>
                   <p className='font-bold text-sm text-foreground font-mono'>
                     {konteks2C?.programs?.reduce(
@@ -730,7 +716,7 @@ export function ReviewRisikoWizard({
                     Unit Kinerja
                   </p>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-1'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1'>
                   <span className='text-[11px] text-muted-foreground block font-medium'>Status Pengisian OPD:</span>
                   <Badge variant='outline' className='font-mono text-xs uppercase'>
                     {konteks2C?.status || 'Final'}
@@ -755,7 +741,7 @@ export function ReviewRisikoWizard({
                     {konteks2C?.programs?.map((program: any) => {
                       const pIndikators = program.indikators || []
                       return (
-                        <div key={program.id} className='rounded-xl border bg-card p-4 space-y-3 shadow-2xs'>
+                        <div key={program.id} className='rounded-lg border bg-card p-3.5 space-y-3 shadow-2xs'>
                           <div className='flex items-start justify-between gap-3'>
                             <div className='space-y-1 w-full'>
                               <div className='flex items-center gap-2'>
@@ -788,7 +774,7 @@ export function ReviewRisikoWizard({
                               {program.children?.map((kegiatan: any) => {
                                 const kIndikators = kegiatan.indikators || []
                                 return (
-                                  <div key={kegiatan.id} className='p-3 rounded-lg bg-muted/30 border space-y-2'>
+                                  <div key={kegiatan.id} className='p-2.5 rounded-md bg-muted/20 border space-y-2'>
                                     <div className='flex items-center justify-between gap-2'>
                                       <div className='flex items-center gap-2'>
                                         <Badge variant='outline' className='font-mono text-[11px] bg-background font-semibold'>
@@ -815,7 +801,7 @@ export function ReviewRisikoWizard({
                                         {kegiatan.children?.map((sub: any) => {
                                           const subInd = sub.indikators?.[0]
                                           return (
-                                            <div key={sub.id} className='p-2 rounded bg-background border text-[11px] flex items-center justify-between gap-2 shadow-2xs'>
+                                            <div key={sub.id} className='p-2 rounded-md bg-background border text-[11px] flex items-center justify-between gap-2 shadow-2xs'>
                                               <div className='flex items-center gap-1.5'>
                                                 <span className='font-mono font-bold text-primary'>{sub.kode}</span>
                                                 <span>{sub.nama}</span>
@@ -849,41 +835,41 @@ export function ReviewRisikoWizard({
           {/* STEP 3: FORM 3B (Identifikasi Risiko Strategis) */}
           {currentStep.id === '3b' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <ShieldAlert className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <ShieldAlert className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Lembar Pemeriksaan Identifikasi Risiko Sasaran Strategis Renstra OPD (SPIP / BPKP).
                 </span>
               </div>
 
-              <div className='rounded-xl border overflow-hidden shadow-2xs'>
+              <div className='rounded-lg border overflow-hidden shadow-2xs'>
                 <table className='w-full text-xs text-start'>
-                  <thead className='bg-muted/50 border-b font-semibold text-muted-foreground'>
+                  <thead className='bg-muted/40 border-b font-semibold text-muted-foreground'>
                     <tr>
-                      <th className='p-3 text-start'>No</th>
-                      <th className='p-3 text-start'>Sasaran Strategis</th>
-                      <th className='p-3 text-start'>Pernyataan Risiko</th>
-                      <th className='p-3 text-start'>Kategori</th>
-                      <th className='p-3 text-start'>Penyebab Utama</th>
-                      <th className='p-3 text-start'>Dampak Terhadap Sasaran</th>
+                      <th className='p-2.5 text-start font-semibold'>No</th>
+                      <th className='p-2.5 text-start font-semibold'>Sasaran Strategis</th>
+                      <th className='p-2.5 text-start font-semibold'>Pernyataan Risiko</th>
+                      <th className='p-2.5 text-start font-semibold'>Kategori</th>
+                      <th className='p-2.5 text-start font-semibold'>Penyebab Utama</th>
+                      <th className='p-2.5 text-start font-semibold'>Dampak Terhadap Sasaran</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y'>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-mono text-muted-foreground'>1</td>
-                      <td className='p-3 font-medium text-foreground'>Peningkatan Kualitas Infrastruktur Permukiman</td>
-                      <td className='p-3 font-semibold text-destructive'>Keterlambatan penyelesaian proyek fisik akibat cuaca ekstrem & sengketa lahan</td>
-                      <td className='p-3'><Badge variant='outline' className='text-[10px]'>Strategis / Fisik</Badge></td>
-                      <td className='p-3 text-muted-foreground'>Perencanaan awal belum matang & koordinasi antar stakeholder lambat</td>
-                      <td className='p-3 text-muted-foreground'>Capaian IKU persentase permukiman layak huni tidak mencapai target Renstra</td>
+                      <td className='p-2.5 font-mono text-muted-foreground'>1</td>
+                      <td className='p-2.5 font-medium text-foreground'>Peningkatan Kualitas Infrastruktur Permukiman</td>
+                      <td className='p-2.5 font-semibold text-destructive'>Keterlambatan penyelesaian proyek fisik akibat cuaca ekstrem & sengketa lahan</td>
+                      <td className='p-2.5'><Badge variant='outline' className='text-[10px]'>Strategis / Fisik</Badge></td>
+                      <td className='p-2.5 text-muted-foreground'>Perencanaan awal belum matang & koordinasi antar stakeholder lambat</td>
+                      <td className='p-2.5 text-muted-foreground'>Capaian IKU persentase permukiman layak huni tidak mencapai target Renstra</td>
                     </tr>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-mono text-muted-foreground'>2</td>
-                      <td className='p-3 font-medium text-foreground'>Peningkatan Akuntabilitas Pengelolaan Anggaran</td>
-                      <td className='p-3 font-semibold text-destructive'>Deviasi realisasi penyerapan anggaran dengan output kinerja riil di lapangan</td>
-                      <td className='p-3'><Badge variant='outline' className='text-[10px]'>Keuangan</Badge></td>
-                      <td className='p-3 text-muted-foreground'>Kapasitas PPK dan pengawas lapangan dalam pengujian mutu belum seragam</td>
-                      <td className='p-3 text-muted-foreground'>Potensi temuan audit BPK dan penurunan opini akuntabilitas keuangan</td>
+                      <td className='p-2.5 font-mono text-muted-foreground'>2</td>
+                      <td className='p-2.5 font-medium text-foreground'>Peningkatan Akuntabilitas Pengelolaan Anggaran</td>
+                      <td className='p-2.5 font-semibold text-destructive'>Deviasi realisasi penyerapan anggaran dengan output kinerja riil di lapangan</td>
+                      <td className='p-2.5'><Badge variant='outline' className='text-[10px]'>Keuangan</Badge></td>
+                      <td className='p-2.5 text-muted-foreground'>Kapasitas PPK dan pengawas lapangan dalam pengujian mutu belum seragam</td>
+                      <td className='p-2.5 text-muted-foreground'>Potensi temuan audit BPK dan penurunan opini akuntabilitas keuangan</td>
                     </tr>
                   </tbody>
                 </table>
@@ -894,38 +880,38 @@ export function ReviewRisikoWizard({
           {/* STEP 4: FORM 3C (Identifikasi Risiko Operasional) */}
           {currentStep.id === '3c' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <FolderTree className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <FolderTree className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Lembar Pemeriksaan Identifikasi Risiko Operasional Kegiatan & Pelayanan Publik OPD.
                 </span>
               </div>
 
-              <div className='rounded-xl border overflow-hidden shadow-2xs'>
+              <div className='rounded-lg border overflow-hidden shadow-2xs'>
                 <table className='w-full text-xs text-start'>
-                  <thead className='bg-muted/50 border-b font-semibold text-muted-foreground'>
+                  <thead className='bg-muted/40 border-b font-semibold text-muted-foreground'>
                     <tr>
-                      <th className='p-3 text-start'>Kode Kegiatan</th>
-                      <th className='p-3 text-start'>Tahapan Proses</th>
-                      <th className='p-3 text-start'>Risiko Operasional</th>
-                      <th className='p-3 text-start'>Pengendalian Eksisting</th>
-                      <th className='p-3 text-start'>Status Efektivitas</th>
+                      <th className='p-2.5 text-start font-semibold'>Kode Kegiatan</th>
+                      <th className='p-2.5 text-start font-semibold'>Tahapan Proses</th>
+                      <th className='p-2.5 text-start font-semibold'>Risiko Operasional</th>
+                      <th className='p-2.5 text-start font-semibold'>Pengendalian Eksisting</th>
+                      <th className='p-2.5 text-start font-semibold'>Status Efektivitas</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y'>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-mono text-primary font-bold'>A.1.1</td>
-                      <td className='p-3 font-medium'>Verifikasi Dokumen Kelayakan Teknis</td>
-                      <td className='p-3 font-semibold text-destructive'>Keterlambatan verifikasi berkas permohonan masyarakat melebihi SLA standar</td>
-                      <td className='p-3 text-muted-foreground'>Checklist dokumen manual dan buku ekspedisi fisik</td>
-                      <td className='p-3'><Badge className='bg-amber-500/15 text-amber-700 text-[10px]'>Kurang Memadai</Badge></td>
+                      <td className='p-2.5 font-mono text-primary font-bold'>A.1.1</td>
+                      <td className='p-2.5 font-medium'>Verifikasi Dokumen Kelayakan Teknis</td>
+                      <td className='p-2.5 font-semibold text-destructive'>Keterlambatan verifikasi berkas permohonan masyarakat melebihi SLA standar</td>
+                      <td className='p-2.5 text-muted-foreground'>Checklist dokumen manual dan buku ekspedisi fisik</td>
+                      <td className='p-2.5'><Badge className='bg-amber-500/15 text-amber-700 text-[10px]'>Kurang Memadai</Badge></td>
                     </tr>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-mono text-primary font-bold'>A.2.1</td>
-                      <td className='p-3 font-medium'>Pelaksanaan Pengawasan Konstruksi</td>
-                      <td className='p-3 font-semibold text-destructive'>Ketidaksesuaian spesifikasi material pekerjaan dengan RAB kontrak</td>
-                      <td className='p-3 text-muted-foreground'>Uji petik konsultan pengawas dan laporan mingguan</td>
-                      <td className='p-3'><Badge className='bg-emerald-500/15 text-emerald-700 text-[10px]'>Cukup Memadai</Badge></td>
+                      <td className='p-2.5 font-mono text-primary font-bold'>A.2.1</td>
+                      <td className='p-2.5 font-medium'>Pelaksanaan Pengawasan Konstruksi</td>
+                      <td className='p-2.5 font-semibold text-destructive'>Ketidaksesuaian spesifikasi material pekerjaan dengan RAB kontrak</td>
+                      <td className='p-2.5 text-muted-foreground'>Uji petik konsultan pengawas dan laporan mingguan</td>
+                      <td className='p-2.5'><Badge className='bg-emerald-500/15 text-emerald-700 text-[10px]'>Cukup Memadai</Badge></td>
                     </tr>
                   </tbody>
                 </table>
@@ -936,25 +922,25 @@ export function ReviewRisikoWizard({
           {/* STEP 5: FORM 4 (Analisis Risiko) */}
           {currentStep.id === '4' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <BarChart3 className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <BarChart3 className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Matriks Skoring & Analisis Risiko (Kemungkinan 1-5 x Dampak 1-5).
                 </span>
               </div>
 
               <div className='grid grid-cols-1 sm:grid-cols-3 gap-3.5'>
-                <div className='p-4 rounded-xl border bg-destructive/10 border-destructive/30 space-y-1 shadow-2xs'>
+                <div className='p-3.5 rounded-lg border bg-destructive/10 border-destructive/30 space-y-1 shadow-2xs'>
                   <span className='text-[11px] text-destructive font-semibold block'>Risiko Tingkat Tinggi (16-25):</span>
                   <p className='text-2xl font-bold font-mono text-destructive'>2 Risiko</p>
                   <p className='text-[10px] text-muted-foreground'>Wajib dilakukan mitigasi segera</p>
                 </div>
-                <div className='p-4 rounded-xl border bg-amber-500/10 border-amber-500/30 space-y-1 shadow-2xs'>
+                <div className='p-3.5 rounded-lg border bg-amber-500/10 border-amber-500/30 space-y-1 shadow-2xs'>
                   <span className='text-[11px] text-amber-700 dark:text-amber-400 font-semibold block'>Risiko Tingkat Sedang (10-15):</span>
                   <p className='text-2xl font-bold font-mono text-amber-700 dark:text-amber-400'>4 Risiko</p>
                   <p className='text-[10px] text-muted-foreground'>Perlu monitoring berkala</p>
                 </div>
-                <div className='p-4 rounded-xl border bg-emerald-500/10 border-emerald-500/30 space-y-1 shadow-2xs'>
+                <div className='p-3.5 rounded-lg border bg-emerald-500/10 border-emerald-500/30 space-y-1 shadow-2xs'>
                   <span className='text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold block'>Risiko Rendah (1-9):</span>
                   <p className='text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400'>5 Risiko</p>
                   <p className='text-[10px] text-muted-foreground'>Dapat diterima dengan pengendalian eksisting</p>
@@ -966,14 +952,14 @@ export function ReviewRisikoWizard({
           {/* STEP 6: FORM 5 (Evaluasi Risiko) */}
           {currentStep.id === '5' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <PieChart className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <PieChart className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Penetapan Prioritas Risiko & Selera Risiko (Risk Appetite) Pemerintah Daerah.
                 </span>
               </div>
 
-              <div className='rounded-xl border p-4 bg-muted/20 space-y-3'>
+              <div className='rounded-lg border p-3.5 bg-muted/20 space-y-2'>
                 <div className='flex items-center justify-between border-b pb-2'>
                   <span className='font-bold text-foreground'>Batas Selera Risiko Pemda:</span>
                   <Badge className='bg-primary text-primary-foreground font-mono'>Nilai Maksimum: 12 (Sedang)</Badge>
@@ -988,38 +974,38 @@ export function ReviewRisikoWizard({
           {/* STEP 7: FORM 6 (Rencana Tindak Pengendalian / RTP) */}
           {currentStep.id === '6' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <Layers className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <Layers className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Pemeriksaan Rencana Tindak Pengendalian Tambahan (RTP) untuk Menurunkan Level Risiko.
                 </span>
               </div>
 
-              <div className='rounded-xl border overflow-hidden shadow-2xs'>
+              <div className='rounded-lg border overflow-hidden shadow-2xs'>
                 <table className='w-full text-xs text-start'>
-                  <thead className='bg-muted/50 border-b font-semibold text-muted-foreground'>
+                  <thead className='bg-muted/40 border-b font-semibold text-muted-foreground'>
                     <tr>
-                      <th className='p-3 text-start'>Uraian Tindak Pengendalian</th>
-                      <th className='p-3 text-start'>Target Output</th>
-                      <th className='p-3 text-start'>Penanggung Jawab (PIC)</th>
-                      <th className='p-3 text-start'>Jadwal Realisasi</th>
-                      <th className='p-3 text-start'>Anggaran</th>
+                      <th className='p-2.5 text-start font-semibold'>Uraian Tindak Pengendalian</th>
+                      <th className='p-2.5 text-start font-semibold'>Target Output</th>
+                      <th className='p-2.5 text-start font-semibold'>Penanggung Jawab (PIC)</th>
+                      <th className='p-2.5 text-start font-semibold'>Jadwal Realisasi</th>
+                      <th className='p-2.5 text-start font-semibold'>Anggaran</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y'>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-semibold text-foreground'>Digitalisasi Layanan Verifikasi Dokumen Terpadu (Aplikasi Web)</td>
-                      <td className='p-3'>Sistem Informasi Terintegrasi 100%</td>
-                      <td className='p-3 font-medium'>Kepala Bidang Permukiman</td>
-                      <td className='p-3 font-mono text-muted-foreground'>Triwulan II 2026</td>
-                      <td className='p-3 font-mono font-bold text-emerald-600'>Rp 75.000.000</td>
+                      <td className='p-2.5 font-semibold text-foreground'>Digitalisasi Layanan Verifikasi Dokumen Terpadu (Aplikasi Web)</td>
+                      <td className='p-2.5'>Sistem Informasi Terintegrasi 100%</td>
+                      <td className='p-2.5 font-medium'>Kepala Bidang Permukiman</td>
+                      <td className='p-2.5 font-mono text-muted-foreground'>Triwulan II 2026</td>
+                      <td className='p-2.5 font-mono font-bold text-emerald-600'>Rp 75.000.000</td>
                     </tr>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-semibold text-foreground'>Pelatihan Sertifikasi Pengawasan Konstruksi bagi PPK & PPTK</td>
-                      <td className='p-3'>15 Pegawai Tersertifikasi</td>
-                      <td className='p-3 font-medium'>Sekretaris Dinas</td>
-                      <td className='p-3 font-mono text-muted-foreground'>Triwulan III 2026</td>
-                      <td className='p-3 font-mono font-bold text-emerald-600'>Rp 50.000.000</td>
+                      <td className='p-2.5 font-semibold text-foreground'>Pelatihan Sertifikasi Pengawasan Konstruksi bagi PPK & PPTK</td>
+                      <td className='p-2.5'>15 Pegawai Tersertifikasi</td>
+                      <td className='p-2.5 font-medium'>Sekretaris Dinas</td>
+                      <td className='p-2.5 font-mono text-muted-foreground'>Triwulan III 2026</td>
+                      <td className='p-2.5 font-mono font-bold text-emerald-600'>Rp 50.000.000</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1030,19 +1016,19 @@ export function ReviewRisikoWizard({
           {/* STEP 8: FORM 7 (Pemantauan Pelaksanaan RTP) */}
           {currentStep.id === '7' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <Activity className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <Activity className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Monitoring Progres Realisasi Pelaksanaan Rencana Tindak Pengendalian (RTP).
                 </span>
               </div>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5'>
-                <div className='p-4 rounded-xl border bg-muted/20 space-y-1.5 shadow-2xs'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1 shadow-2xs'>
                   <span className='font-bold text-foreground block'>RTP Tuntas Tepat Waktu:</span>
                   <p className='text-3xl font-bold font-mono text-emerald-600'>85%</p>
                   <p className='text-muted-foreground text-[11px]'>Sebagian besar program mitigasi telah diimplementasikan.</p>
                 </div>
-                <div className='p-4 rounded-xl border bg-muted/20 space-y-1.5 shadow-2xs'>
+                <div className='p-3.5 rounded-lg border bg-muted/20 space-y-1 shadow-2xs'>
                   <span className='font-bold text-foreground block'>Kendala Lapangan:</span>
                   <p className='text-xs text-muted-foreground leading-relaxed'>
                     Perubahan regulasi pusat memerlukan penyesuaian petunjuk teknis pelaksanaan pada pertengahan triwulan.
@@ -1055,13 +1041,13 @@ export function ReviewRisikoWizard({
           {/* STEP 9: FORM 8 (Kejadian Risiko) */}
           {currentStep.id === '8' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <AlertTriangle className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <AlertTriangle className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Buku Catatan Kejadian Risiko Nyata (Risk Event Register) & Tanggap Darurat.
                 </span>
               </div>
-              <div className='p-4 rounded-xl border bg-muted/20 text-muted-foreground leading-relaxed'>
+              <div className='p-3.5 rounded-lg border bg-muted/20 text-muted-foreground leading-relaxed'>
                 Tidak tercatat kejadian risiko mayor yang menyebabkan kerugian material atau kegagalan pelayanan publik selama periode penilaian berjalan.
               </div>
             </div>
@@ -1070,13 +1056,13 @@ export function ReviewRisikoWizard({
           {/* STEP 10: FORM 9 (Pemantauan Risiko Berkala) */}
           {currentStep.id === '9' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <TrendingUp className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <TrendingUp className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Evaluasi Level Risiko Residual & Tren Dinamika Risiko Periode Berkala.
                 </span>
               </div>
-              <div className='p-4 rounded-xl border bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-400 font-medium'>
+              <div className='p-3.5 rounded-lg border bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-400 font-medium'>
                 Tren risiko residual menunjukkan penurunan sebesar 35% setelah penerapan RTP Form 6.
               </div>
             </div>
@@ -1085,13 +1071,13 @@ export function ReviewRisikoWizard({
           {/* STEP 11: FORM 10 (Laporan Pengelolaan Risiko) */}
           {currentStep.id === '10' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <FileCheck className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <FileCheck className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Kompilasi Laporan Resmi Manajemen Risiko & Pernyataan Efektivitas SPIP.
                 </span>
               </div>
-              <div className='p-4 rounded-xl border bg-muted/20 space-y-2 text-muted-foreground leading-relaxed'>
+              <div className='p-3.5 rounded-lg border bg-muted/20 space-y-2 text-muted-foreground leading-relaxed'>
                 <p className='font-bold text-foreground'>Pernyataan Efektivitas Pengendalian Intern:</p>
                 <p>
                   Sistem Pengendalian Intern Pemerintah (SPIP) pada perangkat daerah telah berjalan memadai dan mendukung pencapaian sasaran strategis daerah secara tertib dan transparan.
@@ -1103,34 +1089,34 @@ export function ReviewRisikoWizard({
           {/* STEP 12: FORM RCA (Root Cause Analysis) */}
           {currentStep.id === 'rca' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-primary/5 text-primary text-xs flex items-center gap-2'>
-                <BrainCircuit className='h-4 w-4 shrink-0' />
+              <div className='p-3 rounded-lg border bg-muted/20 text-foreground text-xs flex items-center gap-2.5 font-medium'>
+                <BrainCircuit className='h-4 w-4 text-primary shrink-0' />
                 <span>
                   Analisis Akar Masalah (Diagram Tulang Ikan / Fishbone BPKP & 5-Whys).
                 </span>
               </div>
               <div className='grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs'>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-0.5 shadow-2xs'>
+                <div className='p-3 rounded-lg border bg-muted/20 space-y-0.5 shadow-2xs'>
                   <span className='font-bold block text-primary'>1. Man (SDM):</span>
                   <span className='text-muted-foreground text-[11px]'>Kompetensi teknis pegawai perlu sertifikasi berkala</span>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-0.5 shadow-2xs'>
+                <div className='p-3 rounded-lg border bg-muted/20 space-y-0.5 shadow-2xs'>
                   <span className='font-bold block text-primary'>2. Method (SOP):</span>
                   <span className='text-muted-foreground text-[11px]'>SOP pelayanan belum seluruhnya terintegrasi digital</span>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-0.5 shadow-2xs'>
+                <div className='p-3 rounded-lg border bg-muted/20 space-y-0.5 shadow-2xs'>
                   <span className='font-bold block text-primary'>3. Machine (TI):</span>
                   <span className='text-muted-foreground text-[11px]'>Infrastruktur jaringan server dan backup perlu penguatan</span>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-0.5 shadow-2xs'>
+                <div className='p-3 rounded-lg border bg-muted/20 space-y-0.5 shadow-2xs'>
                   <span className='font-bold block text-primary'>4. Material (Data):</span>
                   <span className='text-muted-foreground text-[11px]'>Basis data spasial perumahan masih tersebar parsial</span>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-0.5 shadow-2xs'>
+                <div className='p-3 rounded-lg border bg-muted/20 space-y-0.5 shadow-2xs'>
                   <span className='font-bold block text-primary'>5. Money (Dana):</span>
                   <span className='text-muted-foreground text-[11px]'>Alokasi pemeliharaan berkala mencukupi standar SPM</span>
                 </div>
-                <div className='p-3.5 rounded-xl border bg-muted/20 space-y-0.5 shadow-2xs'>
+                <div className='p-3 rounded-lg border bg-muted/20 space-y-0.5 shadow-2xs'>
                   <span className='font-bold block text-primary'>6. Milieu (Eksternal):</span>
                   <span className='text-muted-foreground text-[11px]'>Kondisi geologis daerah rawan bencana alam</span>
                 </div>
@@ -1141,41 +1127,41 @@ export function ReviewRisikoWizard({
           {/* STEP 13: FORM FRAUD (Penilaian Risiko Kecurangan) */}
           {currentStep.id === 'fraud' && (
             <div className='space-y-4 text-xs'>
-              <div className='p-3.5 rounded-xl border bg-destructive/10 border-destructive/30 text-destructive text-xs flex items-center gap-2'>
+              <div className='p-3 rounded-lg border bg-destructive/10 border-destructive/30 text-destructive text-xs flex items-center gap-2.5 font-medium'>
                 <ShieldAlert className='h-4 w-4 shrink-0' />
                 <span>
                   Fraud Risk Assessment (FRA) - Matriks Titik Rawan Kecurangan & Pencegahan Korupsi (BPKP / KPK).
                 </span>
               </div>
 
-              <div className='rounded-xl border overflow-hidden shadow-2xs'>
+              <div className='rounded-lg border overflow-hidden shadow-2xs'>
                 <table className='w-full text-xs text-start'>
-                  <thead className='bg-muted/50 border-b font-semibold text-muted-foreground'>
+                  <thead className='bg-muted/40 border-b font-semibold text-muted-foreground'>
                     <tr>
-                      <th className='p-3 text-start'>Area Rawan Fraud</th>
-                      <th className='p-3 text-start'>Bentuk Potensi Kecurangan</th>
-                      <th className='p-3 text-start'>Level Risiko</th>
-                      <th className='p-3 text-start'>Sistem Pencegahan Anti-Korupsi</th>
+                      <th className='p-2.5 text-start font-semibold'>Area Rawan Fraud</th>
+                      <th className='p-2.5 text-start font-semibold'>Bentuk Potensi Kecurangan</th>
+                      <th className='p-2.5 text-start font-semibold'>Level Risiko</th>
+                      <th className='p-2.5 text-start font-semibold'>Sistem Pencegahan Anti-Korupsi</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y'>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-semibold text-foreground'>Pengadaan Barang & Jasa (PBJ)</td>
-                      <td className='p-3 text-muted-foreground'>Pengondisian pemenang lelang atau pemecahan paket pekerjaan</td>
-                      <td className='p-3'><Badge className='bg-destructive/15 text-destructive text-[10px]'>Tinggi</Badge></td>
-                      <td className='p-3 font-medium text-foreground'>E-Katalog lokal, probity audit inspektorat, pakta integritas vendor</td>
+                      <td className='p-2.5 font-semibold text-foreground'>Pengadaan Barang & Jasa (PBJ)</td>
+                      <td className='p-2.5 text-muted-foreground'>Pengondisian pemenang lelang atau pemecahan paket pekerjaan</td>
+                      <td className='p-2.5'><Badge className='bg-destructive/15 text-destructive text-[10px]'>Tinggi</Badge></td>
+                      <td className='p-2.5 font-medium text-foreground'>E-Katalog lokal, probity audit inspektorat, pakta integritas vendor</td>
                     </tr>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-semibold text-foreground'>Pelayanan Perizinan & Sertifikasi</td>
-                      <td className='p-3 text-muted-foreground'>Permintaan imbalan / gratifikasi untuk percepatan penerbitan izin</td>
-                      <td className='p-3'><Badge className='bg-amber-500/15 text-amber-700 text-[10px]'>Sedang</Badge></td>
-                      <td className='p-3 font-medium text-foreground'>Pembayaran cashless (QRIS/Bank Jabar), CCTV ruang layanan, WBS online</td>
+                      <td className='p-2.5 font-semibold text-foreground'>Pelayanan Perizinan & Sertifikasi</td>
+                      <td className='p-2.5 text-muted-foreground'>Permintaan imbalan / gratifikasi untuk percepatan penerbitan izin</td>
+                      <td className='p-2.5'><Badge className='bg-amber-500/15 text-amber-700 text-[10px]'>Sedang</Badge></td>
+                      <td className='p-2.5 font-medium text-foreground'>Pembayaran cashless (QRIS/Bank Jabar), CCTV ruang layanan, WBS online</td>
                     </tr>
                     <tr className='hover:bg-muted/20'>
-                      <td className='p-3 font-semibold text-foreground'>Pengelolaan Kas & Belanja Hibah</td>
-                      <td className='p-3 text-muted-foreground'>Keterlambatan penyusunan SPJ atau laporan pertanggungjawaban fiktif</td>
-                      <td className='p-3'><Badge className='bg-destructive/15 text-destructive text-[10px]'>Tinggi</Badge></td>
-                      <td className='p-3 font-medium text-foreground'>Verifikasi berlapis bendahara, CMS perbankan non-tunai, audit ketaatan</td>
+                      <td className='p-2.5 font-semibold text-foreground'>Pengelolaan Kas & Belanja Hibah</td>
+                      <td className='p-2.5 text-muted-foreground'>Keterlambatan penyusunan SPJ atau laporan pertanggungjawaban fiktif</td>
+                      <td className='p-2.5'><Badge className='bg-destructive/15 text-destructive text-[10px]'>Tinggi</Badge></td>
+                      <td className='p-2.5 font-medium text-foreground'>Verifikasi berlapis bendahara, CMS perbankan non-tunai, audit ketaatan</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1185,14 +1171,14 @@ export function ReviewRisikoWizard({
         </div>
 
         {/* 5. FOOTER STEPPER NAVIGATION BAR */}
-        <div className='p-4 sm:p-5 border-t bg-muted/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5'>
+        <div className='p-3.5 sm:p-4 border-t bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
           <Button
             type='button'
             variant='outline'
             size='sm'
             disabled={currentStepIndex === 0}
             onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
-            className='h-8.5 text-xs gap-1.5'
+            className='h-8 text-xs gap-1.5 font-medium'
           >
             <ChevronLeft className='h-4 w-4' />
             <span>Langkah Sebelumnya</span>
@@ -1214,7 +1200,7 @@ export function ReviewRisikoWizard({
               size='sm'
               disabled={currentStepIndex === totalSteps - 1}
               onClick={() => setCurrentStepIndex((prev) => Math.min(prev + 1, totalSteps - 1))}
-              className='h-8.5 text-xs gap-1.5'
+              className='h-8 text-xs gap-1.5 font-medium'
             >
               <span>Langkah Selanjutnya</span>
               <ChevronRight className='h-4 w-4' />
@@ -1223,7 +1209,7 @@ export function ReviewRisikoWizard({
         </div>
       </div>
 
-      {/* 6. REJECTION NOTES MODAL DIALOG WITH PRESET CHIPS */}
+      {/* 6. REJECTION NOTES MODAL DIALOG */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
@@ -1242,28 +1228,6 @@ export function ReviewRisikoWizard({
           </DialogHeader>
 
           <div className='space-y-3.5 py-2'>
-            {/* Quick preset chips */}
-            <div className='space-y-1.5'>
-              <Label className='text-[11px] text-muted-foreground font-medium flex items-center gap-1'>
-                <Sparkles className='h-3 w-3 text-primary' />
-                Pilihan Cepat Catatan Revisi (klik untuk memilih):
-              </Label>
-              <div className='flex flex-wrap gap-1.5'>
-                {PRESET_REJECTION_REASONS.map((preset, pIdx) => (
-                  <button
-                    key={pIdx}
-                    type='button'
-                    onClick={() => {
-                      setRejectionNote((prev) => (prev ? `${prev}. ${preset}` : preset))
-                    }}
-                    className='text-[11px] text-start px-2 py-1 rounded-md border border-border/80 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors'
-                  >
-                    + {preset}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className='space-y-1.5'>
               <div className='flex items-center justify-between'>
                 <Label htmlFor='catatan-revisi' className='text-xs font-semibold'>
