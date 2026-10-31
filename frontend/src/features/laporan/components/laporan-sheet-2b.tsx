@@ -123,11 +123,6 @@ export function LaporanSheet2B({ data, meta, opdNama, tahun }: LaporanSheet2BPro
                 <div key={sasaran.id} className='p-3 flex items-start gap-3 bg-card'>
                   <span className='font-bold text-muted-foreground text-xs shrink-0 pt-0.5'>{index + 1}.</span>
                   <div className='space-y-0.5 flex-1'>
-                    {sasaran.kode_sasaran && (
-                      <span className='inline-block text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground mr-1.5'>
-                        {sasaran.kode_sasaran}
-                      </span>
-                    )}
                     <span className='font-medium text-foreground leading-snug'>{sasaran.sasaran}</span>
                   </div>
                 </div>
@@ -177,11 +172,6 @@ export function LaporanSheet2B({ data, meta, opdNama, tahun }: LaporanSheet2BPro
                       <span className='font-bold text-muted-foreground text-xs shrink-0 pt-0.5'>{index + 1}.</span>
                       <div className='space-y-0.5 flex-1'>
                         <div className='flex items-center gap-2 mb-1'>
-                          {ind.kode_indikator && (
-                            <span className='text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground'>
-                              {ind.kode_indikator}
-                            </span>
-                          )}
                           <Badge className='text-[10px] px-1.5 py-0 bg-emerald-600 hover:bg-emerald-600 text-white font-semibold'>
                             IKU
                           </Badge>

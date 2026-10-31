@@ -342,8 +342,7 @@ class KonteksPenilaianService
             $writer->addRow(Row::fromValues(['Sasaran Strategis yang Dinilai:'], $headerSectionStyle));
             $no = 1;
             foreach ($konteks->sasarans as $sasaran) {
-                $kode = $sasaran->kode_sasaran ? "[{$sasaran->kode_sasaran}] " : '';
-                $writer->addRow(Row::fromValues(["{$no}. {$kode}{$sasaran->sasaran}"]));
+                $writer->addRow(Row::fromValues(["{$no}. {$sasaran->sasaran}"]));
                 $no++;
             }
             $writer->addRow(Row::fromValues(['']));
@@ -363,8 +362,7 @@ class KonteksPenilaianService
 
             $no = 1;
             foreach ($targetIku as $ind) {
-                $kode = $ind->kode_indikator ? "[{$ind->kode_indikator}] " : '';
-                $writer->addRow(Row::fromValues(["{$no}. {$kode}[IKU] {$ind->indikator}"]));
+                $writer->addRow(Row::fromValues(["{$no}. [IKU] {$ind->indikator}"]));
                 $no++;
             }
 
@@ -373,9 +371,8 @@ class KonteksPenilaianService
                 $writer->addRow(Row::fromValues(['Indikator Kinerja Penunjang (Non-IKU):'], $boldStyle));
                 $subNo = 1;
                 foreach ($nonIkuIndikators as $ind) {
-                    $kode = $ind->kode_indikator ? "[{$ind->kode_indikator}] " : '';
                     $jenis = $ind->jenis ? "[{$ind->jenis}] " : '';
-                    $writer->addRow(Row::fromValues(["{$subNo}. {$kode}{$jenis}{$ind->indikator}"]));
+                    $writer->addRow(Row::fromValues(["{$subNo}. {$jenis}{$ind->indikator}"]));
                     $subNo++;
                 }
             }
