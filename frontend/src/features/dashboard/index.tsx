@@ -44,14 +44,14 @@ export function Dashboard() {
       value: dashStats?.total_instansi ?? 0,
       icon: Building2,
       color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+
     },
     {
       title: 'Jumlah Users',
       value: dashStats?.total_pegawai ?? 0,
       icon: Users,
       color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+
     },
     {
       title: 'Risiko Tinggi & Kritis',
@@ -59,16 +59,19 @@ export function Dashboard() {
       icon: ShieldAlert,
       color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
       valueColor: 'text-rose-600 dark:text-rose-400',
-      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+
     },
     {
       title: 'Jumlah IKU',
       value: dashStats?.total_iku ?? 0,
       icon: Target,
       color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+
     },
   ]
+
+  const rawName = user?.name || user?.role || 'Superadmin'
+  const displayName = rawName.toLowerCase() === 'superadmin' ? 'Superadmin' : rawName
 
   return (
     <>
@@ -83,12 +86,12 @@ export function Dashboard() {
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6'>
         {/* Header Title & Executive Greeting (Sticky) */}
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-          <div className='space-y-1 min-w-0 flex-1'>
-            <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Selamat Datang, {user?.name || 'Administrator'}
+          <div className='space-y-0.5 min-w-0 flex-1'>
+            <h2 className='text-base font-bold tracking-tight text-foreground sm:text-lg'>
+              Selamat Datang, <span className='text-primary font-semibold'>{displayName}</span>
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Panel ringkasan eksekutif dan pemantauan profil risiko Pemerintah Daerah.
             </p>
           </div>
 
