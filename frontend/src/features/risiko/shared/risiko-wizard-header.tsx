@@ -166,11 +166,11 @@ export function RisikoWizardHeader({
   )
 
   return (
-    <div className='rounded-xl border bg-card/80 backdrop-blur-xs shadow-2xs px-4 py-4 sm:px-6 sm:py-5 space-y-4'>
-      {/* 1. AUDITOR & SUBMISSION WORKFLOW STATUS BANNERS */}
+    <div className='space-y-3'>
+      {/* 1. AUDITOR & SUBMISSION WORKFLOW STATUS BANNERS (Scrollable at top) */}
       {readiness && !readiness.has_auditor && (
-        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <ShieldAlert className='h-5 w-5 shrink-0 mt-0.5' />
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <ShieldAlert className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
               Belum Ada Auditor Pengawas yang Ditugaskan
@@ -183,8 +183,8 @@ export function RisikoWizardHeader({
       )}
 
       {readiness && (readiness.status === 'submitted' || readiness.status === 'in_review') && (
-        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
-          <Clock className='h-5 w-5 shrink-0 mt-0.5' />
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
+          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
               Formulir Sedang Dalam Pemeriksaan Auditor
@@ -197,8 +197,8 @@ export function RisikoWizardHeader({
       )}
 
       {readiness && readiness.status === 'revision_requested' && (
-        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <AlertCircle className='h-5 w-5 shrink-0 mt-0.5' />
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-1.5 text-xs flex-1'>
             <p className='font-bold text-foreground'>
               Auditor Meminta Perbaikan (Revisi) Lembar Kerja
@@ -209,7 +209,7 @@ export function RisikoWizardHeader({
                 .map((item) => (
                   <div
                     key={item.id}
-                    className='p-2.5 rounded-lg bg-background/80 border text-[11px] text-foreground space-y-0.5'
+                    className='p-2 rounded-md bg-background/80 border text-[11px] text-foreground space-y-0.5'
                   >
                     <span className='font-bold uppercase text-destructive mr-2'>
                       Form {item.form_code}:
@@ -226,8 +226,8 @@ export function RisikoWizardHeader({
       )}
 
       {readiness && readiness.status === 'approved' && (
-        <div className='flex items-start gap-3 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
-          <CheckCircle2 className='h-5 w-5 shrink-0 mt-0.5' />
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
+          <CheckCircle2 className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
               Lembar Kerja Resmi Disetujui Auditor Pengawas
@@ -239,296 +239,320 @@ export function RisikoWizardHeader({
         </div>
       )}
 
-      {/* Top summary row: Step counter, Clean title, Progress indicator & Actions */}
-      <div className='flex items-center justify-between gap-3 pb-3.5 border-b border-border/60 flex-wrap sm:flex-nowrap'>
-        <div className='flex items-center gap-3'>
-          <Badge
-            variant='outline'
-            className='text-xs font-mono font-bold px-2.5 py-1 border-primary/40 text-primary bg-primary/10 shadow-2xs'
-          >
-            LANGKAH {activeStep.stepNumber} DARI {totalSteps}
-          </Badge>
-          <div className='hidden sm:flex items-center gap-2'>
-            <span className='text-sm font-bold text-foreground'>
-              {cleanActiveTitle}
-            </span>
+      {/* 2. STICKY COMPACT STEPPER HEADER (TIDAK IKUT TER-SCROLL) */}
+      <div className='sticky top-16 z-20 rounded-xl border bg-card/95 backdrop-blur-md px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-xs space-y-2'>
+        {/* Top summary row: Step counter, Clean title, Progress indicator & Actions */}
+        <div className='flex items-center justify-between gap-2.5 pb-2 border-b border-border/60 flex-wrap sm:flex-nowrap'>
+          <div className='flex items-center gap-2 sm:gap-2.5 min-w-0'>
             <Badge
-              variant='secondary'
-              className='font-mono text-xs px-2 py-0.5 h-5 font-semibold bg-muted text-foreground border border-border/80'
+              variant='outline'
+              className='text-xs font-mono font-bold px-2 py-0.5 border-primary/40 text-primary bg-primary/10 shadow-2xs shrink-0'
             >
-              Form {activeStep.code}
+              LANGKAH {activeStep.stepNumber} DARI {totalSteps}
             </Badge>
-          </div>
-        </div>
-
-        <div className='flex items-center gap-3 ml-auto flex-wrap sm:flex-nowrap'>
-          <div className='flex items-center gap-2.5 text-xs'>
-            <span className='text-xs font-medium text-muted-foreground hidden sm:inline'>
-              Progres ({completedCount}/{totalSteps}):
-            </span>
-            <div className='w-24 sm:w-32 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border border-border/60'>
-              <div
-                className={cn(
-                  'h-full transition-all duration-500 rounded-full',
-                  progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary'
-                )}
-                style={{ width: `${Math.max(progressPercentage, 5)}%` }}
-              />
-            </div>
-            <span
-              className={cn(
-                'font-mono text-xs sm:text-sm font-extrabold',
-                progressPercentage === 100
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-primary'
-              )}
-            >
-              {progressPercentage}%
-            </span>
-          </div>
-
-          {/* Submit to Auditor Button */}
-          {showSubmitButton && (
-            <Button
-              type='button'
-              size='sm'
-              className='h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm'
-              onClick={() => setSubmitOpen(true)}
-            >
-              <Send className='h-3.5 w-3.5' />
-              Kirim ke Auditor
-            </Button>
-          )}
-
-          {actions}
-        </div>
-      </div>
-
-      {/* DESKTOP & TABLET: PROMINENT 13-STEP TIMELINE TRACK */}
-      <TooltipProvider delayDuration={150}>
-        <nav aria-label='Progress' className='hidden sm:block pt-4 pb-1'>
-          <ol className='flex items-start w-full justify-between'>
-            {steps.map((step, index) => {
-              const isCurrent = step.id === currentStepId
-              const isCompleted = step.isCompleted
-              const isLocked = !step.isUnlocked
-              const isLast = index === steps.length - 1
-              const cleanTitle = getCleanStepTitle(step.title)
-
-              return (
-                <li
-                  key={step.id}
-                  className={cn(
-                    'flex items-start min-w-0',
-                    !isLast && 'flex-1'
-                  )}
-                >
-                  {/* Step Node Button with Circle & High-Contrast Form Code */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type='button'
-                        onClick={() => handleStepClick(step)}
-                        disabled={isLocked}
-                        className={cn(
-                          'group flex flex-col items-center shrink-0 w-9 sm:w-10 outline-hidden transition-all select-none',
-                          isLocked
-                            ? 'cursor-not-allowed'
-                            : isCurrent
-                            ? 'cursor-default'
-                            : 'cursor-pointer hover:opacity-90'
-                        )}
-                        aria-label={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})`}
-                      >
-                        {/* Circle Node (Larger, High Contrast) */}
-                        <span
-                          className={cn(
-                            'flex h-9 w-9 sm:h-9.5 sm:w-9.5 items-center justify-center rounded-full text-xs font-mono font-bold transition-all shadow-xs',
-                            isCurrent
-                              ? isCompleted
-                                ? 'bg-emerald-600 text-white ring-4 ring-primary/40 ring-offset-2 ring-offset-background scale-110 shadow-md'
-                                : 'bg-primary text-primary-foreground ring-4 ring-primary/40 ring-offset-2 ring-offset-background scale-110 shadow-md'
-                              : isCompleted
-                              ? 'bg-emerald-600 text-white ring-2 ring-emerald-600/30 group-hover:scale-105 shadow-2xs'
-                              : isLocked
-                              ? 'bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 shadow-2xs'
-                              : 'bg-background text-foreground border-2 border-border group-hover:border-primary group-hover:scale-105 shadow-2xs'
-                          )}
-                        >
-                          {isCompleted ? (
-                            <Check className='h-4.5 w-4.5 stroke-[2.8]' />
-                          ) : isLocked ? (
-                            <Lock className='h-4 w-4 stroke-[2.2] text-slate-500 dark:text-slate-400' />
-                          ) : (
-                            <span className='text-sm font-bold font-mono'>{step.stepNumber}</span>
-                          )}
-                        </span>
-
-                        {/* High-Contrast Clear Form Code underneath */}
-                        <span
-                          className={cn(
-                            'text-[11px] sm:text-xs font-mono mt-1.5 text-center transition-colors truncate max-w-full leading-tight select-none',
-                            isCurrent
-                              ? 'font-extrabold text-primary text-xs sm:text-[13px] tracking-tight'
-                              : isCompleted
-                              ? 'font-bold text-emerald-700 dark:text-emerald-400'
-                              : isLocked
-                              ? 'font-bold text-slate-600 dark:text-slate-300'
-                              : 'font-bold text-foreground group-hover:text-primary'
-                          )}
-                        >
-                          {step.code}
-                        </span>
-
-                        {/* Active Indicator Dot */}
-                        {isCurrent && (
-                          <span className='h-1.5 w-1.5 rounded-full bg-primary mt-0.5 shadow-2xs' />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-
-                    <TooltipContent side='bottom' className='text-xs space-y-1.5 p-2.5 max-w-xs shadow-md'>
-                      <div className='font-bold flex items-center justify-between gap-2 border-b border-border/50 pb-1'>
-                        <span>Langkah {step.stepNumber}: {cleanTitle}</span>
-                        <Badge variant='outline' className='text-[10px] font-mono px-1 py-0'>
-                          Form {step.code}
-                        </Badge>
-                      </div>
-                      <p className='text-[11px] text-muted-foreground leading-snug'>
-                        {step.subtitle}
-                      </p>
-                      <div className='flex items-center gap-1.5 pt-0.5 text-[10px] font-medium'>
-                        <span
-                          className={cn(
-                            'h-1.5 w-1.5 rounded-full',
-                            isCurrent
-                              ? 'bg-primary'
-                              : isCompleted
-                              ? 'bg-emerald-500'
-                              : isLocked
-                              ? 'bg-muted-foreground'
-                              : 'bg-amber-500'
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            isCurrent
-                              ? 'text-primary font-bold'
-                              : isCompleted
-                              ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                              : 'text-muted-foreground'
-                          )}
-                        >
-                          {isCurrent
-                            ? 'Sedang aktif dikerjakan'
-                            : isCompleted
-                            ? 'Sudah selesai & tersimpan'
-                            : !step.isImplemented
-                            ? 'Tahap pengembangan (Coming Soon)'
-                            : isLocked
-                            ? 'Terkunci (Selesaikan langkah sebelumnya)'
-                            : 'Siap diisi'}
-                        </span>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {/* Flexible Connector Line between steps (Solid 3px) */}
-                  {!isLast && (
-                    <div
-                      aria-hidden='true'
-                      className='flex-1 h-[3px] mx-1 sm:mx-1.5 mt-[17px] sm:mt-[18px] rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'
-                    >
-                      <div
-                        className={cn(
-                          'h-full transition-all duration-300',
-                          isCompleted
-                            ? 'bg-emerald-500 w-full'
-                            : isCurrent
-                            ? 'bg-primary/40 w-1/2'
-                            : 'w-0'
-                        )}
-                      />
-                    </div>
-                  )}
-                </li>
-              )
-            })}
-          </ol>
-        </nav>
-      </TooltipProvider>
-
-      {/* MOBILE (<640px): MULTI-SEGMENT PROGRESS + TOUCH NAVIGATOR */}
-      <div className='sm:hidden pt-3 space-y-2.5'>
-        {/* Segmented Micro Progress Bar (13 segments) */}
-        <div className='flex items-center gap-1 h-2 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'>
-          {steps.map((step) => {
-            const isCurrent = step.id === currentStepId
-            const isCompleted = step.isCompleted
-            const isLocked = !step.isUnlocked
-            const cleanTitle = getCleanStepTitle(step.title)
-
-            return (
-              <button
-                key={step.id}
-                type='button'
-                onClick={() => handleStepClick(step)}
-                disabled={isLocked}
-                title={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})`}
-                className={cn(
-                  'flex-1 h-full transition-all rounded-full',
-                  isCurrent
-                    ? 'bg-primary ring-2 ring-primary/40'
-                    : isCompleted
-                    ? 'bg-emerald-500'
-                    : isLocked
-                    ? 'bg-slate-300 dark:bg-slate-600'
-                    : 'bg-slate-400 dark:bg-slate-500'
-                )}
-              />
-            )
-          })}
-        </div>
-
-        {/* Active Step Details & Quick Mobile Navigator */}
-        <div className='flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2'>
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            disabled={!prevStep || !prevStep.isUnlocked}
-            onClick={() => prevStep && handleStepClick(prevStep)}
-            className='h-8 w-8 shrink-0'
-            title={prevStep ? `Kembali ke Langkah ${prevStep.stepNumber}` : undefined}
-          >
-            <ChevronLeft className='h-4 w-4' />
-          </Button>
-
-          <div className='text-center min-w-0 flex-1 px-1'>
-            <div className='flex items-center justify-center gap-1.5 flex-wrap'>
-              <span className='text-xs font-bold text-foreground truncate'>
+            <div className='flex items-center gap-1.5 min-w-0 truncate'>
+              <span className='text-xs sm:text-sm font-bold text-foreground truncate'>
                 {cleanActiveTitle}
               </span>
-              <Badge variant='outline' className='text-[10px] font-mono px-1 py-0 h-4'>
+              <Badge
+                variant='secondary'
+                className='font-mono text-[10px] sm:text-xs px-1.5 py-0 h-4.5 font-semibold bg-muted text-foreground border border-border/80 shrink-0'
+              >
                 Form {activeStep.code}
               </Badge>
             </div>
-            <p className='text-[10px] text-muted-foreground mt-0.5'>
-              Langkah {activeStep.stepNumber} dari {totalSteps}
-            </p>
           </div>
 
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            disabled={!nextStep || !nextStep.isUnlocked}
-            onClick={() => nextStep && handleStepClick(nextStep)}
-            className='h-8 w-8 shrink-0'
-            title={nextStep ? `Lanjut ke Langkah ${nextStep.stepNumber}` : undefined}
-          >
-            <ChevronRight className='h-4 w-4' />
-          </Button>
+          <div className='flex items-center gap-2 sm:gap-2.5 ml-auto flex-wrap sm:flex-nowrap shrink-0'>
+            {/* Compact status pill if in review / approved / revision */}
+            {readiness?.status === 'approved' && (
+              <Badge className='text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 py-0.5 px-2 gap-1 font-semibold'>
+                <CheckCircle2 className='h-3 w-3 text-emerald-600' />
+                Disetujui
+              </Badge>
+            )}
+            {readiness?.status === 'revision_requested' && (
+              <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
+                <AlertCircle className='h-3 w-3 text-destructive' />
+                Perlu Revisi
+              </Badge>
+            )}
+            {(readiness?.status === 'submitted' || readiness?.status === 'in_review') && (
+              <Badge className='text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 py-0.5 px-2 gap-1 font-semibold'>
+                <Clock className='h-3 w-3 text-amber-600 animate-pulse' />
+                Dalam Review
+              </Badge>
+            )}
+
+            {/* Micro Progress Bar & Percentage */}
+            <div className='flex items-center gap-2 text-xs pl-1.5 border-l border-border/60'>
+              <span className='text-xs font-medium text-muted-foreground hidden lg:inline'>
+                Progres ({completedCount}/{totalSteps}):
+              </span>
+              <div className='w-16 sm:w-20 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border border-border/60'>
+                <div
+                  className={cn(
+                    'h-full transition-all duration-500 rounded-full',
+                    progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary'
+                  )}
+                  style={{ width: `${Math.max(progressPercentage, 5)}%` }}
+                />
+              </div>
+              <span
+                className={cn(
+                  'font-mono text-xs font-extrabold',
+                  progressPercentage === 100
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-primary'
+                )}
+              >
+                {progressPercentage}%
+              </span>
+            </div>
+
+            {/* Submit to Auditor Button */}
+            {showSubmitButton && (
+              <Button
+                type='button'
+                size='sm'
+                className='h-7.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs font-semibold'
+                onClick={() => setSubmitOpen(true)}
+              >
+                <Send className='h-3 w-3' />
+                <span>Kirim ke Auditor</span>
+              </Button>
+            )}
+
+            {actions}
+          </div>
+        </div>
+
+        {/* DESKTOP & TABLET: COMPACT 13-STEP TIMELINE TRACK */}
+        <TooltipProvider delayDuration={150}>
+          <nav aria-label='Progress' className='hidden sm:block pt-1.5 pb-0.5 border-t border-border/60'>
+            <ol className='flex items-start w-full justify-between'>
+              {steps.map((step, index) => {
+                const isCurrent = step.id === currentStepId
+                const isCompleted = step.isCompleted
+                const isLocked = !step.isUnlocked
+                const isLast = index === steps.length - 1
+                const cleanTitle = getCleanStepTitle(step.title)
+
+                return (
+                  <li
+                    key={step.id}
+                    className={cn(
+                      'flex items-start min-w-0',
+                      !isLast && 'flex-1'
+                    )}
+                  >
+                    {/* Step Node Button with Circle & High-Contrast Form Code */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type='button'
+                          onClick={() => handleStepClick(step)}
+                          disabled={isLocked}
+                          className={cn(
+                            'group flex flex-col items-center shrink-0 w-8 sm:w-8.5 outline-hidden transition-all select-none',
+                            isLocked
+                              ? 'cursor-not-allowed'
+                              : isCurrent
+                              ? 'cursor-default'
+                              : 'cursor-pointer hover:opacity-90'
+                          )}
+                          aria-label={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})`}
+                        >
+                          {/* Compact Circle Node (30-32px) */}
+                          <span
+                            className={cn(
+                              'flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs font-mono font-bold transition-all shadow-2xs',
+                              isCurrent
+                                ? isCompleted
+                                  ? 'bg-emerald-600 text-white ring-3 ring-primary/40 ring-offset-1 ring-offset-background scale-105 shadow-sm'
+                                  : 'bg-primary text-primary-foreground ring-3 ring-primary/40 ring-offset-1 ring-offset-background scale-105 shadow-sm'
+                                : isCompleted
+                                ? 'bg-emerald-600 text-white ring-1 ring-emerald-600/30 group-hover:scale-105'
+                                : isLocked
+                                ? 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
+                                : 'bg-background text-foreground border border-border group-hover:border-primary group-hover:scale-105'
+                            )}
+                          >
+                            {isCompleted ? (
+                              <Check className='h-3.5 w-3.5 stroke-[2.8]' />
+                            ) : isLocked ? (
+                              <Lock className='h-3.5 w-3.5 stroke-[2.2] text-slate-500 dark:text-slate-400' />
+                            ) : (
+                              <span className='text-[11px] font-bold font-mono'>{step.stepNumber}</span>
+                            )}
+                          </span>
+
+                          {/* High-Contrast Clear Form Code underneath */}
+                          <span
+                            className={cn(
+                              'text-[10px] sm:text-[11px] font-mono mt-1 text-center transition-colors truncate max-w-full leading-none select-none',
+                              isCurrent
+                                ? 'font-extrabold text-primary'
+                                : isCompleted
+                                ? 'font-bold text-emerald-700 dark:text-emerald-400'
+                                : isLocked
+                                ? 'font-bold text-slate-600 dark:text-slate-400'
+                                : 'font-semibold text-foreground group-hover:text-primary'
+                            )}
+                          >
+                            {step.code}
+                          </span>
+
+                          {/* Active Indicator Dot */}
+                          {isCurrent && (
+                            <span className='h-1 w-1 rounded-full bg-primary mt-0.5 shadow-2xs' />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+
+                      <TooltipContent side='bottom' className='text-xs space-y-1 p-2 max-w-xs shadow-md'>
+                        <div className='font-bold flex items-center justify-between gap-2 border-b border-border/50 pb-1'>
+                          <span>Langkah {step.stepNumber}: {cleanTitle}</span>
+                          <Badge variant='outline' className='text-[10px] font-mono px-1 py-0'>
+                            Form {step.code}
+                          </Badge>
+                        </div>
+                        <p className='text-[11px] text-muted-foreground leading-snug'>
+                          {step.subtitle}
+                        </p>
+                        <div className='flex items-center gap-1.5 pt-0.5 text-[10px] font-medium'>
+                          <span
+                            className={cn(
+                              'h-1.5 w-1.5 rounded-full',
+                              isCurrent
+                                ? 'bg-primary'
+                                : isCompleted
+                                ? 'bg-emerald-500'
+                                : isLocked
+                                ? 'bg-muted-foreground'
+                                : 'bg-amber-500'
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              isCurrent
+                                ? 'text-primary font-bold'
+                                : isCompleted
+                                ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                : 'text-muted-foreground'
+                            )}
+                          >
+                            {isCurrent
+                              ? 'Sedang aktif dikerjakan'
+                              : isCompleted
+                              ? 'Sudah selesai & tersimpan'
+                              : !step.isImplemented
+                              ? 'Tahap pengembangan (Coming Soon)'
+                              : isLocked
+                              ? 'Terkunci (Selesaikan langkah sebelumnya)'
+                              : 'Siap diisi'}
+                          </span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Flexible Connector Line between steps */}
+                    {!isLast && (
+                      <div
+                        aria-hidden='true'
+                        className='flex-1 h-[2.5px] mx-1 mt-[13px] sm:mt-[14px] rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'
+                      >
+                        <div
+                          className={cn(
+                            'h-full transition-all duration-300',
+                            isCompleted
+                              ? 'bg-emerald-500 w-full'
+                              : isCurrent
+                              ? 'bg-primary/40 w-1/2'
+                              : 'w-0'
+                          )}
+                        />
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ol>
+          </nav>
+        </TooltipProvider>
+
+        {/* MOBILE (<640px): MULTI-SEGMENT PROGRESS + TOUCH NAVIGATOR */}
+        <div className='sm:hidden pt-1.5 space-y-2 border-t border-border/60'>
+          {/* Segmented Micro Progress Bar (13 segments) */}
+          <div className='flex items-center gap-1 h-1.5 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'>
+            {steps.map((step) => {
+              const isCurrent = step.id === currentStepId
+              const isCompleted = step.isCompleted
+              const isLocked = !step.isUnlocked
+              const cleanTitle = getCleanStepTitle(step.title)
+
+              return (
+                <button
+                  key={step.id}
+                  type='button'
+                  onClick={() => handleStepClick(step)}
+                  disabled={isLocked}
+                  title={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})`}
+                  className={cn(
+                    'flex-1 h-full transition-all rounded-full',
+                    isCurrent
+                      ? 'bg-primary ring-2 ring-primary/40'
+                      : isCompleted
+                      ? 'bg-emerald-500'
+                      : isLocked
+                      ? 'bg-slate-300 dark:bg-slate-600'
+                      : 'bg-slate-400 dark:bg-slate-500'
+                  )}
+                />
+              )
+            })}
+          </div>
+
+          {/* Active Step Details & Quick Mobile Navigator */}
+          <div className='flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-2.5 py-1.5'>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              disabled={!prevStep || !prevStep.isUnlocked}
+              onClick={() => prevStep && handleStepClick(prevStep)}
+              className='h-7 w-7 shrink-0'
+              title={prevStep ? `Kembali ke Langkah ${prevStep.stepNumber}` : undefined}
+            >
+              <ChevronLeft className='h-3.5 w-3.5' />
+            </Button>
+
+            <div className='text-center min-w-0 flex-1 px-1'>
+              <div className='flex items-center justify-center gap-1.5 flex-wrap'>
+                <span className='text-xs font-bold text-foreground truncate'>
+                  {cleanActiveTitle}
+                </span>
+                <Badge variant='outline' className='text-[10px] font-mono px-1 py-0 h-4'>
+                  Form {activeStep.code}
+                </Badge>
+              </div>
+              <p className='text-[10px] text-muted-foreground mt-0.5'>
+                Langkah {activeStep.stepNumber} dari {totalSteps}
+              </p>
+            </div>
+
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              disabled={!nextStep || !nextStep.isUnlocked}
+              onClick={() => nextStep && handleStepClick(nextStep)}
+              className='h-7 w-7 shrink-0'
+              title={nextStep ? `Lanjut ke Langkah ${nextStep.stepNumber}` : undefined}
+            >
+              <ChevronRight className='h-3.5 w-3.5' />
+            </Button>
+          </div>
         </div>
       </div>
 

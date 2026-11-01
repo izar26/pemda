@@ -433,8 +433,8 @@ export function KonteksStrategisPage() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6 pb-12'>
-        {/* Page Title (Sticky) */}
-        <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+        {/* Page Title */}
+        <PageHeader sticky={false} className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
           <div className='space-y-1 min-w-0 flex-1'>
             <div className='flex items-center gap-2 flex-wrap'>
               <h2 className='text-2xl font-bold tracking-tight text-foreground'>
