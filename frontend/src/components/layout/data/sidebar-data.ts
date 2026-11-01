@@ -249,11 +249,6 @@ export const sidebarData: SidebarData = {
               url: '/settings/account',
               icon: Shield,
             },
-            {
-              title: 'Tema & Tampilan',
-              url: '/settings/appearance',
-              icon: Palette,
-            },
           ],
         },
       ],
