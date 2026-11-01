@@ -96,12 +96,23 @@ function PeriodeRowActions({ row }: CellProps) {
                 setCurrentRow(item)
                 setOpen('delete')
               }}
-              disabled={item.is_aktif || Boolean(item.has_transactions)}
+              disabled={
+                item.is_aktif ||
+                Boolean(
+                  item.transaction_counts?.has_any_data ??
+                  item.has_risiko_transactions ??
+                  item.has_transactions
+                )
+              }
               className='gap-2 text-destructive focus:text-destructive'
             >
               <Trash2 className='h-4 w-4' />
               <span>Hapus Periode</span>
-              {item.has_transactions && (
+              {Boolean(
+                item.transaction_counts?.has_any_data ??
+                item.has_risiko_transactions ??
+                item.has_transactions
+              ) && (
                 <Lock className='h-3.5 w-3.5 ml-auto text-muted-foreground' />
               )}
             </DropdownMenuItem>
@@ -116,7 +127,8 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
   const { setOpen, setCurrentRow, setTargetYear } = usePeriode()
   const { hasPermission } = usePermissions()
   const canEdit = hasPermission('periode.edit')
-  const isLocked = Boolean(item.has_transactions)
+  const isLocked = Boolean(item.has_risiko_transactions ?? item.has_transactions)
+  const riskCount = item.risiko_transactions_count ?? item.total_transactions ?? 0
   const years: number[] =
     item.daftar_tahun && item.daftar_tahun.length > 0
       ? item.daftar_tahun
@@ -130,7 +142,7 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
     if (year === item.tahun_penilaian && item.is_aktif) return
     if (isLocked) {
       toast.warning(
-        `Tahun Penilaian tidak dapat diganti karena sudah ada ${item.total_transactions ?? 'beberapa'} data transaksi OPD pada periode ini.`
+        `Tahun Penilaian tidak dapat diganti karena sudah ada ${riskCount} data pengisian Pengelolaan Risiko OPD pada periode ini.`
       )
       return
     }
@@ -155,7 +167,7 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
               disabled={isDisabled}
               title={
                 isLocked && !isSelected
-                  ? `Terkunci: Sudah ada data transaksi OPD (${item.total_transactions ?? 0} data)`
+                  ? `Terkunci: Sudah ada pengisian Pengelolaan Risiko OPD (${riskCount} data)`
                   : isCurrentActive
                   ? `Tahun ${yr} (Sedang Berjalan)`
                   : canEdit
@@ -203,12 +215,12 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
               <>
                 <Lock className='h-3 w-3 shrink-0' />
                 <span>
-                  Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Terkunci: Ada {item.total_transactions ?? 0} transaksi OPD)
+                  Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Terkunci: Ada {riskCount} pengisian Pengelolaan Risiko OPD)
                 </span>
               </>
             ) : (
               <>
-                <span>●</span> Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Klik tahun lain untuk pindah)
+                <span>●</span> Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Bebas beralih tahun - belum ada pengisian risiko)
               </>
             )}
           </span>

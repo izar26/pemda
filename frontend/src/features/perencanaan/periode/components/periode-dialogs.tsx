@@ -113,7 +113,8 @@ export function PeriodeActionDialog({
 }: PeriodeActionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEdit = !!currentRow
-  const isLocked = isEdit && Boolean(currentRow?.has_transactions)
+  const isLocked = isEdit && Boolean(currentRow?.has_risiko_transactions ?? currentRow?.has_transactions)
+  const riskCount = currentRow?.risiko_transactions_count ?? currentRow?.total_transactions ?? 0
 
   const currentYear = new Date().getFullYear()
 
@@ -265,7 +266,7 @@ export function PeriodeActionDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4'
             >
-              {/* Alert: Periode Terkunci Jika Ada Transaksi OPD */}
+              {/* Alert: Periode Terkunci Jika Ada Transaksi Pengelolaan Risiko OPD */}
               {isLocked && (
                 <div className='p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-3'>
                   <Lock className='h-4.5 w-4.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400' />
@@ -275,11 +276,11 @@ export function PeriodeActionDialog({
                         Tahun Penilaian & Siklus RPJMD Terkunci
                       </span>
                       <span className='px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-200 text-[10px] font-mono font-bold'>
-                        {currentRow?.total_transactions ?? '1+'} Transaksi OPD
+                        {riskCount} Pengisian Risiko OPD
                       </span>
                     </div>
                     <p className='text-muted-foreground text-[11px] leading-relaxed'>
-                      Periode ini sudah memiliki data transaksi lembar kerja risiko OPD (Konteks Strategis, Konteks Operasional, atau Pengajuan Review). Tahun penilaian dan rentang RPJMD tidak dapat diubah demi menjaga integritas data dan jejak audit. Anda tetap dapat memperpanjang tanggal batas akhir dan memperbarui keterangan.
+                      Periode ini sudah memiliki data pengisian Pengelolaan Risiko OPD (Form 2B Konteks Strategis, Form 2C Konteks Operasional, atau Pengajuan Review). Tahun penilaian dan rentang RPJMD tidak dapat diubah demi menjaga integritas data dan jejak audit. Anda tetap dapat memperpanjang tanggal batas akhir dan memperbarui keterangan.
                     </p>
                   </div>
                 </div>
@@ -627,13 +628,16 @@ export function PeriodeSwitchYearDialog({
   if (!currentRow || !targetYear) return null
 
   const isSwitchingCycle = !currentRow.is_aktif
-  const isSwitchBlocked = Boolean(currentRow.has_transactions) && targetYear !== currentRow.tahun_penilaian
+  const isSwitchBlocked =
+    Boolean(currentRow.has_risiko_transactions ?? currentRow.has_transactions) &&
+    targetYear !== currentRow.tahun_penilaian
+  const riskCount = currentRow.risiko_transactions_count ?? currentRow.total_transactions ?? 0
 
   async function handleSwitchYear() {
     if (!currentRow || !targetYear) return
     if (isSwitchBlocked) {
       toast.error(
-        `Tahun penilaian tidak dapat dialihkan karena periode '${currentRow.nama_periode}' sudah memiliki data transaksi risiko OPD aktif.`
+        `Tahun penilaian tidak dapat dialihkan karena periode '${currentRow.nama_periode}' sudah memiliki data pengisian Pengelolaan Risiko OPD (${riskCount} data).`
       )
       return
     }
@@ -681,7 +685,7 @@ export function PeriodeSwitchYearDialog({
         <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
           <Lock className='h-4 w-4 shrink-0 mt-0.5' />
           <span>
-            <strong>Terkunci:</strong> Periode ini sudah memiliki {currentRow.total_transactions ?? '1+'} transaksi risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit pengawasan.
+            <strong>Terkunci:</strong> Periode ini sudah memiliki {riskCount} data pengisian Pengelolaan Risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit pengawasan.
           </span>
         </div>
       )}
@@ -727,9 +731,14 @@ export function PeriodeDeleteDialog({
 
   async function handleDelete() {
     if (!currentRow) return
-    if (currentRow.has_transactions) {
+    const hasData = Boolean(
+      currentRow.transaction_counts?.has_any_data ??
+      currentRow.has_risiko_transactions ??
+      currentRow.has_transactions
+    )
+    if (hasData) {
       toast.error(
-        `Periode '${currentRow.nama_periode}' tidak dapat dihapus karena sudah memiliki data transaksi risiko OPD.`
+        `Periode '${currentRow.nama_periode}' tidak dapat dihapus karena masih memiliki data terkait (Tujuan, Sasaran, atau Dokumen Risiko).`
       )
       return
     }
@@ -765,11 +774,15 @@ export function PeriodeDeleteDialog({
       <div className='p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed'>
         Catatan: Periode yang sedang aktif tidak dapat dihapus. Anda dapat mengubah statusnya menjadi Arsip bila data ingin disimpan untuk rekam jejak.
       </div>
-      {currentRow.has_transactions && (
+      {Boolean(
+        currentRow.transaction_counts?.has_any_data ??
+        currentRow.has_risiko_transactions ??
+        currentRow.has_transactions
+      ) && (
         <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
           <Lock className='h-4 w-4 shrink-0 mt-0.5' />
           <span>
-            <strong>Tidak Dapat Dihapus:</strong> Periode ini sudah memiliki {currentRow.total_transactions ?? '1+'} transaksi risiko OPD. Penghapusan diblokir demi menjaga integritas data dan jejak audit pengawasan.
+            <strong>Tidak Dapat Dihapus:</strong> Periode ini sudah memiliki data turunan terkait (data Renstra atau Dokumen Risiko). Penghapusan diblokir demi menjaga integritas data dan jejak audit pengawasan.
           </span>
         </div>
       )}

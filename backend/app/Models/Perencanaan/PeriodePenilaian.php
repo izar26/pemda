@@ -167,30 +167,86 @@ class PeriodePenilaian extends Model
     }
 
     /**
-     * Check if this period has any transactions from OPD.
+     * Check if this period has any actual Risk Management transactions filled by OPD
+     * (Form 2B Konteks Strategis, Form 2C Konteks Operasional, or non-draft Submissions).
      */
-    public function hasTransactions(): bool
+    public function hasRisikoTransactions(): bool
     {
-        if (isset($this->attributes['total_transactions_count'])) {
-            return (int) $this->attributes['total_transactions_count'] > 0;
-        }
-
-        $counts = $this->getTransactionCounts();
-        return $counts['has_transactions'];
+        return $this->getRisikoTransactionsCount() > 0;
     }
 
     /**
-     * Get detailed transaction counts for this evaluation period.
+     * Get total count of Risk Management transactions filled by OPD.
+     */
+    public function getRisikoTransactionsCount(): int
+    {
+        $konteksStrategis = (int) ($this->konteks_penilaians_count ?? $this->konteksPenilaians()->count());
+        $konteksOperasional = (int) ($this->konteks_operasionals_count ?? $this->konteksOperasionals()->count());
+        $activePengajuan = (int) ($this->active_pengajuan_penilaians_count ?? $this->pengajuanPenilaians()
+            ->where(function ($q) {
+                $q->where('status', '!=', 'draft')
+                  ->orWhereNotNull('submitted_at');
+            })->count());
+
+        return $konteksStrategis + $konteksOperasional + $activePengajuan;
+    }
+
+    /**
+     * Get detailed Risk Management transaction counts.
+     *
+     * @return array{
+     *     has_risiko_transactions: bool,
+     *     total_risiko_transactions: int,
+     *     konteks_strategis_count: int,
+     *     konteks_operasional_count: int,
+     *     active_pengajuan_count: int
+     * }
+     */
+    public function getRisikoTransactionCounts(): array
+    {
+        $konteksStrategis = (int) ($this->konteks_penilaians_count ?? $this->konteksPenilaians()->count());
+        $konteksOperasional = (int) ($this->konteks_operasionals_count ?? $this->konteksOperasionals()->count());
+        $activePengajuan = (int) ($this->active_pengajuan_penilaians_count ?? $this->pengajuanPenilaians()
+            ->where(function ($q) {
+                $q->where('status', '!=', 'draft')
+                  ->orWhereNotNull('submitted_at');
+            })->count());
+
+        $totalRisiko = $konteksStrategis + $konteksOperasional + $activePengajuan;
+
+        return [
+            'has_risiko_transactions' => $totalRisiko > 0,
+            'total_risiko_transactions' => $totalRisiko,
+            'konteks_strategis_count' => $konteksStrategis,
+            'konteks_operasional_count' => $konteksOperasional,
+            'active_pengajuan_count' => $activePengajuan,
+        ];
+    }
+
+    /**
+     * Alias for hasRisikoTransactions to enforce that only risk entries lock the evaluation year.
+     */
+    public function hasTransactions(): bool
+    {
+        return $this->hasRisikoTransactions();
+    }
+
+    /**
+     * Get detailed transaction counts for this evaluation period, distinguishing between
+     * Risk Management entries (which lock evaluation year) and Planning entries (Renstra OPD).
      *
      * @return array{
      *     has_transactions: bool,
      *     total_transactions: int,
+     *     has_risiko_transactions: bool,
+     *     total_risiko_transactions: int,
      *     tujuan_count: int,
      *     sasaran_count: int,
      *     indikator_count: int,
      *     konteks_strategis_count: int,
      *     konteks_operasional_count: int,
-     *     pengajuan_count: int
+     *     pengajuan_count: int,
+     *     active_pengajuan_count: int
      * }
      */
     public function getTransactionCounts(): array
@@ -200,19 +256,30 @@ class PeriodePenilaian extends Model
         $indikator = (int) ($this->indikator_penilaians_count ?? $this->indikatorPenilaians()->count());
         $konteksStrategis = (int) ($this->konteks_penilaians_count ?? $this->konteksPenilaians()->count());
         $konteksOperasional = (int) ($this->konteks_operasionals_count ?? $this->konteksOperasionals()->count());
-        $pengajuan = (int) ($this->pengajuan_penilaians_count ?? $this->pengajuanPenilaians()->count());
+        $totalPengajuan = (int) ($this->pengajuan_penilaians_count ?? $this->pengajuanPenilaians()->count());
+        $activePengajuan = (int) ($this->active_pengajuan_penilaians_count ?? $this->pengajuanPenilaians()
+            ->where(function ($q) {
+                $q->where('status', '!=', 'draft')
+                  ->orWhereNotNull('submitted_at');
+            })->count());
 
-        $total = $tujuan + $sasaran + $indikator + $konteksStrategis + $konteksOperasional + $pengajuan;
+        $totalRisiko = $konteksStrategis + $konteksOperasional + $activePengajuan;
+        $totalAll = $tujuan + $sasaran + $indikator + $konteksStrategis + $konteksOperasional + $totalPengajuan;
 
         return [
-            'has_transactions' => $total > 0,
-            'total_transactions' => $total,
+            'has_transactions' => $totalRisiko > 0,
+            'total_transactions' => $totalRisiko,
+            'has_risiko_transactions' => $totalRisiko > 0,
+            'total_risiko_transactions' => $totalRisiko,
             'tujuan_count' => $tujuan,
             'sasaran_count' => $sasaran,
             'indikator_count' => $indikator,
             'konteks_strategis_count' => $konteksStrategis,
             'konteks_operasional_count' => $konteksOperasional,
-            'pengajuan_count' => $pengajuan,
+            'pengajuan_count' => $totalPengajuan,
+            'active_pengajuan_count' => $activePengajuan,
+            'has_any_data' => $totalAll > 0,
+            'total_any_data' => $totalAll,
         ];
     }
 

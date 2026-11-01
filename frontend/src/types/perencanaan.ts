@@ -14,15 +14,22 @@ export interface PeriodePenilaianItem {
   is_aktif: boolean
   has_transactions?: boolean
   total_transactions?: number
+  has_risiko_transactions?: boolean
+  risiko_transactions_count?: number
   transaction_counts?: {
     has_transactions: boolean
     total_transactions: number
+    has_risiko_transactions?: boolean
+    total_risiko_transactions?: number
     tujuan_count: number
     sasaran_count: number
     indikator_count: number
     konteks_strategis_count: number
     konteks_operasional_count: number
     pengajuan_count: number
+    active_pengajuan_count?: number
+    has_any_data?: boolean
+    total_any_data?: number
   }
   sisa_hari: number | null
   keterangan: string | null

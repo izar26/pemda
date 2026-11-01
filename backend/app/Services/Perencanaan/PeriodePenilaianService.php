@@ -42,6 +42,9 @@ class PeriodePenilaianService
                 'konteksPenilaians',
                 'konteksOperasionals',
                 'pengajuanPenilaians',
+                'pengajuanPenilaians as active_pengajuan_penilaians_count' => function ($q) {
+                    $q->where('status', '!=', 'draft')->orWhereNotNull('submitted_at');
+                },
             ]);
 
         $query->filter($filters);
@@ -84,6 +87,9 @@ class PeriodePenilaianService
                 'konteksPenilaians',
                 'konteksOperasionals',
                 'pengajuanPenilaians',
+                'pengajuanPenilaians as active_pengajuan_penilaians_count' => function ($q) {
+                    $q->where('status', '!=', 'draft')->orWhereNotNull('submitted_at');
+                },
             ]);
         $query->filter($filters);
 
@@ -221,9 +227,10 @@ class PeriodePenilaianService
             ]);
         }
 
-        if ($periode->hasTransactions()) {
+        if ($periode->hasRisikoTransactions()) {
+            $count = $periode->getRisikoTransactionsCount();
             throw ValidationException::withMessages([
-                'tahun_penilaian' => "Tidak dapat beralih ke tahun penilaian {$tahunPenilaian}. Periode '{$periode->nama_periode}' pada tahun {$periode->tahun_penilaian} sudah memiliki data transaksi risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit.",
+                'tahun_penilaian' => "Tidak dapat beralih ke tahun penilaian {$tahunPenilaian}. Periode '{$periode->nama_periode}' pada tahun {$periode->tahun_penilaian} sudah memiliki data pengisian Pengelolaan Risiko OPD ({$count} data). Tahun penilaian telah dikunci demi integritas data dan jejak audit.",
             ]);
         }
 
@@ -283,9 +290,18 @@ class PeriodePenilaianService
             ]);
         }
 
-        if ($periode->hasTransactions()) {
-            $counts = $periode->getTransactionCounts();
+        $counts = $periode->getTransactionCounts();
+        if ($counts['has_any_data']) {
             $usages = [];
+            if ($counts['konteks_strategis_count'] > 0) {
+                $usages[] = "{$counts['konteks_strategis_count']} Konteks Strategis (Form 2B)";
+            }
+            if ($counts['konteks_operasional_count'] > 0) {
+                $usages[] = "{$counts['konteks_operasional_count']} Konteks Operasional (Form 2C)";
+            }
+            if ($counts['active_pengajuan_count'] > 0) {
+                $usages[] = "{$counts['active_pengajuan_count']} Pengajuan Review Risiko";
+            }
             if ($counts['tujuan_count'] > 0) {
                 $usages[] = "{$counts['tujuan_count']} Tujuan";
             }
@@ -294,15 +310,6 @@ class PeriodePenilaianService
             }
             if ($counts['indikator_count'] > 0) {
                 $usages[] = "{$counts['indikator_count']} Indikator";
-            }
-            if ($counts['konteks_strategis_count'] > 0) {
-                $usages[] = "{$counts['konteks_strategis_count']} Konteks Strategis";
-            }
-            if ($counts['konteks_operasional_count'] > 0) {
-                $usages[] = "{$counts['konteks_operasional_count']} Konteks Operasional";
-            }
-            if ($counts['pengajuan_count'] > 0) {
-                $usages[] = "{$counts['pengajuan_count']} Pengajuan Review";
             }
             $usageText = implode(', ', $usages);
 
