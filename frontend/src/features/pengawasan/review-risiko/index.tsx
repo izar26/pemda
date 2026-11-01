@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   Building2,
-  Calendar,
   CheckCircle2,
   ClipboardCheck,
   Clock,
@@ -27,7 +26,7 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import {
   Table,
   TableBody,
@@ -124,6 +123,67 @@ export function ReviewRisikoManagement() {
 
     return { total, menunggu, revisi, disetujui, belumKirim }
   }, [rawOpdList])
+
+  // KPI Items using the standard unified KpiStatsCards
+  const kpiItems: KpiStatItem[] = useMemo(
+    () => [
+      {
+        title: 'Total Binaan',
+        value: metrics.total,
+        subtitle: 'Perangkat Daerah',
+        icon: Building2,
+        color: 'bg-primary/10 text-primary',
+        onClick: () => setStatusFilter('semua'),
+        isActive: statusFilter === 'semua',
+        activeClassName: 'border-primary ring-2 ring-primary/20 bg-primary/5',
+      },
+      {
+        title: 'Menunggu Review',
+        value: metrics.menunggu,
+        subtitle: 'Perlu Diperiksa',
+        icon: Clock,
+        color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        valueColor: 'text-amber-600 dark:text-amber-400',
+        onClick: () => setStatusFilter('submitted'),
+        isActive: statusFilter === 'submitted',
+        activeClassName: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5',
+      },
+      {
+        title: 'Perlu Revisi',
+        value: metrics.revisi,
+        subtitle: 'Catatan Perbaikan',
+        icon: AlertCircle,
+        color: 'bg-destructive/10 text-destructive',
+        valueColor: 'text-destructive',
+        onClick: () => setStatusFilter('revision_requested'),
+        isActive: statusFilter === 'revision_requested',
+        activeClassName: 'border-destructive ring-2 ring-destructive/20 bg-destructive/5',
+      },
+      {
+        title: 'Telah Disetujui',
+        value: metrics.disetujui,
+        subtitle: 'Final Disetujui',
+        icon: CheckCircle2,
+        color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        valueColor: 'text-emerald-600 dark:text-emerald-400',
+        onClick: () => setStatusFilter('approved'),
+        isActive: statusFilter === 'approved',
+        activeClassName: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5',
+      },
+      {
+        title: 'Belum Mengirim',
+        value: metrics.belumKirim,
+        subtitle: 'Belum Ada Draft',
+        icon: FileEdit,
+        color: 'bg-muted text-muted-foreground',
+        valueColor: 'text-muted-foreground',
+        onClick: () => setStatusFilter('belum_mengirim'),
+        isActive: statusFilter === 'belum_mengirim',
+        activeClassName: 'border-muted-foreground/60 ring-2 ring-muted/40 bg-muted/20',
+      },
+    ],
+    [metrics, statusFilter]
+  )
 
   // Filtered OPDs based on search term & status filter
   const filteredOpdList = useMemo(() => {
@@ -246,12 +306,6 @@ export function ReviewRisikoManagement() {
                     <ClipboardCheck className='h-6 w-6 text-primary' />
                     Review Risiko OPD
                   </h2>
-                  {activePeriode && (
-                    <Badge variant='outline' className='font-mono text-xs gap-1.5 py-0.5 px-2.5 bg-muted/30'>
-                      <Calendar className='h-3 w-3 text-primary' />
-                      {activePeriode.nama_periode}
-                    </Badge>
-                  )}
                 </div>
                 <p className='text-xs text-muted-foreground'>
                   Pemeriksaan, pemberian catatan revisi, dan persetujuan lembar kerja pengelolaan risiko perangkat daerah binaan Inspektorat.
@@ -274,113 +328,13 @@ export function ReviewRisikoManagement() {
               </div>
             </PageHeader>
 
-            {/* 2. Interactive KPI / Metric Summary Cards */}
-            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3'>
-              {/* Card 1: Total */}
-              <Card
-                onClick={() => setStatusFilter('semua')}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer hover:shadow-sm ${
-                  statusFilter === 'semua'
-                    ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
-                    : 'hover:bg-muted/30'
-                }`}
-              >
-                <div className='flex items-center justify-between'>
-                  <span className='text-xs font-medium text-muted-foreground'>Total Binaan</span>
-                  <Building2 className='h-4 w-4 text-primary' />
-                </div>
-                <div className='mt-2 flex items-baseline justify-between'>
-                  <span className='text-2xl font-bold font-mono tracking-tight text-foreground'>
-                    {metrics.total}
-                  </span>
-                  <span className='text-[11px] text-muted-foreground'>Perangkat Daerah</span>
-                </div>
-              </Card>
-
-              {/* Card 2: Menunggu Review */}
-              <Card
-                onClick={() => setStatusFilter('submitted')}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer hover:shadow-sm ${
-                  statusFilter === 'submitted'
-                    ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5'
-                    : 'hover:bg-muted/30'
-                }`}
-              >
-                <div className='flex items-center justify-between'>
-                  <span className='text-xs font-medium text-muted-foreground'>Menunggu Review</span>
-                  <Clock className='h-4 w-4 text-amber-500' />
-                </div>
-                <div className='mt-2 flex items-baseline justify-between'>
-                  <span className='text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400'>
-                    {metrics.menunggu}
-                  </span>
-                  <span className='text-[11px] text-muted-foreground'>Perlu Diperiksa</span>
-                </div>
-              </Card>
-
-              {/* Card 3: Perlu Revisi */}
-              <Card
-                onClick={() => setStatusFilter('revision_requested')}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer hover:shadow-sm ${
-                  statusFilter === 'revision_requested'
-                    ? 'border-destructive ring-2 ring-destructive/20 bg-destructive/5'
-                    : 'hover:bg-muted/30'
-                }`}
-              >
-                <div className='flex items-center justify-between'>
-                  <span className='text-xs font-medium text-muted-foreground'>Perlu Revisi</span>
-                  <AlertCircle className='h-4 w-4 text-destructive' />
-                </div>
-                <div className='mt-2 flex items-baseline justify-between'>
-                  <span className='text-2xl font-bold font-mono tracking-tight text-destructive'>
-                    {metrics.revisi}
-                  </span>
-                  <span className='text-[11px] text-muted-foreground'>Catatan Perbaikan</span>
-                </div>
-              </Card>
-
-              {/* Card 4: Disetujui */}
-              <Card
-                onClick={() => setStatusFilter('approved')}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer hover:shadow-sm ${
-                  statusFilter === 'approved'
-                    ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5'
-                    : 'hover:bg-muted/30'
-                }`}
-              >
-                <div className='flex items-center justify-between'>
-                  <span className='text-xs font-medium text-muted-foreground'>Telah Disetujui</span>
-                  <CheckCircle2 className='h-4 w-4 text-emerald-500' />
-                </div>
-                <div className='mt-2 flex items-baseline justify-between'>
-                  <span className='text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400'>
-                    {metrics.disetujui}
-                  </span>
-                  <span className='text-[11px] text-muted-foreground'>Final Disetujui</span>
-                </div>
-              </Card>
-
-              {/* Card 5: Belum Mengirim */}
-              <Card
-                onClick={() => setStatusFilter('belum_mengirim')}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer hover:shadow-sm col-span-2 sm:col-span-1 ${
-                  statusFilter === 'belum_mengirim'
-                    ? 'border-muted-foreground ring-2 ring-muted/50 bg-muted/30'
-                    : 'hover:bg-muted/30'
-                }`}
-              >
-                <div className='flex items-center justify-between'>
-                  <span className='text-xs font-medium text-muted-foreground'>Belum Mengirim</span>
-                  <FileEdit className='h-4 w-4 text-muted-foreground' />
-                </div>
-                <div className='mt-2 flex items-baseline justify-between'>
-                  <span className='text-2xl font-bold font-mono tracking-tight text-muted-foreground'>
-                    {metrics.belumKirim}
-                  </span>
-                  <span className='text-[11px] text-muted-foreground'>Belum Ada Draft</span>
-                </div>
-              </Card>
-            </div>
+            {/* 2. Interactive KPI / Metric Summary Cards (Consistent with other pages) */}
+            <KpiStatsCards
+              items={kpiItems}
+              isLoading={isLoading}
+              count={5}
+              className='grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
+            />
 
             {/* 3. Filter Toolbar & Tabs */}
             <div className='flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3'>

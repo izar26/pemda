@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   BarChart3,
   BrainCircuit,
-  Calendar,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -254,13 +253,6 @@ export function ReviewRisikoWizard({
             <span className='font-semibold text-foreground truncate max-w-xs sm:max-w-md'>
               {submission?.opd?.nama || 'Pemeriksaan Risiko'}
             </span>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            <Badge variant='outline' className='font-mono text-xs gap-1.5 py-0.5 px-2.5 bg-muted/30'>
-              <Calendar className='h-3 w-3 text-primary' />
-              {submission?.periode_penilaian?.nama_periode || 'Periode Aktif'}
-            </Badge>
           </div>
         </div>
 

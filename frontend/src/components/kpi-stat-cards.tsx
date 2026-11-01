@@ -10,6 +10,9 @@ export interface KpiStatItem {
   valueColor?: string
   sub?: string
   subtitle?: string
+  onClick?: () => void
+  isActive?: boolean
+  activeClassName?: string
 }
 
 interface KpiStatsCardsProps {
@@ -48,10 +51,20 @@ export function KpiStatsCards({
     <div className={cn('grid gap-2.5 grid-cols-2 lg:grid-cols-4', className)}>
       {items.map((item, idx) => {
         const Icon = item.icon
+        const isClickable = Boolean(item.onClick)
         return (
           <div
             key={idx}
-            className='flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs transition-colors hover:border-primary/30'
+            onClick={item.onClick}
+            className={cn(
+              'flex items-center justify-between rounded-lg border bg-card px-3.5 py-2.5 shadow-2xs transition-all',
+              isClickable && 'cursor-pointer',
+              item.isActive
+                ? item.activeClassName || 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                : isClickable
+                  ? 'hover:border-primary/40 hover:bg-muted/20'
+                  : 'hover:border-primary/30'
+            )}
           >
             <div className='min-w-0 pr-2'>
               <span className='text-[11px] font-medium text-muted-foreground truncate block'>
