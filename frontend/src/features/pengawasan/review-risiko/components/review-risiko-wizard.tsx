@@ -18,11 +18,11 @@ import {
   Loader2,
   PieChart,
   Send,
-  Shield,
   ShieldAlert,
   Target,
   TrendingUp,
   User,
+  X,
   XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -310,136 +310,296 @@ export function ReviewRisikoWizard({
           </div>
         </div>
 
-        {/* Audit Progress Bar */}
-        <div className='pt-2 border-t space-y-2'>
-          <div className='flex items-center justify-between text-xs'>
-            <div className='flex items-center gap-2'>
-              <span className='font-semibold text-foreground'>Progres Pemeriksaan Formulir:</span>
-              <span className='font-mono text-muted-foreground'>
-                {approvedCount} dari {totalSteps} Formulir Disetujui
+        {/* Top Summary Row: Step Counter, Form Code, Clean Title & Progress Indicator */}
+        <div className='flex items-center justify-between gap-3 pt-2.5 pb-2 border-t border-border/60 flex-wrap sm:flex-nowrap'>
+          <div className='flex items-center gap-3'>
+            <Badge
+              variant='outline'
+              className='text-xs font-mono font-bold px-2.5 py-1 border-primary/40 text-primary bg-primary/10 shadow-2xs'
+            >
+              LANGKAH {currentStep.stepNumber} DARI {totalSteps}
+            </Badge>
+            <div className='hidden sm:flex items-center gap-2'>
+              <span className='text-sm font-bold text-foreground'>
+                {currentStep.shortTitle}
               </span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <span className='font-mono font-bold text-xs text-primary'>{progressPercentage}%</span>
-              <div className='flex items-center gap-1.5 text-[11px] font-mono'>
-                <Badge variant='outline' className='text-[10px] py-0 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/30 font-semibold'>
-                  {approvedCount} Disetujui
-                </Badge>
-                {rejectedCount > 0 && (
-                  <Badge variant='outline' className='text-[10px] py-0 px-1.5 bg-destructive/10 text-destructive border-destructive/30 font-semibold'>
-                    {rejectedCount} Revisi
-                  </Badge>
-                )}
-                {pendingCount > 0 && (
-                  <Badge variant='outline' className='text-[10px] py-0 px-1.5 bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold'>
-                    {pendingCount} Menunggu
-                  </Badge>
-                )}
-              </div>
+              <Badge
+                variant='secondary'
+                className='font-mono text-xs px-2 py-0.5 h-5 font-semibold bg-muted text-foreground border border-border/80'
+              >
+                Form {currentStep.code}
+              </Badge>
             </div>
           </div>
 
-          <div className='w-full h-2 rounded-full bg-muted overflow-hidden'>
-            <div
-              className={cn(
-                'h-full transition-all duration-500 rounded-full',
-                progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary'
+          <div className='flex items-center gap-3 ml-auto flex-wrap sm:flex-nowrap'>
+            <div className='flex items-center gap-2.5 text-xs'>
+              <span className='text-xs font-medium text-muted-foreground hidden sm:inline'>
+                Disetujui ({approvedCount}/{totalSteps}):
+              </span>
+              <div className='w-24 sm:w-32 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border border-border/60'>
+                <div
+                  className={cn(
+                    'h-full transition-all duration-500 rounded-full',
+                    progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary'
+                  )}
+                  style={{ width: `${Math.max(progressPercentage, 5)}%` }}
+                />
+              </div>
+              <span
+                className={cn(
+                  'font-mono text-xs sm:text-sm font-extrabold',
+                  progressPercentage === 100
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-primary'
+                )}
+              >
+                {progressPercentage}%
+              </span>
+            </div>
+
+            <div className='hidden md:flex items-center gap-1.5 text-[11px] font-mono'>
+              <Badge variant='outline' className='text-[10px] py-0 px-1.5 bg-emerald-500/10 text-emerald-700 border-emerald-500/30 font-semibold'>
+                {approvedCount} Disetujui
+              </Badge>
+              {rejectedCount > 0 && (
+                <Badge variant='outline' className='text-[10px] py-0 px-1.5 bg-destructive/10 text-destructive border-destructive/30 font-semibold'>
+                  {rejectedCount} Revisi
+                </Badge>
               )}
-              style={{ width: `${Math.max(progressPercentage, 4)}%` }}
-            />
+              {pendingCount > 0 && (
+                <Badge variant='outline' className='text-[10px] py-0 px-1.5 bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold'>
+                  {pendingCount} Menunggu
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 2. 13-STEP TIMELINE TRACK */}
-        <div className='pt-2 border-t space-y-2.5'>
-          <div className='flex items-center justify-between text-xs text-muted-foreground font-medium'>
-            <span className='text-foreground font-bold flex items-center gap-1.5'>
-              <Shield className='h-4 w-4 text-primary' />
-              Tahapan Pemeriksaan Risiko (Form 2B s.d. FRAUD)
-            </span>
-            <span className='font-mono text-[11px]'>
-              Langkah {currentStepIndex + 1} dari {totalSteps}:{' '}
-              <strong className='text-foreground font-semibold'>
-                {currentStep.code} ({currentStep.shortTitle})
-              </strong>
-            </span>
-          </div>
-
-          {/* Stepper Buttons (Responsive Grid - Tanpa Scroll Horizontal) */}
-          <TooltipProvider delayDuration={150}>
-            <div className='grid grid-cols-7 sm:grid-cols-13 gap-1 sm:gap-1.5 pt-0.5'>
-              {RISIKO_WIZARD_STEPS.map((step, idx) => {
+        {/* 2. DESKTOP & TABLET: PROMINENT 13-STEP TIMELINE TRACK (IDENTIK DENGAN PENGELOLAAN RISIKO) */}
+        <TooltipProvider delayDuration={150}>
+          <nav aria-label='Progress' className='hidden sm:block pt-3 pb-1'>
+            <ol className='flex items-start w-full justify-between'>
+              {RISIKO_WIZARD_STEPS.map((step, index) => {
                 const { status } = getItemStatusForStep(step)
-                const isSelected = idx === currentStepIndex
+                const isCurrent = index === currentStepIndex
                 const isApproved = status === 'approved'
                 const isRejected = status === 'rejected'
+                const isLast = index === totalSteps - 1
 
                 return (
-                  <Tooltip key={step.id}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type='button'
-                        onClick={() => setCurrentStepIndex(idx)}
-                        className={cn(
-                          'flex flex-col items-center justify-center py-1.5 px-0.5 sm:px-1 rounded-lg border text-center transition-all duration-150 cursor-pointer w-full relative group',
-                          isSelected
-                            ? 'bg-primary/10 border-primary shadow-2xs ring-2 ring-primary/30'
-                            : isApproved
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/15'
-                              : isRejected
-                                ? 'bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/15'
-                                : 'bg-muted/30 hover:bg-muted/70 border-border/80 text-muted-foreground'
-                        )}
-                      >
-                        <div className='flex items-center gap-0.5 sm:gap-1 mb-0.5'>
+                  <li
+                    key={step.id}
+                    className={cn(
+                      'flex items-start min-w-0',
+                      !isLast && 'flex-1'
+                    )}
+                  >
+                    {/* Step Node Button with Circle & High-Contrast Form Code */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type='button'
+                          onClick={() => setCurrentStepIndex(index)}
+                          className={cn(
+                            'group flex flex-col items-center shrink-0 w-9 sm:w-10 outline-hidden transition-all select-none',
+                            isCurrent
+                              ? 'cursor-default'
+                              : 'cursor-pointer hover:opacity-90'
+                          )}
+                          aria-label={`Langkah ${step.stepNumber}: ${step.shortTitle} (Form ${step.code})`}
+                        >
+                          {/* Circle Node (Larger, High Contrast) */}
                           <span
                             className={cn(
-                              'text-[10px] font-mono font-bold px-1 py-0.2 rounded',
-                              isSelected
-                                ? 'bg-primary text-primary-foreground'
-                                : isApproved
-                                  ? 'bg-emerald-600 text-white'
+                              'flex h-9 w-9 sm:h-9.5 sm:w-9.5 items-center justify-center rounded-full text-xs font-mono font-bold transition-all shadow-xs',
+                              isCurrent
+                                ? isApproved
+                                  ? 'bg-emerald-600 text-white ring-4 ring-primary/40 ring-offset-2 ring-offset-background scale-110 shadow-md'
                                   : isRejected
-                                    ? 'bg-destructive text-white'
-                                    : 'bg-muted text-foreground'
+                                    ? 'bg-destructive text-white ring-4 ring-primary/40 ring-offset-2 ring-offset-background scale-110 shadow-md'
+                                    : 'bg-primary text-primary-foreground ring-4 ring-primary/40 ring-offset-2 ring-offset-background scale-110 shadow-md'
+                                : isApproved
+                                  ? 'bg-emerald-600 text-white ring-2 ring-emerald-600/30 group-hover:scale-105 shadow-2xs'
+                                  : isRejected
+                                    ? 'bg-destructive text-white ring-2 ring-destructive/30 group-hover:scale-105 shadow-2xs'
+                                    : 'bg-background text-foreground border-2 border-border group-hover:border-primary group-hover:scale-105 shadow-2xs'
+                            )}
+                          >
+                            {isApproved ? (
+                              <Check className='h-4.5 w-4.5 stroke-[2.8]' />
+                            ) : isRejected ? (
+                              <X className='h-4.5 w-4.5 stroke-[2.8]' />
+                            ) : (
+                              <span className='text-sm font-bold font-mono'>{step.stepNumber}</span>
+                            )}
+                          </span>
+
+                          {/* High-Contrast Clear Form Code underneath */}
+                          <span
+                            className={cn(
+                              'text-[11px] sm:text-xs font-mono mt-1.5 text-center transition-colors truncate max-w-full leading-tight select-none',
+                              isCurrent
+                                ? 'font-extrabold text-primary text-xs sm:text-[13px] tracking-tight'
+                                : isApproved
+                                  ? 'font-bold text-emerald-700 dark:text-emerald-400'
+                                  : isRejected
+                                    ? 'font-bold text-destructive'
+                                    : 'font-bold text-foreground group-hover:text-primary'
                             )}
                           >
                             {step.code}
                           </span>
-                          {isApproved && (
-                            <CheckCircle2 className='h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400 shrink-0' />
+
+                          {/* Active Indicator Dot */}
+                          {isCurrent && (
+                            <span className='h-1.5 w-1.5 rounded-full bg-primary mt-0.5 shadow-2xs' />
                           )}
-                          {isRejected && (
-                            <XCircle className='h-2.5 w-2.5 sm:h-3 sm:w-3 text-destructive shrink-0' />
-                          )}
-                          {!isApproved && !isRejected && (
-                            <Clock className='h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-500 shrink-0' />
-                          )}
+                        </button>
+                      </TooltipTrigger>
+
+                      <TooltipContent side='bottom' className='text-xs space-y-1.5 p-2.5 max-w-xs shadow-md'>
+                        <div className='font-bold flex items-center justify-between gap-2 border-b border-border/50 pb-1'>
+                          <span>Langkah {step.stepNumber}: {step.shortTitle}</span>
+                          <Badge variant='outline' className='text-[10px] font-mono px-1 py-0'>
+                            Form {step.code}
+                          </Badge>
                         </div>
-                        <span className='text-[9px] sm:text-[10px] font-semibold truncate w-full block text-center px-0.5'>
-                          {step.shortTitle}
-                        </span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side='bottom' className='text-xs space-y-0.5 max-w-xs'>
-                      <p className='font-bold'>
-                        Langkah {step.stepNumber}: {step.title}
-                      </p>
-                      <p className='text-muted-foreground text-[11px]'>{step.subtitle}</p>
-                      <p className='text-[10px] font-mono pt-1 text-primary'>
-                        Status:{' '}
-                        {isApproved
-                          ? 'Disetujui'
-                          : isRejected
-                            ? 'Perlu Revisi'
-                            : 'Menunggu Pemeriksaan'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
+                        <p className='text-[11px] text-muted-foreground leading-snug'>
+                          {step.subtitle}
+                        </p>
+                        <div className='flex items-center gap-1.5 pt-0.5 text-[10px] font-medium'>
+                          <span
+                            className={cn(
+                              'h-1.5 w-1.5 rounded-full',
+                              isCurrent
+                                ? 'bg-primary'
+                                : isApproved
+                                  ? 'bg-emerald-500'
+                                  : isRejected
+                                    ? 'bg-destructive'
+                                    : 'bg-amber-500'
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              isCurrent
+                                ? 'text-primary font-bold'
+                                : isApproved
+                                  ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                  : isRejected
+                                    ? 'text-destructive font-semibold'
+                                    : 'text-muted-foreground'
+                            )}
+                          >
+                            {isApproved
+                              ? 'Disetujui Auditor'
+                              : isRejected
+                                ? 'Perlu Revisi OPD'
+                                : isCurrent
+                                  ? 'Sedang Ditinjau'
+                                  : 'Menunggu Pemeriksaan'}
+                          </span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Flexible Connector Line between steps (Solid 3px) */}
+                    {!isLast && (
+                      <div
+                        aria-hidden='true'
+                        className='flex-1 h-[3px] mx-1 sm:mx-1.5 mt-[17px] sm:mt-[18px] rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'
+                      >
+                        <div
+                          className={cn(
+                            'h-full transition-all duration-300',
+                            isApproved
+                              ? 'bg-emerald-500 w-full'
+                              : isCurrent
+                                ? 'bg-primary/40 w-1/2'
+                                : 'w-0'
+                          )}
+                        />
+                      </div>
+                    )}
+                  </li>
                 )
               })}
+            </ol>
+          </nav>
+        </TooltipProvider>
+
+        {/* MOBILE (<640px): MULTI-SEGMENT PROGRESS + TOUCH NAVIGATOR */}
+        <div className='sm:hidden pt-2 space-y-2.5'>
+          {/* Segmented Micro Progress Bar (13 segments) */}
+          <div className='flex items-center gap-1 h-2 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'>
+            {RISIKO_WIZARD_STEPS.map((step, idx) => {
+              const { status } = getItemStatusForStep(step)
+              const isCurrent = idx === currentStepIndex
+              const isApproved = status === 'approved'
+              const isRejected = status === 'rejected'
+
+              return (
+                <button
+                  key={step.id}
+                  type='button'
+                  onClick={() => setCurrentStepIndex(idx)}
+                  title={`Langkah ${step.stepNumber}: ${step.shortTitle} (Form ${step.code})`}
+                  className={cn(
+                    'flex-1 h-full transition-all rounded-full',
+                    isCurrent
+                      ? 'bg-primary ring-2 ring-primary/40'
+                      : isApproved
+                        ? 'bg-emerald-500'
+                        : isRejected
+                          ? 'bg-destructive'
+                          : 'bg-slate-300 dark:bg-slate-600'
+                  )}
+                />
+              )
+            })}
+          </div>
+
+          {/* Active Step Details & Quick Mobile Navigator */}
+          <div className='flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2'>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              disabled={currentStepIndex === 0}
+              onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
+              className='h-8 w-8 shrink-0'
+              title='Kembali ke Langkah Sebelumnya'
+            >
+              <ChevronLeft className='h-4 w-4' />
+            </Button>
+
+            <div className='text-center min-w-0 flex-1 px-1'>
+              <div className='flex items-center justify-center gap-1.5 flex-wrap'>
+                <span className='text-xs font-bold text-foreground truncate'>
+                  {currentStep.shortTitle}
+                </span>
+                <Badge variant='outline' className='text-[10px] font-mono px-1 py-0 h-4'>
+                  Form {currentStep.code}
+                </Badge>
+              </div>
+              <p className='text-[10px] text-muted-foreground mt-0.5'>
+                Langkah {currentStep.stepNumber} dari {totalSteps}
+              </p>
             </div>
-          </TooltipProvider>
+
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              disabled={currentStepIndex === totalSteps - 1}
+              onClick={() => setCurrentStepIndex((prev) => Math.min(prev + 1, totalSteps - 1))}
+              className='h-8 w-8 shrink-0'
+              title='Lanjut ke Langkah Selanjutnya'
+            >
+              <ChevronRight className='h-4 w-4' />
+            </Button>
+          </div>
         </div>
       </div>
 
