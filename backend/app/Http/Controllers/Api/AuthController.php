@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ActivateUserRequest;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\ConfirmTwoFactorRequest;
 use App\Http\Requests\Auth\DisableTwoFactorRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
@@ -24,6 +25,7 @@ use App\Services\User\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -398,6 +400,47 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Profil pegawai berhasil diperbarui.',
             'user' => new UserResource($updated),
+        ]);
+    }
+
+    /**
+     * Update the authenticated user's password.
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (!Hash::check($request->validated('current_password'), $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Kata sandi saat ini yang Anda masukkan tidak sesuai.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->validated('password')),
+        ]);
+
+        // Revoke active sessions on other devices for security, keeping current session
+        $currentTokenId = $user->currentAccessToken()?->id;
+        if ($currentTokenId) {
+            $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+        }
+
+        $this->auditLogService->log(
+            action: 'AUTH_PASSWORD_CHANGED',
+            module: 'Autentikasi',
+            description: "Pengguna '{$user->name}' ({$user->email}) berhasil memperbarui kata sandi akun.",
+            user: $user,
+            context: [
+                'email' => $user->email,
+                'ip_address' => $request->ip() ?? '127.0.0.1',
+                'user_agent' => $request->userAgent(),
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Kata sandi akun Anda berhasil diperbarui.',
         ]);
     }
 }

@@ -3,6 +3,7 @@ import type {
   ActivateUserPayload,
   ActivateUserResponse,
   AuthUser,
+  ChangePasswordPayload,
   ForgotPasswordPayload,
   GenericMessageResponse,
   LoginPayload,
@@ -177,6 +178,17 @@ export const authService = {
   async activateUser(payload: ActivateUserPayload): Promise<ActivateUserResponse> {
     const response = await apiClient.post<ActivateUserResponse>(
       '/auth/activate',
+      payload
+    )
+    return response.data
+  },
+
+  /**
+   * Change current authenticated user password
+   */
+  async changePassword(payload: ChangePasswordPayload): Promise<GenericMessageResponse> {
+    const response = await apiClient.put<GenericMessageResponse>(
+      '/auth/password',
       payload
     )
     return response.data

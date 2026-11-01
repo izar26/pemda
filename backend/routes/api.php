@@ -56,6 +56,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/password', [AuthController::class, 'changePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
 

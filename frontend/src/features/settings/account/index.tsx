@@ -1,18 +1,18 @@
 import { ContentSection } from '../components/content-section'
 import { TwoFactorSection } from './two-factor-section'
-import { AccountForm } from './account-form'
+import { ChangePasswordForm } from './change-password-form'
 import { Separator } from '@/components/ui/separator'
 
 export function SettingsAccount() {
   return (
     <ContentSection
-      title='Akun & Keamanan'
-      desc='Kelola preferensi akun dan tingkatkan perlindungan dengan Autentikasi Dua Faktor (2FA).'
+      title='Keamanan Akun'
+      desc='Kelola keamanan autentikasi akun Anda: Autentikasi Dua Faktor (2FA) Google Authenticator dan pembaruan kata sandi.'
     >
       <div className='space-y-6'>
         <TwoFactorSection />
         <Separator />
-        <AccountForm />
+        <ChangePasswordForm />
       </div>
     </ContentSection>
   )
