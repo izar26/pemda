@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   RefreshCw,
@@ -25,7 +26,7 @@ import { PeriodeDialogs } from './components/periode-dialogs'
 
 function PeriodeContent() {
   const queryClient = useQueryClient()
-  const { tableFilters } = usePeriode()
+  const { tableFilters, setActiveWithRisk } = usePeriode()
 
   // Fetch paginated periods
   const {
@@ -65,6 +66,18 @@ function PeriodeContent() {
   const periodeList: PeriodePenilaianItem[] = Array.isArray(periodeResponse?.data)
     ? periodeResponse.data
     : []
+
+  const activeWithRisk = useMemo(() => {
+    return (
+      periodeList.find(
+        (p) => p.is_aktif && Boolean(p.has_risiko_transactions ?? p.has_transactions)
+      ) ?? null
+    )
+  }, [periodeList])
+
+  useEffect(() => {
+    setActiveWithRisk(activeWithRisk)
+  }, [activeWithRisk, setActiveWithRisk])
 
   return (
     <>
@@ -138,7 +151,7 @@ function PeriodeContent() {
           <PeriodeTable data={periodeList} />
         )}
 
-        <PeriodeDialogs onSuccess={handleRefresh} />
+        <PeriodeDialogs activeWithRisk={activeWithRisk} onSuccess={handleRefresh} />
       </Main>
     </>
   )

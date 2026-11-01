@@ -70,6 +70,18 @@ class StorePeriodePenilaianRequest extends FormRequest
             $tanggalAkhir = $this->input('tanggal_akhir');
             $status = (string) $this->input('status');
 
+            // 0. Cycle Lock: If creating a new period with status 'aktif' while another active period has risk transactions, block
+            if ($status === 'aktif') {
+                $activeWithRisk = PeriodePenilaian::where('status', 'aktif')->first();
+                if ($activeWithRisk && $activeWithRisk->hasRisikoTransactions()) {
+                    $count = $activeWithRisk->getRisikoTransactionsCount();
+                    $v->errors()->add(
+                        'status',
+                        "Tidak dapat membuat periode baru dengan status aktif. Periode '{$activeWithRisk->nama_periode}' (Tahun {$activeWithRisk->tahun_penilaian}) sedang berjalan aktif dengan {$count} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip periode aktif tersebut terlebih dahulu sebelum mengaktifkan siklus baru."
+                    );
+                }
+            }
+
             // 1. Validate exact 5-year cycle (tahun_akhir - tahun_mulai === 4)
             if ($tahunMulai && $tahunAkhir) {
                 if ($tahunAkhir - $tahunMulai !== 4) {

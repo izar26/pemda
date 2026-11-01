@@ -102,6 +102,7 @@ interface PeriodeActionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   currentRow?: PeriodePenilaianItem | null
+  activeWithRisk?: PeriodePenilaianItem | null
   onSuccess: () => void
 }
 
@@ -109,12 +110,19 @@ export function PeriodeActionDialog({
   open,
   onOpenChange,
   currentRow,
+  activeWithRisk: propActiveWithRisk,
   onSuccess,
 }: PeriodeActionDialogProps) {
+  const { activeWithRisk: ctxActiveWithRisk } = usePeriode()
+  const activeWithRisk = propActiveWithRisk ?? ctxActiveWithRisk ?? null
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEdit = !!currentRow
   const isLocked = isEdit && Boolean(currentRow?.has_risiko_transactions ?? currentRow?.has_transactions)
   const riskCount = currentRow?.risiko_transactions_count ?? currentRow?.total_transactions ?? 0
+  const isBlockedFromActivating = Boolean(
+    activeWithRisk && (!currentRow || currentRow.id !== activeWithRisk.id)
+  )
 
   const currentYear = new Date().getFullYear()
 
@@ -201,6 +209,13 @@ export function PeriodeActionDialog({
   }
 
   async function onSubmit(values: PeriodeFormValues) {
+    if (values.status === 'aktif' && isBlockedFromActivating && activeWithRisk) {
+      toast.error(
+        `Tidak dapat mengaktifkan periode ini. Siklus '${activeWithRisk.nama_periode}' (Tahun ${activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan ${activeWithRisk.risiko_transactions_count ?? 10} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip siklus aktif terlebih dahulu.`
+      )
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const payload: PeriodeFormData = {
@@ -414,7 +429,12 @@ export function PeriodeActionDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value='aktif'>Aktif (Sedang Berjalan)</SelectItem>
+                          <SelectItem
+                            value='aktif'
+                            disabled={isBlockedFromActivating}
+                          >
+                            Aktif (Sedang Berjalan) {isBlockedFromActivating ? '(Terkunci)' : ''}
+                          </SelectItem>
                           <SelectItem value='tidak_aktif'>Tidak Aktif (Draft)</SelectItem>
                           <SelectItem value='arsip'>Arsip</SelectItem>
                         </SelectContent>
@@ -430,12 +450,21 @@ export function PeriodeActionDialog({
 
               {/* Alert banner if status is 'aktif' */}
               {watchedStatus === 'aktif' && (
-                <div className='flex items-start gap-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs'>
-                  <Info className='h-4 w-4 shrink-0 mt-0.5' />
-                  <span>
-                    <strong>Otomatis Arsip:</strong> Mengaktifkan periode ini akan otomatis mengarsipkan periode yang lebih lampau.
-                  </span>
-                </div>
+                isBlockedFromActivating && activeWithRisk ? (
+                  <div className='flex items-start gap-2.5 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs'>
+                    <Lock className='h-4 w-4 shrink-0 mt-0.5' />
+                    <span>
+                      <strong>Aktivasi Diblokir:</strong> Siklus <strong>{activeWithRisk.nama_periode}</strong> (Tahun {activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan {activeWithRisk.risiko_transactions_count ?? 10} data transaksi risiko OPD. Status aktif pada siklus ini diblokir demi integritas data dan jejak audit pengawasan.
+                    </span>
+                  </div>
+                ) : (
+                  <div className='flex items-start gap-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs'>
+                    <Info className='h-4 w-4 shrink-0 mt-0.5' />
+                    <span>
+                      <strong>Otomatis Arsip:</strong> Mengaktifkan periode ini akan otomatis mengarsipkan periode yang lebih lampau.
+                    </span>
+                  </div>
+                )
               )}
 
               {/* Rentang Tanggal Mulai dan Selesai */}
@@ -512,7 +541,7 @@ export function PeriodeActionDialog({
             type='submit'
             size='sm'
             form='periode-action-form'
-            disabled={isSubmitting}
+            disabled={isSubmitting || (watchedStatus === 'aktif' && isBlockedFromActivating)}
             className='min-w-[120px]'
           >
             {isSubmitting ? (
@@ -536,6 +565,7 @@ interface PeriodeActivateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   currentRow?: PeriodePenilaianItem | null
+  activeWithRisk?: PeriodePenilaianItem | null
   onSuccess: () => void
 }
 
@@ -543,14 +573,27 @@ export function PeriodeActivateDialog({
   open,
   onOpenChange,
   currentRow,
+  activeWithRisk: propActiveWithRisk,
   onSuccess,
 }: PeriodeActivateDialogProps) {
+  const { activeWithRisk: ctxActiveWithRisk } = usePeriode()
+  const activeWithRisk = propActiveWithRisk ?? ctxActiveWithRisk ?? null
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!currentRow) return null
 
+  const isBlocked = Boolean(activeWithRisk && activeWithRisk.id !== currentRow.id)
+  const activeRiskCount = activeWithRisk?.risiko_transactions_count ?? activeWithRisk?.total_transactions ?? 0
+
   async function handleActivate() {
     if (!currentRow) return
+    if (isBlocked && activeWithRisk) {
+      toast.error(
+        `Tidak dapat mengaktifkan periode '${currentRow.nama_periode}'. Siklus '${activeWithRisk.nama_periode}' (Tahun ${activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan ${activeRiskCount} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip siklus aktif terlebih dahulu.`
+      )
+      return
+    }
+
     setIsSubmitting(true)
     try {
       await perencanaanService.activatePeriode(currentRow.id)
@@ -582,9 +625,18 @@ export function PeriodeActivateDialog({
       <p>
         Anda akan mengaktifkan <strong className='text-foreground'>{currentRow.nama_periode}</strong> untuk tahun penilaian <strong className='text-foreground'>{currentRow.tahun_penilaian}</strong>.
       </p>
-      <div className='p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed'>
-        ⚠️ Periode aktif berjalan saat ini akan otomatis dinonaktifkan. Seluruh perangkat daerah (OPD) akan diarahkan mengisi dokumen risiko untuk tahun {currentRow.tahun_penilaian}.
-      </div>
+      {isBlocked && activeWithRisk ? (
+        <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
+          <Lock className='h-4 w-4 shrink-0 mt-0.5' />
+          <span>
+            <strong>Aktivasi Diblokir:</strong> Siklus <strong>{activeWithRisk.nama_periode}</strong> (Tahun {activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan {activeRiskCount} data pengisian Pengelolaan Risiko OPD. Selama siklus aktif memiliki transaksi risiko berjalan, perpindahan atau aktivasi siklus lain diblokir demi integritas data dan jejak audit pengawasan.
+          </span>
+        </div>
+      ) : (
+        <div className='p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed'>
+          ⚠️ Periode aktif berjalan saat ini akan otomatis dinonaktifkan. Seluruh perangkat daerah (OPD) akan diarahkan mengisi dokumen risiko untuk tahun {currentRow.tahun_penilaian}.
+        </div>
+      )}
     </div>
   )
 
@@ -601,6 +653,7 @@ export function PeriodeActivateDialog({
         </span>
       }
       cancelBtnText='Batal'
+      disabled={isBlocked}
       isLoading={isSubmitting}
       handleConfirm={handleActivate}
       className='sm:max-w-md'
@@ -613,6 +666,7 @@ interface PeriodeSwitchYearDialogProps {
   onOpenChange: (open: boolean) => void
   currentRow?: PeriodePenilaianItem | null
   targetYear?: number | null
+  activeWithRisk?: PeriodePenilaianItem | null
   onSuccess: () => void
 }
 
@@ -621,21 +675,35 @@ export function PeriodeSwitchYearDialog({
   onOpenChange,
   currentRow,
   targetYear,
+  activeWithRisk: propActiveWithRisk,
   onSuccess,
 }: PeriodeSwitchYearDialogProps) {
+  const { activeWithRisk: ctxActiveWithRisk } = usePeriode()
+  const activeWithRisk = propActiveWithRisk ?? ctxActiveWithRisk ?? null
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!currentRow || !targetYear) return null
 
   const isSwitchingCycle = !currentRow.is_aktif
-  const isSwitchBlocked =
+  const isBlockedByActiveCycle =
+    isSwitchingCycle && Boolean(activeWithRisk && activeWithRisk.id !== currentRow.id)
+  const isBlockedBySameCycleRisk =
     Boolean(currentRow.has_risiko_transactions ?? currentRow.has_transactions) &&
     targetYear !== currentRow.tahun_penilaian
+
+  const isSwitchBlocked = isBlockedByActiveCycle || isBlockedBySameCycleRisk
   const riskCount = currentRow.risiko_transactions_count ?? currentRow.total_transactions ?? 0
+  const activeRiskCount = activeWithRisk?.risiko_transactions_count ?? activeWithRisk?.total_transactions ?? 0
 
   async function handleSwitchYear() {
     if (!currentRow || !targetYear) return
-    if (isSwitchBlocked) {
+    if (isBlockedByActiveCycle && activeWithRisk) {
+      toast.error(
+        `Perpindahan siklus diblokir. Siklus '${activeWithRisk.nama_periode}' (Tahun ${activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan ${activeRiskCount} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip siklus aktif terlebih dahulu.`
+      )
+      return
+    }
+    if (isBlockedBySameCycleRisk) {
       toast.error(
         `Tahun penilaian tidak dapat dialihkan karena periode '${currentRow.nama_periode}' sudah memiliki data pengisian Pengelolaan Risiko OPD (${riskCount} data).`
       )
@@ -681,7 +749,15 @@ export function PeriodeSwitchYearDialog({
           Sistem akan menyelaraskan batas waktu penilaian dan evaluasi kinerja ke tahun anggaran berjalan <strong>{targetYear}</strong>.
         </div>
       )}
-      {isSwitchBlocked && (
+      {isBlockedByActiveCycle && activeWithRisk && (
+        <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
+          <Lock className='h-4 w-4 shrink-0 mt-0.5' />
+          <span>
+            <strong>Perpindahan Siklus Diblokir:</strong> Siklus <strong>{activeWithRisk.nama_periode}</strong> (Tahun {activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan {activeRiskCount} data pengisian Pengelolaan Risiko OPD. Selama siklus aktif memiliki data risiko berjalan, perpindahan ke siklus RPJMD lain diblokir demi integritas data dan jejak audit pengawasan.
+          </span>
+        </div>
+      )}
+      {!isBlockedByActiveCycle && isBlockedBySameCycleRisk && (
         <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
           <Lock className='h-4 w-4 shrink-0 mt-0.5' />
           <span>
@@ -811,7 +887,13 @@ export function PeriodeDeleteDialog({
   )
 }
 
-export function PeriodeDialogs({ onSuccess }: { onSuccess: () => void }) {
+export function PeriodeDialogs({
+  activeWithRisk,
+  onSuccess,
+}: {
+  activeWithRisk?: PeriodePenilaianItem | null
+  onSuccess: () => void
+}) {
   const { open, setOpen, currentRow, setCurrentRow, targetYear, setTargetYear } = usePeriode()
 
   const handleClose = () => {
@@ -830,6 +912,7 @@ export function PeriodeDialogs({ onSuccess }: { onSuccess: () => void }) {
         onOpenChange={(val) => {
           if (!val) handleClose()
         }}
+        activeWithRisk={activeWithRisk}
         onSuccess={() => {
           onSuccess()
           handleClose()
@@ -845,6 +928,7 @@ export function PeriodeDialogs({ onSuccess }: { onSuccess: () => void }) {
               if (!val) handleClose()
             }}
             currentRow={currentRow}
+            activeWithRisk={activeWithRisk}
             onSuccess={() => {
               onSuccess()
               handleClose()
@@ -858,6 +942,7 @@ export function PeriodeDialogs({ onSuccess }: { onSuccess: () => void }) {
               if (!val) handleClose()
             }}
             currentRow={currentRow}
+            activeWithRisk={activeWithRisk}
             onSuccess={() => {
               onSuccess()
               handleClose()
@@ -873,6 +958,7 @@ export function PeriodeDialogs({ onSuccess }: { onSuccess: () => void }) {
               }}
               currentRow={currentRow}
               targetYear={targetYear}
+              activeWithRisk={activeWithRisk}
               onSuccess={() => {
                 onSuccess()
                 handleClose()

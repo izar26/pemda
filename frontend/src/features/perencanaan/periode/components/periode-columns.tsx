@@ -27,14 +27,23 @@ import { usePeriode } from './periode-provider'
 
 interface CellProps {
   row: { original: PeriodePenilaianItem }
+  table?: any
 }
 
-function PeriodeRowActions({ row }: CellProps) {
-  const { setOpen, setCurrentRow } = usePeriode()
+function PeriodeRowActions({ row, table }: CellProps) {
+  const { setOpen, setCurrentRow, activeWithRisk: ctxActiveWithRisk } = usePeriode()
   const { hasPermission } = usePermissions()
   const canEdit = hasPermission('periode.edit')
   const canDelete = hasPermission('periode.delete')
   const item = row.original
+
+  const allItems = (table?.options?.data as PeriodePenilaianItem[]) || []
+  const tableActiveWithRisk = allItems.find(
+    (p) => p.is_aktif && Boolean(p.has_risiko_transactions ?? p.has_transactions)
+  )
+  const activeWithRisk = ctxActiveWithRisk || tableActiveWithRisk || null
+  const isBlockedByOtherActiveCycle =
+    !item.is_aktif && Boolean(activeWithRisk && activeWithRisk.id !== item.id)
 
   if (!canEdit && !canDelete) {
     return null
@@ -46,13 +55,29 @@ function PeriodeRowActions({ row }: CellProps) {
         <Button
           variant='outline'
           size='sm'
-          className='h-8 gap-1.5 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400'
+          disabled={isBlockedByOtherActiveCycle}
+          title={
+            isBlockedByOtherActiveCycle
+              ? `Terkunci: Siklus ${activeWithRisk?.nama_periode} (${activeWithRisk?.tahun_penilaian}) sedang berjalan aktif dengan data transaksi risiko OPD.`
+              : 'Aktifkan Periode'
+          }
+          className={cn(
+            'h-8 gap-1.5',
+            isBlockedByOtherActiveCycle
+              ? 'border-muted text-muted-foreground/60 opacity-60 cursor-not-allowed'
+              : 'border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400'
+          )}
           onClick={() => {
+            if (isBlockedByOtherActiveCycle) return
             setCurrentRow(item)
             setOpen('activate')
           }}
         >
-          <Power className='h-3.5 w-3.5' />
+          {isBlockedByOtherActiveCycle ? (
+            <Lock className='h-3.5 w-3.5' />
+          ) : (
+            <Power className='h-3.5 w-3.5' />
+          )}
           <span>Aktifkan</span>
         </Button>
       )}
@@ -67,14 +92,28 @@ function PeriodeRowActions({ row }: CellProps) {
         <DropdownMenuContent align='end' className='w-48'>
           {canEdit && !item.is_aktif && item.status !== 'arsip' && (
             <DropdownMenuItem
+              disabled={isBlockedByOtherActiveCycle}
               onClick={() => {
+                if (isBlockedByOtherActiveCycle) return
                 setCurrentRow(item)
                 setOpen('activate')
               }}
-              className='gap-2 text-emerald-600 focus:text-emerald-600 dark:text-emerald-400'
+              className={cn(
+                'gap-2',
+                isBlockedByOtherActiveCycle
+                  ? 'opacity-60 cursor-not-allowed'
+                  : 'text-emerald-600 focus:text-emerald-600 dark:text-emerald-400'
+              )}
             >
-              <Power className='h-4 w-4' />
+              {isBlockedByOtherActiveCycle ? (
+                <Lock className='h-4 w-4' />
+              ) : (
+                <Power className='h-4 w-4' />
+              )}
               <span>Jadikan Periode Aktif</span>
+              {isBlockedByOtherActiveCycle && (
+                <span className='text-[10px] text-muted-foreground ml-auto'>(Terkunci)</span>
+              )}
             </DropdownMenuItem>
           )}
           {canEdit && (
@@ -123,12 +162,25 @@ function PeriodeRowActions({ row }: CellProps) {
   )
 }
 
-function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
-  const { setOpen, setCurrentRow, setTargetYear } = usePeriode()
+function YearPillsSelector({
+  item,
+  activeWithRisk: propActiveWithRisk,
+}: {
+  item: PeriodePenilaianItem
+  activeWithRisk?: PeriodePenilaianItem | null
+}) {
+  const { setOpen, setCurrentRow, setTargetYear, activeWithRisk: ctxActiveWithRisk } = usePeriode()
   const { hasPermission } = usePermissions()
   const canEdit = hasPermission('periode.edit')
-  const isLocked = Boolean(item.has_risiko_transactions ?? item.has_transactions)
-  const riskCount = item.risiko_transactions_count ?? item.total_transactions ?? 0
+  const activeWithRisk = propActiveWithRisk ?? ctxActiveWithRisk ?? null
+
+  const isBlockedByOtherActiveCycle =
+    !item.is_aktif && Boolean(activeWithRisk && activeWithRisk.id !== item.id)
+
+  const isSelfLocked = Boolean(item.has_risiko_transactions ?? item.has_transactions)
+  const selfRiskCount = item.risiko_transactions_count ?? item.total_transactions ?? 0
+  const activeRiskCount = activeWithRisk?.risiko_transactions_count ?? activeWithRisk?.total_transactions ?? 0
+
   const years: number[] =
     item.daftar_tahun && item.daftar_tahun.length > 0
       ? item.daftar_tahun
@@ -140,12 +192,21 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
   const handleSelectYear = (year: number) => {
     if (!canEdit) return
     if (year === item.tahun_penilaian && item.is_aktif) return
-    if (year !== item.tahun_penilaian && isLocked) {
+
+    if (isBlockedByOtherActiveCycle && activeWithRisk) {
       toast.warning(
-        `Tahun Penilaian ${item.tahun_penilaian} tidak dapat diubah ke tahun ${year} karena sudah ada ${riskCount} data pengisian Pengelolaan Risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit.`
+        `Tidak dapat beralih ke periode '${item.nama_periode}'. Siklus '${activeWithRisk.nama_periode}' (Tahun ${activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan ${activeRiskCount} data pengisian Pengelolaan Risiko OPD. Selama siklus aktif memiliki transaksi risiko berjalan, perpindahan ke siklus RPJMD lain diblokir demi integritas data.`
       )
       return
     }
+
+    if (year !== item.tahun_penilaian && isSelfLocked) {
+      toast.warning(
+        `Tahun Penilaian ${item.tahun_penilaian} tidak dapat diubah ke tahun ${year} karena sudah ada ${selfRiskCount} data pengisian Pengelolaan Risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit.`
+      )
+      return
+    }
+
     setCurrentRow(item)
     setTargetYear(year)
     setOpen('switch-year')
@@ -157,7 +218,9 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
         {years.map((yr) => {
           const isSelected = yr === item.tahun_penilaian
           const isCurrentActive = isSelected && item.is_aktif
-          const isDisabled = (!canEdit && !isCurrentActive) || (isLocked && !isSelected)
+          const isPillLocked =
+            isBlockedByOtherActiveCycle || (isSelfLocked && !isSelected)
+          const isDisabled = (!canEdit && !isCurrentActive) || isPillLocked
 
           return (
             <button
@@ -166,8 +229,10 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
               onClick={() => handleSelectYear(yr)}
               disabled={isDisabled}
               title={
-                isLocked && !isSelected
-                  ? `Terkunci: Tahun ${item.tahun_penilaian} sudah memiliki ${riskCount} data risiko OPD. Tahun penilaian tidak dapat diubah ke ${yr}.`
+                isBlockedByOtherActiveCycle && activeWithRisk
+                  ? `Terkunci: Siklus ${activeWithRisk.nama_periode} (Tahun ${activeWithRisk.tahun_penilaian}) sedang berjalan aktif dengan data transaksi risiko OPD.`
+                  : isSelfLocked && !isSelected
+                  ? `Terkunci: Tahun ${item.tahun_penilaian} sudah memiliki ${selfRiskCount} data risiko OPD. Tahun penilaian tidak dapat diubah ke ${yr}.`
                   : isCurrentActive
                   ? `Tahun ${yr} (Sedang Aktif Berjalan)`
                   : isSelected
@@ -176,27 +241,27 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
                   ? `Klik untuk beralih ke Tahun ${yr}`
                   : `Tahun ${yr}`
               }
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150 ${
+              className={cn(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150',
                 isDisabled
                   ? 'cursor-not-allowed opacity-60'
                   : canEdit
                   ? 'cursor-pointer'
-                  : 'cursor-default'
-              } ${
+                  : 'cursor-default',
                 isCurrentActive
                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30 ring-2 ring-emerald-600/40 font-bold'
                   : isSelected
                   ? 'bg-secondary text-foreground border border-secondary-foreground/20 hover:bg-secondary/80'
-                  : isLocked
+                  : isPillLocked
                   ? 'bg-muted/40 text-muted-foreground/60 border border-transparent'
                   : 'bg-muted/70 text-muted-foreground border border-transparent hover:border-emerald-500/40 hover:text-foreground hover:bg-emerald-500/10'
-              }`}
+              )}
             >
               {isCurrentActive && (
                 <span className='h-1.5 w-1.5 rounded-full bg-white animate-pulse' />
               )}
               {yr}
-              {isLocked && !isSelected && (
+              {isPillLocked && (
                 <Lock className='h-2.5 w-2.5 text-muted-foreground/60' />
               )}
             </button>
@@ -208,16 +273,16 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
           <span
             className={cn(
               'font-medium flex items-center gap-1',
-              isLocked
+              isSelfLocked
                 ? 'text-amber-600 dark:text-amber-400'
                 : 'text-emerald-600 dark:text-emerald-400'
             )}
           >
-            {isLocked ? (
+            {isSelfLocked ? (
               <>
                 <Lock className='h-3 w-3 shrink-0' />
                 <span>
-                  Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Terkunci: Ada {riskCount} pengisian Pengelolaan Risiko OPD)
+                  Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Terkunci: Ada {selfRiskCount} pengisian Pengelolaan Risiko OPD)
                 </span>
               </>
             ) : (
@@ -225,6 +290,13 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
                 <span>●</span> Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Bebas beralih tahun - belum ada pengisian risiko)
               </>
             )}
+          </span>
+        ) : isBlockedByOtherActiveCycle && activeWithRisk ? (
+          <span className='font-medium text-amber-600/90 dark:text-amber-400/90 flex items-center gap-1'>
+            <Lock className='h-3 w-3 shrink-0' />
+            <span>
+              Terkunci: Siklus aktif {activeWithRisk.nama_periode} ({activeWithRisk.tahun_penilaian}) memiliki data risiko berjalan
+            </span>
           </span>
         ) : (
           <span>Klik tahun untuk mengaktifkan siklus</span>
@@ -267,7 +339,13 @@ export const periodeColumns: ColumnDef<PeriodePenilaianItem>[] = [
       className: 'min-w-[280px]',
       tdClassName: 'whitespace-normal',
     },
-    cell: ({ row }) => <YearPillsSelector item={row.original} />,
+    cell: ({ row, table }) => {
+      const allData = (table?.options?.data as PeriodePenilaianItem[]) || []
+      const activeWithRisk = allData.find(
+        (p) => p.is_aktif && Boolean(p.has_risiko_transactions ?? p.has_transactions)
+      ) || null
+      return <YearPillsSelector item={row.original} activeWithRisk={activeWithRisk} />
+    },
   },
   {
     id: 'rentang_tanggal',

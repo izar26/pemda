@@ -95,6 +95,21 @@ class UpdatePeriodePenilaianRequest extends FormRequest
                 }
             }
 
+            // 0b. Cycle Lock: If activating this period while another active period has risk transactions, block activation
+            if ($status === 'aktif' && (!$periodeModel || $periodeModel->status !== 'aktif')) {
+                $activeWithRisk = PeriodePenilaian::where('status', 'aktif')
+                    ->when($currentId, fn($q) => $q->where('id', '!=', $currentId))
+                    ->first();
+
+                if ($activeWithRisk && $activeWithRisk->hasRisikoTransactions()) {
+                    $count = $activeWithRisk->getRisikoTransactionsCount();
+                    $v->errors()->add(
+                        'status',
+                        "Tidak dapat mengaktifkan periode ini. Periode '{$activeWithRisk->nama_periode}' (Tahun {$activeWithRisk->tahun_penilaian}) sedang berjalan aktif dengan {$count} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip periode aktif tersebut terlebih dahulu sebelum mengaktifkan siklus baru."
+                    );
+                }
+            }
+
             // 1. Validate exact 5-year cycle (tahun_akhir - tahun_mulai === 4)
             if ($tahunMulai && $tahunAkhir) {
                 if ($tahunAkhir - $tahunMulai !== 4) {

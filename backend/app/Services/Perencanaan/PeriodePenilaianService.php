@@ -156,6 +156,16 @@ class PeriodePenilaianService
     {
         $data['created_by'] = $creator?->id ?? auth('sanctum')->id();
 
+        if (($data['status'] ?? null) === 'aktif') {
+            $activeWithRisk = $this->getOtherActivePeriodeWithRisk();
+            if ($activeWithRisk) {
+                $count = $activeWithRisk->getRisikoTransactionsCount();
+                throw ValidationException::withMessages([
+                    'status' => "Tidak dapat membuat periode baru dengan status aktif. Periode '{$activeWithRisk->nama_periode}' (Tahun {$activeWithRisk->tahun_penilaian}) sedang berjalan aktif dengan {$count} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip periode aktif tersebut terlebih dahulu sebelum mengaktifkan siklus baru.",
+                ]);
+            }
+        }
+
         return DB::transaction(function () use ($data) {
             if (($data['status'] ?? null) === 'aktif') {
                 $tahunMulai = (int) ($data['tahun_mulai'] ?? 0);
@@ -183,6 +193,16 @@ class PeriodePenilaianService
      */
     public function updatePeriode(PeriodePenilaian $periode, array $data): PeriodePenilaian
     {
+        if (($data['status'] ?? null) === 'aktif' && $periode->status !== 'aktif') {
+            $activeWithRisk = $this->getOtherActivePeriodeWithRisk($periode->id);
+            if ($activeWithRisk) {
+                $count = $activeWithRisk->getRisikoTransactionsCount();
+                throw ValidationException::withMessages([
+                    'status' => "Tidak dapat mengaktifkan periode '{$periode->nama_periode}'. Periode '{$activeWithRisk->nama_periode}' (Tahun {$activeWithRisk->tahun_penilaian}) sedang berjalan aktif dengan {$count} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip periode aktif tersebut terlebih dahulu sebelum mengaktifkan siklus baru.",
+                ]);
+            }
+        }
+
         return DB::transaction(function () use ($periode, $data) {
             if (($data['status'] ?? null) === 'aktif') {
                 $this->syncStatusesAroundActive($periode);
@@ -196,10 +216,35 @@ class PeriodePenilaianService
     }
 
     /**
+     * Check if there is another currently active evaluation period that has risk transactions.
+     */
+    public function getOtherActivePeriodeWithRisk(?string $exceptPeriodeId = null): ?PeriodePenilaian
+    {
+        $active = PeriodePenilaian::where('status', 'aktif')->first();
+        if (!$active) {
+            return null;
+        }
+
+        if ($exceptPeriodeId && $active->id === $exceptPeriodeId) {
+            return null;
+        }
+
+        return $active->hasRisikoTransactions() ? $active : null;
+    }
+
+    /**
      * Directly activate an evaluation period and auto-archive previous cycles.
      */
     public function activatePeriode(PeriodePenilaian $periode): PeriodePenilaian
     {
+        $activeWithRisk = $this->getOtherActivePeriodeWithRisk($periode->id);
+        if ($activeWithRisk) {
+            $count = $activeWithRisk->getRisikoTransactionsCount();
+            throw ValidationException::withMessages([
+                'status' => "Tidak dapat mengaktifkan periode '{$periode->nama_periode}'. Periode '{$activeWithRisk->nama_periode}' (Tahun {$activeWithRisk->tahun_penilaian}) sedang berjalan aktif dengan {$count} data pengisian Pengelolaan Risiko OPD. Silakan selesaikan atau jadikan arsip periode aktif tersebut terlebih dahulu sebelum mengaktifkan siklus baru.",
+            ]);
+        }
+
         return DB::transaction(function () use ($periode) {
             $this->syncStatusesAroundActive($periode);
             $periode->update(['status' => 'aktif']);
@@ -220,6 +265,17 @@ class PeriodePenilaianService
         // If already active on this exact evaluation year, no change needed
         if ($periode->status === 'aktif' && $tahunPenilaian === $periode->tahun_penilaian) {
             return $periode;
+        }
+
+        // If activating a non-active period, check if the current active period is locked with risk transactions
+        if ($periode->status !== 'aktif') {
+            $activeWithRisk = $this->getOtherActivePeriodeWithRisk($periode->id);
+            if ($activeWithRisk) {
+                $count = $activeWithRisk->getRisikoTransactionsCount();
+                throw ValidationException::withMessages([
+                    'tahun_penilaian' => "Tidak dapat beralih ke periode '{$periode->nama_periode}'. Periode '{$activeWithRisk->nama_periode}' (Tahun {$activeWithRisk->tahun_penilaian}) sedang berjalan aktif dengan {$count} data pengisian Pengelolaan Risiko OPD. Selama periode aktif memiliki data risiko berjalan, perpindahan ke siklus RPJMD lain diblokir demi integritas data.",
+                ]);
+            }
         }
 
         if ($tahunPenilaian < $periode->tahun_mulai || $tahunPenilaian > $periode->tahun_akhir) {

@@ -13,6 +13,8 @@ interface PeriodeContextType {
   setTargetYear: React.Dispatch<React.SetStateAction<number | null>>
   tableFilters: Record<string, unknown>
   setTableFilters: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
+  activeWithRisk: PeriodePenilaianItem | null
+  setActiveWithRisk: React.Dispatch<React.SetStateAction<PeriodePenilaianItem | null>>
 }
 
 const PeriodeContext = React.createContext<PeriodeContextType | null>(null)
@@ -22,6 +24,7 @@ export function PeriodeProvider({ children }: { children: React.ReactNode }) {
   const [currentRow, setCurrentRow] = useState<PeriodePenilaianItem | null>(null)
   const [targetYear, setTargetYear] = useState<number | null>(null)
   const [tableFilters, setTableFilters] = useState<Record<string, unknown>>({})
+  const [activeWithRisk, setActiveWithRisk] = useState<PeriodePenilaianItem | null>(null)
 
   return (
     <PeriodeContext.Provider
@@ -34,6 +37,8 @@ export function PeriodeProvider({ children }: { children: React.ReactNode }) {
         setTargetYear,
         tableFilters,
         setTableFilters,
+        activeWithRisk,
+        setActiveWithRisk,
       }}
     >
       {children}
