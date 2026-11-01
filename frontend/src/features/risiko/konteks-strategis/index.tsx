@@ -35,7 +35,6 @@ import type { KonteksPenilaianFormData } from '@/types/risiko'
 import { Header } from '@/components/layout/header'
 import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
-import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -63,7 +62,10 @@ import { Input } from '@/components/ui/input'
 import { SearchableSelect } from '@/components/searchable-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
-import { RisikoWizardHeader } from '../shared/risiko-wizard-header'
+import {
+  RisikoWizardHeader,
+  RisikoWorkflowBanners,
+} from '../shared/risiko-wizard-header'
 import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
 
 const form2BSchema = z.object({
@@ -433,25 +435,11 @@ export function KonteksStrategisPage() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6 pb-12'>
-        {/* Page Title */}
-        <PageHeader sticky={false} className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
-          <div className='space-y-1 min-w-0 flex-1'>
-            <div className='flex items-center gap-2 flex-wrap'>
-              <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-                Penetapan Konteks Risiko Strategis OPD
-              </h2>
-              <Badge variant='outline' className='font-mono text-xs border-primary/30 text-primary bg-primary/5'>
-                Form 2B • Langkah 1
-              </Badge>
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              Tetapkan Sumber Data, 1 Tujuan Strategis, Sasaran Strategis, serta IKU Renstra OPD yang akan dinilai.
-            </p>
-          </div>
-        </PageHeader>
-
-        {/* Wizard Stepper Header */}
+        {/* Unified Sticky Header: Title + Badges + Progress + Submit + Stepper */}
         <RisikoWizardHeader
+          pageTitle='Penetapan Konteks Risiko Strategis OPD'
+          formCode='2B'
+          stepNumber={1}
           currentStepId='2b'
           steps={steps}
           completedCount={completedCount}
@@ -462,6 +450,9 @@ export function KonteksStrategisPage() {
           activePeriodeId={activePeriode?.id}
           onSubmissionSuccess={refetchWizardProgress}
         />
+
+        {/* Workflow Banners (Scrollable underneath the sticky header) */}
+        <RisikoWorkflowBanners readiness={readiness} />
 
         {/* Active Periode Guard */}
         {!isLoading && !activePeriode ? (

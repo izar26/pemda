@@ -30,7 +30,6 @@ import type {
 import { Header } from '@/components/layout/header'
 import { NavbarStatus } from '@/components/layout/navbar-status'
 import { Main } from '@/components/layout/main'
-import { PageHeader } from '@/components/layout/page-header'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -41,7 +40,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { SearchableSelect } from '@/components/searchable-select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { RisikoWizardHeader } from '../shared/risiko-wizard-header'
+import {
+  RisikoWizardHeader,
+  RisikoWorkflowBanners,
+} from '../shared/risiko-wizard-header'
 import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
 import { OperasionalTreeTable } from './components/operasional-tree-table'
 import { OperasionalItemDialog } from './components/operasional-item-dialog'
@@ -290,28 +292,11 @@ export function KonteksOperasionalPage() {
       </Header>
 
       <Main className='flex flex-1 flex-col gap-5 sm:gap-6 pb-12'>
-        {/* Page Title */}
-        <PageHeader sticky={false} className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
-          <div className='space-y-1 min-w-0 flex-1'>
-            <div className='flex items-center gap-2 flex-wrap'>
-              <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-                Penetapan Konteks Risiko Operasional OPD
-              </h2>
-              <Badge
-                variant='outline'
-                className='font-mono text-xs border-primary/30 text-primary bg-primary/5'
-              >
-                Form 2C • Langkah 2
-              </Badge>
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              Susun hierarki Program (A), Kegiatan (A.1), dan Sub Kegiatan (A.1.1) beserta Indikator dan Targetnya.
-            </p>
-          </div>
-        </PageHeader>
-
-        {/* Wizard Stepper Header */}
+        {/* Unified Sticky Header: Title + Badges + Progress + Submit + Stepper */}
         <RisikoWizardHeader
+          pageTitle='Penetapan Konteks Risiko Operasional OPD'
+          formCode='2C'
+          stepNumber={2}
           currentStepId='2c'
           steps={steps}
           completedCount={completedCount}
@@ -324,6 +309,9 @@ export function KonteksOperasionalPage() {
           isSubmitDialogOpen={isSubmitDialogOpen}
           setIsSubmitDialogOpen={setIsSubmitDialogOpen}
         />
+
+        {/* Workflow Banners (Scrollable underneath the sticky header) */}
+        <RisikoWorkflowBanners readiness={readiness} />
 
         {!isLoading && !activePeriode ? (
           <div className='flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-5 text-destructive'>

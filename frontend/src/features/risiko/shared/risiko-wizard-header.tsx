@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -33,6 +34,9 @@ import {
 } from '@/services/pengajuan-risiko-service'
 
 interface RisikoWizardHeaderProps {
+  pageTitle?: string
+  formCode?: string
+  stepNumber?: number
   currentStepId: RisikoWizardStepId | string
   steps: ResolvedWizardStep[]
   completedCount: number
@@ -47,11 +51,106 @@ interface RisikoWizardHeaderProps {
   setIsSubmitDialogOpen?: (open: boolean) => void
 }
 
+export function RisikoWorkflowBanners({
+  readiness,
+}: {
+  readiness?: ReadinessResponse
+}) {
+  if (!readiness) return null
+
+  const hasAuditorWarning = !readiness.has_auditor
+  const isInReview = readiness.status === 'submitted' || readiness.status === 'in_review'
+  const isRevision = readiness.status === 'revision_requested'
+  const isApproved = readiness.status === 'approved'
+
+  if (!hasAuditorWarning && !isInReview && !isRevision && !isApproved) {
+    return null
+  }
+
+  return (
+    <div className='space-y-3 mb-2'>
+      {hasAuditorWarning && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <ShieldAlert className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Belum Ada Auditor Pengawas yang Ditugaskan
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang ditetapkan oleh Inspektorat. Pengisian lembar kerja berstatus <strong>read-only</strong> hingga Inspektorat menetapkan penugasan auditor binaan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isInReview && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
+          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Formulir Sedang Dalam Pemeriksaan Auditor
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Seluruh formulir telah diajukan kepada Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Formulir saat ini berstatus terkunci untuk proses pemeriksaan (read-only).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isRevision && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-1.5 text-xs flex-1'>
+            <p className='font-bold text-foreground'>
+              Auditor Meminta Perbaikan (Revisi) Lembar Kerja
+            </p>
+            <div className='space-y-1.5'>
+              {readiness.submission?.items
+                ?.filter((i) => i.status === 'rejected')
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className='p-2 rounded-md bg-background/80 border text-[11px] text-foreground space-y-0.5'
+                  >
+                    <span className='font-bold uppercase text-destructive mr-2'>
+                      Form {item.form_code}:
+                    </span>
+                    <span className='text-muted-foreground'>{item.catatan_revisi || 'Perlu perbaikan.'}</span>
+                  </div>
+                ))}
+            </div>
+            <p className='text-[11px] text-muted-foreground'>
+              Silakan perbaiki form yang ditandai di atas, kemudian klik <strong>Kirim ke Auditor</strong> setelah seluruh perbaikan selesai.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isApproved && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
+          <CheckCircle2 className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Lembar Kerja Resmi Disetujui Auditor Pengawas
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Seluruh lembar kerja pengelolaan risiko periode ini telah disetujui secara resmi oleh Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Data terkunci permanen.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function getCleanStepTitle(title: string) {
   return title.replace(/\s*\([^)]*\)$/, '').trim()
 }
 
 export function RisikoWizardHeader({
+  pageTitle,
+  formCode,
+  stepNumber,
   currentStepId,
   steps,
   completedCount,
@@ -166,101 +265,20 @@ export function RisikoWizardHeader({
   )
 
   return (
-    <div className='space-y-3'>
-      {/* 1. AUDITOR & SUBMISSION WORKFLOW STATUS BANNERS (Scrollable at top) */}
-      {readiness && !readiness.has_auditor && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <ShieldAlert className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Belum Ada Auditor Pengawas yang Ditugaskan
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang ditetapkan oleh Inspektorat. Pengisian lembar kerja berstatus <strong>read-only</strong> hingga Inspektorat menetapkan penugasan auditor binaan.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {readiness && (readiness.status === 'submitted' || readiness.status === 'in_review') && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
-          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Formulir Sedang Dalam Pemeriksaan Auditor
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Seluruh formulir telah diajukan kepada Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Formulir saat ini berstatus terkunci untuk proses pemeriksaan (read-only).
-            </p>
-          </div>
-        </div>
-      )}
-
-      {readiness && readiness.status === 'revision_requested' && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-1.5 text-xs flex-1'>
-            <p className='font-bold text-foreground'>
-              Auditor Meminta Perbaikan (Revisi) Lembar Kerja
-            </p>
-            <div className='space-y-1.5'>
-              {readiness.submission?.items
-                ?.filter((i) => i.status === 'rejected')
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className='p-2 rounded-md bg-background/80 border text-[11px] text-foreground space-y-0.5'
-                  >
-                    <span className='font-bold uppercase text-destructive mr-2'>
-                      Form {item.form_code}:
-                    </span>
-                    <span className='text-muted-foreground'>{item.catatan_revisi || 'Perlu perbaikan.'}</span>
-                  </div>
-                ))}
-            </div>
-            <p className='text-[11px] text-muted-foreground'>
-              Silakan perbaiki form yang ditandai di atas, kemudian klik <strong>Kirim ke Auditor</strong> setelah seluruh perbaikan selesai.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {readiness && readiness.status === 'approved' && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
-          <CheckCircle2 className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Lembar Kerja Resmi Disetujui Auditor Pengawas
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Seluruh lembar kerja pengelolaan risiko periode ini telah disetujui secara resmi oleh Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Data terkunci permanen.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 2. STICKY COMPACT STEPPER HEADER (TIDAK IKUT TER-SCROLL) */}
-      <div className='sticky top-16 z-20 rounded-xl border bg-card/95 backdrop-blur-md px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-xs space-y-2'>
-        {/* Top summary row: Step counter, Clean title, Progress indicator & Actions */}
+    <>
+      <PageHeader className='space-y-2 pb-2.5 pt-3'>
+        {/* Top summary row: Main page title, step badge, status pill, progress indicator & Actions */}
         <div className='flex items-center justify-between gap-2.5 pb-2 border-b border-border/60 flex-wrap sm:flex-nowrap'>
           <div className='flex items-center gap-2 sm:gap-2.5 min-w-0'>
+            <h2 className='text-base sm:text-lg font-bold tracking-tight text-foreground truncate'>
+              {pageTitle || cleanActiveTitle}
+            </h2>
             <Badge
               variant='outline'
-              className='text-xs font-mono font-bold px-2 py-0.5 border-primary/40 text-primary bg-primary/10 shadow-2xs shrink-0'
+              className='font-mono text-xs border-primary/30 text-primary bg-primary/5 shrink-0'
             >
-              LANGKAH {activeStep.stepNumber} DARI {totalSteps}
+              Form {formCode || activeStep.code} • Langkah {stepNumber || activeStep.stepNumber}
             </Badge>
-            <div className='flex items-center gap-1.5 min-w-0 truncate'>
-              <span className='text-xs sm:text-sm font-bold text-foreground truncate'>
-                {cleanActiveTitle}
-              </span>
-              <Badge
-                variant='secondary'
-                className='font-mono text-[10px] sm:text-xs px-1.5 py-0 h-4.5 font-semibold bg-muted text-foreground border border-border/80 shrink-0'
-              >
-                Form {activeStep.code}
-              </Badge>
-            </div>
           </div>
 
           <div className='flex items-center gap-2 sm:gap-2.5 ml-auto flex-wrap sm:flex-nowrap shrink-0'>
@@ -554,7 +572,7 @@ export function RisikoWizardHeader({
             </Button>
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Submit Confirmation Dialog */}
       <ConfirmDialog
@@ -571,6 +589,6 @@ export function RisikoWizardHeader({
         isLoading={submitMutation.isPending}
         handleConfirm={() => submitMutation.mutate()}
       />
-    </div>
+    </>
   )
 }
