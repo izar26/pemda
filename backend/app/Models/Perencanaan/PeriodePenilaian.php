@@ -7,6 +7,7 @@ namespace App\Models\Perencanaan;
 use App\Models\Concerns\HasUuid7;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksPenilaian;
+use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Builder;
@@ -155,6 +156,64 @@ class PeriodePenilaian extends Model
     public function konteksOperasionals(): HasMany
     {
         return $this->hasMany(KonteksOperasional::class, 'periode_penilaian_id');
+    }
+
+    /**
+     * @return HasMany<PengajuanPenilaianRisiko, $this>
+     */
+    public function pengajuanPenilaians(): HasMany
+    {
+        return $this->hasMany(PengajuanPenilaianRisiko::class, 'periode_penilaian_id');
+    }
+
+    /**
+     * Check if this period has any transactions from OPD.
+     */
+    public function hasTransactions(): bool
+    {
+        if (isset($this->attributes['total_transactions_count'])) {
+            return (int) $this->attributes['total_transactions_count'] > 0;
+        }
+
+        $counts = $this->getTransactionCounts();
+        return $counts['has_transactions'];
+    }
+
+    /**
+     * Get detailed transaction counts for this evaluation period.
+     *
+     * @return array{
+     *     has_transactions: bool,
+     *     total_transactions: int,
+     *     tujuan_count: int,
+     *     sasaran_count: int,
+     *     indikator_count: int,
+     *     konteks_strategis_count: int,
+     *     konteks_operasional_count: int,
+     *     pengajuan_count: int
+     * }
+     */
+    public function getTransactionCounts(): array
+    {
+        $tujuan = (int) ($this->tujuan_penilaians_count ?? $this->tujuanPenilaians()->count());
+        $sasaran = (int) ($this->sasaran_penilaians_count ?? $this->sasaranPenilaians()->count());
+        $indikator = (int) ($this->indikator_penilaians_count ?? $this->indikatorPenilaians()->count());
+        $konteksStrategis = (int) ($this->konteks_penilaians_count ?? $this->konteksPenilaians()->count());
+        $konteksOperasional = (int) ($this->konteks_operasionals_count ?? $this->konteksOperasionals()->count());
+        $pengajuan = (int) ($this->pengajuan_penilaians_count ?? $this->pengajuanPenilaians()->count());
+
+        $total = $tujuan + $sasaran + $indikator + $konteksStrategis + $konteksOperasional + $pengajuan;
+
+        return [
+            'has_transactions' => $total > 0,
+            'total_transactions' => $total,
+            'tujuan_count' => $tujuan,
+            'sasaran_count' => $sasaran,
+            'indikator_count' => $indikator,
+            'konteks_strategis_count' => $konteksStrategis,
+            'konteks_operasional_count' => $konteksOperasional,
+            'pengajuan_count' => $pengajuan,
+        ];
     }
 
     /**

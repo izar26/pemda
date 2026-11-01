@@ -71,6 +71,29 @@ class UpdatePeriodePenilaianRequest extends FormRequest
 
             $currentPeriode = $this->route('periode');
             $currentId = $currentPeriode instanceof PeriodePenilaian ? $currentPeriode->id : $currentPeriode;
+            $periodeModel = $currentPeriode instanceof PeriodePenilaian
+                ? $currentPeriode
+                : ($currentId ? PeriodePenilaian::find($currentId) : null);
+
+            // 0. Integrity Check: If period already has OPD transactions, lock years
+            if ($periodeModel && $periodeModel->hasTransactions()) {
+                if ($tahunPenilaian && $tahunPenilaian !== $periodeModel->tahun_penilaian) {
+                    $v->errors()->add(
+                        'tahun_penilaian',
+                        "Tahun penilaian ({$periodeModel->tahun_penilaian}) tidak dapat diubah karena periode ini sudah memiliki data transaksi risiko OPD. Tahun telah dikunci demi integritas data dan jejak audit."
+                    );
+                }
+
+                if (
+                    ($tahunMulai && $tahunMulai !== $periodeModel->tahun_mulai) ||
+                    ($tahunAkhir && $tahunAkhir !== $periodeModel->tahun_akhir)
+                ) {
+                    $v->errors()->add(
+                        'tahun_mulai',
+                        "Rentang siklus RPJMD ({$periodeModel->tahun_mulai} - {$periodeModel->tahun_akhir}) tidak dapat diubah karena periode ini sudah memiliki data transaksi aktif."
+                    );
+                }
+            }
 
             // 1. Validate exact 5-year cycle (tahun_akhir - tahun_mulai === 4)
             if ($tahunMulai && $tahunAkhir) {

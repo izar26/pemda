@@ -12,6 +12,18 @@ export interface PeriodePenilaianItem {
   tanggal_akhir: string
   status: PeriodeStatus
   is_aktif: boolean
+  has_transactions?: boolean
+  total_transactions?: number
+  transaction_counts?: {
+    has_transactions: boolean
+    total_transactions: number
+    tujuan_count: number
+    sasaran_count: number
+    indikator_count: number
+    konteks_strategis_count: number
+    konteks_operasional_count: number
+    pengajuan_count: number
+  }
   sisa_hari: number | null
   keterangan: string | null
   created_by: string | null

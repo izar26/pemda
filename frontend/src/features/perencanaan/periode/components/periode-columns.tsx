@@ -8,7 +8,10 @@ import {
   Trash2,
   CheckCircle2,
   Archive,
+  Lock,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import type { PeriodePenilaianItem } from '@/types/perencanaan'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -93,11 +96,14 @@ function PeriodeRowActions({ row }: CellProps) {
                 setCurrentRow(item)
                 setOpen('delete')
               }}
-              disabled={item.is_aktif}
+              disabled={item.is_aktif || Boolean(item.has_transactions)}
               className='gap-2 text-destructive focus:text-destructive'
             >
               <Trash2 className='h-4 w-4' />
               <span>Hapus Periode</span>
+              {item.has_transactions && (
+                <Lock className='h-3.5 w-3.5 ml-auto text-muted-foreground' />
+              )}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -110,6 +116,7 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
   const { setOpen, setCurrentRow, setTargetYear } = usePeriode()
   const { hasPermission } = usePermissions()
   const canEdit = hasPermission('periode.edit')
+  const isLocked = Boolean(item.has_transactions)
   const years: number[] =
     item.daftar_tahun && item.daftar_tahun.length > 0
       ? item.daftar_tahun
@@ -121,6 +128,12 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
   const handleSelectYear = (year: number) => {
     if (!canEdit) return
     if (year === item.tahun_penilaian && item.is_aktif) return
+    if (isLocked) {
+      toast.warning(
+        `Tahun Penilaian tidak dapat diganti karena sudah ada ${item.total_transactions ?? 'beberapa'} data transaksi OPD pada periode ini.`
+      )
+      return
+    }
     setCurrentRow(item)
     setTargetYear(year)
     setOpen('switch-year')
@@ -132,27 +145,36 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
         {years.map((yr) => {
           const isSelected = yr === item.tahun_penilaian
           const isCurrentActive = isSelected && item.is_aktif
+          const isDisabled = (!canEdit && !isCurrentActive) || (isLocked && !isSelected)
 
           return (
             <button
               key={yr}
               type='button'
               onClick={() => handleSelectYear(yr)}
-              disabled={!canEdit && !isCurrentActive}
+              disabled={isDisabled}
               title={
-                isCurrentActive
+                isLocked && !isSelected
+                  ? `Terkunci: Sudah ada data transaksi OPD (${item.total_transactions ?? 0} data)`
+                  : isCurrentActive
                   ? `Tahun ${yr} (Sedang Berjalan)`
                   : canEdit
                   ? `Klik untuk beralih ke Tahun ${yr}`
                   : `Tahun ${yr}`
               }
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150 ${
-                canEdit ? 'cursor-pointer' : 'cursor-default'
+                isDisabled
+                  ? 'cursor-not-allowed opacity-60'
+                  : canEdit
+                  ? 'cursor-pointer'
+                  : 'cursor-default'
               } ${
                 isCurrentActive
                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30 ring-2 ring-emerald-600/40 font-bold'
                   : isSelected
                   ? 'bg-secondary text-foreground border border-secondary-foreground/20 hover:bg-secondary/80'
+                  : isLocked
+                  ? 'bg-muted/40 text-muted-foreground/60 border border-transparent'
                   : 'bg-muted/70 text-muted-foreground border border-transparent hover:border-emerald-500/40 hover:text-foreground hover:bg-emerald-500/10'
               }`}
             >
@@ -160,14 +182,35 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
                 <span className='h-1.5 w-1.5 rounded-full bg-white animate-pulse' />
               )}
               {yr}
+              {isLocked && !isSelected && (
+                <Lock className='h-2.5 w-2.5 text-muted-foreground/60' />
+              )}
             </button>
           )
         })}
       </div>
       <div className='text-[11px] text-muted-foreground'>
         {item.is_aktif ? (
-          <span className='text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1'>
-            <span>●</span> Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Klik tahun lain untuk pindah)
+          <span
+            className={cn(
+              'font-medium flex items-center gap-1',
+              isLocked
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-emerald-600 dark:text-emerald-400'
+            )}
+          >
+            {isLocked ? (
+              <>
+                <Lock className='h-3 w-3 shrink-0' />
+                <span>
+                  Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Terkunci: Ada {item.total_transactions ?? 0} transaksi OPD)
+                </span>
+              </>
+            ) : (
+              <>
+                <span>●</span> Tahun Aktif: <strong>{item.tahun_penilaian}</strong> (Klik tahun lain untuk pindah)
+              </>
+            )}
           </span>
         ) : (
           <span>Klik tahun untuk mengaktifkan siklus</span>

@@ -33,7 +33,16 @@ class PeriodePenilaianService
         string $sortBy = 'tahun_penilaian',
         string $sortDirection = 'desc'
     ): LengthAwarePaginator {
-        $query = PeriodePenilaian::query()->with('creator');
+        $query = PeriodePenilaian::query()
+            ->with('creator')
+            ->withCount([
+                'tujuanPenilaians',
+                'sasaranPenilaians',
+                'indikatorPenilaians',
+                'konteksPenilaians',
+                'konteksOperasionals',
+                'pengajuanPenilaians',
+            ]);
 
         $query->filter($filters);
 
@@ -66,7 +75,16 @@ class PeriodePenilaianService
      */
     public function getAllPeriodes(array $filters = []): Collection
     {
-        $query = PeriodePenilaian::query()->with('creator');
+        $query = PeriodePenilaian::query()
+            ->with('creator')
+            ->withCount([
+                'tujuanPenilaians',
+                'sasaranPenilaians',
+                'indikatorPenilaians',
+                'konteksPenilaians',
+                'konteksOperasionals',
+                'pengajuanPenilaians',
+            ]);
         $query->filter($filters);
 
         return $query->orderBy('tahun_penilaian', 'desc')->get();
@@ -193,9 +211,19 @@ class PeriodePenilaianService
      */
     public function switchTahun(PeriodePenilaian $periode, int $tahunPenilaian): PeriodePenilaian
     {
+        if ($tahunPenilaian === $periode->tahun_penilaian) {
+            return $periode;
+        }
+
         if ($tahunPenilaian < $periode->tahun_mulai || $tahunPenilaian > $periode->tahun_akhir) {
             throw ValidationException::withMessages([
                 'tahun_penilaian' => "Tahun penilaian {$tahunPenilaian} berada di luar rentang RPJMD ({$periode->tahun_mulai} - {$periode->tahun_akhir}).",
+            ]);
+        }
+
+        if ($periode->hasTransactions()) {
+            throw ValidationException::withMessages([
+                'tahun_penilaian' => "Tidak dapat beralih ke tahun penilaian {$tahunPenilaian}. Periode '{$periode->nama_periode}' pada tahun {$periode->tahun_penilaian} sudah memiliki data transaksi risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit.",
             ]);
         }
 
@@ -255,39 +283,31 @@ class PeriodePenilaianService
             ]);
         }
 
-        $tujuanCount = $periode->tujuanPenilaians()->count();
-        $sasaranCount = $periode->sasaranPenilaians()->count();
-        $indikatorCount = $periode->indikatorPenilaians()->count();
-        $konteksCount = $periode->konteksPenilaians()->count();
-        $operasionalCount = $periode->konteksOperasionals()->count();
-
-        if (
-            $tujuanCount > 0 ||
-            $sasaranCount > 0 ||
-            $indikatorCount > 0 ||
-            $konteksCount > 0 ||
-            $operasionalCount > 0
-        ) {
+        if ($periode->hasTransactions()) {
+            $counts = $periode->getTransactionCounts();
             $usages = [];
-            if ($tujuanCount > 0) {
-                $usages[] = "{$tujuanCount} Tujuan";
+            if ($counts['tujuan_count'] > 0) {
+                $usages[] = "{$counts['tujuan_count']} Tujuan";
             }
-            if ($sasaranCount > 0) {
-                $usages[] = "{$sasaranCount} Sasaran";
+            if ($counts['sasaran_count'] > 0) {
+                $usages[] = "{$counts['sasaran_count']} Sasaran";
             }
-            if ($indikatorCount > 0) {
-                $usages[] = "{$indikatorCount} Indikator";
+            if ($counts['indikator_count'] > 0) {
+                $usages[] = "{$counts['indikator_count']} Indikator";
             }
-            if ($konteksCount > 0) {
-                $usages[] = "{$konteksCount} Konteks Strategis";
+            if ($counts['konteks_strategis_count'] > 0) {
+                $usages[] = "{$counts['konteks_strategis_count']} Konteks Strategis";
             }
-            if ($operasionalCount > 0) {
-                $usages[] = "{$operasionalCount} Konteks Operasional";
+            if ($counts['konteks_operasional_count'] > 0) {
+                $usages[] = "{$counts['konteks_operasional_count']} Konteks Operasional";
+            }
+            if ($counts['pengajuan_count'] > 0) {
+                $usages[] = "{$counts['pengajuan_count']} Pengajuan Review";
             }
             $usageText = implode(', ', $usages);
 
             throw ValidationException::withMessages([
-                'periode' => "Tidak dapat menghapus Periode Penilaian '{$periode->nama_periode}' karena masih memiliki data terkait ({$usageText}). Bersihkan data turunannya terlebih dahulu dari bawah.",
+                'periode' => "Tidak dapat menghapus Periode Penilaian '{$periode->nama_periode}' karena masih memiliki data terkait ({$usageText}). Data historis dilindungi demi integritas audit pengawasan.",
             ]);
         }
 

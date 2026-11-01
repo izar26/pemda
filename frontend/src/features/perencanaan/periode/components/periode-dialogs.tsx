@@ -11,7 +11,9 @@ import {
   Power,
   Info,
   Trash2,
+  Lock,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { perencanaanService } from '@/services/perencanaan-service'
 import type { PeriodeFormData, PeriodePenilaianItem } from '@/types/perencanaan'
 import { usePeriode } from './periode-provider'
@@ -111,6 +113,7 @@ export function PeriodeActionDialog({
 }: PeriodeActionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEdit = !!currentRow
+  const isLocked = isEdit && Boolean(currentRow?.has_transactions)
 
   const currentYear = new Date().getFullYear()
 
@@ -176,6 +179,7 @@ export function PeriodeActionDialog({
 
   // Smart helper: when user types start year in create mode, auto-suggest end year & period name
   const handleTahunMulaiChange = (val: number) => {
+    if (isLocked) return
     form.setValue('tahun_mulai', val)
     if (!isEdit) {
       const suggestedEnd = val + 4
@@ -189,6 +193,7 @@ export function PeriodeActionDialog({
 
   // Smart helper: when evaluation year changes, auto-adjust date range
   const handleTahunPenilaianChange = (year: number) => {
+    if (isLocked) return
     form.setValue('tahun_penilaian', year)
     form.setValue('tanggal_mulai', `${year}-01-02`)
     form.setValue('tanggal_akhir', `${year}-12-31`)
@@ -260,6 +265,26 @@ export function PeriodeActionDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4'
             >
+              {/* Alert: Periode Terkunci Jika Ada Transaksi OPD */}
+              {isLocked && (
+                <div className='p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-3'>
+                  <Lock className='h-4.5 w-4.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400' />
+                  <div className='space-y-1 flex-1'>
+                    <div className='flex items-center gap-2'>
+                      <span className='font-bold text-foreground'>
+                        Tahun Penilaian & Siklus RPJMD Terkunci
+                      </span>
+                      <span className='px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-200 text-[10px] font-mono font-bold'>
+                        {currentRow?.total_transactions ?? '1+'} Transaksi OPD
+                      </span>
+                    </div>
+                    <p className='text-muted-foreground text-[11px] leading-relaxed'>
+                      Periode ini sudah memiliki data transaksi lembar kerja risiko OPD (Konteks Strategis, Konteks Operasional, atau Pengajuan Review). Tahun penilaian dan rentang RPJMD tidak dapat diubah demi menjaga integritas data dan jejak audit. Anda tetap dapat memperpanjang tanggal batas akhir dan memperbarui keterangan.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Periode Penilaian: Rentang 5 Tahun RPJMD */}
               <div className='p-3.5 rounded-xl bg-muted/40 border border-muted space-y-3'>
                 <div className='flex items-center justify-between'>
@@ -278,12 +303,16 @@ export function PeriodeActionDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className='text-xs font-semibold'>
-                          Tahun Mulai <span className='text-destructive'>*</span>
+                          <span>Tahun Mulai</span>
+                          {isLocked && <Lock className='h-3 w-3 text-amber-600' />}
+                          <span className='text-destructive'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type='number'
                             placeholder='2026'
+                            disabled={isLocked}
+                            className={cn(isLocked && 'bg-muted/50 cursor-not-allowed font-medium')}
                             value={field.value ?? ''}
                             onChange={(e) =>
                               handleTahunMulaiChange(parseInt(e.target.value, 10) || 0)
@@ -332,16 +361,21 @@ export function PeriodeActionDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-xs font-semibold'>
-                        Tahun Penilaian Berjalan <span className='text-destructive'>*</span>
+                        <span className='flex items-center gap-1.5'>
+                          <span>Tahun Penilaian Berjalan</span>
+                          {isLocked && <Lock className='h-3 w-3 text-amber-600' />}
+                        </span>
+                        <span className='text-destructive'>*</span>
                       </FormLabel>
                       <Select
                         value={field.value ? String(field.value) : ''}
+                        disabled={isLocked}
                         onValueChange={(val) =>
                           handleTahunPenilaianChange(parseInt(val, 10))
                         }
                       >
                         <FormControl>
-                          <SelectTrigger className='w-full'>
+                          <SelectTrigger className={cn('w-full', isLocked && 'bg-muted/50 cursor-not-allowed font-medium')}>
                             <SelectValue placeholder='Pilih tahun berjalan' />
                           </SelectTrigger>
                         </FormControl>
@@ -593,9 +627,16 @@ export function PeriodeSwitchYearDialog({
   if (!currentRow || !targetYear) return null
 
   const isSwitchingCycle = !currentRow.is_aktif
+  const isSwitchBlocked = Boolean(currentRow.has_transactions) && targetYear !== currentRow.tahun_penilaian
 
   async function handleSwitchYear() {
     if (!currentRow || !targetYear) return
+    if (isSwitchBlocked) {
+      toast.error(
+        `Tahun penilaian tidak dapat dialihkan karena periode '${currentRow.nama_periode}' sudah memiliki data transaksi risiko OPD aktif.`
+      )
+      return
+    }
     setIsSubmitting(true)
     try {
       await perencanaanService.switchTahun(currentRow.id, targetYear)
@@ -634,6 +675,14 @@ export function PeriodeSwitchYearDialog({
       ) : (
         <div className='p-2.5 rounded-md bg-muted/60 border border-muted text-muted-foreground text-[11px] leading-relaxed'>
           Sistem akan menyelaraskan batas waktu penilaian dan evaluasi kinerja ke tahun anggaran berjalan <strong>{targetYear}</strong>.
+        </div>
+      )}
+      {isSwitchBlocked && (
+        <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
+          <Lock className='h-4 w-4 shrink-0 mt-0.5' />
+          <span>
+            <strong>Terkunci:</strong> Periode ini sudah memiliki {currentRow.total_transactions ?? '1+'} transaksi risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit pengawasan.
+          </span>
         </div>
       )}
     </div>
@@ -678,6 +727,12 @@ export function PeriodeDeleteDialog({
 
   async function handleDelete() {
     if (!currentRow) return
+    if (currentRow.has_transactions) {
+      toast.error(
+        `Periode '${currentRow.nama_periode}' tidak dapat dihapus karena sudah memiliki data transaksi risiko OPD.`
+      )
+      return
+    }
     setIsSubmitting(true)
     try {
       await perencanaanService.deletePeriode(currentRow.id)
@@ -710,6 +765,14 @@ export function PeriodeDeleteDialog({
       <div className='p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed'>
         Catatan: Periode yang sedang aktif tidak dapat dihapus. Anda dapat mengubah statusnya menjadi Arsip bila data ingin disimpan untuk rekam jejak.
       </div>
+      {currentRow.has_transactions && (
+        <div className='p-2.5 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-[11px] leading-relaxed flex items-start gap-2'>
+          <Lock className='h-4 w-4 shrink-0 mt-0.5' />
+          <span>
+            <strong>Tidak Dapat Dihapus:</strong> Periode ini sudah memiliki {currentRow.total_transactions ?? '1+'} transaksi risiko OPD. Penghapusan diblokir demi menjaga integritas data dan jejak audit pengawasan.
+          </span>
+        </div>
+      )}
     </div>
   )
 
