@@ -140,9 +140,9 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
   const handleSelectYear = (year: number) => {
     if (!canEdit) return
     if (year === item.tahun_penilaian && item.is_aktif) return
-    if (isLocked) {
+    if (year !== item.tahun_penilaian && isLocked) {
       toast.warning(
-        `Tahun Penilaian tidak dapat diganti karena sudah ada ${riskCount} data pengisian Pengelolaan Risiko OPD pada periode ini.`
+        `Tahun Penilaian ${item.tahun_penilaian} tidak dapat diubah ke tahun ${year} karena sudah ada ${riskCount} data pengisian Pengelolaan Risiko OPD. Tahun penilaian telah dikunci demi integritas data dan jejak audit.`
       )
       return
     }
@@ -167,9 +167,11 @@ function YearPillsSelector({ item }: { item: PeriodePenilaianItem }) {
               disabled={isDisabled}
               title={
                 isLocked && !isSelected
-                  ? `Terkunci: Sudah ada pengisian Pengelolaan Risiko OPD (${riskCount} data)`
+                  ? `Terkunci: Tahun ${item.tahun_penilaian} sudah memiliki ${riskCount} data risiko OPD. Tahun penilaian tidak dapat diubah ke ${yr}.`
                   : isCurrentActive
-                  ? `Tahun ${yr} (Sedang Berjalan)`
+                  ? `Tahun ${yr} (Sedang Aktif Berjalan)`
+                  : isSelected
+                  ? `Klik untuk mengaktifkan siklus di Tahun ${yr}`
                   : canEdit
                   ? `Klik untuk beralih ke Tahun ${yr}`
                   : `Tahun ${yr}`

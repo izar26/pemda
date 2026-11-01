@@ -705,6 +705,7 @@ export function PeriodeSwitchYearDialog({
         </span>
       }
       cancelBtnText='Batal'
+      disabled={isSwitchBlocked}
       isLoading={isSubmitting}
       handleConfirm={handleSwitchYear}
       className='sm:max-w-md'

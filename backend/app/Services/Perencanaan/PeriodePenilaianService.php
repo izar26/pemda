@@ -217,7 +217,8 @@ class PeriodePenilaianService
      */
     public function switchTahun(PeriodePenilaian $periode, int $tahunPenilaian): PeriodePenilaian
     {
-        if ($tahunPenilaian === $periode->tahun_penilaian) {
+        // If already active on this exact evaluation year, no change needed
+        if ($periode->status === 'aktif' && $tahunPenilaian === $periode->tahun_penilaian) {
             return $periode;
         }
 
@@ -227,7 +228,8 @@ class PeriodePenilaianService
             ]);
         }
 
-        if ($periode->hasRisikoTransactions()) {
+        // Only block if attempting to change to a DIFFERENT year on a period that already has risk data
+        if ($tahunPenilaian !== $periode->tahun_penilaian && $periode->hasRisikoTransactions()) {
             $count = $periode->getRisikoTransactionsCount();
             throw ValidationException::withMessages([
                 'tahun_penilaian' => "Tidak dapat beralih ke tahun penilaian {$tahunPenilaian}. Periode '{$periode->nama_periode}' pada tahun {$periode->tahun_penilaian} sudah memiliki data pengisian Pengelolaan Risiko OPD ({$count} data). Tahun penilaian telah dikunci demi integritas data dan jejak audit.",

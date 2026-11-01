@@ -56,6 +56,8 @@ function PeriodeContent() {
 
   function handleRefresh() {
     queryClient.invalidateQueries({ queryKey: ['perencanaan', 'periode'] })
+    queryClient.invalidateQueries({ queryKey: ['risiko'] })
+    queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
     refetchTable()
     refetchStats()
   }
