@@ -39,7 +39,7 @@ class AuditLogArchiveController extends Controller
      */
     public function purge(Request $request): JsonResponse
     {
-        if (!$request->user()->can('audit.purge') && !$request->user()->hasRole('Superadmin')) {
+        if (!$request->user()->can('audit.purge') && !$request->user()->hasRole('Superadmin') && !$request->user()->roles()->where('is_system', true)->exists()) {
             abort(403, 'Akses Ditolak. Hanya pengguna dengan izin audit.purge atau Superadmin yang berwenang melakukan pengarsipan dan pembersihan log.');
         }
 
@@ -75,7 +75,7 @@ class AuditLogArchiveController extends Controller
 
             return response()->json([
                 'message' => $count > 0
-                    ? "Berhasil memindahkan {$count} log audit terpilih ke Kubah Arsip Permanen dan membersihkannya dari tabel aktif."
+                    ? "Berhasil memindahkan {$count} log audit terpilih ke Arsip Permanen dan membersihkannya dari tabel aktif."
                     : 'Tidak ada log audit yang dipindahkan.',
                 'archived_count' => $count,
                 'mode' => 'selected_ids',
@@ -102,7 +102,7 @@ class AuditLogArchiveController extends Controller
 
             return response()->json([
                 'message' => $count > 0
-                    ? "Berhasil memindahkan {$count} log audit hasil filter ke Kubah Arsip Permanen dan membersihkannya dari tabel aktif."
+                    ? "Berhasil memindahkan {$count} log audit hasil filter ke Arsip Permanen dan membersihkannya dari tabel aktif."
                     : 'Tidak ada log audit hasil filter yang memenuhi kriteria pengarsipan.',
                 'archived_count' => $count,
                 'mode' => 'filter_criteria',
@@ -123,7 +123,7 @@ class AuditLogArchiveController extends Controller
 
         return response()->json([
             'message' => $count > 0
-                ? "Berhasil memindahkan {$count} log audit ke Kubah Arsip Permanen dan membersihkannya dari tabel aktif."
+                ? "Berhasil memindahkan {$count} log audit ke Arsip Permanen dan membersihkannya dari tabel aktif."
                 : 'Tidak ada data log yang memenuhi kriteria untuk diarsipkan.',
             'archived_count' => $count,
             'cutoff_date' => $result['cutoff_date'],
@@ -136,7 +136,8 @@ class AuditLogArchiveController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        if (!$request->user()->hasRole('Superadmin')) {
+        $user = $request->user();
+        if (!$user->hasRole('Superadmin') && !$user->roles()->where('is_system', true)->exists()) {
             abort(403, 'Akses Ditolak. Statistik siklus hidup log audit hanya untuk Superadmin.');
         }
 

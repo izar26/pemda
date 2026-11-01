@@ -98,7 +98,7 @@ export function AuditPurgeDialog({
                 Arsipkan & Bersihkan Log Operasional
               </DialogTitle>
               <DialogDescription className='text-xs'>
-                Pindahkan data log lama ke Kubah Arsip Permanen (WORM) dan bersihkan tabel aktif.
+                Pindahkan data log lama ke Arsip Permanen (WORM) dan bersihkan tabel aktif.
               </DialogDescription>
             </div>
           </div>
@@ -114,7 +114,7 @@ export function AuditPurgeDialog({
               </span>
             </div>
             <div>
-              <span className='text-[11px] text-muted-foreground block'>Tersimpan di Kubah Arsip</span>
+              <span className='text-[11px] text-muted-foreground block'>Tersimpan di Arsip Permanen</span>
               <span className='text-base font-bold text-emerald-600 dark:text-emerald-400'>
                 {isLoadingStats ? '...' : (stats?.archived_logs_count ?? 0).toLocaleString('id-ID')}
               </span>
@@ -139,7 +139,7 @@ export function AuditPurgeDialog({
           <div className='flex items-start gap-2.5 rounded-lg border border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/30 p-3'>
             <Lock className='h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5' />
             <div className='text-xs text-blue-950 dark:text-blue-200 leading-relaxed'>
-              <span className='font-semibold'>Jaminan Integritas & Anti-Hilang:</span> Seluruh log yang melewati batas tanggal akan <strong>disalin ke Kubah Arsip Permanen</strong> terlebih dahulu sebelum dihapus dari tabel operasional. Catatan di Kubah Arsip dilindungi proteksi database <em>Write-Once-Read-Many</em> dan <strong>tidak dapat dihapus selamanya</strong>.
+              <span className='font-semibold'>Jaminan Integritas & Anti-Hilang:</span> Seluruh log yang melewati batas tanggal akan <strong>disalin ke Arsip Permanen</strong> terlebih dahulu sebelum dihapus dari tabel operasional. Catatan di Arsip Permanen dilindungi proteksi database <em>Write-Once-Read-Many</em> dan <strong>tidak dapat diubah selamanya</strong>.
             </div>
           </div>
 

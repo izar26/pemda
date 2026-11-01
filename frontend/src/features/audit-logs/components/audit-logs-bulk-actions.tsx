@@ -55,7 +55,7 @@ export function AuditLogsBulkActions({
       const msg =
         isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
-          : 'Gagal memindahkan log terpilih ke kubah arsip.'
+          : 'Gagal memindahkan log terpilih ke arsip permanen.'
       toast.error(msg)
     },
   })
@@ -97,7 +97,7 @@ export function AuditLogsBulkActions({
               onClick={() => setConfirmOpen(true)}
             >
               <Archive className='h-3.5 w-3.5' />
-              Arsipkan ke Kubah ({selectedCount})
+              Pindahkan ke Arsip Permanen ({selectedCount})
             </Button>
           )}
         </div>
@@ -116,7 +116,7 @@ export function AuditLogsBulkActions({
                   Konfirmasi Pengarsipan Terpilih
                 </DialogTitle>
                 <DialogDescription className='text-xs'>
-                  Pindahkan {selectedCount} log yang Anda centang ke Kubah Arsip Permanen.
+                  Pindahkan {selectedCount} log yang Anda centang ke Arsip Permanen.
                 </DialogDescription>
               </div>
             </div>
@@ -131,7 +131,7 @@ export function AuditLogsBulkActions({
               <div className='flex justify-between text-muted-foreground'>
                 <span>Status Destinasi:</span>
                 <span className='font-medium text-emerald-600 dark:text-emerald-400'>
-                  Kubah Arsip (WORM / Read-Only)
+                  Arsip Permanen (WORM / Read-Only)
                 </span>
               </div>
             </div>
@@ -139,7 +139,7 @@ export function AuditLogsBulkActions({
             <div className='flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/30 p-2.5'>
               <Lock className='h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5' />
               <p className='text-[11px] text-blue-950 dark:text-blue-200 leading-relaxed'>
-                Catatan yang <strong>tidak Anda centang</strong> akan tetap aman berada di tabel log operasional ini. Catatan yang tercentang akan dipindahkan ke Kubah Arsip dan <strong>tidak dapat dihapus selamanya</strong>.
+                Catatan yang <strong>tidak Anda centang</strong> akan tetap aman berada di tabel log operasional ini. Catatan yang tercentang akan dipindahkan ke Arsip Permanen dan <strong>tidak dapat diubah selamanya</strong>.
               </p>
             </div>
           </div>

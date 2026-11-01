@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Audit\DestroyAllAuditLogsRequest;
 use App\Http\Resources\AuditLogResource;
 use App\Jobs\ProcessAuditLogExportJob;
 use App\Models\AuditLog;
@@ -15,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -35,20 +37,15 @@ class AuditLogController extends Controller
         }
 
         $isArchive = $request->boolean('archive') || $request->input('type') === 'archive';
-        if ($isArchive && !$user->hasRole('Superadmin')) {
-            abort(403, 'Hanya Superadmin yang berhak mengekspor kubah arsip permanen.');
+        $isSuperadmin = $user->hasRole('Superadmin') || $user->roles()->where('is_system', true)->exists();
+        if ($isArchive && !$isSuperadmin) {
+            abort(403, 'Hanya Superadmin yang berhak mengekspor arsip permanen.');
         }
 
         $modelClass = $isArchive ? AuditLogArchive::class : AuditLog::class;
         $query = $modelClass::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
-        if (!$user->hasRole('Superadmin')) {
-            $query->where('description', 'not like', '%Superadmin%')
-                  ->where(function ($q) {
-                      $q->whereNull('user_name')
-                        ->orWhere('user_name', 'not like', '%Superadmin%');
-                  });
-        }
+        $this->auditLogService->applyGhostFilter($query, $user);
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
@@ -109,7 +106,7 @@ class AuditLogController extends Controller
         };
 
         $metadata = [
-            'Tipe Log Audit' => $isArchive ? 'Kubah Arsip Permanen (WORM)' : 'Log Operasional (Aktif)',
+            'Tipe Log Audit' => $isArchive ? 'Arsip Permanen (WORM)' : 'Log Operasional (Aktif)',
         ];
         if ($request->filled('search')) {
             $metadata['Kata Kunci Pencarian'] = $request->input('search');
@@ -119,7 +116,7 @@ class AuditLogController extends Controller
         }
 
         $filename = $isArchive ? 'Arsip_Log_Audit_Permanen_PEMDA' : 'Log_Audit_Keamanan_PEMDA';
-        $title = $isArchive ? 'LAPORAN KUBAH ARSIP PERMANEN LOG AUDIT KEAMANAN (WORM)' : 'LAPORAN REKAPITULASI LOG AUDIT KEAMANAN SISTEM';
+        $title = $isArchive ? 'LAPORAN ARSIP PERMANEN LOG AUDIT KEAMANAN (WORM)' : 'LAPORAN REKAPITULASI LOG AUDIT KEAMANAN SISTEM';
 
         $totalCount = (clone $query)->count();
         $isForceDirect = $request->boolean('direct');
@@ -181,5 +178,31 @@ class AuditLogController extends Controller
         $logs = $this->auditLogService->listLogs($filters, $perPage, $request->user());
 
         return AuditLogResource::collection($logs);
+    }
+
+    /**
+     * Permanently destroy all active audit logs (Hard Delete).
+     * Restricted strictly to Superadmin with password verification.
+     */
+    public function destroyAll(DestroyAllAuditLogsRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $password = (string) $request->input('password');
+
+        if (!Hash::check($password, $user->password)) {
+            return response()->json([
+                'message' => 'Kata sandi konfirmasi tidak sesuai. Pembersihan seluruh log dibatalkan demi keamanan.',
+                'errors' => [
+                    'password' => ['Kata sandi akun Superadmin tidak valid.'],
+                ],
+            ], 422);
+        }
+
+        $deletedCount = $this->auditLogService->destroyAllLogs($user);
+
+        return response()->json([
+            'message' => "Seluruh data log audit ({$deletedCount} log) berhasil dikosongkan secara permanen.",
+            'deleted_count' => $deletedCount,
+        ]);
     }
 }

@@ -55,4 +55,11 @@ export const auditService = {
     const response = await apiClient.get<{ data: AuditLifecycleStats }>('/audit-logs/stats')
     return response.data
   },
+
+  async destroyAllLogs(password: string): Promise<{ message: string; deleted_count: number }> {
+    const response = await apiClient.delete<{ message: string; deleted_count: number }>('/audit-logs/destroy-all', {
+      data: { password },
+    })
+    return response.data
+  },
 }

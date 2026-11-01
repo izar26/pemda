@@ -384,7 +384,7 @@ export function AuditLogsTable({
                   Arsipkan Semua Hasil Filter
                 </DialogTitle>
                 <DialogDescription className='text-xs'>
-                  Pindahkan seluruh {filteredLogs.length} catatan yang cocok dengan filter saat ini ke Kubah Arsip.
+                  Pindahkan seluruh {filteredLogs.length} catatan yang cocok dengan filter saat ini ke Arsip Permanen.
                 </DialogDescription>
               </div>
             </div>
@@ -399,7 +399,7 @@ export function AuditLogsTable({
               <div className='flex justify-between text-muted-foreground'>
                 <span>Tujuan Pengarsipan:</span>
                 <span className='font-medium text-emerald-600 dark:text-emerald-400'>
-                  Kubah Arsip Permanen (WORM / Read-Only)
+                  Arsip Permanen (WORM / Read-Only)
                 </span>
               </div>
             </div>

@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Models\AuditLog;
 use App\Models\AuditLogArchive;
 use App\Models\User;
+use App\Services\Audit\AuditLogService;
 use App\Services\Export\ExcelExportService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,7 +33,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
      */
     public function __construct(
         public string $jobId,
-        public int $userId,
+        public string|int $userId,
         public array $filters,
         public bool $isArchive,
         public string $filename
@@ -41,7 +42,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(ExcelExportService $exportService): void
+    public function handle(ExcelExportService $exportService, AuditLogService $auditLogService): void
     {
         try {
             Cache::put("export_job_{$this->jobId}", [
@@ -59,13 +60,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
             $modelClass = $this->isArchive ? AuditLogArchive::class : AuditLog::class;
             $query = $modelClass::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
-            if (!$user->hasRole('Superadmin')) {
-                $query->where('description', 'not like', '%Superadmin%')
-                      ->where(function ($q) {
-                          $q->whereNull('user_name')
-                            ->orWhere('user_name', 'not like', '%Superadmin%');
-                      });
-            }
+            $auditLogService->applyGhostFilter($query, $user);
 
             if (!empty($this->filters['search'])) {
                 $search = trim((string) $this->filters['search']);
@@ -126,7 +121,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
             };
 
             $metadata = [
-                'Tipe Log Audit' => $this->isArchive ? 'Kubah Arsip Permanen (WORM)' : 'Log Operasional (Aktif)',
+                'Tipe Log Audit' => $this->isArchive ? 'Arsip Permanen (WORM)' : 'Log Operasional (Aktif)',
             ];
             if (!empty($this->filters['search'])) {
                 $metadata['Kata Kunci Pencarian'] = $this->filters['search'];
@@ -136,7 +131,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
             }
 
             $title = $this->isArchive
-                ? 'LAPORAN KUBAH ARSIP PERMANEN LOG AUDIT KEAMANAN (WORM)'
+                ? 'LAPORAN ARSIP PERMANEN LOG AUDIT KEAMANAN (WORM)'
                 : 'LAPORAN REKAPITULASI LOG AUDIT KEAMANAN SISTEM';
 
             $exportDir = storage_path('app/exports');

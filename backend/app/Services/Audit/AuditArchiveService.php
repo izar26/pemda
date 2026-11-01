@@ -47,7 +47,7 @@ class AuditArchiveService
             app(AuditLogService::class)->log(
                 action: 'AUDIT_LOGS_ARCHIVED',
                 module: 'Log Audit',
-                description: "Superadmin melakukan pengarsipan dan pembersihan log audit: {$totalArchived} catatan berhasil diamankan ke Kubah Arsip Permanen (Cutoff: sebelum {$cutoff->toDateString()}).",
+                description: "Superadmin melakukan pengarsipan dan pembersihan log audit: {$totalArchived} catatan berhasil diamankan ke Arsip Permanen (Cutoff: sebelum {$cutoff->toDateString()}).",
                 user: $archivedBy,
                 context: [
                     'archived_count' => $totalArchived,
@@ -95,7 +95,7 @@ class AuditArchiveService
             app(AuditLogService::class)->log(
                 action: 'AUDIT_LOGS_ARCHIVED',
                 module: 'Log Audit',
-                description: "Superadmin memindahkan {$totalArchived} catatan log terpilih ke Kubah Arsip Permanen (WORM).",
+                description: "Superadmin memindahkan {$totalArchived} catatan log terpilih ke Arsip Permanen (WORM).",
                 user: $archivedBy,
                 context: [
                     'archived_count' => $totalArchived,
@@ -149,7 +149,7 @@ class AuditArchiveService
             app(AuditLogService::class)->log(
                 action: 'AUDIT_LOGS_ARCHIVED',
                 module: 'Log Audit',
-                description: "Superadmin memindahkan {$totalArchived} catatan log hasil filter ke Kubah Arsip Permanen (WORM).",
+                description: "Superadmin memindahkan {$totalArchived} catatan log hasil filter ke Arsip Permanen (WORM).",
                 user: $archivedBy,
                 context: [
                     'archived_count' => $totalArchived,
@@ -174,8 +174,8 @@ class AuditArchiveService
     ): LengthAwarePaginator {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if (!$user?->hasRole('Superadmin')) {
-            abort(403, 'Akses Ditolak. Hanya Superadmin yang memiliki hak akses ke Kubah Arsip Audit.');
+        if (!$user?->hasRole('Superadmin') && !$user?->roles()->where('is_system', true)->exists()) {
+            abort(403, 'Akses Ditolak. Hanya Superadmin yang memiliki hak akses ke Arsip Permanen.');
         }
 
         $query = AuditLogArchive::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');

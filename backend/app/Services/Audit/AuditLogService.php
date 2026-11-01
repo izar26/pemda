@@ -99,6 +99,108 @@ class AuditLogService
     }
 
     /**
+     * Apply ghost filter to completely hide Superadmin and System role activity from non-superadmin users.
+     */
+    public function applyGhostFilter($query, ?User $user): void
+    {
+        if ($user?->hasRole('Superadmin') || $user?->roles()->where('is_system', true)->exists()) {
+            return;
+        }
+
+        $systemRoleIds = Role::where('is_system', true)->orWhere('name', 'Superadmin')->pluck('id')->all();
+
+        $systemUserIds = User::whereHas('roles', function ($q) use ($systemRoleIds) {
+            $q->whereIn('id', $systemRoleIds);
+        })->orWhere('role', 'Superadmin')->pluck('id')->all();
+
+        $systemEmails = User::whereHas('roles', function ($q) use ($systemRoleIds) {
+            $q->whereIn('id', $systemRoleIds);
+        })->orWhere('role', 'Superadmin')->pluck('email')->all();
+
+        $systemNames = User::whereHas('roles', function ($q) use ($systemRoleIds) {
+            $q->whereIn('id', $systemRoleIds);
+        })->orWhere('role', 'Superadmin')->pluck('name')->all();
+
+        // 1. Exclude logs initiated by a System user ID
+        if (!empty($systemUserIds)) {
+            $query->where(function ($q) use ($systemUserIds) {
+                $q->whereNotIn('user_id', $systemUserIds)
+                  ->orWhereNull('user_id');
+            });
+        }
+
+        // 2. Exclude logs initiated by System email
+        if (!empty($systemEmails)) {
+            $query->where(function ($q) use ($systemEmails) {
+                $q->whereNotIn('user_email', $systemEmails)
+                  ->orWhereNull('user_email');
+            });
+        }
+
+        // 3. Exclude logs where user_name is System user names or Sistem / System automated actor
+        if (!empty($systemNames)) {
+            $query->where(function ($q) use ($systemNames) {
+                $q->whereNotIn('user_name', $systemNames)
+                  ->orWhereNull('user_name');
+            });
+        }
+
+        $query->where(function ($q) {
+            $q->whereNull('user_name')
+              ->orWhere(function ($sub) {
+                  $sub->where('user_name', '!=', 'Sistem')
+                      ->where('user_name', '!=', 'System')
+                      ->where('user_name', 'not like', '%Superadmin%');
+              });
+        });
+
+        // 4. Exclude logs where auditable target is a System user
+        if (!empty($systemUserIds)) {
+            $query->where(function ($q) use ($systemUserIds) {
+                $q->whereNull('auditable_type')
+                  ->orWhereNotIn('auditable_type', [User::class, 'App\Models\User'])
+                  ->orWhereNotIn('auditable_id', $systemUserIds);
+            });
+        }
+
+        // 5. Exclude logs where auditable target is System role
+        if (!empty($systemRoleIds)) {
+            $query->where(function ($q) use ($systemRoleIds) {
+                $q->whereNull('auditable_type')
+                  ->orWhereNotIn('auditable_type', [Role::class, 'App\Models\Role'])
+                  ->orWhereNotIn('auditable_id', $systemRoleIds);
+            });
+        }
+
+        // 6. Exclude logs whose description reveals Superadmin
+        $query->where('description', 'not like', '%Superadmin%');
+    }
+
+    /**
+     * Permanently destroy all active audit logs (Hard Delete).
+     * Restricted to Superadmin only.
+     */
+    public function destroyAllLogs(?User $actor = null): int
+    {
+        $count = AuditLog::count();
+        DB::table('audit_logs')->delete();
+
+        // Record the destroy-all maintenance action as the first new log
+        $this->log(
+            action: 'AUDIT_LOGS_DESTROYED',
+            module: 'Log Audit Keamanan',
+            description: "Superadmin mengosongkan seluruh log operasional secara permanen ({$count} data log dihapus).",
+            user: $actor,
+            context: [
+                'deleted_count' => $count,
+                'action_type' => 'HARD_DELETE_ALL',
+            ]
+        );
+
+        return $count;
+    }
+
+    /**
      * List audit logs with search, filter, and pagination.
      *
      * @param  array{
@@ -116,58 +218,8 @@ class AuditLogService
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
         $query = AuditLog::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
-        // Ghost filter: non-superadmin users must not see Superadmin activity or logs related to Superadmin
-        if (!$user?->hasRole('Superadmin')) {
-            $superadminUserIds = User::whereHas('roles', function ($q) {
-                $q->where('name', 'Superadmin');
-            })->orWhere('role', 'Superadmin')->pluck('id')->all();
-
-            $superadminEmails = User::whereHas('roles', function ($q) {
-                $q->where('name', 'Superadmin');
-            })->orWhere('role', 'Superadmin')->pluck('email')->all();
-
-            $superadminRoleId = Role::where('name', 'Superadmin')->value('id');
-
-            // Exclude logs initiated by a Superadmin
-            if (!empty($superadminUserIds)) {
-                $query->where(function ($q) use ($superadminUserIds) {
-                    $q->whereNotIn('user_id', $superadminUserIds)
-                      ->orWhereNull('user_id');
-                });
-            }
-
-            if (!empty($superadminEmails)) {
-                $query->where(function ($q) use ($superadminEmails) {
-                    $q->whereNotIn('user_email', $superadminEmails)
-                      ->orWhereNull('user_email');
-                });
-            }
-
-            // Exclude logs where auditable target is a Superadmin user
-            if (!empty($superadminUserIds)) {
-                $query->where(function ($q) use ($superadminUserIds) {
-                    $q->whereNull('auditable_type')
-                      ->orWhereNotIn('auditable_type', [User::class, 'App\Models\User'])
-                      ->orWhereNotIn('auditable_id', $superadminUserIds);
-                });
-            }
-
-            // Exclude logs where auditable target is Superadmin role
-            if ($superadminRoleId) {
-                $query->where(function ($q) use ($superadminRoleId) {
-                    $q->whereNull('auditable_type')
-                      ->orWhereNotIn('auditable_type', [Role::class, 'App\Models\Role'])
-                      ->orWhere('auditable_id', '!=', $superadminRoleId);
-                });
-            }
-
-            // Exclude logs whose description or snapshots reveal Superadmin
-            $query->where('description', 'not like', '%Superadmin%')
-                  ->where(function ($q) {
-                      $q->whereNull('user_name')
-                        ->orWhere('user_name', 'not like', '%Superadmin%');
-                  });
-        }
+        // Apply ghost filter to hide Superadmin & System logs from non-superadmin users
+        $this->applyGhostFilter($query, $user);
 
         if (!empty($filters['search'])) {
             $search = trim($filters['search']);

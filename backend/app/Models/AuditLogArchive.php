@@ -53,11 +53,11 @@ class AuditLogArchive extends Model
     protected static function booted(): void
     {
         static::updating(function () {
-            throw new \LogicException('Catatan kubah arsip audit log bersifat permanen dan tidak dapat diubah.');
+            throw new \LogicException('Catatan arsip permanen audit log bersifat permanen dan tidak dapat diubah.');
         });
 
         static::deleting(function () {
-            throw new \LogicException('Catatan kubah arsip audit log bersifat permanen dan tidak dapat dihapus oleh siapapun.');
+            throw new \LogicException('Catatan arsip permanen audit log bersifat permanen dan tidak dapat dihapus oleh siapapun.');
         });
     }
 

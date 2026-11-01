@@ -8,6 +8,7 @@ import {
   Lock,
   RefreshCw,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react'
 import { auditService } from '@/services/audit-service'
 import { useAuthStore } from '@/stores/auth-store'
@@ -26,6 +27,7 @@ import { ExportExcelButton } from '@/components/export-excel-button'
 import { AuditLogsTable } from './components/audit-logs-table'
 import { AuditLogsDialogs } from './components/audit-logs-dialogs'
 import { AuditPurgeDialog } from './components/audit-purge-dialog'
+import { AuditDestroyAllDialog } from './components/audit-destroy-all-dialog'
 import { AuditLogsProvider, useAuditLogs } from './components/audit-logs-provider'
 
 function AuditLogsContent() {
@@ -36,6 +38,7 @@ function AuditLogsContent() {
 
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active')
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false)
+  const [destroyDialogOpen, setDestroyDialogOpen] = useState(false)
 
   // 1. Fetch active operational logs
   const {
@@ -104,7 +107,7 @@ function AuditLogsContent() {
                   className='bg-emerald-500/10 text-emerald-600 border-emerald-300 dark:border-emerald-800 text-xs px-2 py-0.5 font-medium'
                 >
                   <Lock className='h-3 w-3 mr-1 inline' />
-                  Kubah Arsip (WORM)
+                  Arsip Permanen
                 </Badge>
               )}
             </div>
@@ -118,7 +121,7 @@ function AuditLogsContent() {
               endpoint='/audit-logs/export'
               fixedParams={{ archive: activeTab === 'archive' }}
               params={tableFilters}
-              filename={activeTab === 'archive' ? 'Kubah_Arsip_Log_Audit_PEMDA.xlsx' : 'Log_Audit_Keamanan_PEMDA.xlsx'}
+              filename={activeTab === 'archive' ? 'Arsip_Permanen_Log_Audit_PEMDA.xlsx' : 'Log_Audit_Keamanan_PEMDA.xlsx'}
               label={activeTab === 'archive' ? 'Ekspor Arsip Excel' : 'Ekspor Excel'}
             />
 
@@ -131,6 +134,18 @@ function AuditLogsContent() {
               >
                 <Archive className='h-3.5 w-3.5' />
                 Arsipkan & Bersihkan Log
+              </Button>
+            )}
+
+            {isSuperadmin && activeTab === 'active' && (
+              <Button
+                variant='destructive'
+                size='sm'
+                className='h-9 text-xs gap-1.5'
+                onClick={() => setDestroyDialogOpen(true)}
+              >
+                <Trash2 className='h-3.5 w-3.5' />
+                Hapus Semua Log
               </Button>
             )}
 
@@ -169,7 +184,7 @@ function AuditLogsContent() {
                 className='text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-xs'
               >
                 <History className='h-3.5 w-3.5' />
-                Kubah Arsip Permanen (WORM)
+                Arsip Permanen
               </TabsTrigger>
             </TabsList>
 
@@ -192,7 +207,7 @@ function AuditLogsContent() {
                 <div className='flex items-center gap-2'>
                   <ShieldCheck className='h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0' />
                   <span>
-                    <strong>Kubah Arsip Permanen (Superadmin Only):</strong> Seluruh catatan di halaman ini dilindungi oleh proteksi trigger database tingkat mesin. Catatan bersifat abadi dan dilarang dihapus atau diubah oleh siapapun.
+                    <strong>Arsip Permanen (Superadmin Only):</strong> Seluruh catatan di halaman ini dilindungi oleh proteksi trigger database tingkat mesin. Catatan bersifat abadi dan dilarang dihapus atau diubah oleh siapapun.
                   </span>
                 </div>
                 <Badge
@@ -207,7 +222,7 @@ function AuditLogsContent() {
                 <div className='flex flex-col items-center justify-center h-64 gap-2 rounded-lg border bg-card/50'>
                   <Loader2 className='h-8 w-8 animate-spin text-primary' />
                   <p className='text-xs text-muted-foreground'>
-                    Membuka kubah arsip log audit permanen...
+                    Membuka arsip log audit permanen...
                   </p>
                 </div>
               ) : (
@@ -238,6 +253,14 @@ function AuditLogsContent() {
         <AuditPurgeDialog
           open={purgeDialogOpen}
           onOpenChange={setPurgeDialogOpen}
+        />
+      )}
+
+      {/* Superadmin Destroy All Dialog */}
+      {isSuperadmin && (
+        <AuditDestroyAllDialog
+          open={destroyDialogOpen}
+          onOpenChange={setDestroyDialogOpen}
         />
       )}
     </>

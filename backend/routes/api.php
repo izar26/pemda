@@ -107,6 +107,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
     Route::get('/audit-logs/stats', [AuditLogArchiveController::class, 'stats']);
     Route::get('/audit-logs/archives', [AuditLogArchiveController::class, 'index']);
     Route::post('/audit-logs/archive-purge', [AuditLogArchiveController::class, 'purge']);
+    Route::delete('/audit-logs/destroy-all', [AuditLogController::class, 'destroyAll']);
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 
     // System Settings & Assets

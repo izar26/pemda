@@ -5,7 +5,6 @@ import {
   Settings,
   UserCog,
   Shield,
-  Palette,
   Landmark,
   History,
   Sliders,
