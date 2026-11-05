@@ -5,6 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Risiko;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Risiko\DelegateOperatorRequest;
+use App\Http\Requests\Risiko\ForwardRevisionAuditorRequest;
+use App\Http\Requests\Risiko\ResubmitPengawasRequest;
+use App\Http\Requests\Risiko\ReviewAuditorItemRequest;
+use App\Http\Requests\Risiko\ReviewKepalaOpdRequest;
+use App\Http\Requests\Risiko\ReviewPengawasItemRequest;
+use App\Http\Requests\Risiko\SubmitPengajuanRisikoRequest;
 use App\Services\Risiko\PengajuanRisikoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,12 +31,17 @@ class PengajuanRisikoController extends Controller
         $targetOpdId = $request->get('opd_id');
 
         // OPD role can only check their own OPD
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat', 'Auditor'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat', 'Auditor'])) {
+            $targetOpdId = $user->opd_id;
+        }
+
+        // Executive role with opd_id can only check their own OPD
+        if ($user && $user->hasRole('Executive') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']) && $user->opd_id) {
             $targetOpdId = $user->opd_id;
         }
 
         // Auditor can only check OPDs they are assigned to
-        if ($user && $user->isScopedAuditor() && !empty($targetOpdId) && !$user->canReadOpdData((string) $targetOpdId)) {
+        if ($user && $user->isScopedAuditor() && ! empty($targetOpdId) && ! $user->canReadOpdData((string) $targetOpdId)) {
             abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
         }
 
@@ -41,23 +53,19 @@ class PengajuanRisikoController extends Controller
         }
 
         $periodeId = $request->get('periode_penilaian_id');
-        $readiness = $this->service->checkReadiness((string) $targetOpdId, $periodeId);
+        $readiness = $this->service->checkReadiness((string) $targetOpdId, $periodeId, $user);
 
         return response()->json(['data' => $readiness]);
     }
 
     /**
-     * Submit completed risk forms to assigned auditor.
+     * Submit completed risk forms from Operator to Kepala OPD.
      */
-    public function submit(Request $request): JsonResponse
+    public function submit(SubmitPengajuanRisikoRequest $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('penilaian_risiko.submit')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk mengajukan lembar kerja risiko.');
-        }
-
         $targetOpdId = $request->input('opd_id');
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             $targetOpdId = $user->opd_id;
         }
 
@@ -70,7 +78,7 @@ class PengajuanRisikoController extends Controller
         $periodeId = $request->input('periode_penilaian_id');
         $catatan = $request->input('catatan');
 
-        $submission = $this->service->submitForReview(
+        $submission = $this->service->submitToKepalaOpd(
             (string) $targetOpdId,
             $periodeId ? (string) $periodeId : null,
             $user,
@@ -78,7 +86,48 @@ class PengajuanRisikoController extends Controller
         );
 
         return response()->json([
-            'message' => 'Seluruh lembar kerja risiko berhasil dikirimkan kepada Auditor Pengawas untuk ditinjau.',
+            'message' => 'Seluruh lembar kerja pengelolaan risiko berhasil diajukan kepada Kepala OPD.',
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Review by Kepala OPD (Approve or Reject).
+     */
+    public function reviewKepalaOpd(ReviewKepalaOpdRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->reviewByKepalaOpd(
+            $id,
+            $validated['status'],
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        $actionText = $validated['status'] === 'approved'
+            ? 'disetujui dan diteruskan kepada Auditor Pengawas'
+            : 'dikembalikan kepada Operator OPD untuk diperbaiki';
+
+        return response()->json([
+            'message' => "Pengajuan berhasil {$actionText}.",
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Delegate auditor revision down to Operator OPD.
+     */
+    public function delegateOperator(DelegateOperatorRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->delegateRevisionToOperator(
+            $id,
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Catatan revisi berhasil didelegasikan kepada Operator OPD.',
             'data' => $submission,
         ]);
     }
@@ -89,12 +138,12 @@ class PengajuanRisikoController extends Controller
     public function indexReviews(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('review_risiko.view')) {
+        if (! $user?->can('review_risiko.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar review risiko OPD.');
         }
 
         $perPage = (int) $request->input('per_page', 15);
-        $filters = $request->only(['search', 'status', 'periode_penilaian_id', 'auditor_id']);
+        $filters = $request->only(['search', 'status', 'periode_penilaian_id', 'auditor_id', 'tier']);
 
         $paginated = $this->service->getAuditorReviewList($user, $filters, $perPage);
 
@@ -115,7 +164,7 @@ class PengajuanRisikoController extends Controller
     public function showReview(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('review_risiko.view')) {
+        if (! $user?->can('review_risiko.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat detail review risiko.');
         }
 
@@ -125,30 +174,78 @@ class PengajuanRisikoController extends Controller
     }
 
     /**
-     * Review a specific form item (Approve or Reject with mandatory revision notes).
+     * Review a specific form item by Auditor (Approve or Reject with revision notes).
      */
-    public function reviewItem(Request $request, string $id): JsonResponse
+    public function reviewItem(ReviewAuditorItemRequest $request, string $id): JsonResponse
     {
-        $user = $request->user();
-        if (!$user?->can('review_risiko.approve')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk menyetujui atau menolak lembar kerja risiko.');
-        }
-
-        $validated = $request->validate([
-            'form_code' => ['required', 'string', 'in:2b,2c'],
-            'status' => ['required', 'string', 'in:approved,rejected'],
-            'catatan_revisi' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        $item = $this->service->reviewItem(
+        $validated = $request->validated();
+        $item = $this->service->reviewByAuditor(
             $id,
             $validated['form_code'],
             $validated['status'],
             $validated['catatan_revisi'] ?? null,
-            $user
+            $request->user()
         );
 
-        $actionText = $validated['status'] === 'approved' ? 'disetujui' : 'ditolak (dikembalikan untuk revisi)';
+        $actionText = $validated['status'] === 'approved' ? 'disetujui' : 'ditolak (dikembalikan ke Kepala OPD)';
+
+        return response()->json([
+            'message' => "Form {$validated['form_code']} berhasil {$actionText}.",
+            'data' => $item,
+        ]);
+    }
+
+    /**
+     * Auditor forwards Pengawas rejection to Kepala OPD.
+     */
+    public function forwardRevisionAuditor(ForwardRevisionAuditorRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->forwardRevisionFromAuditor(
+            $id,
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Catatan revisi pengawas berhasil diteruskan kepada Kepala OPD.',
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Auditor resubmits clarification directly back to Pengawas.
+     */
+    public function resubmitPengawas(ResubmitPengawasRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->resubmitToPengawas(
+            $id,
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Berkas klarifikasi berhasil dikirimkan kembali kepada Pengawas Inspektorat.',
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Pengawas (Inspektorat) reviews a specific form item (Approve final or Reject to Auditor).
+     */
+    public function reviewPengawas(ReviewPengawasItemRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $item = $this->service->reviewByPengawas(
+            $id,
+            $validated['form_code'],
+            $validated['status'],
+            $validated['catatan_revisi'] ?? null,
+            $request->user()
+        );
+
+        $actionText = $validated['status'] === 'approved' ? 'disahkan' : 'ditolak (dikembalikan ke Auditor)';
 
         return response()->json([
             'message' => "Form {$validated['form_code']} berhasil {$actionText}.",

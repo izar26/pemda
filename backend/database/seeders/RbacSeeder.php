@@ -96,6 +96,8 @@ class RbacSeeder extends Seeder
                 ['name' => 'penilaian_risiko.submit', 'description' => 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Auditor Pengawas'],
                 ['name' => 'review_risiko.view', 'description' => 'Melihat daftar dan status pengajuan lembar kerja risiko OPD binaan'],
                 ['name' => 'review_risiko.approve', 'description' => 'Melakukan persetujuan atau penolakan per-form risiko beserta catatan revisi'],
+                ['name' => 'review_risiko.review_kepala', 'description' => 'Memeriksa dan menyetujui lembar kerja risiko internal OPD tingkat Kepala OPD'],
+                ['name' => 'review_risiko.review_pengawas', 'description' => 'Memeriksa dan mengesahkan lembar kerja risiko tingkat akhir Pengawas APIP (Inspektorat)'],
             ],
             'Banner Login & Publik' => [
                 ['name' => 'content.view', 'description' => 'Melihat daftar banner portal login dan publik (CMS)'],
@@ -188,7 +190,7 @@ class RbacSeeder extends Seeder
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
                     'penugasan_auditor.view', 'penugasan_auditor.create', 'penugasan_auditor.edit', 'penugasan_auditor.delete',
-                    'review_risiko.view', 'review_risiko.approve',
+                    'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_pengawas',
                     'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
                 ],
@@ -207,11 +209,12 @@ class RbacSeeder extends Seeder
                 ],
             ],
             'Executive' => [
-                'description' => 'Pimpinan Daerah (Bupati / Sekda) untuk memantau dashboard eksekutif dan laporan ringkasan.',
+                'description' => 'Pimpinan Daerah (Bupati / Sekda / Kepala OPD) untuk memantau dashboard eksekutif dan lembar risiko.',
                 'is_system' => false,
                 'permissions' => [
                     'konteks_risiko.view', 'konteks_risiko.export',
                     'konteks_operasional.view', 'konteks_operasional.export',
+                    'review_risiko.view', 'review_risiko.review_kepala',
                     'laporan.view', 'laporan.export',
                 ],
             ],

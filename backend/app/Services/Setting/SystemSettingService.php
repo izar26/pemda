@@ -66,7 +66,7 @@ class SystemSettingService
     /**
      * Update system settings.
      *
-     * @param array<string, mixed> $settings
+     * @param  array<string, mixed>  $settings
      */
     public function updateSettings(array $settings, User $user): Collection
     {
@@ -94,11 +94,11 @@ class SystemSettingService
             }
         }
 
-        if (!empty($updatedKeys)) {
+        if (! empty($updatedKeys)) {
             $this->auditLogService->log(
                 action: 'SETTINGS_UPDATE',
                 module: 'Pengaturan Sistem',
-                description: "Memperbarui konfigurasi sistem: " . implode(', ', $updatedKeys),
+                description: 'Memperbarui konfigurasi sistem: '.implode(', ', $updatedKeys),
                 user: $user,
                 context: [
                     'action_type' => 'UPDATE',
@@ -135,7 +135,7 @@ class SystemSettingService
         $oldPath = $setting->value;
         $stored = $this->assetService->storeLogo($file);
 
-        if (!empty($oldPath)) {
+        if (! empty($oldPath)) {
             $this->assetService->deleteAsset($oldPath);
         }
 
@@ -147,7 +147,7 @@ class SystemSettingService
         $this->auditLogService->log(
             action: 'LOGO_UPDATE',
             module: 'Pengaturan Sistem',
-            description: 'Memperbarui berkas logo resmi aplikasi: ' . $stored['original_name'],
+            description: 'Memperbarui berkas logo resmi aplikasi: '.$stored['original_name'],
             user: $user,
             context: [
                 'action_type' => 'UPDATE',
@@ -173,7 +173,7 @@ class SystemSettingService
     public function deleteLogo(User $user): void
     {
         $setting = SystemSetting::where('key', 'app_logo')->first();
-        if ($setting && !empty($setting->value)) {
+        if ($setting && ! empty($setting->value)) {
             $this->assetService->deleteAsset($setting->value);
             $setting->value = null;
             SystemSetting::withoutAuditing(function () use ($setting) {

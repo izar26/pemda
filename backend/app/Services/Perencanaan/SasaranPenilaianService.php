@@ -28,12 +28,12 @@ class SasaranPenilaianService
      */
     public function resolvePeriodeId(?string $periodeId = null): string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$active) {
+        if (! $active) {
             throw ValidationException::withMessages([
                 'periode' => 'Tidak ada periode penilaian yang aktif saat ini. Silakan aktifkan periode penilaian terlebih dahulu.',
             ]);
@@ -47,7 +47,7 @@ class SasaranPenilaianService
      */
     public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
@@ -59,7 +59,7 @@ class SasaranPenilaianService
     /**
      * Get paginated list of evaluation strategic targets.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedSasaran(
         array $filters = [],
@@ -68,7 +68,7 @@ class SasaranPenilaianService
         string $sortDirection = 'asc'
     ): LengthAwarePaginator {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
+        if (! $periodeId) {
             return SasaranPenilaian::query()->whereRaw('1 = 0')->paginate($perPage);
         }
         $filters['periode_penilaian_id'] = $periodeId;
@@ -87,14 +87,14 @@ class SasaranPenilaianService
     /**
      * Get all evaluation targets without pagination (dropdown or cascading).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return Collection<int, SasaranPenilaian>
      */
     public function getAllSasaran(array $filters = []): Collection
     {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
-            return new Collection();
+        if (! $periodeId) {
+            return new Collection;
         }
         $filters['periode_penilaian_id'] = $periodeId;
 
@@ -122,7 +122,7 @@ class SasaranPenilaianService
         $totalOpd = Opd::count();
         $totalTujuan = $resolvedId ? TujuanPenilaian::where('periode_penilaian_id', $resolvedId)->count() : 0;
 
-        if (!$resolvedId) {
+        if (! $resolvedId) {
             return [
                 'total_sasaran' => 0,
                 'total_tujuan' => 0,
@@ -171,7 +171,7 @@ class SasaranPenilaianService
     /**
      * Create a new strategic target.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createSasaran(array $data, ?User $creator = null): SasaranPenilaian
     {
@@ -179,7 +179,7 @@ class SasaranPenilaianService
         $data['created_by'] = $creator?->id ?? auth('sanctum')->id();
 
         // Ensure OPD ID is resolved from Tujuan if omitted
-        if (empty($data['opd_id']) && !empty($data['tujuan_penilaian_id'])) {
+        if (empty($data['opd_id']) && ! empty($data['tujuan_penilaian_id'])) {
             $tujuan = TujuanPenilaian::find($data['tujuan_penilaian_id']);
             if ($tujuan) {
                 $data['opd_id'] = $tujuan->opd_id;
@@ -210,11 +210,11 @@ class SasaranPenilaianService
     /**
      * Update an evaluation target.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateSasaran(SasaranPenilaian $sasaran, array $data): SasaranPenilaian
     {
-        if (!empty($data['tujuan_penilaian_id']) && $data['tujuan_penilaian_id'] !== $sasaran->tujuan_penilaian_id) {
+        if (! empty($data['tujuan_penilaian_id']) && $data['tujuan_penilaian_id'] !== $sasaran->tujuan_penilaian_id) {
             if ($sasaran->indikators()->exists() || $sasaran->konteksPenilaians()->exists()) {
                 throw ValidationException::withMessages([
                     'tujuan_penilaian_id' => 'Tidak dapat memindahkan Tujuan induk pada Sasaran ini karena sudah memiliki Indikator atau digunakan pada Konteks Penilaian (Form 2B). Bersihkan data turunannya terlebih dahulu dari bawah.',
@@ -223,7 +223,7 @@ class SasaranPenilaianService
         }
 
         // If tujuan changed, sync opd with new tujuan
-        if (!empty($data['tujuan_penilaian_id'])) {
+        if (! empty($data['tujuan_penilaian_id'])) {
             $tujuan = TujuanPenilaian::find($data['tujuan_penilaian_id']);
             if ($tujuan) {
                 $data['opd_id'] = $tujuan->opd_id;
@@ -269,7 +269,7 @@ class SasaranPenilaianService
     /**
      * Reorder strategic targets within their parent goal scope.
      *
-     * @param array<int, string> $orderedIds
+     * @param  array<int, string>  $orderedIds
      */
     public function reorderSasaran(array $orderedIds): void
     {
@@ -307,10 +307,10 @@ class SasaranPenilaianService
             ->where('periode_penilaian_id', $sourcePeriodeId)
             ->whereHas('opd', fn ($q) => $q->where('is_active', true));
 
-        if (!empty($opdId)) {
+        if (! empty($opdId)) {
             $query->where('opd_id', $opdId);
         }
-        if (!empty($tujuanId)) {
+        if (! empty($tujuanId)) {
             $query->where('tujuan_penilaian_id', $tujuanId);
         }
 
@@ -322,7 +322,7 @@ class SasaranPenilaianService
         }
 
         foreach ($sourceItems as $item) {
-            if ($item->tujuan?->sumberData && !$item->tujuan->sumberData->is_active) {
+            if ($item->tujuan?->sumberData && ! $item->tujuan->sumberData->is_active) {
                 throw ValidationException::withMessages([
                     'source_periode_id' => "Tidak dapat menyalin Sasaran '{$item->sasaran}' karena Sumber Data '{$item->tujuan->sumberData->nama}' pada Tujuan induknya sedang nonaktif.",
                 ]);
@@ -367,7 +367,7 @@ class SasaranPenilaianService
                     }
                 }
 
-                if (!$targetTujuanId) {
+                if (! $targetTujuanId) {
                     continue;
                 }
 
@@ -377,7 +377,7 @@ class SasaranPenilaianService
                     ->where('sasaran', $item->sasaran)
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     $maxUrutan = SasaranPenilaian::where('periode_penilaian_id', $targetPeriodeId)
                         ->where('tujuan_penilaian_id', $targetTujuanId)
                         ->max('urutan');
@@ -404,7 +404,7 @@ class SasaranPenilaianService
     /**
      * Stream export strategic targets to Excel (.xlsx).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function exportSasaran(array $filters = []): StreamedResponse
     {
@@ -419,16 +419,16 @@ class SasaranPenilaianService
 
         $periode = PeriodePenilaian::find($periodeId);
         $periodeLabel = $periode ? "{$periode->nama_periode}_Tahun_{$periode->tahun_penilaian}" : 'Semua';
-        $fileName = 'Data_Sasaran_Renstra_OPD_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $periodeLabel) . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'Data_Sasaran_Renstra_OPD_'.preg_replace('/[^a-zA-Z0-9_-]/', '_', $periodeLabel).'_'.date('Ymd_His').'.xlsx';
 
         return response()->streamDownload(function () use ($items) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $headerBorder = new Border(
                 new BorderPart(Border::BOTTOM, Color::rgb(0, 0, 0), Border::WIDTH_THIN, Border::STYLE_SOLID)
             );
-            $headerStyle = (new Style())
+            $headerStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(11)
                 ->setBackgroundColor(Color::rgb(220, 240, 225))

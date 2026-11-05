@@ -11,7 +11,7 @@ use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksPenilaian;
-use App\Models\User;
+use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -107,11 +107,10 @@ class Opd extends Model
     }
 
     /**
-     * @return HasMany<\App\Models\Risiko\PengajuanPenilaianRisiko, $this>
+     * @return HasMany<PengajuanPenilaianRisiko, $this>
      */
     public function pengajuanRisiko(): HasMany
     {
-        return $this->hasMany(\App\Models\Risiko\PengajuanPenilaianRisiko::class, 'opd_id');
+        return $this->hasMany(PengajuanPenilaianRisiko::class, 'opd_id');
     }
 }
-

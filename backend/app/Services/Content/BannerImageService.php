@@ -17,7 +17,7 @@ class BannerImageService
 
     public function __construct()
     {
-        $this->imageManager = new ImageManager(new Driver());
+        $this->imageManager = new ImageManager(new Driver);
     }
 
     /**
@@ -47,7 +47,7 @@ class BannerImageService
         $encodedContent = (string) $encoded;
 
         // 4. Generate unique filename and storage path
-        $filename = Str::uuid()->toString() . '.webp';
+        $filename = Str::uuid()->toString().'.webp';
         $relativePath = "banners/{$placement}/{$filename}";
 
         // 5. Store to public disk

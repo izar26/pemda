@@ -24,7 +24,7 @@ class StorePegawaiRequest extends FormRequest
             'phone' => is_string($this->phone) ? preg_replace('/\s+/', '', trim($this->phone)) : $this->phone,
         ];
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             $mergeData['opd_id'] = $user->opd_id;
         }
 

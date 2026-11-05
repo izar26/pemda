@@ -11,6 +11,7 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
 class Permission extends SpatiePermission
 {
     use Auditable, HasUuid7;
+
     protected $fillable = [
         'name',
         'guard_name',

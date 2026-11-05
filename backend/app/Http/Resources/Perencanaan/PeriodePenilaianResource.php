@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Perencanaan;
 
+use App\Models\Perencanaan\PeriodePenilaian;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Perencanaan\PeriodePenilaian
+ * @mixin PeriodePenilaian
  */
 class PeriodePenilaianResource extends JsonResource
 {

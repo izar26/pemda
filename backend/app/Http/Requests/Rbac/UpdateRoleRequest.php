@@ -13,7 +13,7 @@ class UpdateRoleRequest extends FormRequest
     public function authorize(): bool
     {
         $role = $this->route('role');
-        if ($role instanceof Role && $role->name === 'Superadmin' && !$this->user()?->hasRole('Superadmin')) {
+        if ($role instanceof Role && $role->name === 'Superadmin' && ! $this->user()?->hasRole('Superadmin')) {
             abort(404, 'Data peran tidak ditemukan.');
         }
 
@@ -22,7 +22,7 @@ class UpdateRoleRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var \App\Models\Role|int|string $role */
+        /** @var Role|int|string $role */
         $role = $this->route('role');
         $roleId = $role instanceof Role ? $role->id : $role;
 
@@ -33,7 +33,7 @@ class UpdateRoleRequest extends FormRequest
             Rule::unique('roles', 'name')->ignore($roleId),
         ];
 
-        if (!($role instanceof Role && $role->name === 'Superadmin')) {
+        if (! ($role instanceof Role && $role->name === 'Superadmin')) {
             $nameRules[] = Rule::notIn(['Superadmin', 'superadmin', 'SUPERADMIN']);
         }
 

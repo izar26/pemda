@@ -16,12 +16,12 @@ return new class extends Migration
             $table->string('phone', 20)->nullable()->after('nip');
             $table->string('role', 30)->default('staff')->after('phone');
             $table->string('status', 20)->default('active')->after('role');
-            
+
             // 2FA TOTP Fields
             $table->text('two_factor_secret')->nullable()->after('password');
             $table->text('two_factor_recovery_codes')->nullable()->after('two_factor_secret');
             $table->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_recovery_codes');
-            
+
             // Security & Lockout Fields
             $table->unsignedInteger('failed_login_attempts')->default(0)->after('two_factor_confirmed_at');
             $table->timestamp('lockout_until')->nullable()->after('failed_login_attempts');

@@ -27,7 +27,7 @@ class IndikatorPenilaianController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data IKU & Indikator perencanaan.');
         }
 
@@ -40,13 +40,14 @@ class IndikatorPenilaianController extends Controller
             'jenis',
         ]);
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
         // Fast unpaginated query (dropdown or cascading)
         if ($request->boolean('all') || $request->input('paginate') === 'false') {
             $items = $this->indikatorService->getAllIndikator($filters);
+
             return response()->json([
                 'data' => IndikatorPenilaianResource::collection($items),
             ]);
@@ -75,7 +76,7 @@ class IndikatorPenilaianController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik IKU & Indikator.');
         }
 
@@ -109,11 +110,11 @@ class IndikatorPenilaianController extends Controller
     public function show(Request $request, IndikatorPenilaian $iku): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian IKU & Indikator.');
         }
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian IKU & Indikator OPD lain.');
         }
 
@@ -130,7 +131,7 @@ class IndikatorPenilaianController extends Controller
     public function update(UpdateIndikatorPenilaianRequest $request, IndikatorPenilaian $iku): JsonResponse
     {
         $user = $request->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah IKU/Indikator OPD lain.');
         }
 
@@ -149,11 +150,11 @@ class IndikatorPenilaianController extends Controller
     public function destroy(Request $request, IndikatorPenilaian $iku): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.delete')) {
+        if (! $user?->can('tujuan.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus data IKU & Indikator.');
         }
 
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $iku->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus IKU/Indikator OPD lain.');
         }
 
@@ -172,7 +173,7 @@ class IndikatorPenilaianController extends Controller
     {
         $user = $request->user() ?? auth('sanctum')->user();
         $validated = $request->validated();
-        $targetOpdId = ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']))
+        $targetOpdId = ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']))
             ? (string) $user->opd_id
             : ($validated['opd_id'] ?? null);
 
@@ -196,7 +197,7 @@ class IndikatorPenilaianController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data IKU & Indikator.');
         }
 
@@ -209,7 +210,7 @@ class IndikatorPenilaianController extends Controller
             'jenis',
         ]);
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
@@ -222,7 +223,7 @@ class IndikatorPenilaianController extends Controller
     public function reorder(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.edit')) {
+        if (! $user?->can('tujuan.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan indikator kinerja.');
         }
 
@@ -236,7 +237,7 @@ class IndikatorPenilaianController extends Controller
             abort(422, 'Sebagian data indikator tidak ditemukan.');
         }
 
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
             foreach ($items as $item) {
                 if ($item->opd_id !== $user->opd_id) {
                     abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan IKU/Indikator OPD lain.');

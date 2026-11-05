@@ -28,7 +28,7 @@ class PegawaiController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $user = $request->user();
-        if (!$user->can('pegawai.view') && !$user->can('users.view') && !$user->can('users.create')) {
+        if (! $user->can('pegawai.view') && ! $user->can('users.view') && ! $user->can('users.create')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data pegawai.');
         }
 
@@ -49,7 +49,7 @@ class PegawaiController extends Controller
     public function checkKepalaOpd(Request $request, string $opdId): JsonResponse
     {
         $user = $request->user();
-        if (!$user->can('pegawai.view') && !$user->can('pegawai.create') && !$user->can('pegawai.edit')) {
+        if (! $user->can('pegawai.view') && ! $user->can('pegawai.create') && ! $user->can('pegawai.edit')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -68,19 +68,19 @@ class PegawaiController extends Controller
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse
     {
         $user = $request->user();
-        if (!$user->can('pegawai.view')) {
+        if (! $user->can('pegawai.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data pegawai.');
         }
 
         $filters = $request->only(['search', 'opd_id', 'jabatan']);
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
         $query = User::with(['opd']);
 
-        if (!$user->hasRole('Superadmin')) {
+        if (! $user->hasRole('Superadmin')) {
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
             })->where(function ($q) {
@@ -88,7 +88,7 @@ class PegawaiController extends Controller
             });
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
@@ -100,11 +100,11 @@ class PegawaiController extends Controller
             });
         }
 
-        if (!empty($filters['opd_id'])) {
+        if (! empty($filters['opd_id'])) {
             $query->where('opd_id', $filters['opd_id']);
         }
 
-        if (!empty($filters['jabatan'])) {
+        if (! empty($filters['jabatan'])) {
             $query->where('jabatan', (string) $filters['jabatan']);
         }
 
@@ -140,10 +140,10 @@ class PegawaiController extends Controller
         };
 
         $metadata = [];
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $metadata['Kata Kunci Pencarian'] = $filters['search'];
         }
-        if (!empty($filters['jabatan'])) {
+        if (! empty($filters['jabatan'])) {
             $metadata['Filter Jabatan'] = $filters['jabatan'];
         }
 
@@ -173,7 +173,7 @@ class PegawaiController extends Controller
      */
     public function show(Request $request, string $id): UserResource
     {
-        if (!$request->user()->can('pegawai.view')) {
+        if (! $request->user()->can('pegawai.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data pegawai.');
         }
 
@@ -201,7 +201,7 @@ class PegawaiController extends Controller
      */
     public function destroy(Request $request, User $pegawai): JsonResponse
     {
-        if (!$request->user()->can('pegawai.delete')) {
+        if (! $request->user()->can('pegawai.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus data pegawai.');
         }
 

@@ -23,7 +23,7 @@ class PasswordChangedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Pemberitahuan Keamanan: Kata Sandi Berhasil Diperbarui - ' . config('app.name', 'Portal Pemda'),
+            subject: 'Pemberitahuan Keamanan: Kata Sandi Berhasil Diperbarui - '.config('app.name', 'Portal Pemda'),
         );
     }
 
@@ -36,7 +36,7 @@ class PasswordChangedMail extends Mailable
                 'userEmail' => $this->user->email,
                 'userNip' => $this->user->nip,
                 'ipAddress' => $this->ipAddress,
-                'changedAt' => now()->translatedFormat('d F Y, H:i') . ' WIB',
+                'changedAt' => now()->translatedFormat('d F Y, H:i').' WIB',
             ],
         );
     }

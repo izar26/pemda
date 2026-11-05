@@ -14,7 +14,6 @@ use App\Models\Master\MasterSumberData;
 use App\Models\Master\MasterTingkatRisiko;
 use App\Models\Master\MasterUnsurSpip;
 use App\Models\Master\MasterUrusanPemerintahan;
-use App\Models\Opd;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 
@@ -25,8 +24,8 @@ class MasterDataSeeder extends Seeder
      */
     public function run(): void
     {
-        $jsonPath = __DIR__ . '/master_excel_data.json';
-        if (!File::exists($jsonPath)) {
+        $jsonPath = __DIR__.'/master_excel_data.json';
+        if (! File::exists($jsonPath)) {
             return;
         }
 
@@ -49,7 +48,7 @@ class MasterDataSeeder extends Seeder
                     ['kode' => trim((string) $row['KODE'])],
                     [
                         'nama' => trim((string) $row['KATEGORI RISIKO']),
-                        'definisi' => !empty($row['DEFINISI']) ? trim((string) $row['DEFINISI']) : null,
+                        'definisi' => ! empty($row['DEFINISI']) ? trim((string) $row['DEFINISI']) : null,
                         'urutan' => (int) ($row['NO'] ?? $idx + 1),
                         'is_active' => true,
                     ]
@@ -130,7 +129,7 @@ class MasterDataSeeder extends Seeder
                     ]
                 );
 
-                if (!empty($row['BAGIAN'])) {
+                if (! empty($row['BAGIAN'])) {
                     $lines = explode("\n", (string) $row['BAGIAN']);
                     foreach ($lines as $subIdx => $line) {
                         $clean = trim(ltrim(trim($line), '-'));
@@ -150,7 +149,6 @@ class MasterDataSeeder extends Seeder
                 }
             }
         }
-
 
         // 11. Sumber Data (Sheet 11)
         if (isset($data['11']['rows'])) {

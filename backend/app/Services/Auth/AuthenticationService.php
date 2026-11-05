@@ -29,7 +29,7 @@ class AuthenticationService
     public function attempt(string $identifier, string $password, string $ip, ?string $userAgent): array
     {
         $cleanIdentifier = trim($identifier);
-        $throttleKey = 'login_attempt:' . Str::lower($cleanIdentifier) . '|' . $ip;
+        $throttleKey = 'login_attempt:'.Str::lower($cleanIdentifier).'|'.$ip;
 
         // Retrieve dynamic security thresholds from system settings
         $maxAttempts = (int) (SystemSetting::where('key', 'max_login_attempts')->value('value') ?? 5);
@@ -54,7 +54,7 @@ class AuthenticationService
             ->first();
 
         // 3. Timing-attack Defense (Calculate dummy hash if user not found or has no account)
-        if (!$user || empty($user->password)) {
+        if (! $user || empty($user->password)) {
             Hash::check($password, '$2y$12$e8F35Q4X1X1X1X1X1X1X1OuL6q2.4X1X1X1X1X1X1X1X1X1X1X1X1');
             RateLimiter::hit($throttleKey, 60);
             $this->recordLog(null, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::FAILED_CREDENTIALS, 'User not found or no account');
@@ -76,7 +76,7 @@ class AuthenticationService
         }
 
         // 5. Password Verification
-        if (!Hash::check($password, $user->password)) {
+        if (! Hash::check($password, $user->password)) {
             RateLimiter::hit($throttleKey, 60);
             $user->increment('failed_login_attempts');
 
@@ -97,7 +97,7 @@ class AuthenticationService
         }
 
         // 6. Account Status Check
-        if (!$user->isActive()) {
+        if (! $user->isActive()) {
             $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_INACTIVE, "User status is {$user->status}", $user);
 
             throw new HttpResponseException(response()->json([
@@ -106,7 +106,7 @@ class AuthenticationService
         }
 
         // 6b. Active OPD Check for Non-Superadmin
-        if (!$user->hasRole('Superadmin') && $user->opd && !$user->opd->is_active) {
+        if (! $user->hasRole('Superadmin') && $user->opd && ! $user->opd->is_active) {
             $this->recordLog($user->id, $cleanIdentifier, $ip, $userAgent, LoginLogStatus::ACCOUNT_INACTIVE, "User's OPD '{$user->opd->nama}' is inactive", $user);
 
             throw new HttpResponseException(response()->json([
@@ -175,7 +175,7 @@ class AuthenticationService
      */
     public function verifyTwoFactor(User $user, string $code, string $ip, ?string $userAgent): array
     {
-        $throttleKey = '2fa_verify:' . $user->id . '|' . $ip;
+        $throttleKey = '2fa_verify:'.$user->id.'|'.$ip;
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -189,7 +189,7 @@ class AuthenticationService
 
         $result = $this->twoFactorService->verify($user, $code);
 
-        if (!$result['valid']) {
+        if (! $result['valid']) {
             RateLimiter::hit($throttleKey, 60);
             $this->recordLog($user->id, $user->email, $ip, $userAgent, LoginLogStatus::FAILED_2FA, $result['reason'] ?? 'Invalid code', $user);
 
@@ -273,16 +273,16 @@ class AuthenticationService
             LoginLogStatus::ACCOUNT_INACTIVE => 'AUTH_LOGIN_BLOCKED',
             LoginLogStatus::CHALLENGE_2FA => 'AUTH_2FA_CHALLENGE',
             LoginLogStatus::FAILED_2FA => 'AUTH_2FA_FAILED',
-            default => 'AUTH_' . $status->value,
+            default => 'AUTH_'.$status->value,
         };
 
         $description = match ($status) {
-            LoginLogStatus::SUCCESS => "Pegawai " . ($resolvedUser?->name ?? $identifier) . " berhasil masuk ke sistem",
+            LoginLogStatus::SUCCESS => 'Pegawai '.($resolvedUser?->name ?? $identifier).' berhasil masuk ke sistem',
             LoginLogStatus::FAILED_CREDENTIALS => "Percobaan masuk gagal untuk '{$identifier}': Kredensial tidak valid",
             LoginLogStatus::ACCOUNT_LOCKED => "Akun '{$identifier}' terkunci sementara karena beberapa kali kesalahan kata sandi",
             LoginLogStatus::ACCOUNT_INACTIVE => "Percobaan masuk ditolak: Akun '{$identifier}' sedang nonaktif/ditangguhkan",
-            LoginLogStatus::CHALLENGE_2FA => "Tantangan 2FA Google Authenticator dimulai untuk " . ($resolvedUser?->name ?? $identifier),
-            LoginLogStatus::FAILED_2FA => "Kode autentikasi 2FA salah untuk " . ($resolvedUser?->name ?? $identifier),
+            LoginLogStatus::CHALLENGE_2FA => 'Tantangan 2FA Google Authenticator dimulai untuk '.($resolvedUser?->name ?? $identifier),
+            LoginLogStatus::FAILED_2FA => 'Kode autentikasi 2FA salah untuk '.($resolvedUser?->name ?? $identifier),
             default => "Aktivitas autentikasi: {$status->value}",
         };
 

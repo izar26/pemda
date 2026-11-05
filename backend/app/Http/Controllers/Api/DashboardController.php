@@ -21,7 +21,7 @@ class DashboardController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Unauthenticated.');
         }
 
@@ -29,7 +29,7 @@ class DashboardController extends Controller
         $activeOpd = Opd::where('is_active', true)->count();
 
         $userQuery = User::whereNotNull('password');
-        if (!$user->hasRole('Superadmin')) {
+        if (! $user->hasRole('Superadmin')) {
             $userQuery->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
             })->where(function ($q) {
@@ -57,7 +57,7 @@ class DashboardController extends Controller
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user) {
+        if (! $user) {
             abort(401, 'Unauthenticated.');
         }
 
@@ -65,7 +65,7 @@ class DashboardController extends Controller
         $activeOpd = Opd::where('is_active', true)->count();
 
         $userExportQuery = User::whereNotNull('password');
-        if (!$user->hasRole('Superadmin')) {
+        if (! $user->hasRole('Superadmin')) {
             $userExportQuery->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
             })->where(function ($q) {

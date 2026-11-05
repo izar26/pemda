@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Export\ExcelExportService;
+use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use ZipArchive;
@@ -19,7 +20,7 @@ class ExcelExportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Database\Seeders\RbacSeeder::class);
+        $this->seed(RbacSeeder::class);
 
         $this->admin = User::factory()->create([
             'role' => 'Superadmin',
@@ -27,7 +28,6 @@ class ExcelExportTest extends TestCase
         ]);
         $this->admin->assignRole('Superadmin');
     }
-
 
     public function test_excel_export_generates_valid_xlsx_with_proper_cols_and_styles(): void
     {
@@ -58,7 +58,7 @@ class ExcelExportTest extends TestCase
         $this->assertFileExists($tempPath);
 
         // Inspect XLSX ZIP contents
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $this->assertTrue($zip->open($tempPath));
 
         $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
@@ -74,9 +74,9 @@ class ExcelExportTest extends TestCase
         $this->assertStringContainsString('ref="A2:F2"', $sheetXml); // Subtitle
 
         // Verify formula injection neutralization (escaped as &#039; in XML)
-        $this->assertStringContainsString("=cmd|calc.exe!A1", $sheetXml);
+        $this->assertStringContainsString('=cmd|calc.exe!A1', $sheetXml);
         $this->assertTrue(
-            str_contains($sheetXml, "&#039;=cmd|calc.exe!A1") ||
+            str_contains($sheetXml, '&#039;=cmd|calc.exe!A1') ||
             str_contains($sheetXml, "'=cmd|calc.exe!A1")
         );
 
@@ -184,4 +184,3 @@ class ExcelExportTest extends TestCase
         $this->assertNotEmpty($smallContent);
     }
 }
-

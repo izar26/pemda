@@ -6,7 +6,7 @@ namespace App\Http\Requests\Perencanaan;
 
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
-use App\Models\Perencanaan\TujuanPenilaian;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -27,7 +27,7 @@ class StoreIndikatorPenilaianRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
             $this->merge(['opd_id' => $user->opd_id]);
         }
 
@@ -39,7 +39,7 @@ class StoreIndikatorPenilaianRequest extends FormRequest
         }
 
         // Auto-resolve OPD ID & Tujuan ID from Sasaran if not provided
-        if (!empty($this->sasaran_penilaian_id)) {
+        if (! empty($this->sasaran_penilaian_id)) {
             $sasaran = SasaranPenilaian::find($this->sasaran_penilaian_id);
             if ($sasaran) {
                 if (empty($this->opd_id)) {
@@ -59,7 +59,7 @@ class StoreIndikatorPenilaianRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -95,7 +95,7 @@ class StoreIndikatorPenilaianRequest extends FormRequest
             }
 
             $sasaran = SasaranPenilaian::find($this->sasaran_penilaian_id);
-            if (!$sasaran) {
+            if (! $sasaran) {
                 return;
             }
 

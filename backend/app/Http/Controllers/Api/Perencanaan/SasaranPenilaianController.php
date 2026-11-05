@@ -27,19 +27,20 @@ class SasaranPenilaianController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data sasaran perencanaan.');
         }
 
         $filters = $request->only(['search', 'opd_id', 'tujuan_penilaian_id', 'periode_penilaian_id']);
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
         // Fast unpaginated query (dropdown or cascading)
         if ($request->boolean('all') || $request->input('paginate') === 'false') {
             $items = $this->sasaranService->getAllSasaran($filters);
+
             return response()->json([
                 'data' => SasaranPenilaianResource::collection($items),
             ]);
@@ -68,7 +69,7 @@ class SasaranPenilaianController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik sasaran perencanaan.');
         }
 
@@ -100,11 +101,11 @@ class SasaranPenilaianController extends Controller
     public function show(Request $request, SasaranPenilaian $sasaran): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian sasaran perencanaan.');
         }
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $sasaran->opd_id !== $user->opd_id) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $sasaran->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian Sasaran Renstra OPD lain.');
         }
 
@@ -121,7 +122,7 @@ class SasaranPenilaianController extends Controller
     public function update(UpdateSasaranPenilaianRequest $request, SasaranPenilaian $sasaran): JsonResponse
     {
         $user = $request->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $sasaran->opd_id !== $user->opd_id) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $sasaran->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah Sasaran Renstra OPD lain.');
         }
 
@@ -139,11 +140,11 @@ class SasaranPenilaianController extends Controller
     public function destroy(Request $request, SasaranPenilaian $sasaran): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.delete')) {
+        if (! $user?->can('tujuan.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus data sasaran perencanaan.');
         }
 
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $sasaran->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']) && $sasaran->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus Sasaran Renstra OPD lain.');
         }
 
@@ -161,7 +162,7 @@ class SasaranPenilaianController extends Controller
     {
         $user = $request->user() ?? auth('sanctum')->user();
         $validated = $request->validated();
-        $targetOpdId = ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']))
+        $targetOpdId = ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor']))
             ? (string) $user->opd_id
             : ($validated['opd_id'] ?? null);
 
@@ -184,13 +185,13 @@ class SasaranPenilaianController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.view')) {
+        if (! $user?->can('tujuan.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data sasaran perencanaan.');
         }
 
         $filters = $request->only(['search', 'opd_id', 'tujuan_penilaian_id', 'periode_penilaian_id']);
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
@@ -203,7 +204,7 @@ class SasaranPenilaianController extends Controller
     public function reorder(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('tujuan.edit')) {
+        if (! $user?->can('tujuan.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan sasaran perencanaan.');
         }
 
@@ -217,7 +218,7 @@ class SasaranPenilaianController extends Controller
             abort(422, 'Sebagian data sasaran tidak ditemukan.');
         }
 
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'])) {
             foreach ($items as $item) {
                 if ($item->opd_id !== $user->opd_id) {
                     abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan Sasaran Renstra OPD lain.');

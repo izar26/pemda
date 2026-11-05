@@ -29,7 +29,7 @@ class KonteksPenilaianPolicy
             return true;
         }
 
-        if (!$user->can('konteks_risiko.view') && !$user->can('review_risiko.view') && !$user->can('laporan.view')) {
+        if (! $user->can('konteks_risiko.view') && ! $user->can('review_risiko.view') && ! $user->can('laporan.view')) {
             return false;
         }
 
@@ -49,7 +49,7 @@ class KonteksPenilaianPolicy
      */
     public function update(User $user, KonteksPenilaian $konteks): bool
     {
-        if (!$user->can('konteks_risiko.edit')) {
+        if (! $user->can('konteks_risiko.edit')) {
             return false;
         }
 
@@ -65,7 +65,7 @@ class KonteksPenilaianPolicy
      */
     public function delete(User $user, KonteksPenilaian $konteks): bool
     {
-        if (!$user->can('konteks_risiko.delete')) {
+        if (! $user->can('konteks_risiko.delete')) {
             return false;
         }
 

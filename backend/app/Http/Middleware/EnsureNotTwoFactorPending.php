@@ -17,7 +17,7 @@ class EnsureNotTwoFactorPending
 
         if ($user && $user->currentAccessToken()) {
             // If the current token only has '2fa:verify' ability, block access to normal API resources
-            if ($user->tokenCan('2fa:verify') && !$user->tokenCan('*')) {
+            if ($user->tokenCan('2fa:verify') && ! $user->tokenCan('*')) {
                 return response()->json([
                     'message' => 'Autentikasi 2FA diperlukan untuk mengakses sumber daya ini.',
                     'requires_2fa' => true,
@@ -25,7 +25,7 @@ class EnsureNotTwoFactorPending
             }
         }
 
-        if ($user && !$user->hasRole('Superadmin') && $user->opd && !$user->opd->is_active) {
+        if ($user && ! $user->hasRole('Superadmin') && $user->opd && ! $user->opd->is_active) {
             return response()->json([
                 'message' => "Instansi / Perangkat Daerah ({$user->opd->nama}) tempat akun Anda terdaftar saat ini berstatus nonaktif. Akses dinonaktifkan.",
             ], 403);

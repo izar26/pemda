@@ -1,16 +1,18 @@
 import { useState } from 'react'
+import type { AxiosError } from 'axios'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
-  Check,
+  ArrowRightCircle,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   Clock,
-  Lock,
   Send,
   ShieldAlert,
+  UserCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -18,6 +20,16 @@ import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Tooltip,
   TooltipContent,
@@ -59,11 +71,32 @@ export function RisikoWorkflowBanners({
   if (!readiness) return null
 
   const hasAuditorWarning = !readiness.has_auditor
-  const isInReview = readiness.status === 'submitted' || readiness.status === 'in_review'
-  const isRevision = readiness.status === 'revision_requested'
+  const isSubmittedToKepala = readiness.status === 'submitted_to_kepala_opd'
+  const isRevisionByKepala = readiness.status === 'revision_by_kepala_opd'
+  const isInAuditorReview =
+    readiness.status === 'submitted_to_auditor' ||
+    readiness.status === 'in_review_auditor' ||
+    readiness.status === 'submitted' ||
+    readiness.status === 'in_review'
+  const isRevisionByAuditor = readiness.status === 'revision_by_auditor'
+  const isRevisionToOperator = readiness.status === 'revision_to_operator'
+  const isInPengawasReview =
+    readiness.status === 'submitted_to_pengawas' ||
+    readiness.status === 'in_review_pengawas'
+  const isRevisionByPengawas = readiness.status === 'revision_by_pengawas'
   const isApproved = readiness.status === 'approved'
 
-  if (!hasAuditorWarning && !isInReview && !isRevision && !isApproved) {
+  if (
+    !hasAuditorWarning &&
+    !isSubmittedToKepala &&
+    !isRevisionByKepala &&
+    !isInAuditorReview &&
+    !isRevisionByAuditor &&
+    !isRevisionToOperator &&
+    !isInPengawasReview &&
+    !isRevisionByPengawas &&
+    !isApproved
+  ) {
     return null
   }
 
@@ -83,30 +116,32 @@ export function RisikoWorkflowBanners({
         </div>
       )}
 
-      {isInReview && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
+      {/* Tier 2: Menunggu Review Kepala OPD */}
+      {isSubmittedToKepala && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400 text-start'>
           <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
-              Formulir Sedang Dalam Pemeriksaan Auditor
+              Menunggu Persetujuan Internal Kepala OPD
             </p>
             <p className='text-muted-foreground leading-relaxed'>
-              Seluruh formulir telah diajukan kepada Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Formulir saat ini berstatus terkunci untuk proses pemeriksaan (read-only).
+              Seluruh lembar kerja telah diajukan kepada Kepala OPD (<strong>{readiness.kepala_opd?.name || 'Pimpinan OPD'}</strong>) untuk ditinjau secara internal sebelum diteruskan kepada Auditor Pengawas.
             </p>
           </div>
         </div>
       )}
 
-      {isRevision && (
+      {/* Tier 2: Revisi dari Kepala OPD */}
+      {isRevisionByKepala && (
         <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
           <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-1.5 text-xs flex-1'>
             <p className='font-bold text-foreground'>
-              Auditor Meminta Perbaikan (Revisi) Lembar Kerja
+              Kepala OPD Meminta Revisi Internal
             </p>
             <div className='space-y-1.5'>
               {readiness.submission?.items
-                ?.filter((i) => i.status === 'rejected')
+                ?.filter((i) => i.status_kepala_opd === 'rejected' || i.status === 'rejected')
                 .map((item) => (
                   <div
                     key={item.id}
@@ -115,26 +150,121 @@ export function RisikoWorkflowBanners({
                     <span className='font-bold uppercase text-destructive mr-2'>
                       Form {item.form_code}:
                     </span>
-                    <span className='text-muted-foreground'>{item.catatan_revisi || 'Perlu perbaikan.'}</span>
+                    <span className='text-muted-foreground'>
+                      {item.catatan_kepala_opd || item.catatan_revisi || 'Perlu perbaikan internal.'}
+                    </span>
                   </div>
                 ))}
             </div>
             <p className='text-[11px] text-muted-foreground'>
-              Silakan perbaiki form yang ditandai di atas, kemudian klik <strong>Kirim ke Auditor</strong> setelah seluruh perbaikan selesai.
+              Silakan lakukan perbaikan yang diminta, lalu ajukan kembali kepada Kepala OPD.
             </p>
           </div>
         </div>
       )}
 
+      {/* Tier 3: Auditor In Review */}
+      {isInAuditorReview && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
+          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Formulir Sedang Dalam Pemeriksaan Auditor Pengawas
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Lembar kerja telah disetujui Kepala OPD dan sedang diperiksa oleh Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Formulir berstatus read-only.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tier 3: Revisi dari Auditor (Menunggu Delegasi Kepala OPD) */}
+      {isRevisionByAuditor && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-start'>
+          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5 text-amber-600' />
+          <div className='space-y-1 text-xs flex-1'>
+            <p className='font-bold text-foreground'>
+              Auditor Meminta Perbaikan (Menunggu Arahan Kepala OPD)
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Auditor Pengawas mengembalikan lembar kerja kepada Kepala OPD dengan catatan perbaikan. Operator OPD menunggu arahan delegasi perbaikan dari Kepala OPD.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tier 3: Revisi Didelegasikan ke Operator */}
+      {isRevisionToOperator && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
+          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-1.5 text-xs flex-1'>
+            <p className='font-bold text-foreground'>
+              Perbaikan Lembar Kerja Telah Didelegasikan kepada Operator
+            </p>
+            <div className='space-y-1.5'>
+              {readiness.submission?.items
+                ?.filter((i) => i.status_auditor === 'rejected' || i.status === 'rejected')
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className='p-2 rounded-md bg-background/80 border text-[11px] text-foreground space-y-0.5'
+                  >
+                    <span className='font-bold uppercase text-destructive mr-2'>
+                      Form {item.form_code}:
+                    </span>
+                    <span className='text-muted-foreground'>
+                      {item.catatan_auditor || item.catatan_revisi || 'Perlu perbaikan.'}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <p className='text-[11px] text-muted-foreground'>
+              Silakan lakukan perbaikan pada form yang ditandai, kemudian ajukan kembali kepada Kepala OPD.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tier 4: Pengawas In Review */}
+      {isInPengawasReview && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-400 text-start'>
+          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Menunggu Pengesahan Akhir Pengawas (Inspektorat)
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Seluruh formulir telah disetujui oleh Auditor Pengawas dan kini sedang dalam tahap pengesahan akhir oleh Pengawas APIP (Inspektorat).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tier 4: Revisi Pengawas */}
+      {isRevisionByPengawas && (
+        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
+          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+          <div className='space-y-0.5 text-xs'>
+            <p className='font-bold text-foreground'>
+              Pengawas Mengembalikan Berkas ke Auditor
+            </p>
+            <p className='text-muted-foreground leading-relaxed'>
+              Pengawas APIP meminta klarifikasi atau perbaikan teknis kepada Auditor Pengawas sebelum pengesahan final.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tier 5 / Approved: Disetujui Final */}
       {isApproved && (
         <div className='flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
           <CheckCircle2 className='h-4.5 w-4.5 shrink-0 mt-0.5' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
-              Lembar Kerja Resmi Disetujui Auditor Pengawas
+              Lembar Kerja Resmi Disahkan oleh Pengawas Inspektorat
             </p>
             <p className='text-muted-foreground leading-relaxed'>
-              Seluruh lembar kerja pengelolaan risiko periode ini telah disetujui secara resmi oleh Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Data terkunci permanen.
+              Seluruh formulir pengelolaan risiko periode ini telah melalui verifikasi 4 tingkat (Operator $\rightarrow$ Kepala OPD $\rightarrow$ Auditor $\rightarrow$ Pengawas) dan disahkan secara final. Data terkunci permanen.
             </p>
           </div>
         </div>
@@ -168,6 +298,14 @@ export function RisikoWizardHeader({
   const queryClient = useQueryClient()
   const [internalSubmitDialogOpen, setInternalSubmitDialogOpen] = useState(false)
 
+  // Dialog states for Kepala OPD
+  const [isKepalaReviewOpen, setIsKepalaReviewOpen] = useState(false)
+  const [kepalaAction, setKepalaAction] = useState<'approved' | 'rejected'>('approved')
+  const [kepalaNotes, setKepalaNotes] = useState('')
+
+  const [isKepalaDelegateOpen, setIsKepalaDelegateOpen] = useState(false)
+  const [delegateNotes, setDelegateNotes] = useState('')
+
   const isSubmitOpen =
     controlledSubmitDialogOpen !== undefined
       ? controlledSubmitDialogOpen
@@ -175,29 +313,32 @@ export function RisikoWizardHeader({
   const setSubmitOpen =
     controlledSetIsSubmitDialogOpen || setInternalSubmitDialogOpen
 
-  const submitMutation = useMutation({
+  // 1. Operator submit to Kepala OPD mutation
+  const submitToKepalaMutation = useMutation({
     mutationFn: () =>
-      pengajuanRisikoService.submitForReview({
+      pengajuanRisikoService.submitToKepalaOpd({
         opd_id: effectiveOpdId!,
         periode_penilaian_id: activePeriodeId,
       }),
     onMutate: async () => {
-      // Optimistic update: hide Kirim ke Auditor button & show top banner immediately
-      queryClient.setQueriesData(
+      queryClient.setQueriesData<ReadinessResponse>(
         { queryKey: ['risiko-pengajuan-readiness'] },
-        (old: any) => {
+        (old) => {
           if (!old) return old
           return {
             ...old,
             is_ready_to_submit: false,
+            can_submit_to_kepala: false,
             is_locked: true,
-            status: 'submitted',
+            is_locked_for_operator: true,
+            status: 'submitted_to_kepala_opd',
+            current_tier: 'kepala_opd',
           }
         }
       )
     },
     onSuccess: async (res) => {
-      toast.success(res.message || 'Lembar kerja risiko berhasil dikirimkan ke auditor.')
+      toast.success(res.message || 'Lembar kerja risiko berhasil diajukan kepada Kepala OPD.')
       setSubmitOpen(false)
 
       try {
@@ -210,7 +351,7 @@ export function RisikoWizardHeader({
           freshReadiness
         )
       } catch {
-        // Fallback: retain optimistic status
+        // Retain optimistic status
       }
 
       await Promise.all([
@@ -221,13 +362,67 @@ export function RisikoWizardHeader({
       ])
       onSubmissionSuccess?.()
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
       queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] })
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.forms?.[0] ||
         err.response?.data?.errors?.auditor?.[0] ||
-        'Gagal mengajukan lembar kerja ke auditor.'
+        'Gagal mengajukan lembar kerja ke Kepala OPD.'
+      toast.error(msg)
+    },
+  })
+
+  // 2. Kepala OPD review mutation (Approve or Reject internal)
+  const reviewKepalaMutation = useMutation({
+    mutationFn: () =>
+      pengajuanRisikoService.reviewByKepalaOpd(readiness!.submission.id, {
+        status: kepalaAction,
+        catatan: kepalaNotes.trim(),
+      }),
+    onSuccess: async (res) => {
+      toast.success(res.message || 'Keputusan Kepala OPD berhasil disimpan.')
+      setIsKepalaReviewOpen(false)
+      setKepalaNotes('')
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+      ])
+      onSubmissionSuccess?.()
+    },
+    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.catatan?.[0] ||
+        'Gagal memproses persetujuan Kepala OPD.'
+      toast.error(msg)
+    },
+  })
+
+  // 3. Kepala OPD delegate mutation
+  const delegateMutation = useMutation({
+    mutationFn: () =>
+      pengajuanRisikoService.delegateToOperator(readiness!.submission.id, {
+        catatan: delegateNotes.trim() || undefined,
+      }),
+    onSuccess: async (res) => {
+      toast.success(res.message || 'Instruksi revisi berhasil didelegasikan kepada Operator.')
+      setIsKepalaDelegateOpen(false)
+      setDelegateNotes('')
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
+        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+      ])
+      onSubmissionSuccess?.()
+    },
+    onError: (err: AxiosError<{ message?: string }>) => {
+      const msg = err.response?.data?.message || 'Gagal mendelegasikan revisi ke Operator.'
       toast.error(msg)
     },
   })
@@ -255,13 +450,21 @@ export function RisikoWizardHeader({
     navigate({ to: step.url })
   }
 
-  const showSubmitButton = Boolean(
-    readiness?.is_ready_to_submit &&
-      !readiness?.is_locked &&
-      readiness?.status !== 'submitted' &&
-      readiness?.status !== 'in_review' &&
-      readiness?.status !== 'approved' &&
-      !submitMutation.isPending
+  // Operator submit button visibility
+  const showOperatorSubmitButton = Boolean(
+    readiness?.can_submit_to_kepala &&
+      !readiness?.is_locked_for_operator &&
+      !submitToKepalaMutation.isPending
+  )
+
+  // Kepala OPD review button visibility
+  const showKepalaReviewButton = Boolean(
+    readiness?.can_review_kepala && !reviewKepalaMutation.isPending
+  )
+
+  // Kepala OPD delegate button visibility
+  const showKepalaDelegateButton = Boolean(
+    readiness?.can_delegate_operator && !delegateMutation.isPending
   )
 
   return (
@@ -282,23 +485,57 @@ export function RisikoWizardHeader({
           </div>
 
           <div className='flex items-center gap-2 sm:gap-2.5 ml-auto flex-wrap sm:flex-nowrap shrink-0'>
-            {/* Compact status pill if in review / approved / revision */}
+            {/* Status Pills */}
             {readiness?.status === 'approved' && (
               <Badge className='text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 py-0.5 px-2 gap-1 font-semibold'>
                 <CheckCircle2 className='h-3 w-3 text-emerald-600' />
-                Disetujui
+                Disahkan Final
               </Badge>
             )}
-            {readiness?.status === 'revision_requested' && (
+            {readiness?.status === 'submitted_to_kepala_opd' && (
+              <Badge className='text-[10px] bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 py-0.5 px-2 gap-1 font-semibold'>
+                <Clock className='h-3 w-3 text-sky-600 animate-pulse' />
+                Review Kepala OPD
+              </Badge>
+            )}
+            {readiness?.status === 'revision_by_kepala_opd' && (
               <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
                 <AlertCircle className='h-3 w-3 text-destructive' />
-                Perlu Revisi
+                Revisi Kepala OPD
               </Badge>
             )}
-            {(readiness?.status === 'submitted' || readiness?.status === 'in_review') && (
+            {(readiness?.status === 'submitted_to_auditor' ||
+              readiness?.status === 'in_review_auditor' ||
+              readiness?.status === 'submitted' ||
+              readiness?.status === 'in_review') && (
               <Badge className='text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 py-0.5 px-2 gap-1 font-semibold'>
                 <Clock className='h-3 w-3 text-amber-600 animate-pulse' />
-                Dalam Review
+                Review Auditor
+              </Badge>
+            )}
+            {readiness?.status === 'revision_by_auditor' && (
+              <Badge className='text-[10px] bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 py-0.5 px-2 gap-1 font-semibold'>
+                <AlertCircle className='h-3 w-3 text-amber-600' />
+                Revisi dari Auditor
+              </Badge>
+            )}
+            {readiness?.status === 'revision_to_operator' && (
+              <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
+                <AlertCircle className='h-3 w-3 text-destructive' />
+                Revisi Operator
+              </Badge>
+            )}
+            {(readiness?.status === 'submitted_to_pengawas' ||
+              readiness?.status === 'in_review_pengawas') && (
+              <Badge className='text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 py-0.5 px-2 gap-1 font-semibold'>
+                <Clock className='h-3 w-3 text-purple-600 animate-pulse' />
+                Pengesahan Pengawas
+              </Badge>
+            )}
+            {readiness?.status === 'revision_by_pengawas' && (
+              <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
+                <AlertCircle className='h-3 w-3 text-destructive' />
+                Revisi Pengawas
               </Badge>
             )}
 
@@ -328,8 +565,8 @@ export function RisikoWizardHeader({
               </span>
             </div>
 
-            {/* Submit to Auditor Button */}
-            {showSubmitButton && (
+            {/* 1. Operator: Submit to Kepala OPD Button */}
+            {showOperatorSubmitButton && (
               <Button
                 type='button'
                 size='sm'
@@ -337,7 +574,33 @@ export function RisikoWizardHeader({
                 onClick={() => setSubmitOpen(true)}
               >
                 <Send className='h-3 w-3' />
-                <span>Kirim ke Auditor</span>
+                <span>Kirim ke Kepala OPD</span>
+              </Button>
+            )}
+
+            {/* 2. Kepala OPD: Review Decision Button */}
+            {showKepalaReviewButton && (
+              <Button
+                type='button'
+                size='sm'
+                className='h-7.5 text-xs bg-sky-600 hover:bg-sky-700 text-white gap-1.5 shadow-xs font-semibold'
+                onClick={() => setIsKepalaReviewOpen(true)}
+              >
+                <ClipboardCheck className='h-3.5 w-3.5' />
+                <span>Persetujuan Kepala OPD</span>
+              </Button>
+            )}
+
+            {/* 3. Kepala OPD: Delegate Auditor Revision to Operator Button */}
+            {showKepalaDelegateButton && (
+              <Button
+                type='button'
+                size='sm'
+                className='h-7.5 text-xs bg-amber-600 hover:bg-amber-700 text-white gap-1.5 shadow-xs font-semibold'
+                onClick={() => setIsKepalaDelegateOpen(true)}
+              >
+                <ArrowRightCircle className='h-3.5 w-3.5' />
+                <span>Delegasikan ke Operator</span>
               </Button>
             )}
 
@@ -347,161 +610,67 @@ export function RisikoWizardHeader({
 
         {/* DESKTOP & TABLET: COMPACT 13-STEP TIMELINE TRACK */}
         <TooltipProvider delayDuration={150}>
-          <nav aria-label='Progress' className='hidden sm:block pt-1.5 pb-0.5 border-t border-border/60'>
-            <ol className='flex items-start w-full justify-between'>
-              {steps.map((step, index) => {
-                const isCurrent = step.id === currentStepId
-                const isCompleted = step.isCompleted
-                const isLocked = !step.isUnlocked
-                const isLast = index === steps.length - 1
-                const cleanTitle = getCleanStepTitle(step.title)
+          <nav
+            aria-label='Progress Pengisian Risiko'
+            className='hidden sm:flex items-center gap-1.5 py-1.5 overflow-x-auto no-scrollbar'
+          >
+            {steps.map((step) => {
+              const isCurrent = step.id === currentStepId
+              const isCompleted = step.isCompleted
+              const isLocked = !step.isUnlocked
+              const cleanTitle = getCleanStepTitle(step.title)
 
-                return (
-                  <li
-                    key={step.id}
-                    className={cn(
-                      'flex items-start min-w-0',
-                      !isLast && 'flex-1'
-                    )}
-                  >
-                    {/* Step Node Button with Circle & High-Contrast Form Code */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type='button'
-                          onClick={() => handleStepClick(step)}
-                          disabled={isLocked}
-                          className={cn(
-                            'group flex flex-col items-center shrink-0 w-8 sm:w-8.5 outline-hidden transition-all select-none',
-                            isLocked
-                              ? 'cursor-not-allowed'
-                              : isCurrent
-                              ? 'cursor-default'
-                              : 'cursor-pointer hover:opacity-90'
-                          )}
-                          aria-label={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})`}
-                        >
-                          {/* Compact Circle Node (30-32px) */}
-                          <span
-                            className={cn(
-                              'flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs font-mono font-bold transition-all shadow-2xs',
-                              isCurrent
-                                ? isCompleted
-                                  ? 'bg-emerald-600 text-white ring-3 ring-primary/40 ring-offset-1 ring-offset-background scale-105 shadow-sm'
-                                  : 'bg-primary text-primary-foreground ring-3 ring-primary/40 ring-offset-1 ring-offset-background scale-105 shadow-sm'
-                                : isCompleted
-                                ? 'bg-emerald-600 text-white ring-1 ring-emerald-600/30 group-hover:scale-105'
-                                : isLocked
-                                ? 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
-                                : 'bg-background text-foreground border border-border group-hover:border-primary group-hover:scale-105'
-                            )}
-                          >
-                            {isCompleted ? (
-                              <Check className='h-3.5 w-3.5 stroke-[2.8]' />
-                            ) : isLocked ? (
-                              <Lock className='h-3.5 w-3.5 stroke-[2.2] text-slate-500 dark:text-slate-400' />
-                            ) : (
-                              <span className='text-[11px] font-bold font-mono'>{step.stepNumber}</span>
-                            )}
-                          </span>
-
-                          {/* High-Contrast Clear Form Code underneath */}
-                          <span
-                            className={cn(
-                              'text-[10px] sm:text-[11px] font-mono mt-1 text-center transition-colors truncate max-w-full leading-none select-none',
-                              isCurrent
-                                ? 'font-extrabold text-primary'
-                                : isCompleted
-                                ? 'font-bold text-emerald-700 dark:text-emerald-400'
-                                : isLocked
-                                ? 'font-bold text-slate-600 dark:text-slate-400'
-                                : 'font-semibold text-foreground group-hover:text-primary'
-                            )}
-                          >
-                            {step.code}
-                          </span>
-
-                          {/* Active Indicator Dot */}
-                          {isCurrent && (
-                            <span className='h-1 w-1 rounded-full bg-primary mt-0.5 shadow-2xs' />
-                          )}
-                        </button>
-                      </TooltipTrigger>
-
-                      <TooltipContent side='bottom' className='text-xs space-y-1 p-2 max-w-xs shadow-md'>
-                        <div className='font-bold flex items-center justify-between gap-2 border-b border-border/50 pb-1'>
-                          <span>Langkah {step.stepNumber}: {cleanTitle}</span>
-                          <Badge variant='outline' className='text-[10px] font-mono px-1 py-0'>
-                            Form {step.code}
-                          </Badge>
-                        </div>
-                        <p className='text-[11px] text-muted-foreground leading-snug'>
-                          {step.subtitle}
-                        </p>
-                        <div className='flex items-center gap-1.5 pt-0.5 text-[10px] font-medium'>
-                          <span
-                            className={cn(
-                              'h-1.5 w-1.5 rounded-full',
-                              isCurrent
-                                ? 'bg-primary'
-                                : isCompleted
-                                ? 'bg-emerald-500'
-                                : isLocked
-                                ? 'bg-muted-foreground'
-                                : 'bg-amber-500'
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              isCurrent
-                                ? 'text-primary font-bold'
-                                : isCompleted
-                                ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                                : 'text-muted-foreground'
-                            )}
-                          >
-                            {isCurrent
-                              ? 'Sedang aktif dikerjakan'
-                              : isCompleted
-                              ? 'Sudah selesai & tersimpan'
-                              : !step.isImplemented
-                              ? 'Tahap pengembangan (Coming Soon)'
-                              : isLocked
-                              ? 'Terkunci (Selesaikan langkah sebelumnya)'
-                              : 'Siap diisi'}
-                          </span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Flexible Connector Line between steps */}
-                    {!isLast && (
-                      <div
-                        aria-hidden='true'
-                        className='flex-1 h-[2.5px] mx-1 mt-[13px] sm:mt-[14px] rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'
+              return (
+                <Tooltip key={step.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type='button'
+                      onClick={() => handleStepClick(step)}
+                      disabled={isLocked}
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 border select-none',
+                        isCurrent
+                          ? 'bg-primary text-primary-foreground border-primary font-bold shadow-xs'
+                          : isCompleted
+                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                          : isLocked
+                          ? 'bg-muted/40 text-muted-foreground/50 border-transparent cursor-not-allowed'
+                          : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0',
+                          isCurrent
+                            ? 'bg-primary-foreground text-primary font-bold'
+                            : isCompleted
+                            ? 'bg-emerald-600 text-white'
+                            : isLocked
+                            ? 'bg-muted-foreground/20 text-muted-foreground/60'
+                            : 'bg-muted text-foreground'
+                        )}
                       >
-                        <div
-                          className={cn(
-                            'h-full transition-all duration-300',
-                            isCompleted
-                              ? 'bg-emerald-500 w-full'
-                              : isCurrent
-                              ? 'bg-primary/40 w-1/2'
-                              : 'w-0'
-                          )}
-                        />
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
-            </ol>
+                        {step.stepNumber}
+                      </span>
+                      <span className='truncate max-w-[120px]'>{cleanTitle}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side='bottom' className='text-xs'>
+                    <p className='font-bold'>
+                      Langkah {step.stepNumber}: {cleanTitle}
+                    </p>
+                    <p className='text-[10px] text-muted-foreground'>
+                      Form {step.code} • {isCompleted ? 'Sudah Diisi' : isLocked ? 'Terkunci' : 'Siap Diisi'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
           </nav>
         </TooltipProvider>
 
         {/* MOBILE (<640px): MULTI-SEGMENT PROGRESS + TOUCH NAVIGATOR */}
         <div className='sm:hidden pt-1.5 space-y-2 border-t border-border/60'>
-          {/* Segmented Micro Progress Bar (13 segments) */}
           <div className='flex items-center gap-1 h-1.5 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'>
             {steps.map((step) => {
               const isCurrent = step.id === currentStepId
@@ -531,7 +700,6 @@ export function RisikoWizardHeader({
             })}
           </div>
 
-          {/* Active Step Details & Quick Mobile Navigator */}
           <div className='flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-2.5 py-1.5'>
             <Button
               type='button'
@@ -574,21 +742,175 @@ export function RisikoWizardHeader({
         </div>
       </PageHeader>
 
-      {/* Submit Confirmation Dialog */}
+      {/* 1. OPERATOR SUBMIT CONFIRMATION DIALOG */}
       <ConfirmDialog
         open={isSubmitOpen}
         onOpenChange={setSubmitOpen}
-        title='Kirim Lembar Kerja Risiko ke Auditor?'
+        title='Ajukan Lembar Kerja Risiko ke Kepala OPD?'
         desc={
           <span>
-            Seluruh data lembar kerja risiko (Form 2B dan Form 2C) akan dikirimkan kepada Auditor Pengawas (
-            <strong>{readiness?.assigned_auditor?.name || 'Inspektorat'}</strong>). Selama proses peninjauan, data akan berstatus terkunci (read-only).
+            Seluruh data lembar kerja pengelolaan risiko (Form 2B dan Form 2C) akan diajukan kepada Kepala OPD (
+            <strong>{readiness?.kepala_opd?.name || 'Pimpinan OPD'}</strong>) untuk diverifikasi secara internal.
           </span>
         }
-        confirmText='Ya, Kirim Sekarang'
-        isLoading={submitMutation.isPending}
-        handleConfirm={() => submitMutation.mutate()}
+        confirmText='Ya, Ajukan ke Kepala OPD'
+        isLoading={submitToKepalaMutation.isPending}
+        handleConfirm={() => submitToKepalaMutation.mutate()}
       />
+
+      {/* 2. KEPALA OPD REVIEW MODAL */}
+      <Dialog open={isKepalaReviewOpen} onOpenChange={setIsKepalaReviewOpen}>
+        <DialogContent className='sm:max-w-lg'>
+          <DialogHeader>
+            <DialogTitle className='flex items-center gap-2 text-base font-bold'>
+              <UserCheck className='h-5 w-5 text-primary' />
+              Persetujuan Internal Kepala OPD
+            </DialogTitle>
+            <DialogDescription className='text-xs'>
+              Sebagai Kepala OPD, Anda dapat menyetujui draf internal untuk diteruskan kepada Auditor Pengawas atau meminta revisi kepada Operator.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className='space-y-4 py-2 text-xs'>
+            <div className='space-y-1.5'>
+              <Label className='text-xs font-semibold'>Keputusan Persetujuan:</Label>
+              <div className='grid grid-cols-2 gap-2'>
+                <Button
+                  type='button'
+                  variant={kepalaAction === 'approved' ? 'default' : 'outline'}
+                  size='sm'
+                  onClick={() => setKepalaAction('approved')}
+                  className={cn(
+                    'text-xs h-9 justify-center gap-1.5 font-bold',
+                    kepalaAction === 'approved' && 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  )}
+                >
+                  <CheckCircle2 className='h-4 w-4' />
+                  Setujui & Kirim ke Auditor
+                </Button>
+                <Button
+                  type='button'
+                  variant={kepalaAction === 'rejected' ? 'destructive' : 'outline'}
+                  size='sm'
+                  onClick={() => setKepalaAction('rejected')}
+                  className='text-xs h-9 justify-center gap-1.5 font-bold'
+                >
+                  <AlertCircle className='h-4 w-4' />
+                  Minta Revisi ke Operator
+                </Button>
+              </div>
+            </div>
+
+            <div className='space-y-1.5'>
+              <Label className='text-xs font-semibold'>
+                Catatan Kepala OPD {kepalaAction === 'rejected' && <span className='text-destructive'>* (Wajib diisi min. 5 karakter)</span>}:
+              </Label>
+              <Textarea
+                rows={3}
+                value={kepalaNotes}
+                onChange={(e) => setKepalaNotes(e.target.value)}
+                placeholder={
+                  kepalaAction === 'approved'
+                    ? 'Catatan opsional untuk auditor pengawas...'
+                    : 'Instruksi perbaikan untuk operator OPD...'
+                }
+                className='text-xs'
+              />
+            </div>
+          </div>
+
+          <DialogFooter className='gap-2 sm:gap-0'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => setIsKepalaReviewOpen(false)}
+              disabled={reviewKepalaMutation.isPending}
+            >
+              Batal
+            </Button>
+            <Button
+              type='button'
+              size='sm'
+              disabled={
+                reviewKepalaMutation.isPending ||
+                (kepalaAction === 'rejected' && kepalaNotes.trim().length < 5)
+              }
+              onClick={() => reviewKepalaMutation.mutate()}
+              className={cn(
+                kepalaAction === 'approved'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-destructive hover:bg-destructive/90 text-white'
+              )}
+            >
+              {reviewKepalaMutation.isPending ? 'Menyimpan...' : 'Simpan Keputusan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 3. KEPALA OPD DELEGATE AUDITOR REVISION MODAL */}
+      <Dialog open={isKepalaDelegateOpen} onOpenChange={setIsKepalaDelegateOpen}>
+        <DialogContent className='sm:max-w-lg'>
+          <DialogHeader>
+            <DialogTitle className='flex items-center gap-2 text-base font-bold'>
+              <ArrowRightCircle className='h-5 w-5 text-amber-600' />
+              Delegasikan Revisi ke Operator OPD
+            </DialogTitle>
+            <DialogDescription className='text-xs'>
+              Auditor Pengawas telah mengembalikan lembar kerja dengan catatan perbaikan. Klik delegasikan untuk membuka akses edit bagi Operator.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className='space-y-3 py-2 text-xs'>
+            <div className='rounded-lg border bg-muted/40 p-3 space-y-2'>
+              <p className='font-semibold text-foreground text-xs'>Catatan dari Auditor Pengawas:</p>
+              <div className='space-y-1.5'>
+                {readiness?.submission?.items
+                  ?.filter((i) => i.status_auditor === 'rejected' || i.status === 'rejected')
+                  .map((item) => (
+                    <div key={item.id} className='text-xs bg-background/80 p-2 rounded border'>
+                      <span className='font-bold uppercase text-destructive mr-1'>Form {item.form_code}:</span>
+                      <span className='text-muted-foreground'>{item.catatan_auditor || item.catatan_revisi || 'Perlu perbaikan.'}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div className='space-y-1.5'>
+              <Label className='text-xs font-semibold'>Tambahan Instruksi Kepala OPD (Opsional):</Label>
+              <Textarea
+                rows={2}
+                value={delegateNotes}
+                onChange={(e) => setDelegateNotes(e.target.value)}
+                placeholder='Instruksi khusus kepada staf penyusun...'
+                className='text-xs'
+              />
+            </div>
+          </div>
+
+          <DialogFooter className='gap-2 sm:gap-0'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => setIsKepalaDelegateOpen(false)}
+              disabled={delegateMutation.isPending}
+            >
+              Batal
+            </Button>
+            <Button
+              type='button'
+              size='sm'
+              disabled={delegateMutation.isPending}
+              onClick={() => delegateMutation.mutate()}
+              className='bg-amber-600 hover:bg-amber-700 text-white font-semibold'
+            >
+              {delegateMutation.isPending ? 'Mendelegasikan...' : 'Kirim Catatan & Buka Akses Edit Operator'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -24,7 +24,7 @@ class SystemSettingController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        if (!$request->user()->can('settings.view')) {
+        if (! $request->user()->can('settings.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat pengaturan sistem.');
         }
 
@@ -68,7 +68,7 @@ class SystemSettingController extends Controller
      */
     public function deleteLogo(Request $request): JsonResponse
     {
-        if (!$request->user()->can('settings.edit')) {
+        if (! $request->user()->can('settings.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah logo aplikasi.');
         }
 

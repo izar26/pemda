@@ -29,12 +29,12 @@ class IndikatorPenilaianService
      */
     public function resolvePeriodeId(?string $periodeId = null): string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$active) {
+        if (! $active) {
             throw ValidationException::withMessages([
                 'periode' => 'Tidak ada periode penilaian yang aktif saat ini. Silakan aktifkan periode penilaian terlebih dahulu.',
             ]);
@@ -48,7 +48,7 @@ class IndikatorPenilaianService
      */
     public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
@@ -60,7 +60,7 @@ class IndikatorPenilaianService
     /**
      * Get paginated list of evaluation indicators / IKU.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedIndikator(
         array $filters = [],
@@ -69,7 +69,7 @@ class IndikatorPenilaianService
         string $sortDirection = 'asc'
     ): LengthAwarePaginator {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
+        if (! $periodeId) {
             return IndikatorPenilaian::query()->whereRaw('1 = 0')->paginate($perPage);
         }
         $filters['periode_penilaian_id'] = $periodeId;
@@ -88,14 +88,14 @@ class IndikatorPenilaianService
     /**
      * Get all evaluation indicators without pagination (dropdown or reporting).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return Collection<int, IndikatorPenilaian>
      */
     public function getAllIndikator(array $filters = []): Collection
     {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
-            return new Collection();
+        if (! $periodeId) {
+            return new Collection;
         }
         $filters['periode_penilaian_id'] = $periodeId;
 
@@ -123,7 +123,7 @@ class IndikatorPenilaianService
         $totalOpd = Opd::count();
         $totalSasaran = $resolvedId ? SasaranPenilaian::where('periode_penilaian_id', $resolvedId)->count() : 0;
 
-        if (!$resolvedId) {
+        if (! $resolvedId) {
             return [
                 'total_indikator' => 0,
                 'total_iku' => 0,
@@ -180,7 +180,7 @@ class IndikatorPenilaianService
     /**
      * Create a new evaluation indicator / IKU.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createIndikator(array $data, ?User $creator = null): IndikatorPenilaian
     {
@@ -188,7 +188,7 @@ class IndikatorPenilaianService
         $data['created_by'] = $creator?->id ?? auth('sanctum')->id();
 
         // Resolve OPD ID & Tujuan ID from Sasaran if omitted
-        if (!empty($data['sasaran_penilaian_id'])) {
+        if (! empty($data['sasaran_penilaian_id'])) {
             $sasaran = SasaranPenilaian::find($data['sasaran_penilaian_id']);
             if ($sasaran) {
                 $data['opd_id'] = $data['opd_id'] ?? $sasaran->opd_id;
@@ -221,12 +221,12 @@ class IndikatorPenilaianService
     /**
      * Update an evaluation indicator / IKU.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateIndikator(IndikatorPenilaian $indikator, array $data): IndikatorPenilaian
     {
         // If sasaran changed, resolve opd and tujuan from new sasaran
-        if (!empty($data['sasaran_penilaian_id']) && $data['sasaran_penilaian_id'] !== $indikator->sasaran_penilaian_id) {
+        if (! empty($data['sasaran_penilaian_id']) && $data['sasaran_penilaian_id'] !== $indikator->sasaran_penilaian_id) {
             if ($indikator->konteksPenilaians()->exists()) {
                 throw ValidationException::withMessages([
                     'sasaran_penilaian_id' => 'Tidak dapat memindahkan Sasaran induk pada Indikator ini karena sedang digunakan pada Konteks Penilaian Strategis (Form 2B).',
@@ -234,7 +234,7 @@ class IndikatorPenilaianService
             }
         }
 
-        if (!empty($data['sasaran_penilaian_id'])) {
+        if (! empty($data['sasaran_penilaian_id'])) {
             $sasaran = SasaranPenilaian::find($data['sasaran_penilaian_id']);
             if ($sasaran) {
                 $data['opd_id'] = $sasaran->opd_id;
@@ -270,7 +270,7 @@ class IndikatorPenilaianService
     /**
      * Reorder indicators within their parent target scope.
      *
-     * @param array<int, string> $orderedIds
+     * @param  array<int, string>  $orderedIds
      */
     public function reorderIndikator(array $orderedIds): void
     {
@@ -313,13 +313,13 @@ class IndikatorPenilaianService
             ->where('periode_penilaian_id', $sourcePeriodeId)
             ->whereHas('opd', fn ($q) => $q->where('is_active', true));
 
-        if (!empty($opdId)) {
+        if (! empty($opdId)) {
             $query->where('opd_id', $opdId);
         }
-        if (!empty($sasaranId)) {
+        if (! empty($sasaranId)) {
             $query->where('sasaran_penilaian_id', $sasaranId);
         }
-        if (!empty($jenis) && $jenis !== 'all') {
+        if (! empty($jenis) && $jenis !== 'all') {
             $query->where('jenis', $jenis);
         }
 
@@ -331,7 +331,7 @@ class IndikatorPenilaianService
         }
 
         foreach ($sourceItems as $item) {
-            if ($item->tujuan?->sumberData && !$item->tujuan->sumberData->is_active) {
+            if ($item->tujuan?->sumberData && ! $item->tujuan->sumberData->is_active) {
                 throw ValidationException::withMessages([
                     'source_periode_id' => "Tidak dapat menyalin Indikator '{$item->indikator}' karena Sumber Data '{$item->tujuan->sumberData->nama}' pada Tujuan induknya sedang nonaktif.",
                 ]);
@@ -375,7 +375,7 @@ class IndikatorPenilaianService
                     }
                 }
 
-                if (!$targetTujuanId) {
+                if (! $targetTujuanId) {
                     continue;
                 }
 
@@ -411,7 +411,7 @@ class IndikatorPenilaianService
                     }
                 }
 
-                if (!$targetSasaranId) {
+                if (! $targetSasaranId) {
                     continue;
                 }
 
@@ -421,7 +421,7 @@ class IndikatorPenilaianService
                     ->where('indikator', $item->indikator)
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     $maxUrutan = IndikatorPenilaian::where('periode_penilaian_id', $targetPeriodeId)
                         ->where('sasaran_penilaian_id', $targetSasaranId)
                         ->max('urutan');
@@ -450,7 +450,7 @@ class IndikatorPenilaianService
     /**
      * Stream export indicators / IKU to Excel (.xlsx).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function exportIndikator(array $filters = []): StreamedResponse
     {
@@ -465,16 +465,16 @@ class IndikatorPenilaianService
 
         $periode = PeriodePenilaian::find($periodeId);
         $periodeLabel = $periode ? "{$periode->nama_periode}_Tahun_{$periode->tahun_penilaian}" : 'Semua';
-        $fileName = 'Data_IKU_dan_Indikator_Renstra_OPD_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $periodeLabel) . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'Data_IKU_dan_Indikator_Renstra_OPD_'.preg_replace('/[^a-zA-Z0-9_-]/', '_', $periodeLabel).'_'.date('Ymd_His').'.xlsx';
 
         return response()->streamDownload(function () use ($items) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $headerBorder = new Border(
                 new BorderPart(Border::BOTTOM, Color::rgb(0, 0, 0), Border::WIDTH_THIN, Border::STYLE_SOLID)
             );
-            $headerStyle = (new Style())
+            $headerStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(11)
                 ->setBackgroundColor(Color::rgb(220, 240, 225))

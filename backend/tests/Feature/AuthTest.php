@@ -15,7 +15,7 @@ class AuthTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Ensure clean test user
         User::updateOrCreate(
             ['email' => 'admin@pemda.go.id'],
@@ -78,7 +78,7 @@ class AuthTest extends TestCase
     public function test_login_requires_2fa_when_enabled_and_blocks_bypass(): void
     {
         $user = User::where('email', 'admin@pemda.go.id')->first();
-        $g2fa = new Google2FA();
+        $g2fa = new Google2FA;
         $secret = $g2fa->generateSecretKey();
 
         $user->update([
@@ -100,14 +100,14 @@ class AuthTest extends TestCase
         $tempToken = $loginRes->json('temp_token');
 
         // 2. Anti-Bypass: accessing protected endpoint using temp token must be blocked (HTTP 403)
-        $bypassRes = $this->withHeader('Authorization', 'Bearer ' . $tempToken)
+        $bypassRes = $this->withHeader('Authorization', 'Bearer '.$tempToken)
             ->getJson('/api/auth/me');
 
         $bypassRes->assertStatus(403);
 
         // 3. Step 2: verify TOTP
         $validOtp = $g2fa->getCurrentOtp($secret);
-        $verifyRes = $this->withHeader('Authorization', 'Bearer ' . $tempToken)
+        $verifyRes = $this->withHeader('Authorization', 'Bearer '.$tempToken)
             ->postJson('/api/auth/2fa/verify', [
                 'code' => $validOtp,
             ]);
@@ -116,7 +116,7 @@ class AuthTest extends TestCase
             ->assertJsonStructure(['token', 'user']);
 
         // 4. Anti-Replay: submitting the exact same OTP code immediately must be rejected
-        $replayRes = $this->withHeader('Authorization', 'Bearer ' . $tempToken)
+        $replayRes = $this->withHeader('Authorization', 'Bearer '.$tempToken)
             ->postJson('/api/auth/2fa/verify', [
                 'code' => $validOtp,
             ]);
@@ -127,7 +127,7 @@ class AuthTest extends TestCase
     public function test_can_login_using_backup_recovery_code(): void
     {
         $user = User::where('email', 'admin@pemda.go.id')->first();
-        $g2fa = new Google2FA();
+        $g2fa = new Google2FA;
         $secret = $g2fa->generateSecretKey();
 
         $user->update([
@@ -143,7 +143,7 @@ class AuthTest extends TestCase
 
         $tempToken = $loginRes->json('temp_token');
 
-        $verifyRes = $this->withHeader('Authorization', 'Bearer ' . $tempToken)
+        $verifyRes = $this->withHeader('Authorization', 'Bearer '.$tempToken)
             ->postJson('/api/auth/2fa/verify', [
                 'code' => 'EMERGENCY-01',
             ]);

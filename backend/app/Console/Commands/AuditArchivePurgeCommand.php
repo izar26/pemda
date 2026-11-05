@@ -36,14 +36,15 @@ class AuditArchivePurgeCommand extends Command
         $force = (bool) $this->option('force');
 
         $this->info('=== PENGARSIPAN & PEMBERSIHAN LOG AUDIT (Arsip Permanen) ===');
-        $this->line("Batas Retensi : > {$days} hari" . ($cutoff ? " (Cutoff: {$cutoff})" : ''));
+        $this->line("Batas Retensi : > {$days} hari".($cutoff ? " (Cutoff: {$cutoff})" : ''));
 
         $statsBefore = $archiveService->getStats();
         $this->line("Total Log Aktif Saat Ini : {$statsBefore['active_logs_count']}");
         $this->line("Total Log di Arsip Permanen : {$statsBefore['archived_logs_count']}");
 
-        if (!$force && !$this->confirm('Apakah Anda yakin ingin memindahkan log audit lama ke arsip permanen dan membersihkannya dari tabel aktif?', true)) {
+        if (! $force && ! $this->confirm('Apakah Anda yakin ingin memindahkan log audit lama ke arsip permanen dan membersihkannya dari tabel aktif?', true)) {
             $this->warn('Operasi dibatalkan.');
+
             return self::SUCCESS;
         }
 

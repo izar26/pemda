@@ -54,13 +54,13 @@ class AuditorAssignmentService
         ]);
 
         // Only display auditors who currently have OPD assignments
-        if ($currentUser && $currentUser->hasRole('Auditor') && !$currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($currentUser && $currentUser->hasRole('Auditor') && ! $currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
             $query->where('id', $currentUser->id)->has('auditorAssignments');
         } else {
             $query->has('auditorAssignments');
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
@@ -73,7 +73,7 @@ class AuditorAssignmentService
             });
         }
 
-        if (!empty($filters['opd_id'])) {
+        if (! empty($filters['opd_id'])) {
             $query->whereHas('auditorAssignments', function ($q) use ($filters) {
                 $q->where('opd_id', $filters['opd_id']);
             });
@@ -263,6 +263,7 @@ class AuditorAssignmentService
     public function deleteAssignment(string $id): bool
     {
         $assignment = AuditorOpdAssignment::findOrFail($id);
+
         return (bool) $assignment->delete();
     }
 
@@ -277,6 +278,7 @@ class AuditorAssignmentService
             $assignment->delete();
             $count++;
         }
+
         return $count;
     }
 
@@ -285,17 +287,17 @@ class AuditorAssignmentService
      */
     protected function applyFilters($query, array $filters, ?User $currentUser): void
     {
-        if ($currentUser && $currentUser->hasRole('Auditor') && !$currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($currentUser && $currentUser->hasRole('Auditor') && ! $currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
             $query->where('auditor_id', $currentUser->id);
-        } elseif (!empty($filters['auditor_id'])) {
+        } elseif (! empty($filters['auditor_id'])) {
             $query->where('auditor_id', $filters['auditor_id']);
         }
 
-        if (!empty($filters['opd_id'])) {
+        if (! empty($filters['opd_id'])) {
             $query->where('opd_id', $filters['opd_id']);
         }
 
-        if (!empty($filters['periode_penilaian_id'])) {
+        if (! empty($filters['periode_penilaian_id'])) {
             $query->where('periode_penilaian_id', $filters['periode_penilaian_id']);
         }
 
@@ -303,7 +305,7 @@ class AuditorAssignmentService
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('nomor_surat_tugas', 'like', "%{$term}%")

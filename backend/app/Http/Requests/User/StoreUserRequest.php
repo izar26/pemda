@@ -18,7 +18,7 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         $roleRule = ['required', 'string'];
-        if (!$this->user()?->hasRole('Superadmin')) {
+        if (! $this->user()?->hasRole('Superadmin')) {
             $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
                 $query->where('name', '!=', 'Superadmin');
             });

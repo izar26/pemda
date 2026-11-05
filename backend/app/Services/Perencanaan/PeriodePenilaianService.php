@@ -25,7 +25,7 @@ class PeriodePenilaianService
     /**
      * Get paginated list of evaluation periods with filters and sorting.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedPeriodes(
         array $filters = [],
@@ -50,7 +50,7 @@ class PeriodePenilaianService
         $query->filter($filters);
 
         $allowedSorts = ['id', 'nama_periode', 'tahun_mulai', 'tahun_akhir', 'tahun_penilaian', 'tanggal_mulai', 'tanggal_akhir', 'status', 'created_at'];
-        if (!in_array($sortBy, $allowedSorts, true)) {
+        if (! in_array($sortBy, $allowedSorts, true)) {
             $sortBy = 'tahun_penilaian';
         }
 
@@ -73,7 +73,7 @@ class PeriodePenilaianService
     /**
      * Get all evaluation periods (unpaginated for select dropdowns).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return Collection<int, PeriodePenilaian>
      */
     public function getAllPeriodes(array $filters = []): Collection
@@ -150,7 +150,7 @@ class PeriodePenilaianService
      * Create a new evaluation period.
      * Enforces single active period inside a database transaction.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createPeriode(array $data, ?User $creator = null): PeriodePenilaian
     {
@@ -189,7 +189,7 @@ class PeriodePenilaianService
      * Update an evaluation period.
      * Enforces single active period if status changed to active.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updatePeriode(PeriodePenilaian $periode, array $data): PeriodePenilaian
     {
@@ -221,7 +221,7 @@ class PeriodePenilaianService
     public function getOtherActivePeriodeWithRisk(?string $exceptPeriodeId = null): ?PeriodePenilaian
     {
         $active = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$active) {
+        if (! $active) {
             return null;
         }
 
@@ -382,7 +382,7 @@ class PeriodePenilaianService
     /**
      * Stream export evaluation periods to Excel (.xlsx).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function exportPeriodes(array $filters = []): StreamedResponse
     {
@@ -439,10 +439,10 @@ class PeriodePenilaianService
             'Modul' => 'Perencanaan Kinerja & Tata Kelola Risiko Pemda',
             'Tanggal Ekspor' => now()->translatedFormat('d F Y H:i'),
         ];
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $metadata['Pencarian'] = $filters['search'];
         }
-        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+        if (! empty($filters['status']) && $filters['status'] !== 'all') {
             $metadata['Filter Status'] = $filters['status'];
         }
 

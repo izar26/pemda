@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Risiko;
 
 use App\Models\Perencanaan\PeriodePenilaian;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +27,7 @@ class SaveKonteksOperasionalRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             $this->merge(['opd_id' => $user->opd_id]);
         }
 
@@ -41,7 +42,7 @@ class SaveKonteksOperasionalRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

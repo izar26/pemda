@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Perencanaan;
 
-use App\Models\AuditLog;
 use App\Models\Perencanaan\PeriodePenilaian;
-use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class PeriodePenilaianTest extends TestCase
@@ -16,13 +16,14 @@ class PeriodePenilaianTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $staff;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RbacSeeder::class);
+        $this->seed(RbacSeeder::class);
 
         $this->admin = User::factory()->create([
             'role' => 'superadmin',
@@ -391,7 +392,7 @@ class PeriodePenilaianTest extends TestCase
 
     public function test_get_active_or_throw_aborts_with_422_when_no_active_period(): void
     {
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Tidak ada periode penilaian yang aktif saat ini.');
 
         PeriodePenilaian::getActiveOrThrow();
@@ -510,4 +511,3 @@ class PeriodePenilaianTest extends TestCase
         $this->assertEquals('arsip', $past->fresh()->status);
     }
 }
-

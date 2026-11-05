@@ -12,12 +12,12 @@ use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
 use App\Models\User;
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KonteksPenilaian extends Model
@@ -109,15 +109,15 @@ class KonteksPenilaian extends Model
     /**
      * Scope for filter.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
-            ->when(!empty($filters['periode_penilaian_id']), fn ($q) => $q->where('periode_penilaian_id', $filters['periode_penilaian_id']))
-            ->when(!empty($filters['opd_id']), fn ($q) => $q->where('opd_id', $filters['opd_id']))
-            ->when(!empty($filters['status']), fn ($q) => $q->where('status', $filters['status']))
-            ->when(!empty($filters['search']), function ($q) use ($filters) {
+            ->when(! empty($filters['periode_penilaian_id']), fn ($q) => $q->where('periode_penilaian_id', $filters['periode_penilaian_id']))
+            ->when(! empty($filters['opd_id']), fn ($q) => $q->where('opd_id', $filters['opd_id']))
+            ->when(! empty($filters['status']), fn ($q) => $q->where('status', $filters['status']))
+            ->when(! empty($filters['search']), function ($q) use ($filters) {
                 $search = $filters['search'];
                 $q->where(function ($sub) use ($search) {
                     $sub->where('informasi_lain', 'ilike', "%{$search}%")

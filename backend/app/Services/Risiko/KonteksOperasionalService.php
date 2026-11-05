@@ -43,12 +43,12 @@ class KonteksOperasionalService
      */
     public function resolvePeriodeId(?string $periodeId = null): string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$active) {
+        if (! $active) {
             throw ValidationException::withMessages([
                 'periode' => 'Tidak ada periode penilaian yang aktif saat ini. Silakan aktifkan periode penilaian terlebih dahulu.',
             ]);
@@ -62,18 +62,19 @@ class KonteksOperasionalService
      */
     public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
+
         return $active ? (string) $active->id : null;
     }
 
     /**
      * Get paginated list of operational context assessments (Form 2C).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedKonteks(
         array $filters = [],
@@ -82,7 +83,7 @@ class KonteksOperasionalService
         string $sortDirection = 'desc'
     ): LengthAwarePaginator {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
+        if (! $periodeId) {
             return KonteksOperasional::query()->whereRaw('1 = 0')->paginate($perPage);
         }
         $filters['periode_penilaian_id'] = $periodeId;
@@ -107,7 +108,7 @@ class KonteksOperasionalService
     public function getKonteksByOpd(string $opdId, ?string $periodeId = null): ?KonteksOperasional
     {
         $resolvedPeriodeId = $this->resolveOptionalPeriodeId($periodeId);
-        if (!$resolvedPeriodeId) {
+        if (! $resolvedPeriodeId) {
             return null;
         }
 
@@ -116,7 +117,7 @@ class KonteksOperasionalService
             ->first();
 
         // Step 2C cannot exist or be unlocked if Step 2B hasn't been created yet
-        if (!$konteksStrategis) {
+        if (! $konteksStrategis) {
             return null;
         }
 
@@ -124,7 +125,7 @@ class KonteksOperasionalService
             ->where('opd_id', $opdId)
             ->first();
 
-        if (!$operasional) {
+        if (! $operasional) {
             $operasional = KonteksOperasional::create([
                 'periode_penilaian_id' => $resolvedPeriodeId,
                 'opd_id' => $opdId,
@@ -175,7 +176,7 @@ class KonteksOperasionalService
     /**
      * Save (create or update) document header (Form 2C).
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function saveKonteks(array $data, ?User $user = null): KonteksOperasional
     {
@@ -188,7 +189,7 @@ class KonteksOperasionalService
                 ->where('opd_id', $opdId)
                 ->first();
 
-            if (!$konteksStrategis) {
+            if (! $konteksStrategis) {
                 throw ValidationException::withMessages([
                     'opd_id' => 'Langkah 1: Penetapan Konteks Risiko Strategis (Form 2B) belum diisi untuk perangkat daerah ini.',
                 ]);
@@ -241,7 +242,7 @@ class KonteksOperasionalService
     /**
      * Batch sync hierarchical items (Programs, Kegiatans, Sub-Kegiatans with Indicators).
      *
-     * @param array<int, array<string, mixed>> $itemsData
+     * @param  array<int, array<string, mixed>>  $itemsData
      */
     public function syncBatchItems(KonteksOperasional $konteks, array $itemsData): void
     {
@@ -272,7 +273,7 @@ class KonteksOperasionalService
             if ($item['jenis'] === 'kegiatan') {
                 $parentKode = $item['parent_kode'] ?? explode('.', $item['kode'])[0] ?? null;
                 $parentId = $parentKode && isset($codeMap[$parentKode]) ? $codeMap[$parentKode] : null;
-                if (!$parentId) {
+                if (! $parentId) {
                     throw ValidationException::withMessages([
                         'items' => "Kegiatan '{$item['nama']}' ({$item['kode']}) tidak memiliki Program induk yang valid dalam payload.",
                     ]);
@@ -289,7 +290,7 @@ class KonteksOperasionalService
                 $parts = explode('.', $item['kode']);
                 $parentKode = $item['parent_kode'] ?? (count($parts) >= 2 ? "{$parts[0]}.{$parts[1]}" : null);
                 $parentId = $parentKode && isset($codeMap[$parentKode]) ? $codeMap[$parentKode] : null;
-                if (!$parentId) {
+                if (! $parentId) {
                     throw ValidationException::withMessages([
                         'items' => "Sub-Kegiatan '{$item['nama']}' ({$item['kode']}) tidak memiliki Kegiatan induk yang valid dalam payload.",
                     ]);
@@ -304,7 +305,7 @@ class KonteksOperasionalService
     /**
      * Create an item node along with its indicators.
      *
-     * @param array<string, mixed> $itemData
+     * @param  array<string, mixed>  $itemData
      */
     protected function createItemWithIndikators(
         KonteksOperasional $konteks,
@@ -320,7 +321,7 @@ class KonteksOperasionalService
             'urutan' => $itemData['urutan'] ?? 1,
         ]);
 
-        if (!empty($itemData['indikators']) && is_array($itemData['indikators'])) {
+        if (! empty($itemData['indikators']) && is_array($itemData['indikators'])) {
             $u = 1;
             foreach ($itemData['indikators'] as $ind) {
                 KonteksOperasionalIndikator::create([
@@ -339,7 +340,7 @@ class KonteksOperasionalService
     /**
      * Save (create or update) a single operational tree item and auto-recalculate hierarchical codes.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function saveItem(
         KonteksOperasional $konteks,
@@ -375,7 +376,7 @@ class KonteksOperasionalService
                     'konteks_operasional_id' => $konteks->id,
                     'parent_id' => $parentId,
                     'jenis' => $data['jenis'],
-                    'kode' => !empty($data['kode']) ? $data['kode'] : 'TEMP',
+                    'kode' => ! empty($data['kode']) ? $data['kode'] : 'TEMP',
                     'nama' => $data['nama'],
                     'urutan' => $data['urutan'] ?? ($maxUrutan + 1),
                 ]);
@@ -432,7 +433,7 @@ class KonteksOperasionalService
     /**
      * Reorder items within Form 2C and auto-recalculate tree codes.
      *
-     * @param array<int, string> $orderedIds
+     * @param  array<int, string>  $orderedIds
      */
     public function reorderItems(KonteksOperasional $konteks, array $orderedIds): void
     {
@@ -517,7 +518,7 @@ class KonteksOperasionalService
         $alpha = '';
         while ($num > 0) {
             $mod = ($num - 1) % 26;
-            $alpha = chr(65 + $mod) . $alpha;
+            $alpha = chr(65 + $mod).$alpha;
             $num = intdiv($num - $mod, 26);
         }
 
@@ -550,23 +551,23 @@ class KonteksOperasionalService
 
         $opdNama = $konteks->opd?->nama ?? 'OPD';
         $tahun = $konteks->periode?->tahun_penilaian ?? date('Y');
-        $fileName = 'Form_2C_Penetapan_Konteks_Risiko_Operasional_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $opdNama) . '_' . $tahun . '.xlsx';
+        $fileName = 'Form_2C_Penetapan_Konteks_Risiko_Operasional_'.preg_replace('/[^a-zA-Z0-9_-]/', '_', $opdNama).'_'.$tahun.'.xlsx';
 
         return response()->streamDownload(function () use ($konteks) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
-            $titleStyle = (new Style())
+            $titleStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(14)
                 ->setFontColor(Color::rgb(20, 50, 40));
 
-            $tableHeaderStyle = (new Style())
+            $tableHeaderStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(10)
                 ->setBackgroundColor(Color::rgb(235, 240, 245));
 
-            $boldStyle = (new Style())->setFontBold();
+            $boldStyle = (new Style)->setFontBold();
 
             // Row 1: Title
             $writer->addRow(Row::fromValues(['PENETAPAN KONTEKS RISIKO OPERASIONAL OPD (FORM 2C)'], $titleStyle));

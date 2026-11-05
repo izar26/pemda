@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Services\Auth\TurnstileService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;

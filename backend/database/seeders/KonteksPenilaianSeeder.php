@@ -22,7 +22,7 @@ class KonteksPenilaianSeeder extends Seeder
     public function run(): void
     {
         $activePeriode = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$activePeriode) {
+        if (! $activePeriode) {
             return;
         }
 
@@ -71,7 +71,7 @@ class KonteksPenilaianSeeder extends Seeder
                 ->orWhere('nama', 'like', "%{$config['opd_kode']}%")
                 ->first();
 
-            if (!$opd) {
+            if (! $opd) {
                 continue;
             }
 
@@ -80,7 +80,7 @@ class KonteksPenilaianSeeder extends Seeder
                 ->where('kode_tujuan', $config['tujuan_kode'])
                 ->first();
 
-            if (!$tujuan) {
+            if (! $tujuan) {
                 continue;
             }
 

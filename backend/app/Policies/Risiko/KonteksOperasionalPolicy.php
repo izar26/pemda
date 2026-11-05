@@ -29,7 +29,7 @@ class KonteksOperasionalPolicy
             return true;
         }
 
-        if (!$user->can('konteks_operasional.view') && !$user->can('review_risiko.view') && !$user->can('laporan.view')) {
+        if (! $user->can('konteks_operasional.view') && ! $user->can('review_risiko.view') && ! $user->can('laporan.view')) {
             return false;
         }
 
@@ -49,7 +49,7 @@ class KonteksOperasionalPolicy
      */
     public function update(User $user, KonteksOperasional $konteks): bool
     {
-        if (!$user->can('konteks_operasional.edit')) {
+        if (! $user->can('konteks_operasional.edit')) {
             return false;
         }
 
@@ -65,7 +65,7 @@ class KonteksOperasionalPolicy
      */
     public function delete(User $user, KonteksOperasional $konteks): bool
     {
-        if (!$user->can('konteks_operasional.delete')) {
+        if (! $user->can('konteks_operasional.delete')) {
             return false;
         }
 

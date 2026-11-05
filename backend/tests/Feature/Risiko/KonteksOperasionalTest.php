@@ -6,6 +6,7 @@ namespace Tests\Feature\Risiko;
 
 use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
+use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
 use App\Models\Risiko\KonteksOperasional;
@@ -21,11 +22,17 @@ class KonteksOperasionalTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $opdPuprUser;
+
     protected User $opdDiskominfoUser;
+
     protected PeriodePenilaian $activePeriode;
+
     protected Opd $puprOpd;
+
     protected Opd $diskominfoOpd;
+
     protected MasterSumberData $sumberData;
 
     protected function setUp(): void
@@ -84,13 +91,13 @@ class KonteksOperasionalTest extends TestCase
 
         $auditor = User::factory()->create(['status' => 'active']);
         $auditor->assignRole('Auditor');
-        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+        AuditorOpdAssignment::create([
             'auditor_id' => $auditor->id,
             'opd_id' => $this->puprOpd->id,
             'periode_penilaian_id' => $this->activePeriode->id,
             'is_active' => true,
         ]);
-        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+        AuditorOpdAssignment::create([
             'auditor_id' => $auditor->id,
             'opd_id' => $this->diskominfoOpd->id,
             'periode_penilaian_id' => $this->activePeriode->id,

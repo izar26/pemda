@@ -12,6 +12,7 @@ use App\Models\Perencanaan\PeriodePenilaian;
 use App\Services\Perencanaan\PeriodePenilaianService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PeriodePenilaianController extends Controller
@@ -26,7 +27,7 @@ class PeriodePenilaianController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.view')) {
+        if (! $user?->can('periode.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data periode penilaian.');
         }
 
@@ -35,6 +36,7 @@ class PeriodePenilaianController extends Controller
         // Fast dropdown query (unpaginated)
         if ($request->boolean('all') || $request->input('paginate') === 'false') {
             $periodes = $this->periodeService->getAllPeriodes($filters);
+
             return response()->json([
                 'data' => PeriodePenilaianResource::collection($periodes),
             ]);
@@ -72,7 +74,7 @@ class PeriodePenilaianController extends Controller
                 'server_time' => now()->toIso8601String(),
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('PeriodePenilaianController@active failed: ' . $e->getMessage());
+            Log::warning('PeriodePenilaianController@active failed: '.$e->getMessage());
 
             return response()->json([
                 'data' => null,
@@ -87,7 +89,7 @@ class PeriodePenilaianController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.view')) {
+        if (! $user?->can('periode.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik periode penilaian.');
         }
 
@@ -118,7 +120,7 @@ class PeriodePenilaianController extends Controller
     public function show(Request $request, PeriodePenilaian $periode): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.view')) {
+        if (! $user?->can('periode.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian periode penilaian.');
         }
 
@@ -148,7 +150,7 @@ class PeriodePenilaianController extends Controller
     public function activate(Request $request, PeriodePenilaian $periode): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.edit')) {
+        if (! $user?->can('periode.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengaktifkan periode penilaian.');
         }
 
@@ -166,7 +168,7 @@ class PeriodePenilaianController extends Controller
     public function switchTahun(Request $request, PeriodePenilaian $periode): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.edit')) {
+        if (! $user?->can('periode.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah tahun penilaian aktif.');
         }
 
@@ -188,7 +190,7 @@ class PeriodePenilaianController extends Controller
     public function destroy(Request $request, PeriodePenilaian $periode): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.delete')) {
+        if (! $user?->can('periode.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus periode penilaian.');
         }
 
@@ -205,7 +207,7 @@ class PeriodePenilaianController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('periode.view')) {
+        if (! $user?->can('periode.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data periode penilaian.');
         }
 

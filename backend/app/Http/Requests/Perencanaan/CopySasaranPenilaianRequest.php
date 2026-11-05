@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Perencanaan;
 
+use App\Models\Perencanaan\TujuanPenilaian;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class CopySasaranPenilaianRequest extends FormRequest
 {
@@ -23,7 +26,7 @@ class CopySasaranPenilaianRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
             $this->merge(['opd_id' => $user->opd_id]);
         }
     }
@@ -31,7 +34,7 @@ class CopySasaranPenilaianRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -49,16 +52,16 @@ class CopySasaranPenilaianRequest extends FormRequest
     /**
      * Custom after validation hook for cascading integrity.
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             if ($validator->errors()->isNotEmpty()) {
                 return;
             }
 
-            if (!empty($this->tujuan_penilaian_id)) {
-                $tujuan = \App\Models\Perencanaan\TujuanPenilaian::find($this->tujuan_penilaian_id);
-                if ($tujuan && !empty($this->opd_id) && $tujuan->opd_id !== $this->opd_id) {
+            if (! empty($this->tujuan_penilaian_id)) {
+                $tujuan = TujuanPenilaian::find($this->tujuan_penilaian_id);
+                if ($tujuan && ! empty($this->opd_id) && $tujuan->opd_id !== $this->opd_id) {
                     $validator->errors()->add('tujuan_penilaian_id', 'Tujuan strategis yang dipilih tidak berasal dari Perangkat Daerah (OPD) yang sama.');
                 }
             }

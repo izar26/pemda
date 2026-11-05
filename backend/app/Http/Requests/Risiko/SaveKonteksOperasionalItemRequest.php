@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
+use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksOperasionalItem;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -23,7 +25,7 @@ class SaveKonteksOperasionalItemRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -56,14 +58,15 @@ class SaveKonteksOperasionalItemRequest extends FormRequest
             $parentId = $this->parent_id;
 
             $konteksParam = $this->route('konteks') ?? $this->route('id');
-            $konteksId = $konteksParam instanceof \App\Models\Risiko\KonteksOperasional ? (string) $konteksParam->id : (string) $konteksParam;
+            $konteksId = $konteksParam instanceof KonteksOperasional ? (string) $konteksParam->id : (string) $konteksParam;
 
             $itemParam = $this->route('item') ?? $this->route('itemId');
-            $itemId = $itemParam instanceof \App\Models\Risiko\KonteksOperasionalItem ? (string) $itemParam->id : (string) $itemParam;
+            $itemId = $itemParam instanceof KonteksOperasionalItem ? (string) $itemParam->id : (string) $itemParam;
 
             // Prevent self-referencing cycle
             if ($itemId && $parentId && (string) $parentId === (string) $itemId) {
                 $validator->errors()->add('parent_id', 'Sebuah item tidak dapat menjadi induk bagi dirinya sendiri.');
+
                 return;
             }
 
@@ -73,6 +76,7 @@ class SaveKonteksOperasionalItemRequest extends FormRequest
                 if ($currentItem) {
                     if ($currentItem->jenis !== $jenis && $currentItem->children()->count() > 0) {
                         $validator->errors()->add('jenis', "Tingkatan '{$currentItem->jenis}' tidak dapat diubah menjadi '{$jenis}' karena sudah memiliki rincian turunan di bawahnya.");
+
                         return;
                     }
 
@@ -85,17 +89,19 @@ class SaveKonteksOperasionalItemRequest extends FormRequest
                             $visited[] = $targetId;
 
                             $node = KonteksOperasionalItem::find($targetId);
-                            if (!$node || !$node->parent_id) {
+                            if (! $node || ! $node->parent_id) {
                                 return false;
                             }
                             if ((string) $node->parent_id === (string) $possibleAncestorId) {
                                 return true;
                             }
+
                             return $isDescendant((string) $node->parent_id, $possibleAncestorId, $visited);
                         };
 
                         if ($isDescendant((string) $parentId, (string) $itemId)) {
                             $validator->errors()->add('parent_id', 'Induk yang dipilih tidak boleh merupakan rincian turunan dari item ini.');
+
                             return;
                         }
                     }
@@ -103,7 +109,7 @@ class SaveKonteksOperasionalItemRequest extends FormRequest
             }
 
             if ($jenis === 'program') {
-                if (!empty($parentId)) {
+                if (! empty($parentId)) {
                     $validator->errors()->add('parent_id', 'Tingkatan Program adalah tingkat tertinggi dan tidak boleh memiliki induk (parent).');
                 }
             } elseif ($jenis === 'kegiatan') {

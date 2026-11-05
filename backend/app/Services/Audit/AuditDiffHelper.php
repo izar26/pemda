@@ -95,6 +95,7 @@ class AuditDiffHelper
 
             if (self::isSensitiveField($key)) {
                 $snapshot[$key] = '***REDACTED***';
+
                 continue;
             }
 
@@ -134,12 +135,12 @@ class AuditDiffHelper
 
         foreach ($candidates as $attribute) {
             $val = $model->getAttribute($attribute);
-            if (!empty($val) && is_scalar($val)) {
+            if (! empty($val) && is_scalar($val)) {
                 return (string) $val;
             }
         }
 
-        return class_basename($model) . ' #' . $model->getKey();
+        return class_basename($model).' #'.$model->getKey();
     }
 
     /**
@@ -194,6 +195,7 @@ class AuditDiffHelper
             try {
                 $timeA = Carbon::parse($a)->toIso8601String();
                 $timeB = Carbon::parse($b)->toIso8601String();
+
                 return $timeA === $timeB;
             } catch (\Throwable) {
                 // fall through
@@ -220,8 +222,9 @@ class AuditDiffHelper
             // Trim and truncate excessively huge strings (like base64 or long dumps)
             $trimmed = trim($value);
             if (strlen($trimmed) > 3000) {
-                return mb_substr($trimmed, 0, 3000) . '... [TRUNCATED]';
+                return mb_substr($trimmed, 0, 3000).'... [TRUNCATED]';
             }
+
             return $trimmed;
         }
 
@@ -233,6 +236,7 @@ class AuditDiffHelper
             if (method_exists($value, '__toString')) {
                 return (string) $value;
             }
+
             return get_class($value);
         }
 

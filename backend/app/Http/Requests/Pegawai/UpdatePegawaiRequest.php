@@ -14,7 +14,7 @@ class UpdatePegawaiRequest extends FormRequest
     {
         $target = $this->route('pegawai');
         $targetPegawai = $target instanceof User ? $target : (is_string($target) ? User::find($target) : null);
-        if ($targetPegawai && $targetPegawai->hasRole('Superadmin') && !$this->user()?->hasRole('Superadmin')) {
+        if ($targetPegawai && $targetPegawai->hasRole('Superadmin') && ! $this->user()?->hasRole('Superadmin')) {
             abort(404, 'Data pegawai tidak ditemukan.');
         }
 

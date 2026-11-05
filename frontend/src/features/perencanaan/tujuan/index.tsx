@@ -68,7 +68,7 @@ function TujuanContent() {
       return [user.opd]
     }
     return opdData || []
-  }, [isOpdRole, user?.opd, opdData])
+  }, [isOpdRole, user, opdData])
 
   // 3. Fetch Tujuan list
   const {

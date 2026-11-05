@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Opd\ReorderOpdRequest;
+use App\Http\Requests\Opd\StoreOpdRequest;
+use App\Http\Requests\Opd\UpdateOpdRequest;
 use App\Http\Resources\OpdResource;
 use App\Models\Opd;
 use App\Models\User;
+use App\Services\Audit\AuditLogService;
 use App\Services\Export\ExcelExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OpdController extends Controller
@@ -22,7 +26,7 @@ class OpdController extends Controller
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('opd.view')) {
+        if (! $user?->can('opd.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data perangkat daerah.');
         }
 
@@ -98,6 +102,7 @@ class OpdController extends Controller
             metadata: $metadata
         );
     }
+
     /**
      * Get list of OPDs.
      * Supports public/dropdown view (all active) or paginated management view with RBAC.
@@ -109,7 +114,7 @@ class OpdController extends Controller
         $isPublic = is_null($user);
 
         // Fast public dropdown for registration, invitations, etc.
-        if ($isAll || ($isPublic && !$request->has('per_page') && !$request->has('page'))) {
+        if ($isAll || ($isPublic && ! $request->has('per_page') && ! $request->has('page'))) {
             $query = Opd::query()->where('is_active', true);
 
             // Auditor-scoped dropdown: only OPDs actively assigned to the logged-in auditor
@@ -139,7 +144,7 @@ class OpdController extends Controller
         }
 
         // Authenticated management table - verify permission
-        if (!$user?->can('opd.view')) {
+        if (! $user?->can('opd.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data perangkat daerah.');
         }
 
@@ -174,7 +179,7 @@ class OpdController extends Controller
         // Sorting
         $allowedSorts = ['id', 'urutan', 'nama', 'kode', 'kategori', 'kepala', 'is_active', 'created_at', 'users_count'];
         $sortBy = (string) $request->input('sort_by', 'urutan');
-        if (!in_array($sortBy, $allowedSorts, true)) {
+        if (! in_array($sortBy, $allowedSorts, true)) {
             $sortBy = 'urutan';
         }
 
@@ -205,7 +210,7 @@ class OpdController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        if (!$request->user()?->can('opd.view')) {
+        if (! $request->user()?->can('opd.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data perangkat daerah.');
         }
 
@@ -244,22 +249,11 @@ class OpdController extends Controller
     /**
      * Store a new OPD.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreOpdRequest $request): JsonResponse
     {
-        if (!$request->user()?->can('opd.create')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk menambahkan perangkat daerah.');
-        }
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
-            'kode' => ['required', 'string', 'max:50', 'unique:opds,kode'],
-            'kategori' => ['required', 'string', 'in:Dinas,Badan,Sekretariat,Inspektorat,RSUD,Kecamatan,BUMD,DESA/KELURAHAN,Desa/Kelurahan'],
-            'kepala' => ['nullable', 'string', 'max:255'],
-            'urutan' => ['nullable', 'integer', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
-
-        if (!isset($validated['urutan']) || $validated['urutan'] === null) {
+        if (! isset($validated['urutan']) || $validated['urutan'] === null) {
             $validated['urutan'] = ((int) Opd::max('urutan')) + 1;
         }
 
@@ -277,19 +271,12 @@ class OpdController extends Controller
     /**
      * Reorder OPD display sequence.
      */
-    public function reorder(Request $request, \App\Services\Audit\AuditLogService $auditLogService): JsonResponse
+    public function reorder(ReorderOpdRequest $request, AuditLogService $auditLogService): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('opd.edit')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan perangkat daerah.');
-        }
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['required', 'uuid', 'exists:opds,id'],
-        ]);
-
-        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $user, $auditLogService) {
+        DB::transaction(function () use ($validated, $user, $auditLogService) {
             foreach ($validated['ids'] as $index => $id) {
                 Opd::where('id', $id)->update(['urutan' => $index + 1]);
             }
@@ -316,29 +303,18 @@ class OpdController extends Controller
     /**
      * Update an existing OPD.
      */
-    public function update(Request $request, Opd $opd): JsonResponse
+    public function update(UpdateOpdRequest $request, Opd $opd): JsonResponse
     {
-        if (!$request->user()?->can('opd.edit')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk mengubah data perangkat daerah.');
-        }
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
-            'kode' => ['required', 'string', 'max:50', Rule::unique('opds', 'kode')->ignore($opd->id)],
-            'kategori' => ['required', 'string', 'in:Dinas,Badan,Sekretariat,Inspektorat,RSUD,Kecamatan,BUMD,DESA/KELURAHAN,Desa/Kelurahan'],
-            'kepala' => ['nullable', 'string', 'max:255'],
-            'urutan' => ['nullable', 'integer', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
-
-        if (array_key_exists('is_active', $validated) && $opd->is_active && !$validated['is_active']) {
+        if (array_key_exists('is_active', $validated) && $opd->is_active && ! $validated['is_active']) {
             $blocker = $this->getDeactivationBlockerMessage($opd);
             if ($blocker !== null) {
                 return response()->json(['message' => $blocker], 422);
             }
         }
 
-        if (!array_key_exists('urutan', $validated) || $validated['urutan'] === null) {
+        if (! array_key_exists('urutan', $validated) || $validated['urutan'] === null) {
             unset($validated['urutan']);
         }
 
@@ -356,7 +332,7 @@ class OpdController extends Controller
      */
     public function toggleActive(Request $request, Opd $opd): JsonResponse
     {
-        if (!$request->user()?->can('opd.edit')) {
+        if (! $request->user()?->can('opd.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah status perangkat daerah.');
         }
 
@@ -367,7 +343,7 @@ class OpdController extends Controller
             }
         }
 
-        $opd->update(['is_active' => !$opd->is_active]);
+        $opd->update(['is_active' => ! $opd->is_active]);
         $opd->loadCount('users');
 
         return response()->json([
@@ -381,7 +357,7 @@ class OpdController extends Controller
      */
     public function destroy(Request $request, Opd $opd): JsonResponse
     {
-        if (!$request->user()?->can('opd.delete')) {
+        if (! $request->user()?->can('opd.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus perangkat daerah.');
         }
 
@@ -493,4 +469,3 @@ class OpdController extends Controller
         return null;
     }
 }
-

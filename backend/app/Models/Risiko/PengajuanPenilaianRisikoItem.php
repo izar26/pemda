@@ -16,8 +16,11 @@ class PengajuanPenilaianRisikoItem extends Model
     use Auditable, HasFactory, HasUuid7;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
 
     public const VALID_STATUSES = [
@@ -34,6 +37,12 @@ class PengajuanPenilaianRisikoItem extends Model
         'form_code',
         'status',
         'catatan_revisi',
+        'status_kepala_opd',
+        'catatan_kepala_opd',
+        'status_auditor',
+        'catatan_auditor',
+        'status_pengawas',
+        'catatan_pengawas',
         'reviewed_at',
         'reviewed_by',
     ];

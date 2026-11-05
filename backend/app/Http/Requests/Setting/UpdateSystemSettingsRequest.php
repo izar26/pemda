@@ -32,13 +32,13 @@ class UpdateSystemSettingsRequest extends FormRequest
     {
         $validator->after(function (Validator $v) {
             $settings = $this->input('settings', []);
-            if (!is_array($settings)) {
+            if (! is_array($settings)) {
                 return;
             }
 
             $validKeys = SystemSetting::pluck('key')->all();
             foreach (array_keys($settings) as $key) {
-                if (!in_array($key, $validKeys, true)) {
+                if (! in_array($key, $validKeys, true)) {
                     $v->errors()->add("settings.{$key}", "Kunci parameter pengaturan '{$key}' tidak valid atau tidak terdaftar dalam sistem.");
                 }
             }

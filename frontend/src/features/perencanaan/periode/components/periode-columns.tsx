@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, Table } from '@tanstack/react-table'
 import {
   CalendarDays,
   Clock,
@@ -27,7 +27,7 @@ import { usePeriode } from './periode-provider'
 
 interface CellProps {
   row: { original: PeriodePenilaianItem }
-  table?: any
+  table?: Table<PeriodePenilaianItem>
 }
 
 function PeriodeRowActions({ row, table }: CellProps) {

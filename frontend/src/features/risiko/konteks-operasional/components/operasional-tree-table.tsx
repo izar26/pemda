@@ -54,6 +54,7 @@ export function OperasionalTreeTable({
   // Auto-expand all matching nodes when user types in search
   useEffect(() => {
     if (searchQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCollapsedPrograms({})
       setCollapsedKegiatans({})
     }

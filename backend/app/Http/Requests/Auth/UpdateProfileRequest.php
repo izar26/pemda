@@ -17,7 +17,7 @@ class UpdateProfileRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             // Protect against self-mutation of OPD and Jabatan by regular employees
             $this->merge([
                 'opd_id' => $user->opd_id,

@@ -1,8 +1,33 @@
 import { Loader2, Target } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
+export interface SasaranIndikatorItem {
+  id?: string | number
+  sasaran_id?: string | number
+  sasaran_penilaian_id?: string | number
+  indikator?: string
+  nama?: string
+  target?: string | number
+  satuan?: string
+  jenis?: string
+  polaritas?: string
+}
+
+export interface SasaranItem {
+  id?: string | number
+  sasaran?: string
+  nama?: string
+}
+
+export interface Konteks2BData {
+  sumber_data?: { nama?: string }
+  tujuan?: { tujuan?: string }
+  sasarans?: SasaranItem[]
+  indikators?: SasaranIndikatorItem[]
+}
+
 interface ReviewStep2BProps {
-  konteks2B: any
+  konteks2B?: Konteks2BData | null
   isLoading: boolean
 }
 
@@ -58,9 +83,9 @@ export function ReviewStep2B({ konteks2B, isLoading }: ReviewStep2BProps) {
           </div>
         ) : (konteks2B?.sasarans?.length || 0) > 0 ? (
           <div className='space-y-3'>
-            {konteks2B?.sasarans?.map((sasaran: any, sIdx: number) => {
+            {konteks2B?.sasarans?.map((sasaran: SasaranItem, sIdx: number) => {
               const sasaranIndikators = (konteks2B?.indikators || []).filter(
-                (ind: any) =>
+                (ind: SasaranIndikatorItem) =>
                   ind.sasaran_penilaian_id === sasaran.id || ind.sasaran_id === sasaran.id
               )
 
@@ -87,7 +112,7 @@ export function ReviewStep2B({ konteks2B, isLoading }: ReviewStep2BProps) {
                     </span>
                     {sasaranIndikators.length > 0 ? (
                       <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs'>
-                        {sasaranIndikators.map((ind: any, iIdx: number) => (
+                        {sasaranIndikators.map((ind: SasaranIndikatorItem, iIdx: number) => (
                           <div
                             key={ind.id || iIdx}
                             className='p-2 rounded-md bg-muted/20 border text-[11px] space-y-1 shadow-2xs'

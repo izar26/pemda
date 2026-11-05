@@ -6,6 +6,7 @@ namespace Tests\Feature\Risiko;
 
 use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
+use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
@@ -23,16 +24,27 @@ class KonteksPenilaianTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $opdPuprUser;
+
     protected User $opdDiskominfoUser;
+
     protected PeriodePenilaian $activePeriode;
+
     protected Opd $puprOpd;
+
     protected Opd $diskominfoOpd;
+
     protected MasterSumberData $sumberData;
+
     protected TujuanPenilaian $tujuanPupr;
+
     protected SasaranPenilaian $sasaran1;
+
     protected SasaranPenilaian $sasaran2;
+
     protected IndikatorPenilaian $indikator1;
+
     protected IndikatorPenilaian $indikator2;
 
     protected function setUp(): void
@@ -90,13 +102,13 @@ class KonteksPenilaianTest extends TestCase
 
         $auditor = User::factory()->create(['status' => 'active']);
         $auditor->assignRole('Auditor');
-        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+        AuditorOpdAssignment::create([
             'auditor_id' => $auditor->id,
             'opd_id' => $this->puprOpd->id,
             'periode_penilaian_id' => $this->activePeriode->id,
             'is_active' => true,
         ]);
-        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+        AuditorOpdAssignment::create([
             'auditor_id' => $auditor->id,
             'opd_id' => $this->diskominfoOpd->id,
             'periode_penilaian_id' => $this->activePeriode->id,

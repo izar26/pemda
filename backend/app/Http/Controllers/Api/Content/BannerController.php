@@ -26,7 +26,7 @@ class BannerController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        if (!$request->user()->can('content.view')) {
+        if (! $request->user()->can('content.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat konten banner.');
         }
 
@@ -60,7 +60,7 @@ class BannerController extends Controller
      */
     public function show(Request $request, Banner $banner): BannerResource
     {
-        if (!$request->user()->can('content.view')) {
+        if (! $request->user()->can('content.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat konten banner.');
         }
 
@@ -91,7 +91,7 @@ class BannerController extends Controller
      */
     public function toggleActive(Request $request, Banner $banner): JsonResponse
     {
-        if (!$request->user()->can('content.edit') && !$request->user()->can('content.manage')) {
+        if (! $request->user()->can('content.edit') && ! $request->user()->can('content.manage')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah status banner.');
         }
 
@@ -120,7 +120,7 @@ class BannerController extends Controller
      */
     public function destroy(Request $request, Banner $banner): JsonResponse
     {
-        if (!$request->user()->can('content.delete') && !$request->user()->can('content.manage')) {
+        if (! $request->user()->can('content.delete') && ! $request->user()->can('content.manage')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus banner.');
         }
 

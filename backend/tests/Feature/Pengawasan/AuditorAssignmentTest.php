@@ -18,13 +18,21 @@ class AuditorAssignmentTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $inspektoratUser;
+
     protected User $auditorUser1;
+
     protected User $auditorUser2;
+
     protected User $opdUser;
+
     protected Opd $opdDinkes;
+
     protected Opd $opdDisdik;
+
     protected Opd $opdPupr;
+
     protected PeriodePenilaian $activePeriode;
 
     protected function setUp(): void

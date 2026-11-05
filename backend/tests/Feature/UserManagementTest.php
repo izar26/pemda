@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
+use App\Models\Perencanaan\TujuanPenilaian;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
@@ -13,8 +16,10 @@ class UserManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staff;
-    protected \App\Models\Opd $opd;
+
+    protected Opd $opd;
 
     protected function setUp(): void
     {
@@ -22,7 +27,7 @@ class UserManagementTest extends TestCase
 
         $this->seed(RbacSeeder::class);
 
-        $this->opd = \App\Models\Opd::create([
+        $this->opd = Opd::create([
             'nama' => 'Dinas Komunikasi dan Informatika',
             'kode' => 'DISKOMINFO',
             'kategori' => 'Dinas',
@@ -65,7 +70,7 @@ class UserManagementTest extends TestCase
     {
         $token = $this->getSuperadminToken();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/users');
 
         $response->assertStatus(200)
@@ -95,7 +100,7 @@ class UserManagementTest extends TestCase
         $token = $this->getSuperadminToken();
 
         // Search by name
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/users?search=Super');
 
         $response->assertStatus(200);
@@ -103,7 +108,7 @@ class UserManagementTest extends TestCase
         $this->assertEquals('Super Administrator', $response->json('data.0.name'));
 
         // Filter by role
-        $responseRole = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseRole = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/users?role=Staff');
 
         $responseRole->assertStatus(200);
@@ -128,7 +133,7 @@ class UserManagementTest extends TestCase
             'password' => 'Password@123',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/users', $payload);
 
         $response->assertStatus(201)
@@ -149,7 +154,7 @@ class UserManagementTest extends TestCase
         $token = $this->getSuperadminToken();
 
         // Empty payload - all fields are mandatory
-        $responseEmpty = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseEmpty = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/users', []);
 
         $responseEmpty->assertStatus(422)
@@ -179,7 +184,7 @@ class UserManagementTest extends TestCase
             'password' => 'Short1!',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/users', $payload);
 
         $response->assertStatus(422)
@@ -199,7 +204,7 @@ class UserManagementTest extends TestCase
             'status' => 'active',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/users/{$this->staff->id}", $payload);
 
         $response->assertStatus(200)
@@ -223,7 +228,7 @@ class UserManagementTest extends TestCase
             'status' => 'active',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/users/{$this->superadmin->id}", $payload);
 
         $response->assertStatus(422)
@@ -235,7 +240,7 @@ class UserManagementTest extends TestCase
         $token = $this->getSuperadminToken();
 
         // Attempting to deactivate self
-        $responseDeactivate = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseDeactivate = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/users/{$this->superadmin->id}", [
                 'name' => 'Super Administrator',
                 'email' => 'superadmin@pemda.go.id',
@@ -247,7 +252,7 @@ class UserManagementTest extends TestCase
             ->assertJsonValidationErrors(['status']);
 
         // Attempting to delete self
-        $responseDelete = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseDelete = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/users/{$this->superadmin->id}");
 
         $responseDelete->assertStatus(422)
@@ -266,7 +271,7 @@ class UserManagementTest extends TestCase
         ]);
         $this->assertTrue($this->staff->hasTwoFactorEnabled());
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/users/{$this->staff->id}/reset-2fa");
 
         $response->assertStatus(200)
@@ -281,7 +286,7 @@ class UserManagementTest extends TestCase
     {
         $token = $this->getSuperadminToken();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/users/{$this->staff->id}");
 
         $response->assertStatus(200);
@@ -298,7 +303,7 @@ class UserManagementTest extends TestCase
         $token = $manager->createToken('test')->plainTextToken;
 
         // 1. List users - Superadmin must not be in list
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson('/api/users');
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)->getJson('/api/users');
         $response->assertStatus(200);
         $ids = collect($response->json('data'))->pluck('id')->all();
         $this->assertNotContains($this->superadmin->id, $ids);
@@ -306,16 +311,16 @@ class UserManagementTest extends TestCase
         $this->assertContains($this->staff->id, $ids);
 
         // 2. Search targeting superadmin - must return empty
-        $responseSearch = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson('/api/users?search=Super');
+        $responseSearch = $this->withHeader('Authorization', 'Bearer '.$token)->getJson('/api/users?search=Super');
         $responseSearch->assertStatus(200);
         $this->assertCount(0, $responseSearch->json('data'));
 
         // 3. Direct GET superadmin by ID - must return 404 Not Found (anti-enumeration)
-        $responseShow = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson("/api/users/{$this->superadmin->id}");
+        $responseShow = $this->withHeader('Authorization', 'Bearer '.$token)->getJson("/api/users/{$this->superadmin->id}");
         $responseShow->assertStatus(404);
 
         // 4. Direct PUT superadmin by ID - must return 404 Not Found
-        $responsePut = $this->withHeader('Authorization', 'Bearer ' . $token)->putJson("/api/users/{$this->superadmin->id}", [
+        $responsePut = $this->withHeader('Authorization', 'Bearer '.$token)->putJson("/api/users/{$this->superadmin->id}", [
             'name' => 'Hacked Name',
             'email' => 'superadmin@pemda.go.id',
             'role' => 'HR Manager',
@@ -324,15 +329,15 @@ class UserManagementTest extends TestCase
         $responsePut->assertStatus(404);
 
         // 5. Direct DELETE superadmin by ID - must return 404 Not Found
-        $responseDelete = $this->withHeader('Authorization', 'Bearer ' . $token)->deleteJson("/api/users/{$this->superadmin->id}");
+        $responseDelete = $this->withHeader('Authorization', 'Bearer '.$token)->deleteJson("/api/users/{$this->superadmin->id}");
         $responseDelete->assertStatus(404);
 
         // 6. Direct reset 2FA on superadmin by ID - must return 404 Not Found
-        $response2fa = $this->withHeader('Authorization', 'Bearer ' . $token)->postJson("/api/users/{$this->superadmin->id}/reset-2fa");
+        $response2fa = $this->withHeader('Authorization', 'Bearer '.$token)->postJson("/api/users/{$this->superadmin->id}/reset-2fa");
         $response2fa->assertStatus(404);
 
         // 7. Creating user with Superadmin role - must be rejected (422)
-        $responseCreate = $this->withHeader('Authorization', 'Bearer ' . $token)->postJson('/api/users', [
+        $responseCreate = $this->withHeader('Authorization', 'Bearer '.$token)->postJson('/api/users', [
             'name' => 'Fake Superadmin',
             'email' => 'fake_super@pemda.go.id',
             'role' => 'Superadmin',
@@ -341,7 +346,7 @@ class UserManagementTest extends TestCase
         $responseCreate->assertStatus(422)->assertJsonValidationErrors(['role']);
 
         // 8. Inviting user with Superadmin role - must be rejected (422)
-        $responseInvite = $this->withHeader('Authorization', 'Bearer ' . $token)->postJson('/api/users/invite', [
+        $responseInvite = $this->withHeader('Authorization', 'Bearer '.$token)->postJson('/api/users/invite', [
             'name' => 'Fake Invite',
             'email' => 'fake_invite@pemda.go.id',
             'role' => 'Superadmin',
@@ -354,7 +359,7 @@ class UserManagementTest extends TestCase
         $token = $this->getSuperadminToken();
 
         // Create a period and planning goal authored by $this->staff
-        $periode = \App\Models\Perencanaan\PeriodePenilaian::create([
+        $periode = PeriodePenilaian::create([
             'nama_periode' => 'Periode 2026-2030',
             'tahun_mulai' => 2026,
             'tahun_akhir' => 2030,
@@ -365,7 +370,7 @@ class UserManagementTest extends TestCase
             'status' => 'Aktif',
         ]);
 
-        \App\Models\Perencanaan\TujuanPenilaian::create([
+        TujuanPenilaian::create([
             'periode_penilaian_id' => $periode->id,
             'opd_id' => $this->opd->id,
             'tujuan' => 'Meningkatkan Kualitas Layanan Publik',
@@ -373,7 +378,7 @@ class UserManagementTest extends TestCase
             'created_by' => $this->staff->id,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/users/{$this->staff->id}");
 
         $response->assertStatus(422)
@@ -385,7 +390,7 @@ class UserManagementTest extends TestCase
     public function test_superadmin_sees_all_users_in_dashboard_stats(): void
     {
         $superadminToken = $this->getSuperadminToken();
-        $response = $this->withHeader('Authorization', 'Bearer ' . $superadminToken)
+        $response = $this->withHeader('Authorization', 'Bearer '.$superadminToken)
             ->getJson('/api/dashboard/stats');
 
         $response->assertStatus(200);
@@ -395,7 +400,7 @@ class UserManagementTest extends TestCase
     public function test_non_superadmin_excludes_superadmin_in_dashboard_stats(): void
     {
         $staffToken = $this->getStaffToken();
-        $response = $this->withHeader('Authorization', 'Bearer ' . $staffToken)
+        $response = $this->withHeader('Authorization', 'Bearer '.$staffToken)
             ->getJson('/api/dashboard/stats');
 
         $response->assertStatus(200);
@@ -408,7 +413,7 @@ class UserManagementTest extends TestCase
 
         $this->staff->update(['jabatan' => 'Kepala OPD']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/users/{$this->staff->id}");
 
         $response->assertStatus(422)

@@ -69,7 +69,7 @@ class StoreAuditorAssignmentRequest extends FormRequest
             $opdIds = (array) $this->input('opd_ids', []);
             $auditorId = (string) $this->input('auditor_id');
 
-            if (!empty($opdIds)) {
+            if (! empty($opdIds)) {
                 $alreadyAssigned = AuditorOpdAssignment::whereIn('opd_id', $opdIds)
                     ->where('auditor_id', '!=', $auditorId)
                     ->with(['opd:id,nama', 'auditor:id,name'])

@@ -16,7 +16,9 @@ class PegawaiAndUserAccountTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected Opd $opdA;
+
     protected Opd $opdB;
 
     protected function setUp(): void
@@ -62,7 +64,7 @@ class PegawaiAndUserAccountTest extends TestCase
     {
         $token = $this->getToken();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Dr. H. Ahmad Fauzi, M.Si.',
                 'email' => 'ahmad.fauzi@pemda.go.id',
@@ -90,7 +92,7 @@ class PegawaiAndUserAccountTest extends TestCase
         $token = $this->getToken();
 
         // Invalid jabatan
-        $invalidJabatan = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $invalidJabatan = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Pegawai Uji',
                 'email' => 'uji@pemda.go.id',
@@ -105,7 +107,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonValidationErrors(['jabatan']);
 
         // Duplicate phone number
-        $duplicatePhone = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $duplicatePhone = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Pegawai Duplikat WA',
                 'email' => 'duplikat.wa@pemda.go.id',
@@ -125,7 +127,7 @@ class PegawaiAndUserAccountTest extends TestCase
         $token = $this->getToken();
 
         // 1. Create first Kepala OPD on OPD A
-        $firstResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $firstResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Pejabat Lama, M.T.',
                 'email' => 'pejabat.lama@pemda.go.id',
@@ -139,14 +141,14 @@ class PegawaiAndUserAccountTest extends TestCase
         $firstKepalaId = $firstResponse->json('data.id');
 
         // 2. Check Kepala OPD endpoint returns Pejabat Lama
-        $checkRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $checkRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/pegawai/check-kepala/{$this->opdA->id}");
         $checkRes->assertOk()
             ->assertJsonPath('has_kepala', true)
             ->assertJsonPath('kepala.id', $firstKepalaId);
 
         // 3. Attempt to create second Kepala OPD without replace_kepala confirmation -> must fail 422
-        $blockedResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $blockedResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Pejabat Baru, M.Kom.',
                 'email' => 'pejabat.baru@pemda.go.id',
@@ -161,7 +163,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonValidationErrors(['jabatan']);
 
         // 4. Create second Kepala OPD WITH replace_kepala = true -> atomic handover!
-        $handoverResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $handoverResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Pejabat Baru, M.Kom.',
                 'email' => 'pejabat.baru@pemda.go.id',
@@ -194,7 +196,7 @@ class PegawaiAndUserAccountTest extends TestCase
         ]);
 
         // 5. Mutate Pejabat Baru from OPD A to OPD B as Kepala OPD
-        $mutateResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $mutateResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/pegawai/{$secondKepalaId}", [
                 'name' => 'Pejabat Baru, M.Kom.',
                 'email' => 'pejabat.baru@pemda.go.id',
@@ -218,7 +220,7 @@ class PegawaiAndUserAccountTest extends TestCase
         $token = $this->getToken();
 
         // 1. Create a Pegawai without account
-        $pegawaiRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $pegawaiRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/pegawai', [
                 'name' => 'Siti Aminah, S.E.',
                 'email' => 'siti.aminah@pemda.go.id',
@@ -232,14 +234,14 @@ class PegawaiAndUserAccountTest extends TestCase
         $pegawaiId = $pegawaiRes->json('data.id');
 
         // 2. Pegawai without account must NOT appear in /api/user-accounts list
-        $listBefore = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $listBefore = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/user-accounts');
         $listBefore->assertOk();
         $accountIdsBefore = collect($listBefore->json('data'))->pluck('id')->all();
         $this->assertNotContains($pegawaiId, $accountIdsBefore);
 
         // 3. Assign user account to Siti Aminah
-        $assignRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $assignRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'pegawai_id' => $pegawaiId,
                 'role' => 'OPD',
@@ -253,7 +255,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonPath('data.has_account', true);
 
         // 4. Attempting to assign a second account to the same Pegawai must fail 422
-        $dupAssignRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $dupAssignRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'pegawai_id' => $pegawaiId,
                 'role' => 'OPD',
@@ -264,7 +266,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonValidationErrors(['pegawai_id']);
 
         // 5. Update user account status to inactive and change role to Auditor
-        $updateRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $updateRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/user-accounts/{$pegawaiId}", [
                 'role' => 'Auditor',
                 'status' => 'inactive',
@@ -274,7 +276,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonPath('data.status', 'inactive');
 
         // 6. Status other than active/inactive must fail 422
-        $invalidStatusRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $invalidStatusRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/user-accounts/{$pegawaiId}", [
                 'role' => 'Auditor',
                 'status' => 'suspended',
@@ -283,7 +285,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonValidationErrors(['status']);
 
         // 7. Revoke (delete) user account -> must preserve Pegawai record in database!
-        $revokeRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $revokeRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/user-accounts/{$pegawaiId}");
         $revokeRes->assertOk();
 
@@ -302,7 +304,7 @@ class PegawaiAndUserAccountTest extends TestCase
     {
         $token = $this->getToken();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'account_type' => 'direct',
                 'name' => 'Bupati H. Syamsuddin, S.E., M.Si.',
@@ -336,7 +338,7 @@ class PegawaiAndUserAccountTest extends TestCase
     {
         $token = $this->getToken();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'account_type' => 'direct',
                 'name' => 'Drs. H. Hendra Wijaya, M.Si.',
@@ -363,7 +365,7 @@ class PegawaiAndUserAccountTest extends TestCase
         $token = $this->getToken();
 
         // 1. Invalid Jabatan (must be Bupati or Sekda)
-        $response1 = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response1 = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'account_type' => 'direct',
                 'name' => 'Pejabat Non Pemimpin',
@@ -378,7 +380,7 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonValidationErrors(['jabatan']);
 
         // 2. Invalid Role (must be Executive)
-        $response2 = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response2 = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'account_type' => 'direct',
                 'name' => 'Bupati Test Role',
@@ -397,7 +399,7 @@ class PegawaiAndUserAccountTest extends TestCase
     {
         $token = $this->getToken();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'account_type' => 'direct',
                 'name' => 'Sekda Tanpa NIP',

@@ -71,7 +71,7 @@ class PeriodePenilaian extends Model
     /**
      * Scope query to only currently active period.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeAktif(Builder $query): Builder
@@ -82,13 +82,13 @@ class PeriodePenilaian extends Model
     /**
      * Scope query to filter periods.
      *
-     * @param Builder<self> $query
-     * @param array<string, mixed> $filters
+     * @param  Builder<self>  $query
+     * @param  array<string, mixed>  $filters
      * @return Builder<self>
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function (Builder $q) use ($term) {
                 $q->where('nama_periode', 'like', "%{$term}%")
@@ -97,11 +97,11 @@ class PeriodePenilaian extends Model
             });
         }
 
-        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+        if (! empty($filters['status']) && $filters['status'] !== 'all') {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['tahun_penilaian']) && $filters['tahun_penilaian'] !== 'all') {
+        if (! empty($filters['tahun_penilaian']) && $filters['tahun_penilaian'] !== 'all') {
             $query->where('tahun_penilaian', (int) $filters['tahun_penilaian']);
         }
 
@@ -185,7 +185,7 @@ class PeriodePenilaian extends Model
         $activePengajuan = (int) ($this->active_pengajuan_penilaians_count ?? $this->pengajuanPenilaians()
             ->where(function ($q) {
                 $q->where('status', '!=', 'draft')
-                  ->orWhereNotNull('submitted_at');
+                    ->orWhereNotNull('submitted_at');
             })->count());
 
         return $konteksStrategis + $konteksOperasional + $activePengajuan;
@@ -209,7 +209,7 @@ class PeriodePenilaian extends Model
         $activePengajuan = (int) ($this->active_pengajuan_penilaians_count ?? $this->pengajuanPenilaians()
             ->where(function ($q) {
                 $q->where('status', '!=', 'draft')
-                  ->orWhereNotNull('submitted_at');
+                    ->orWhereNotNull('submitted_at');
             })->count());
 
         $totalRisiko = $konteksStrategis + $konteksOperasional + $activePengajuan;
@@ -260,7 +260,7 @@ class PeriodePenilaian extends Model
         $activePengajuan = (int) ($this->active_pengajuan_penilaians_count ?? $this->pengajuanPenilaians()
             ->where(function ($q) {
                 $q->where('status', '!=', 'draft')
-                  ->orWhereNotNull('submitted_at');
+                    ->orWhereNotNull('submitted_at');
             })->count());
 
         $totalRisiko = $konteksStrategis + $konteksOperasional + $activePengajuan;
@@ -299,11 +299,10 @@ class PeriodePenilaian extends Model
     {
         $active = self::where('status', 'aktif')->first();
 
-        if (!$active) {
+        if (! $active) {
             abort(422, 'Tidak ada periode penilaian yang aktif saat ini. Silakan hubungi Administrator atau Bapperida untuk mengaktifkan periode penilaian.');
         }
 
         return $active;
     }
 }
-

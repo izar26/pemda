@@ -36,7 +36,7 @@ trait Auditable
     {
         // 1. Hook CREATED event
         static::created(function (Model $model) {
-            if (static::$auditDisabled || !$model->shouldAuditEvent('created')) {
+            if (static::$auditDisabled || ! $model->shouldAuditEvent('created')) {
                 return;
             }
 
@@ -52,7 +52,7 @@ trait Auditable
 
         // 2. Hook UPDATING event to reliably snapshot old values
         static::updating(function (Model $model) {
-            if (static::$auditDisabled || !$model->shouldAuditEvent('updated')) {
+            if (static::$auditDisabled || ! $model->shouldAuditEvent('updated')) {
                 return;
             }
 
@@ -66,7 +66,7 @@ trait Auditable
 
         // 3. Hook UPDATED event
         static::updated(function (Model $model) {
-            if (static::$auditDisabled || !$model->shouldAuditEvent('updated')) {
+            if (static::$auditDisabled || ! $model->shouldAuditEvent('updated')) {
                 return;
             }
 
@@ -106,7 +106,7 @@ trait Auditable
 
         // 4. Hook DELETED event
         static::deleted(function (Model $model) {
-            if (static::$auditDisabled || !$model->shouldAuditEvent('deleted')) {
+            if (static::$auditDisabled || ! $model->shouldAuditEvent('deleted')) {
                 return;
             }
 
@@ -125,7 +125,7 @@ trait Auditable
         // 5. Hook RESTORED event (for SoftDeletes if used)
         if (method_exists(static::class, 'restored')) {
             static::restored(function (Model $model) {
-                if (static::$auditDisabled || !$model->shouldAuditEvent('restored')) {
+                if (static::$auditDisabled || ! $model->shouldAuditEvent('restored')) {
                     return;
                 }
 

@@ -53,7 +53,7 @@ class PasswordResetTest extends TestCase
         // Assert email was sent
         Mail::assertSent(ResetPasswordMail::class, function ($mail) {
             return $mail->hasTo('pegawai@pemda.go.id') &&
-                !empty($mail->token) &&
+                ! empty($mail->token) &&
                 $mail->user->id === $this->user->id;
         });
     }

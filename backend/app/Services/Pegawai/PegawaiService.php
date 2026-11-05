@@ -26,14 +26,14 @@ class PegawaiService
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
         $query = User::with(['roles', 'opd']);
 
         // Ghost filter: non-superadmin users must not see Superadmin accounts
-        if (!$user?->hasRole('Superadmin')) {
+        if (! $user?->hasRole('Superadmin')) {
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
             })->where(function ($q) {
@@ -42,7 +42,7 @@ class PegawaiService
         }
 
         // Search by name, email, nip, phone, jabatan, or pangkat
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
@@ -55,12 +55,12 @@ class PegawaiService
         }
 
         // Filter by OPD (Instansi)
-        if (!empty($filters['opd_id'])) {
+        if (! empty($filters['opd_id'])) {
             $query->where('opd_id', $filters['opd_id']);
         }
 
         // Filter by Jabatan ('Kepala OPD' or 'Pegawai')
-        if (!empty($filters['jabatan'])) {
+        if (! empty($filters['jabatan'])) {
             $query->where('jabatan', (string) $filters['jabatan']);
         }
 
@@ -79,7 +79,7 @@ class PegawaiService
         $sortDirection = strtolower($filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
         $allowedSortColumns = ['name', 'email', 'nip', 'phone', 'jabatan', 'pangkat_gol', 'created_at'];
-        if (!in_array($sortBy, $allowedSortColumns, true)) {
+        if (! in_array($sortBy, $allowedSortColumns, true)) {
             $sortBy = 'created_at';
         }
 
@@ -96,7 +96,7 @@ class PegawaiService
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
         $pegawai = User::with(['roles', 'opd'])->findOrFail($id);
 
-        if ($pegawai->hasRole('Superadmin') && !$user?->hasRole('Superadmin')) {
+        if ($pegawai->hasRole('Superadmin') && ! $user?->hasRole('Superadmin')) {
             abort(404, 'Data pegawai tidak ditemukan.');
         }
 
@@ -147,7 +147,7 @@ class PegawaiService
         $existingKepala = null;
         if ($jabatan === 'Kepala OPD') {
             $existingKepala = $this->getKepalaOpd($opdId);
-            if ($existingKepala && !$replaceKepala) {
+            if ($existingKepala && ! $replaceKepala) {
                 throw ValidationException::withMessages([
                     'jabatan' => [
                         "Instansi ini sudah memiliki Kepala OPD ({$existingKepala->name}). Silakan centang konfirmasi pergantian Kepala OPD untuk menggantikan pejabat saat ini.",
@@ -209,7 +209,7 @@ class PegawaiService
     {
         $actor = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if ($pegawai->hasRole('Superadmin') && !$actor?->hasRole('Superadmin')) {
+        if ($pegawai->hasRole('Superadmin') && ! $actor?->hasRole('Superadmin')) {
             abort(404, 'Data pegawai tidak ditemukan.');
         }
 
@@ -220,7 +220,7 @@ class PegawaiService
         $existingKepala = null;
         if ($newJabatan === 'Kepala OPD') {
             $existingKepala = $this->getKepalaOpd($newOpdId, $pegawai->id);
-            if ($existingKepala && !$replaceKepala) {
+            if ($existingKepala && ! $replaceKepala) {
                 throw ValidationException::withMessages([
                     'jabatan' => [
                         "Instansi ini sudah memiliki Kepala OPD ({$existingKepala->name}). Silakan centang konfirmasi pergantian Kepala OPD untuk menggantikan pejabat saat ini.",
@@ -282,7 +282,7 @@ class PegawaiService
     {
         $actor = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if ($pegawai->hasRole('Superadmin') && !$actor?->hasRole('Superadmin')) {
+        if ($pegawai->hasRole('Superadmin') && ! $actor?->hasRole('Superadmin')) {
             abort(404, 'Data pegawai tidak ditemukan.');
         }
 

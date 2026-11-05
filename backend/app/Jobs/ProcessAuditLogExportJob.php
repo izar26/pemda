@@ -53,7 +53,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
             ], now()->addHours(4));
 
             $user = User::find($this->userId);
-            if (!$user) {
+            if (! $user) {
                 throw new \Exception('User initiating export not found.');
             }
 
@@ -62,7 +62,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
 
             $auditLogService->applyGhostFilter($query, $user);
 
-            if (!empty($this->filters['search'])) {
+            if (! empty($this->filters['search'])) {
                 $search = trim((string) $this->filters['search']);
                 $query->where(function ($q) use ($search) {
                     $q->where('user_name', 'like', "%{$search}%")
@@ -73,19 +73,19 @@ class ProcessAuditLogExportJob implements ShouldQueue
                 });
             }
 
-            if (!empty($this->filters['module']) && $this->filters['module'] !== 'all') {
+            if (! empty($this->filters['module']) && $this->filters['module'] !== 'all') {
                 $query->where('module', $this->filters['module']);
             }
 
-            if (!empty($this->filters['action']) && $this->filters['action'] !== 'all') {
+            if (! empty($this->filters['action']) && $this->filters['action'] !== 'all') {
                 $query->where('action', $this->filters['action']);
             }
 
-            if (!empty($this->filters['date_from'])) {
+            if (! empty($this->filters['date_from'])) {
                 $query->whereDate('created_at', '>=', $this->filters['date_from']);
             }
 
-            if (!empty($this->filters['date_to'])) {
+            if (! empty($this->filters['date_to'])) {
                 $query->whereDate('created_at', '<=', $this->filters['date_to']);
             }
 
@@ -123,10 +123,10 @@ class ProcessAuditLogExportJob implements ShouldQueue
             $metadata = [
                 'Tipe Log Audit' => $this->isArchive ? 'Arsip Permanen (WORM)' : 'Log Operasional (Aktif)',
             ];
-            if (!empty($this->filters['search'])) {
+            if (! empty($this->filters['search'])) {
                 $metadata['Kata Kunci Pencarian'] = $this->filters['search'];
             }
-            if (!empty($this->filters['module']) && $this->filters['module'] !== 'all') {
+            if (! empty($this->filters['module']) && $this->filters['module'] !== 'all') {
                 $metadata['Filter Modul'] = $this->filters['module'];
             }
 
@@ -137,7 +137,7 @@ class ProcessAuditLogExportJob implements ShouldQueue
             $exportDir = storage_path('app/exports');
             File::ensureDirectoryExists($exportDir);
 
-            $filePath = $exportDir . DIRECTORY_SEPARATOR . "{$this->jobId}.xlsx";
+            $filePath = $exportDir.DIRECTORY_SEPARATOR."{$this->jobId}.xlsx";
             $cleanFilename = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $this->filename);
             $fullDownloadName = sprintf('%s_%s.xlsx', $cleanFilename, date('Ymd_His'));
 
@@ -159,13 +159,13 @@ class ProcessAuditLogExportJob implements ShouldQueue
             ], now()->addHours(24));
 
         } catch (Throwable $e) {
-            Log::error("Async Export Job Failed [{$this->jobId}]: " . $e->getMessage(), [
+            Log::error("Async Export Job Failed [{$this->jobId}]: ".$e->getMessage(), [
                 'exception' => $e,
             ]);
 
             Cache::put("export_job_{$this->jobId}", [
                 'status' => 'failed',
-                'error' => 'Gagal memproses ekspor di antrean worker: ' . $e->getMessage(),
+                'error' => 'Gagal memproses ekspor di antrean worker: '.$e->getMessage(),
             ], now()->addHours(2));
         }
     }

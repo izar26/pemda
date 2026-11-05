@@ -7,6 +7,7 @@ namespace App\Rules;
 use App\Services\Auth\TurnstileService;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Translation\PotentiallyTranslatedString;
 
 class TurnstileRule implements ValidationRule
 {
@@ -18,12 +19,12 @@ class TurnstileRule implements ValidationRule
     /**
      * Run the validation rule.
      *
-     * @param  \Closure(string, ?string=): \Illuminate\Translation\PotentiallyTranslatedString  $fail
+     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $enabled = (bool) config('services.turnstile.enabled', true);
-        if (!$enabled) {
+        if (! $enabled) {
             return;
         }
 
@@ -36,7 +37,7 @@ class TurnstileRule implements ValidationRule
             expectedAction: $this->action ?? 'login'
         );
 
-        if (!$isValid) {
+        if (! $isValid) {
             $fail('Verifikasi keamanan bot (Cloudflare Turnstile) gagal atau telah kedaluwarsa. Silakan coba lagi.');
         }
     }

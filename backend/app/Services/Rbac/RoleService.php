@@ -32,7 +32,7 @@ class RoleService
             ->orderBy('name', 'asc');
 
         // Ghost filter: non-superadmin users must not see Superadmin role
-        if (!$user?->hasRole('Superadmin')) {
+        if (! $user?->hasRole('Superadmin')) {
             $query->where('name', '!=', 'Superadmin');
         }
 
@@ -45,7 +45,7 @@ class RoleService
     public function getRole(Role $role, ?User $currentUser = null): Role
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
-        if ($role->name === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+        if ($role->name === 'Superadmin' && ! $user?->hasRole('Superadmin')) {
             abort(404, 'Data peran tidak ditemukan.');
         }
 
@@ -55,7 +55,7 @@ class RoleService
     /**
      * Create a new custom role with assigned permissions.
      *
-     * @param list<string> $permissions
+     * @param  list<string>  $permissions
      */
     public function createRole(string $name, ?string $description, array $permissions, ?User $currentUser = null): Role
     {
@@ -68,7 +68,7 @@ class RoleService
         }
 
         // Safeguard: Non-superadmin cannot grant roles.* permissions
-        if ($user && !$user->hasRole('Superadmin')) {
+        if ($user && ! $user->hasRole('Superadmin')) {
             $hasRolePermissions = collect($permissions)->contains(function ($perm) {
                 return str_starts_with((string) $perm, 'roles.');
             });
@@ -90,11 +90,11 @@ class RoleService
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        if (!empty($permissions)) {
+        if (! empty($permissions)) {
             $this->auditLogService->log(
                 action: 'ROLE_PERMISSIONS_UPDATED',
                 module: 'Peran & Izin',
-                description: "Menetapkan " . count($permissions) . " izin akses pada peran baru '{$role->name}'",
+                description: 'Menetapkan '.count($permissions)." izin akses pada peran baru '{$role->name}'",
                 context: [
                     'role_id' => $role->id,
                     'role_name' => $role->name,
@@ -111,26 +111,26 @@ class RoleService
     /**
      * Update existing role.
      *
-     * @param list<string> $permissions
+     * @param  list<string>  $permissions
      *
      * @throws ValidationException
      */
     public function updateRole(Role $role, string $name, ?string $description, array $permissions, ?User $currentUser = null): Role
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
-        if ($role->name === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+        if ($role->name === 'Superadmin' && ! $user?->hasRole('Superadmin')) {
             abort(404, 'Data peran tidak ditemukan.');
         }
 
         // Safeguard: Non-superadmin cannot modify their own role permissions (prevent self-privilege escalation)
-        if ($user && !$user->hasRole('Superadmin') && $user->hasRole($role->name)) {
+        if ($user && ! $user->hasRole('Superadmin') && $user->hasRole($role->name)) {
             throw ValidationException::withMessages([
                 'role' => ['Anda tidak dapat mengubah hak akses pada peran Anda sendiri demi keamanan sistem.'],
             ]);
         }
 
         // Safeguard: Non-superadmin cannot grant roles.* permissions
-        if ($user && !$user->hasRole('Superadmin')) {
+        if ($user && ! $user->hasRole('Superadmin')) {
             $hasRolePermissions = collect($permissions)->contains(function ($perm) {
                 return str_starts_with((string) $perm, 'roles.');
             });
@@ -147,13 +147,13 @@ class RoleService
         if ($role->is_system) {
             if ($role->name !== $cleanName) {
                 throw ValidationException::withMessages([
-                    'name' => ['Nama peran sistem bawaan (' . $role->name . ') tidak dapat diubah.'],
+                    'name' => ['Nama peran sistem bawaan ('.$role->name.') tidak dapat diubah.'],
                 ]);
             }
 
             if ($role->name === 'Superadmin') {
                 throw ValidationException::withMessages([
-                    'role' => ['Kewenangan peran sistem bawaan (' . $role->name . ') bersifat permanen dan tidak dapat diubah.'],
+                    'role' => ['Kewenangan peran sistem bawaan ('.$role->name.') bersifat permanen dan tidak dapat diubah.'],
                 ]);
             }
         }
@@ -173,11 +173,11 @@ class RoleService
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        if (!empty($added) || !empty($removed)) {
+        if (! empty($added) || ! empty($removed)) {
             $this->auditLogService->log(
                 action: 'ROLE_PERMISSIONS_UPDATED',
                 module: 'Peran & Izin',
-                description: "Memperbarui izin akses untuk peran '{$role->name}' (" . count($added) . " ditambahkan, " . count($removed) . " dicabut)",
+                description: "Memperbarui izin akses untuk peran '{$role->name}' (".count($added).' ditambahkan, '.count($removed).' dicabut)',
                 context: [
                     'role_id' => $role->id,
                     'role_name' => $role->name,
@@ -200,20 +200,20 @@ class RoleService
     public function deleteRole(Role $role, ?User $currentUser = null): void
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
-        if ($role->name === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+        if ($role->name === 'Superadmin' && ! $user?->hasRole('Superadmin')) {
             abort(404, 'Data peran tidak ditemukan.');
         }
 
         if ($role->is_system) {
             throw ValidationException::withMessages([
-                'role' => ['Peran sistem bawaan (' . $role->name . ') tidak dapat dihapus.'],
+                'role' => ['Peran sistem bawaan ('.$role->name.') tidak dapat dihapus.'],
             ]);
         }
 
         $assignedCount = $role->users()->count();
         if ($assignedCount > 0) {
             throw ValidationException::withMessages([
-                'role' => ['Peran ini masih digunakan oleh ' . $assignedCount . ' pegawai. Alihkan peran pegawai terlebih dahulu sebelum menghapus.'],
+                'role' => ['Peran ini masih digunakan oleh '.$assignedCount.' pegawai. Alihkan peran pegawai terlebih dahulu sebelum menghapus.'],
             ]);
         }
 

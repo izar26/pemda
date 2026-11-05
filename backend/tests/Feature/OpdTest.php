@@ -67,7 +67,7 @@ class OpdTest extends TestCase
         $opd = Opd::first();
         $this->assertNotNull($opd);
 
-        $response = $this->getJson('/api/opds/' . $opd->id);
+        $response = $this->getJson('/api/opds/'.$opd->id);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $opd->id)

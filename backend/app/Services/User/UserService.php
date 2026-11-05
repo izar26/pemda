@@ -19,6 +19,7 @@ class UserService
     public function __construct(
         protected AuditLogService $auditLogService
     ) {}
+
     /**
      * Get paginated and filtered list of users.
      *
@@ -31,7 +32,7 @@ class UserService
             ->whereNotNull('password');
 
         // Ghost filter: non-superadmin users must not see Superadmin accounts
-        if (!$user?->hasRole('Superadmin')) {
+        if (! $user?->hasRole('Superadmin')) {
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
             })->where(function ($q) {
@@ -40,7 +41,7 @@ class UserService
         }
 
         // Search by name, email, nip, phone, jabatan, or pangkat
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
@@ -53,12 +54,12 @@ class UserService
         }
 
         // Filter by OPD (Instansi)
-        if (!empty($filters['opd_id'])) {
+        if (! empty($filters['opd_id'])) {
             $query->where('opd_id', $filters['opd_id']);
         }
 
         // Filter by role
-        if (!empty($filters['role'])) {
+        if (! empty($filters['role'])) {
             $roleName = (string) $filters['role'];
             $query->whereHas('roles', function ($q) use ($roleName) {
                 $q->where('name', $roleName);
@@ -66,7 +67,7 @@ class UserService
         }
 
         // Filter by status
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', (string) $filters['status']);
         }
 
@@ -75,10 +76,9 @@ class UserService
         $sortDirection = strtolower($filters['sort_direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
         $allowedSortColumns = ['name', 'email', 'nip', 'jabatan', 'status', 'created_at', 'last_login_at'];
-        if (!in_array($sortBy, $allowedSortColumns, true)) {
+        if (! in_array($sortBy, $allowedSortColumns, true)) {
             $sortBy = 'created_at';
         }
-
 
         $query->orderBy($sortBy, $sortDirection);
 
@@ -93,7 +93,7 @@ class UserService
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
         $targetUser = User::with(['roles', 'roles.permissions', 'opd'])->findOrFail($id);
 
-        if ($targetUser->hasRole('Superadmin') && !$user?->hasRole('Superadmin')) {
+        if ($targetUser->hasRole('Superadmin') && ! $user?->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
@@ -108,7 +108,7 @@ class UserService
     public function createUser(array $data, ?User $currentUser = null): User
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
-        if (($data['role'] ?? '') === 'Superadmin' && !$user?->hasRole('Superadmin')) {
+        if (($data['role'] ?? '') === 'Superadmin' && ! $user?->hasRole('Superadmin')) {
             throw ValidationException::withMessages([
                 'role' => ['Peran yang dipilih tidak valid.'],
             ]);
@@ -143,12 +143,12 @@ class UserService
     public function updateUser(User $user, array $data, User $currentUser): User
     {
         // Ghost safeguard: non-superadmin cannot see or update a Superadmin account
-        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+        if ($user->hasRole('Superadmin') && ! $currentUser->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
         // Cannot assign Superadmin role if not Superadmin
-        if (($data['role'] ?? '') === 'Superadmin' && !$currentUser->hasRole('Superadmin')) {
+        if (($data['role'] ?? '') === 'Superadmin' && ! $currentUser->hasRole('Superadmin')) {
             throw ValidationException::withMessages([
                 'role' => ['Peran yang dipilih tidak valid.'],
             ]);
@@ -184,7 +184,7 @@ class UserService
                 'status' => $data['status'],
             ];
 
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $updatePayload['password'] = Hash::make($data['password']);
             }
 
@@ -195,14 +195,13 @@ class UserService
         });
     }
 
-
     /**
      * Delete a user with security safeguards.
      */
     public function deleteUser(User $user, User $currentUser): void
     {
         // Ghost safeguard: non-superadmin cannot see or delete a Superadmin account
-        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+        if ($user->hasRole('Superadmin') && ! $currentUser->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
@@ -267,7 +266,7 @@ class UserService
     {
         $actor = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if (($data['role'] ?? '') === 'Superadmin' && !$actor?->hasRole('Superadmin')) {
+        if (($data['role'] ?? '') === 'Superadmin' && ! $actor?->hasRole('Superadmin')) {
             throw ValidationException::withMessages([
                 'role' => ['Peran yang dipilih tidak valid.'],
             ]);
@@ -321,7 +320,7 @@ class UserService
     {
         $actor = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if (($data['role'] ?? '') === 'Superadmin' && !$actor?->hasRole('Superadmin')) {
+        if (($data['role'] ?? '') === 'Superadmin' && ! $actor?->hasRole('Superadmin')) {
             throw ValidationException::withMessages([
                 'role' => ['Peran yang dipilih tidak valid.'],
             ]);
@@ -331,11 +330,11 @@ class UserService
             $user = User::create([
                 'name' => trim((string) $data['name']),
                 'email' => strtolower(trim((string) $data['email'])),
-                'nip' => !empty($data['nip']) ? preg_replace('/\s+/', '', trim((string) $data['nip'])) : null,
-                'phone' => !empty($data['phone']) ? trim((string) $data['phone']) : null,
-                'opd_id' => !empty($data['opd_id']) ? $data['opd_id'] : null,
-                'pangkat_gol' => !empty($data['pangkat_gol']) ? trim((string) $data['pangkat_gol']) : null,
-                'jabatan' => !empty($data['jabatan']) ? trim((string) $data['jabatan']) : 'Pimpinan Daerah',
+                'nip' => ! empty($data['nip']) ? preg_replace('/\s+/', '', trim((string) $data['nip'])) : null,
+                'phone' => ! empty($data['phone']) ? trim((string) $data['phone']) : null,
+                'opd_id' => ! empty($data['opd_id']) ? $data['opd_id'] : null,
+                'pangkat_gol' => ! empty($data['pangkat_gol']) ? trim((string) $data['pangkat_gol']) : null,
+                'jabatan' => ! empty($data['jabatan']) ? trim((string) $data['jabatan']) : 'Pimpinan Daerah',
                 'role' => $data['role'],
                 'status' => $data['status'] ?? 'active',
                 'password' => Hash::make($data['password']),
@@ -374,11 +373,11 @@ class UserService
      */
     public function updateUserAccount(User $user, array $data, User $currentUser): User
     {
-        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+        if ($user->hasRole('Superadmin') && ! $currentUser->hasRole('Superadmin')) {
             abort(404, 'Data akun pengguna tidak ditemukan.');
         }
 
-        if (($data['role'] ?? '') === 'Superadmin' && !$currentUser->hasRole('Superadmin')) {
+        if (($data['role'] ?? '') === 'Superadmin' && ! $currentUser->hasRole('Superadmin')) {
             throw ValidationException::withMessages([
                 'role' => ['Peran yang dipilih tidak valid.'],
             ]);
@@ -405,7 +404,7 @@ class UserService
                 'status' => $data['status'],
             ];
 
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $updatePayload['password'] = Hash::make($data['password']);
             }
 
@@ -425,7 +424,7 @@ class UserService
      */
     public function revokeUserAccount(User $user, User $currentUser): void
     {
-        if ($user->hasRole('Superadmin') && !$currentUser->hasRole('Superadmin')) {
+        if ($user->hasRole('Superadmin') && ! $currentUser->hasRole('Superadmin')) {
             abort(404, 'Data akun pengguna tidak ditemukan.');
         }
 
@@ -489,7 +488,7 @@ class UserService
         $adminUser = $admin ?? auth('sanctum')->user() ?? auth()->user();
 
         // Ghost safeguard: non-superadmin cannot reset 2FA on a Superadmin account
-        if ($user->hasRole('Superadmin') && !$adminUser?->hasRole('Superadmin')) {
+        if ($user->hasRole('Superadmin') && ! $adminUser?->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
@@ -529,7 +528,7 @@ class UserService
      */
     public function inviteUser(array $data, User $admin): array
     {
-        if (($data['role'] ?? '') === 'Superadmin' && !$admin->hasRole('Superadmin')) {
+        if (($data['role'] ?? '') === 'Superadmin' && ! $admin->hasRole('Superadmin')) {
             throw ValidationException::withMessages([
                 'role' => ['Peran yang dipilih tidak valid.'],
             ]);
@@ -544,20 +543,20 @@ class UserService
                 'name' => trim($data['name']),
                 'email' => strtolower(trim($data['email'])),
                 'opd_id' => $data['opd_id'] ?? null,
-                'jabatan' => !empty($data['jabatan']) ? trim($data['jabatan']) : null,
+                'jabatan' => ! empty($data['jabatan']) ? trim($data['jabatan']) : null,
                 'role' => $data['role'],
                 'status' => 'pending_activation',
                 'password' => Hash::make(Str::random(32)),
                 'activation_token' => $token,
                 'activation_token_expires_at' => $expiresAt,
                 'invitation_sent_at' => now(),
-                'invitation_notes' => !empty($data['notes']) ? trim($data['notes']) : null,
+                'invitation_notes' => ! empty($data['notes']) ? trim($data['notes']) : null,
             ]);
 
             $user->syncRoles([$data['role']]);
 
             $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-            $activationUrl = rtrim($frontendUrl, '/') . '/activate?token=' . $token;
+            $activationUrl = rtrim($frontendUrl, '/').'/activate?token='.$token;
 
             // Send notification email
             try {
@@ -596,11 +595,11 @@ class UserService
     public function resendInvitation(User $user, User $admin): array
     {
         // Ghost safeguard: non-superadmin cannot see or resend invitation to a Superadmin account
-        if ($user->hasRole('Superadmin') && !$admin->hasRole('Superadmin')) {
+        if ($user->hasRole('Superadmin') && ! $admin->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
-        if (!$user->isPendingActivation()) {
+        if (! $user->isPendingActivation()) {
             throw ValidationException::withMessages([
                 'user' => 'Pengguna ini sudah aktif atau tidak dalam status menunggu aktivasi.',
             ]);
@@ -617,7 +616,7 @@ class UserService
             ]);
 
             $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-            $activationUrl = rtrim($frontendUrl, '/') . '/activate?token=' . $token;
+            $activationUrl = rtrim($frontendUrl, '/').'/activate?token='.$token;
 
             try {
                 Mail::to($user->email)->send(
@@ -655,19 +654,19 @@ class UserService
 
         $user = User::where('activation_token', $token)->first();
 
-        if (!$user) {
+        if (! $user) {
             throw ValidationException::withMessages([
                 'token' => 'Tautan aktivasi tidak ditemukan atau sudah pernah digunakan.',
             ]);
         }
 
-        if (!$user->isPendingActivation()) {
+        if (! $user->isPendingActivation()) {
             throw ValidationException::withMessages([
                 'token' => 'Akun ini sudah aktif. Silakan langsung masuk ke portal.',
             ]);
         }
 
-        if (!$user->hasValidActivationToken()) {
+        if (! $user->hasValidActivationToken()) {
             throw ValidationException::withMessages([
                 'token' => 'Tautan aktivasi telah kadaluwarsa (melebihi 48 jam). Harap hubungi Administrator untuk mengirim ulang undangan.',
             ]);
@@ -687,11 +686,11 @@ class UserService
 
         return DB::transaction(function () use ($user, $data) {
             $updatePayload = [
-                'name' => !empty($data['name']) ? trim($data['name']) : $user->name,
-                'nip' => !empty($data['nip']) ? trim($data['nip']) : $user->nip,
-                'phone' => !empty($data['phone']) ? trim($data['phone']) : $user->phone,
-                'pangkat_gol' => !empty($data['pangkat_gol']) ? trim($data['pangkat_gol']) : $user->pangkat_gol,
-                'jabatan' => !empty($data['jabatan']) ? trim($data['jabatan']) : $user->jabatan,
+                'name' => ! empty($data['name']) ? trim($data['name']) : $user->name,
+                'nip' => ! empty($data['nip']) ? trim($data['nip']) : $user->nip,
+                'phone' => ! empty($data['phone']) ? trim($data['phone']) : $user->phone,
+                'pangkat_gol' => ! empty($data['pangkat_gol']) ? trim($data['pangkat_gol']) : $user->pangkat_gol,
+                'jabatan' => ! empty($data['jabatan']) ? trim($data['jabatan']) : $user->jabatan,
                 'password' => Hash::make($data['password']),
                 'status' => 'active',
                 'email_verified_at' => now(),
@@ -699,7 +698,7 @@ class UserService
                 'activation_token_expires_at' => null,
             ];
 
-            if (!empty($data['opd_id'])) {
+            if (! empty($data['opd_id'])) {
                 $updatePayload['opd_id'] = $data['opd_id'];
             }
 
@@ -727,13 +726,13 @@ class UserService
         return DB::transaction(function () use ($user, $data) {
             $updatePayload = [
                 'name' => trim($data['name']),
-                'nip' => !empty($data['nip']) ? trim($data['nip']) : null,
-                'phone' => !empty($data['phone']) ? trim($data['phone']) : null,
-                'pangkat_gol' => !empty($data['pangkat_gol']) ? trim($data['pangkat_gol']) : null,
-                'jabatan' => !empty($data['jabatan']) ? trim($data['jabatan']) : null,
+                'nip' => ! empty($data['nip']) ? trim($data['nip']) : null,
+                'phone' => ! empty($data['phone']) ? trim($data['phone']) : null,
+                'pangkat_gol' => ! empty($data['pangkat_gol']) ? trim($data['pangkat_gol']) : null,
+                'jabatan' => ! empty($data['jabatan']) ? trim($data['jabatan']) : null,
             ];
 
-            if (array_key_exists('opd_id', $data) && !empty($data['opd_id'])) {
+            if (array_key_exists('opd_id', $data) && ! empty($data['opd_id'])) {
                 $updatePayload['opd_id'] = $data['opd_id'];
             }
 
@@ -771,5 +770,4 @@ class UserService
             return $user->load(['roles', 'roles.permissions', 'opd']);
         });
     }
-
 }

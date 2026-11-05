@@ -10,8 +10,8 @@ use App\Http\Resources\AuditLogResource;
 use App\Jobs\ProcessAuditLogExportJob;
 use App\Models\AuditLog;
 use App\Models\AuditLogArchive;
-use App\Services\Export\ExcelExportService;
 use App\Services\Audit\AuditLogService;
+use App\Services\Export\ExcelExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -32,13 +32,13 @@ class AuditLogController extends Controller
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse|JsonResponse
     {
         $user = $request->user();
-        if (!$user->can('audit.export') && !$user->can('audit.view')) {
+        if (! $user->can('audit.export') && ! $user->can('audit.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor log audit keamanan.');
         }
 
         $isArchive = $request->boolean('archive') || $request->input('type') === 'archive';
         $isSuperadmin = $user->hasRole('Superadmin') || $user->roles()->where('is_system', true)->exists();
-        if ($isArchive && !$isSuperadmin) {
+        if ($isArchive && ! $isSuperadmin) {
             abort(403, 'Hanya Superadmin yang berhak mengekspor arsip permanen.');
         }
 
@@ -123,7 +123,7 @@ class AuditLogController extends Controller
         $isAsyncRequested = $request->boolean('async');
 
         // Hybrid threshold: if dataset exceeds 2,500 records or async requested, delegate to queue worker
-        if (($totalCount > 2500 || $isAsyncRequested) && !$isForceDirect) {
+        if (($totalCount > 2500 || $isAsyncRequested) && ! $isForceDirect) {
             $jobId = (string) Str::uuid();
 
             Cache::put("export_job_{$jobId}", [
@@ -164,7 +164,7 @@ class AuditLogController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        if (!$request->user()->can('audit.view')) {
+        if (! $request->user()->can('audit.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat log audit keamanan.');
         }
 
@@ -189,7 +189,7 @@ class AuditLogController extends Controller
         $user = $request->user();
         $password = (string) $request->input('password');
 
-        if (!Hash::check($password, $user->password)) {
+        if (! Hash::check($password, $user->password)) {
             return response()->json([
                 'message' => 'Kata sandi konfirmasi tidak sesuai. Pembersihan seluruh log dibatalkan demi keamanan.',
                 'errors' => [

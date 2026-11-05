@@ -8,6 +8,7 @@ use App\Models\Concerns\HasUuid7;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class SystemSetting extends Model
 {
@@ -40,7 +41,7 @@ class SystemSetting extends Model
      */
     public function getAssetUrlAttribute(): ?string
     {
-        if (empty($this->value) || !in_array($this->key, ['app_logo', 'app_favicon'], true)) {
+        if (empty($this->value) || ! in_array($this->key, ['app_logo', 'app_favicon'], true)) {
             return null;
         }
 
@@ -49,7 +50,7 @@ class SystemSetting extends Model
         }
 
         try {
-            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->value);
+            return Storage::disk('public')->url($this->value);
         } catch (\Throwable) {
             return null;
         }

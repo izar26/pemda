@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import type { AxiosError } from 'axios'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Building2,
@@ -74,7 +75,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   })
 
   // Map of which OPDs are already assigned to which auditor (for 1 OPD = 1 Auditor visual guidance)
-  const assignedAuditorsData = queryClient.getQueryData<{ data: any[] }>([
+  const assignedAuditorsData = queryClient.getQueryData<{ data: unknown[] }>([
     'pengawasan',
     'penugasan-auditor',
   ])
@@ -113,11 +114,13 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
   // Populate form on open/edit
   useEffect(() => {
     if (isEdit && currentRow) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedAuditorId(currentRow.id)
       const opdIds = currentRow.auditor_assignments?.map((a) => a.opd_id) || []
       setSelectedOpdIds(opdIds)
       setOpdSearch('')
     } else if (open === 'add') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedAuditorId('')
       setSelectedOpdIds([])
       setOpdSearch('')
@@ -232,7 +235,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       handleCloseForm()
       onSuccess?.()
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.opd_ids?.[0] ||
@@ -251,7 +254,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       handleCloseForm()
       onSuccess?.()
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.opd_ids?.[0] ||
@@ -270,7 +273,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       setSelectedAssignment(null)
       onSuccess?.()
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(err.response?.data?.message || 'Gagal mencabut penugasan.')
     },
   })
@@ -286,7 +289,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       setCurrentRow(null)
       onSuccess?.()
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<{ message?: string }>) => {
       toast.error(err.response?.data?.message || 'Gagal mencabut penugasan.')
     },
   })

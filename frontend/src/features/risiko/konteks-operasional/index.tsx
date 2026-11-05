@@ -157,6 +157,7 @@ export function KonteksOperasionalPage() {
 
   // Sync informasi_lain from loaded currentKonteks (resets properly on OPD switch)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInformasiLain(currentKonteks?.informasi_lain || '-')
   }, [currentKonteks?.id, currentKonteks?.informasi_lain])
 

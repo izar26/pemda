@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { AxiosError } from 'axios'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -106,7 +107,7 @@ export function ReviewDialog({
       setRejectionNote('')
       onSuccess?.()
     },
-    onError: (err: any) => {
+    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.catatan_revisi?.[0] ||
@@ -247,7 +248,7 @@ export function ReviewDialog({
           <div className='flex flex-col flex-1 overflow-hidden'>
             <Tabs
               value={activeTab}
-              onValueChange={(v) => setActiveTab(v as any)}
+              onValueChange={(v) => setActiveTab(v as 'forms' | 'history')}
               className='flex flex-col flex-1 overflow-hidden'
             >
               <div className='px-6 pt-3 pb-2 border-b bg-muted/5'>

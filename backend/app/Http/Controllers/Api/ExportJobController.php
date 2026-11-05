@@ -20,7 +20,7 @@ class ExportJobController extends Controller
     {
         $jobData = Cache::get("export_job_{$jobId}");
 
-        if (!$jobData) {
+        if (! $jobData) {
             return response()->json([
                 'status' => 'not_found',
                 'message' => 'Tugas ekspor tidak ditemukan atau telah kedaluwarsa.',
@@ -29,7 +29,7 @@ class ExportJobController extends Controller
 
         // Authorization check: only the initiating user or Superadmin may inspect the job
         $user = $request->user();
-        if ($user && isset($jobData['user_id']) && $jobData['user_id'] !== $user->id && !$user->hasRole('Superadmin')) {
+        if ($user && isset($jobData['user_id']) && $jobData['user_id'] !== $user->id && ! $user->hasRole('Superadmin')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki wewenang untuk memeriksa tugas ekspor ini.',
@@ -46,7 +46,7 @@ class ExportJobController extends Controller
     {
         $jobData = Cache::get("export_job_{$jobId}");
 
-        if (!$jobData || ($jobData['status'] ?? '') !== 'completed') {
+        if (! $jobData || ($jobData['status'] ?? '') !== 'completed') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Berkas ekspor belum siap atau telah kedaluwarsa.',
@@ -55,7 +55,7 @@ class ExportJobController extends Controller
 
         // Authorization check: only the initiating user or Superadmin may download the file
         $user = $request->user();
-        if ($user && isset($jobData['user_id']) && $jobData['user_id'] !== $user->id && !$user->hasRole('Superadmin')) {
+        if ($user && isset($jobData['user_id']) && $jobData['user_id'] !== $user->id && ! $user->hasRole('Superadmin')) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki hak akses untuk mengunduh berkas ekspor ini.',
@@ -64,7 +64,7 @@ class ExportJobController extends Controller
 
         $filePath = storage_path("app/exports/{$jobId}.xlsx");
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Berkas fisik pada server tidak ditemukan.',

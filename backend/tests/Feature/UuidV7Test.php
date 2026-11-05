@@ -6,7 +6,13 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\LoginLog;
+use App\Models\Master\MasterSubUnsurSpip;
+use App\Models\Master\MasterUnsurSpip;
 use App\Models\Opd;
+use App\Models\Permission;
+use App\Models\PersonalAccessToken;
+use App\Models\Role;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -78,7 +84,7 @@ class UuidV7Test extends TestCase
 
     public function test_role_id_is_valid_uuid_v7(): void
     {
-        $role = \App\Models\Role::create([
+        $role = Role::create([
             'name' => 'Test UUID Role',
             'guard_name' => 'web',
             'is_system' => false,
@@ -92,7 +98,7 @@ class UuidV7Test extends TestCase
 
     public function test_permission_id_is_valid_uuid_v7(): void
     {
-        $perm = \App\Models\Permission::create([
+        $perm = Permission::create([
             'name' => 'test.uuid.perm',
             'guard_name' => 'web',
             'group' => 'Test',
@@ -106,7 +112,7 @@ class UuidV7Test extends TestCase
 
     public function test_system_setting_id_is_valid_uuid_v7(): void
     {
-        $setting = \App\Models\SystemSetting::create([
+        $setting = SystemSetting::create([
             'key' => 'test_uuid_setting',
             'value' => 'sample',
             'group' => 'general',
@@ -122,7 +128,7 @@ class UuidV7Test extends TestCase
 
     public function test_master_data_ids_are_valid_uuid_v7(): void
     {
-        $unsur = \App\Models\Master\MasterUnsurSpip::create([
+        $unsur = MasterUnsurSpip::create([
             'nomor' => '99',
             'nama' => 'Unsur Test UUID',
         ]);
@@ -131,7 +137,7 @@ class UuidV7Test extends TestCase
         $cleanId = str_replace('-', '', $unsur->id);
         $this->assertSame('7', $cleanId[12], 'MasterUnsurSpip ID must be UUID version 7');
 
-        $subUnsur = \App\Models\Master\MasterSubUnsurSpip::create([
+        $subUnsur = MasterSubUnsurSpip::create([
             'unsur_spip_id' => $unsur->id,
             'nama' => 'Sub Unsur Test UUID',
         ]);
@@ -156,7 +162,7 @@ class UuidV7Test extends TestCase
     public function test_personal_access_token_handles_legacy_non_uuid_tokens_gracefully(): void
     {
         // Must return null without throwing PostgreSQL 22P02 invalid uuid syntax exception
-        $result = \App\Models\PersonalAccessToken::findToken('49|nonexistent_token_hash');
+        $result = PersonalAccessToken::findToken('49|nonexistent_token_hash');
         $this->assertNull($result);
 
         // API request with legacy integer ID token returns 401 instead of 500

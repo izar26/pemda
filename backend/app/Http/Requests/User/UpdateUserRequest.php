@@ -15,7 +15,7 @@ class UpdateUserRequest extends FormRequest
     {
         $target = $this->route('user');
         $targetUser = $target instanceof User ? $target : (is_string($target) ? User::find($target) : null);
-        if ($targetUser && $targetUser->hasRole('Superadmin') && !$this->user()?->hasRole('Superadmin')) {
+        if ($targetUser && $targetUser->hasRole('Superadmin') && ! $this->user()?->hasRole('Superadmin')) {
             abort(404, 'Data pengguna tidak ditemukan.');
         }
 
@@ -29,7 +29,7 @@ class UpdateUserRequest extends FormRequest
         $userId = $targetUser?->id ?? (is_string($target) ? $target : null);
 
         $roleRule = ['required', 'string'];
-        if (!$this->user()?->hasRole('Superadmin')) {
+        if (! $this->user()?->hasRole('Superadmin')) {
             $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
                 $query->where('name', '!=', 'Superadmin');
             });

@@ -70,11 +70,11 @@ class AuditLogService
         if (Str::startsWith(get_class($model), 'App\\Models\\Master\\')) {
             $actionPrefix = 'MASTER_DATA';
         }
-        $action = "{$actionPrefix}_" . Str::upper($event);
+        $action = "{$actionPrefix}_".Str::upper($event);
 
         $description = $customDescription ?? match ($event) {
             'created' => "Menambahkan {$entityShort} baru: {$label}",
-            'updated' => "Memperbarui {$entityShort}: {$label}" . (!empty($eventData['changes']) ? ' (' . count($eventData['changes']) . ' atribut diubah)' : ''),
+            'updated' => "Memperbarui {$entityShort}: {$label}".(! empty($eventData['changes']) ? ' ('.count($eventData['changes']).' atribut diubah)' : ''),
             'deleted' => "Menghapus {$entityShort}: {$label}",
             'restored' => "Memulihkan {$entityShort}: {$label}",
             default => "Melakukan aksi {$event} pada {$entityShort}: {$label}",
@@ -122,53 +122,53 @@ class AuditLogService
         })->orWhere('role', 'Superadmin')->pluck('name')->all();
 
         // 1. Exclude logs initiated by a System user ID
-        if (!empty($systemUserIds)) {
+        if (! empty($systemUserIds)) {
             $query->where(function ($q) use ($systemUserIds) {
                 $q->whereNotIn('user_id', $systemUserIds)
-                  ->orWhereNull('user_id');
+                    ->orWhereNull('user_id');
             });
         }
 
         // 2. Exclude logs initiated by System email
-        if (!empty($systemEmails)) {
+        if (! empty($systemEmails)) {
             $query->where(function ($q) use ($systemEmails) {
                 $q->whereNotIn('user_email', $systemEmails)
-                  ->orWhereNull('user_email');
+                    ->orWhereNull('user_email');
             });
         }
 
         // 3. Exclude logs where user_name is System user names or Sistem / System automated actor
-        if (!empty($systemNames)) {
+        if (! empty($systemNames)) {
             $query->where(function ($q) use ($systemNames) {
                 $q->whereNotIn('user_name', $systemNames)
-                  ->orWhereNull('user_name');
+                    ->orWhereNull('user_name');
             });
         }
 
         $query->where(function ($q) {
             $q->whereNull('user_name')
-              ->orWhere(function ($sub) {
-                  $sub->where('user_name', '!=', 'Sistem')
-                      ->where('user_name', '!=', 'System')
-                      ->where('user_name', 'not like', '%Superadmin%');
-              });
+                ->orWhere(function ($sub) {
+                    $sub->where('user_name', '!=', 'Sistem')
+                        ->where('user_name', '!=', 'System')
+                        ->where('user_name', 'not like', '%Superadmin%');
+                });
         });
 
         // 4. Exclude logs where auditable target is a System user
-        if (!empty($systemUserIds)) {
+        if (! empty($systemUserIds)) {
             $query->where(function ($q) use ($systemUserIds) {
                 $q->whereNull('auditable_type')
-                  ->orWhereNotIn('auditable_type', [User::class, 'App\Models\User'])
-                  ->orWhereNotIn('auditable_id', $systemUserIds);
+                    ->orWhereNotIn('auditable_type', [User::class, 'App\Models\User'])
+                    ->orWhereNotIn('auditable_id', $systemUserIds);
             });
         }
 
         // 5. Exclude logs where auditable target is System role
-        if (!empty($systemRoleIds)) {
+        if (! empty($systemRoleIds)) {
             $query->where(function ($q) use ($systemRoleIds) {
                 $q->whereNull('auditable_type')
-                  ->orWhereNotIn('auditable_type', [Role::class, 'App\Models\Role'])
-                  ->orWhereNotIn('auditable_id', $systemRoleIds);
+                    ->orWhereNotIn('auditable_type', [Role::class, 'App\Models\Role'])
+                    ->orWhereNotIn('auditable_id', $systemRoleIds);
             });
         }
 
@@ -221,7 +221,7 @@ class AuditLogService
         // Apply ghost filter to hide Superadmin & System logs from non-superadmin users
         $this->applyGhostFilter($query, $user);
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = trim($filters['search']);
             $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
             $query->where(function ($q) use ($search, $likeOperator) {
@@ -233,27 +233,27 @@ class AuditLogService
             });
         }
 
-        if (!empty($filters['module']) && $filters['module'] !== 'all') {
+        if (! empty($filters['module']) && $filters['module'] !== 'all') {
             $query->where('module', $filters['module']);
         }
 
-        if (!empty($filters['action']) && $filters['action'] !== 'all') {
+        if (! empty($filters['action']) && $filters['action'] !== 'all') {
             $query->where('action', $filters['action']);
         }
 
-        if (!empty($filters['auditable_type'])) {
+        if (! empty($filters['auditable_type'])) {
             $query->where('auditable_type', $filters['auditable_type']);
         }
 
-        if (!empty($filters['auditable_id'])) {
+        if (! empty($filters['auditable_id'])) {
             $query->where('auditable_id', (string) $filters['auditable_id']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 

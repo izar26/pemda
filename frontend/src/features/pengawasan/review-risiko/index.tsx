@@ -44,6 +44,7 @@ import {
 import {
   pengajuanRisikoService,
   type OpdReviewListItem,
+  type PengajuanPenilaianRisiko,
 } from '@/services/pengajuan-risiko-service'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { ReviewRisikoWizard } from './components/review-risiko-wizard'
@@ -102,7 +103,7 @@ export function ReviewRisikoManagement() {
 
   // Calculate accurate summary metrics
   const metrics = useMemo(() => {
-    let total = rawOpdList.length
+    const total = rawOpdList.length
     let menunggu = 0
     let revisi = 0
     let disetujui = 0
@@ -112,9 +113,23 @@ export function ReviewRisikoManagement() {
       const s = opd.pengajuan_risiko?.[0]?.status
       if (!s || s === 'draft') {
         belumKirim++
-      } else if (s === 'submitted' || s === 'in_review') {
+      } else if (
+        s === 'submitted' ||
+        s === 'in_review' ||
+        s === 'submitted_to_kepala_opd' ||
+        s === 'submitted_to_auditor' ||
+        s === 'in_review_auditor' ||
+        s === 'submitted_to_pengawas' ||
+        s === 'in_review_pengawas'
+      ) {
         menunggu++
-      } else if (s === 'revision_requested') {
+      } else if (
+        s === 'revision_requested' ||
+        s === 'revision_by_kepala_opd' ||
+        s === 'revision_by_auditor' ||
+        s === 'revision_to_operator' ||
+        s === 'revision_by_pengawas'
+      ) {
         revisi++
       } else if (s === 'approved') {
         disetujui++
@@ -207,10 +222,24 @@ export function ReviewRisikoManagement() {
       list = list.filter((opd) => {
         const s = opd.pengajuan_risiko?.[0]?.status
         if (statusFilter === 'submitted') {
-          return s === 'submitted' || s === 'in_review'
+          return (
+            s === 'submitted' ||
+            s === 'in_review' ||
+            s === 'submitted_to_kepala_opd' ||
+            s === 'submitted_to_auditor' ||
+            s === 'in_review_auditor' ||
+            s === 'submitted_to_pengawas' ||
+            s === 'in_review_pengawas'
+          )
         }
         if (statusFilter === 'revision_requested') {
-          return s === 'revision_requested'
+          return (
+            s === 'revision_requested' ||
+            s === 'revision_by_kepala_opd' ||
+            s === 'revision_by_auditor' ||
+            s === 'revision_to_operator' ||
+            s === 'revision_by_pengawas'
+          )
         }
         if (statusFilter === 'approved') {
           return s === 'approved'
@@ -230,7 +259,7 @@ export function ReviewRisikoManagement() {
     refetch()
   }
 
-  const getStatusBadge = (submission?: any) => {
+  const getStatusBadge = (submission?: Partial<PengajuanPenilaianRisiko> | null) => {
     if (!submission || submission.status === 'draft') {
       return (
         <Badge
@@ -244,12 +273,57 @@ export function ReviewRisikoManagement() {
     }
 
     switch (submission.status) {
+      case 'submitted_to_kepala_opd':
+        return (
+          <Badge className='text-xs bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+            <Clock className='h-3 w-3 text-sky-600 animate-pulse' />
+            Review Kepala OPD
+          </Badge>
+        )
+      case 'revision_by_kepala_opd':
+        return (
+          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+            <XCircle className='h-3 w-3 text-destructive' />
+            Revisi Kepala OPD
+          </Badge>
+        )
+      case 'submitted_to_auditor':
+      case 'in_review_auditor':
       case 'submitted':
       case 'in_review':
         return (
           <Badge className='text-xs bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
             <Clock className='h-3 w-3 text-amber-600 dark:text-amber-400 animate-pulse' />
-            Menunggu Review
+            Pemeriksaan Auditor
+          </Badge>
+        )
+      case 'revision_by_auditor':
+        return (
+          <Badge className='text-xs bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+            <AlertCircle className='h-3 w-3 text-amber-600' />
+            Revisi dari Auditor
+          </Badge>
+        )
+      case 'revision_to_operator':
+        return (
+          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+            <XCircle className='h-3 w-3 text-destructive' />
+            Revisi Operator
+          </Badge>
+        )
+      case 'submitted_to_pengawas':
+      case 'in_review_pengawas':
+        return (
+          <Badge className='text-xs bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+            <Clock className='h-3 w-3 text-purple-600 animate-pulse' />
+            Pengesahan Pengawas
+          </Badge>
+        )
+      case 'revision_by_pengawas':
+        return (
+          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+            <XCircle className='h-3 w-3 text-destructive' />
+            Revisi Pengawas
           </Badge>
         )
       case 'revision_requested':
@@ -263,7 +337,7 @@ export function ReviewRisikoManagement() {
         return (
           <Badge className='text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
             <CheckCircle2 className='h-3 w-3 text-emerald-600 dark:text-emerald-400' />
-            Disetujui
+            Disahkan Final
           </Badge>
         )
       default:
@@ -453,10 +527,22 @@ export function ReviewRisikoManagement() {
                       const item2c = submission?.items?.find((i) => i.form_code === '2c')
 
                       const hasSubmitted =
+                        Boolean(submission?.status && submission.status !== 'draft')
+
+                      const isPendingReview =
+                        submission?.status === 'submitted_to_auditor' ||
+                        submission?.status === 'in_review_auditor' ||
+                        submission?.status === 'submitted_to_pengawas' ||
+                        submission?.status === 'in_review_pengawas' ||
                         submission?.status === 'submitted' ||
-                        submission?.status === 'in_review' ||
+                        submission?.status === 'in_review'
+
+                      const isRevisionState =
                         submission?.status === 'revision_requested' ||
-                        submission?.status === 'approved'
+                        submission?.status === 'revision_by_kepala_opd' ||
+                        submission?.status === 'revision_by_auditor' ||
+                        submission?.status === 'revision_to_operator' ||
+                        submission?.status === 'revision_by_pengawas'
 
                       return (
                         <TableRow key={opd.id} className='hover:bg-muted/30 transition-colors'>
@@ -535,13 +621,9 @@ export function ReviewRisikoManagement() {
                                     <Button
                                       size='sm'
                                       disabled={!hasSubmitted}
-                                      variant={
-                                        submission?.status === 'submitted' || submission?.status === 'in_review'
-                                          ? 'default'
-                                          : 'outline'
-                                      }
+                                      variant={isPendingReview ? 'default' : 'outline'}
                                       className={`h-8 text-xs gap-1.5 ${
-                                        submission?.status === 'submitted' || submission?.status === 'in_review'
+                                        isPendingReview
                                           ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs font-semibold'
                                           : ''
                                       }`}
@@ -555,25 +637,25 @@ export function ReviewRisikoManagement() {
                                         }
                                       }}
                                     >
-                                      {submission?.status === 'submitted' || submission?.status === 'in_review' ? (
+                                      {isPendingReview ? (
                                         <>
                                           <ClipboardCheck className='h-3.5 w-3.5' />
                                           Periksa Pengajuan
                                         </>
-                                      ) : submission?.status === 'revision_requested' ? (
+                                      ) : isRevisionState ? (
                                         <>
                                           <Eye className='h-3.5 w-3.5' />
-                                          Lihat Revisi
+                                          Pantau Revisi
                                         </>
                                       ) : submission?.status === 'approved' ? (
                                         <>
-                                          <Eye className='h-3.5 w-3.5' />
-                                          Lihat Dokumen
+                                          <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600' />
+                                          Lihat Berkas Final
                                         </>
                                       ) : (
                                         <>
-                                          <Clock className='h-3.5 w-3.5 text-muted-foreground' />
-                                          Belum Mengirim
+                                          <Eye className='h-3.5 w-3.5' />
+                                          Pratinjau Draf
                                         </>
                                       )}
                                     </Button>

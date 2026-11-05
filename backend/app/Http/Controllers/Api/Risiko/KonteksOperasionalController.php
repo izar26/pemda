@@ -9,7 +9,6 @@ use App\Http\Requests\Risiko\SaveKonteksOperasionalItemRequest;
 use App\Http\Requests\Risiko\SaveKonteksOperasionalRequest;
 use App\Http\Resources\Risiko\KonteksOperasionalItemResource;
 use App\Http\Resources\Risiko\KonteksOperasionalResource;
-use App\Models\Risiko\KonteksOperasional;
 use App\Services\Risiko\KonteksOperasionalService;
 use App\Services\Risiko\PengajuanRisikoService;
 use Illuminate\Http\JsonResponse;
@@ -35,22 +34,22 @@ class KonteksOperasionalController extends Controller
             || $user?->can('laporan.view')
             || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
 
-        if (!$canView) {
+        if (! $canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat penetapan konteks risiko operasional.');
         }
 
         $filters = $request->only(['periode_penilaian_id', 'opd_id', 'status', 'search']);
 
         // Scope to user's OPD if role is OPD
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             $filters['opd_id'] = $user->opd_id;
         }
 
         // Auditors may only list OPDs they are assigned to
         if ($user->isScopedAuditor()) {
             $assigned = $user->activeAssignedOpdIds();
-            if (!empty($filters['opd_id'])) {
-                if (!in_array((string) $filters['opd_id'], $assigned, true)) {
+            if (! empty($filters['opd_id'])) {
+                if (! in_array((string) $filters['opd_id'], $assigned, true)) {
                     abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
                 }
             } else {
@@ -86,17 +85,17 @@ class KonteksOperasionalController extends Controller
             || $user?->can('laporan.view')
             || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
 
-        if (!$canView) {
+        if (! $canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat penetapan konteks risiko operasional.');
         }
 
         $targetOpdId = $request->get('opd_id');
 
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             $targetOpdId = $user->opd_id;
         }
 
-        if ($user->isScopedAuditor() && !empty($targetOpdId) && !$user->canReadOpdData((string) $targetOpdId)) {
+        if ($user->isScopedAuditor() && ! empty($targetOpdId) && ! $user->canReadOpdData((string) $targetOpdId)) {
             abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
         }
 
@@ -141,15 +140,15 @@ class KonteksOperasionalController extends Controller
             || $user?->can('laporan.view')
             || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
 
-        if (!$canView) {
+        if (! $canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat penetapan konteks risiko operasional.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat konteks risiko operasional OPD lain.');
         }
-        if (!$user->canReadOpdData((string) $konteks->opd_id)) {
+        if (! $user->canReadOpdData((string) $konteks->opd_id)) {
             abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
         }
 
@@ -164,12 +163,12 @@ class KonteksOperasionalController extends Controller
     public function update(SaveKonteksOperasionalRequest $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.edit')) {
+        if (! $user?->can('konteks_operasional.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah penetapan konteks risiko operasional.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
@@ -192,12 +191,12 @@ class KonteksOperasionalController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.delete')) {
+        if (! $user?->can('konteks_operasional.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus penetapan konteks risiko operasional.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus konteks risiko operasional OPD lain.');
         }
 
@@ -216,12 +215,12 @@ class KonteksOperasionalController extends Controller
     public function reorderItems(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.edit')) {
+        if (! $user?->can('konteks_operasional.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan rincian operasional Form 2C.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
@@ -250,12 +249,12 @@ class KonteksOperasionalController extends Controller
     public function storeItem(SaveKonteksOperasionalItemRequest $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.create') && !$user?->can('konteks_operasional.edit')) {
+        if (! $user?->can('konteks_operasional.create') && ! $user?->can('konteks_operasional.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menambah rincian operasional Form 2C.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
@@ -276,12 +275,12 @@ class KonteksOperasionalController extends Controller
     public function updateItem(SaveKonteksOperasionalItemRequest $request, string $id, string $itemId): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.edit')) {
+        if (! $user?->can('konteks_operasional.edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah rincian operasional Form 2C.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
@@ -302,12 +301,12 @@ class KonteksOperasionalController extends Controller
     public function destroyItem(Request $request, string $id, string $itemId): JsonResponse
     {
         $user = $request->user();
-        if (!$user?->can('konteks_operasional.edit') && !$user?->can('konteks_operasional.delete')) {
+        if (! $user?->can('konteks_operasional.edit') && ! $user?->can('konteks_operasional.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus rincian operasional Form 2C.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus rincian operasional OPD lain.');
         }
 
@@ -332,15 +331,15 @@ class KonteksOperasionalController extends Controller
             || $user?->can('laporan.view')
             || $user?->hasRole(['Auditor', 'Inspektorat', 'Superadmin', 'Admin Office']);
 
-        if (!$canExport) {
+        if (! $canExport) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor penetapan konteks risiko operasional.');
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor konteks risiko operasional OPD lain.');
         }
-        if ($user && !$user->canReadOpdData((string) $konteks->opd_id)) {
+        if ($user && ! $user->canReadOpdData((string) $konteks->opd_id)) {
             abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
         }
 

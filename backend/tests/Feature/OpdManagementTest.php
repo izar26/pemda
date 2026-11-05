@@ -8,8 +8,6 @@ use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
-use App\Models\Permission;
-use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\MasterDataSeeder;
 use Database\Seeders\RbacSeeder;
@@ -21,6 +19,7 @@ class OpdManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $operator;
 
     protected function setUp(): void
@@ -72,7 +71,7 @@ class OpdManagementTest extends TestCase
         Opd::create(['nama' => 'Badan Keuangan', 'kode' => 'BKD', 'kategori' => 'Badan', 'is_active' => true, 'urutan' => 2]);
 
         $token = $this->superadmin->createToken('test')->plainTextToken;
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/opds?kategori=Dinas&search=Kesehatan&per_page=100');
 
         $response->assertOk()

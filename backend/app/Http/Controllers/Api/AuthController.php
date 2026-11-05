@@ -25,6 +25,7 @@ use App\Services\User\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -158,7 +159,7 @@ class AuthController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (!Hash::check($request->validated('current_password'), $user->password)) {
+        if (! Hash::check($request->validated('current_password'), $user->password)) {
             return response()->json([
                 'message' => 'Kata sandi saat ini yang Anda masukkan salah.',
             ], 422);
@@ -192,7 +193,7 @@ class AuthController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (!$user->hasTwoFactorEnabled()) {
+        if (! $user->hasTwoFactorEnabled()) {
             return response()->json([
                 'message' => 'Autentikasi dua faktor belum diaktifkan.',
             ], 400);
@@ -211,7 +212,7 @@ class AuthController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (!$user->hasTwoFactorEnabled()) {
+        if (! $user->hasTwoFactorEnabled()) {
             return response()->json([
                 'message' => 'Autentikasi dua faktor belum diaktifkan.',
             ], 400);
@@ -219,7 +220,7 @@ class AuthController extends Controller
 
         $codes = [];
         for ($i = 0; $i < 8; $i++) {
-            $codes[] = strtoupper(\Illuminate\Support\Str::random(4)) . '-' . strtoupper(\Illuminate\Support\Str::random(4));
+            $codes[] = strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
         }
 
         $user->update([
@@ -411,7 +412,7 @@ class AuthController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (!Hash::check($request->validated('current_password'), $user->password)) {
+        if (! Hash::check($request->validated('current_password'), $user->password)) {
             throw ValidationException::withMessages([
                 'current_password' => ['Kata sandi saat ini yang Anda masukkan tidak sesuai.'],
             ]);

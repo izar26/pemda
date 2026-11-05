@@ -27,7 +27,7 @@ class UserAccountController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        if (!$request->user()->can('users.view')) {
+        if (! $request->user()->can('users.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data akun pengguna.');
         }
 
@@ -47,7 +47,7 @@ class UserAccountController extends Controller
      */
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse
     {
-        if (!$request->user()->can('users.view')) {
+        if (! $request->user()->can('users.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data akun pengguna.');
         }
 
@@ -56,7 +56,7 @@ class UserAccountController extends Controller
 
         $query = User::with(['roles', 'opd'])->whereNotNull('password');
 
-        if (!$user->hasRole('Superadmin')) {
+        if (! $user->hasRole('Superadmin')) {
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Superadmin');
             })->where(function ($q) {
@@ -64,7 +64,7 @@ class UserAccountController extends Controller
             });
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = trim((string) $filters['search']);
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
@@ -74,18 +74,18 @@ class UserAccountController extends Controller
             });
         }
 
-        if (!empty($filters['opd_id'])) {
+        if (! empty($filters['opd_id'])) {
             $query->where('opd_id', $filters['opd_id']);
         }
 
-        if (!empty($filters['role'])) {
+        if (! empty($filters['role'])) {
             $roleName = (string) $filters['role'];
             $query->whereHas('roles', function ($q) use ($roleName) {
                 $q->where('name', $roleName);
             });
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', (string) $filters['status']);
         }
 
@@ -133,10 +133,10 @@ class UserAccountController extends Controller
         };
 
         $metadata = [];
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $metadata['Kata Kunci Pencarian'] = $filters['search'];
         }
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $metadata['Filter Status'] = $filters['status'];
         }
 
@@ -155,9 +155,9 @@ class UserAccountController extends Controller
     public function store(StoreUserAccountRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $accountType = $validated['account_type'] ?? (!empty($validated['pegawai_id']) ? 'pegawai' : 'direct');
+        $accountType = $validated['account_type'] ?? (! empty($validated['pegawai_id']) ? 'pegawai' : 'direct');
 
-        if ($accountType === 'pegawai' && !empty($validated['pegawai_id'])) {
+        if ($accountType === 'pegawai' && ! empty($validated['pegawai_id'])) {
             $user = $this->userService->assignUserAccount($validated, $request->user());
         } else {
             $user = $this->userService->createDirectUserAccount($validated, $request->user());
@@ -187,7 +187,7 @@ class UserAccountController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        if (!$request->user()->can('users.delete')) {
+        if (! $request->user()->can('users.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mencabut akun pengguna.');
         }
 
@@ -203,7 +203,7 @@ class UserAccountController extends Controller
      */
     public function resetTwoFactor(Request $request, User $user): JsonResponse
     {
-        if (!$request->user()->can('users.reset_2fa')) {
+        if (! $request->user()->can('users.reset_2fa')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mereset 2FA pengguna.');
         }
 

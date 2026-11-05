@@ -54,4 +54,3 @@ class MasterSumberData extends Model
         return $this->hasMany(KonteksOperasional::class, 'sumber_data_id');
     }
 }
-

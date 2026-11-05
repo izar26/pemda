@@ -93,7 +93,7 @@ export const penugasanAuditorService = {
   /**
    * Get list of auditors with their assigned OPDs (grouped view).
    */
-  async getAuditorsWithAssignments(params?: Record<string, any>): Promise<PenugasanAuditorResponse> {
+  async getAuditorsWithAssignments(params?: Record<string, unknown>): Promise<PenugasanAuditorResponse> {
     const response = await apiClient.get<PenugasanAuditorResponse>(
       '/pengawasan/penugasan-auditor',
       { params }

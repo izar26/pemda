@@ -23,7 +23,7 @@ class AuditorAssignmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('penugasan_auditor.view')) {
+        if (! $user?->can('penugasan_auditor.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data penugasan auditor.');
         }
 
@@ -54,7 +54,7 @@ class AuditorAssignmentController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('penugasan_auditor.view')) {
+        if (! $user?->can('penugasan_auditor.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik penugasan.');
         }
 
@@ -70,7 +70,7 @@ class AuditorAssignmentController extends Controller
     public function auditors(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('penugasan_auditor.view')) {
+        if (! $user?->can('penugasan_auditor.view')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -113,7 +113,7 @@ class AuditorAssignmentController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('penugasan_auditor.delete')) {
+        if (! $user?->can('penugasan_auditor.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus penugasan auditor.');
         }
 
@@ -130,7 +130,7 @@ class AuditorAssignmentController extends Controller
     public function destroyAuditor(Request $request, string $auditorId): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (!$user?->can('penugasan_auditor.delete')) {
+        if (! $user?->can('penugasan_auditor.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mencabut penugasan.');
         }
 

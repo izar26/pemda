@@ -38,7 +38,7 @@ class BannerService
     {
         $query = Banner::query()->with('creator:id,name,email');
 
-        if (!empty($filters['placement'])) {
+        if (! empty($filters['placement'])) {
             $query->placement($filters['placement']);
         }
 
@@ -46,11 +46,11 @@ class BannerService
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
 
-        if (!empty($filters['search'])) {
-            $search = '%' . $filters['search'] . '%';
+        if (! empty($filters['search'])) {
+            $search = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', $search)
-                  ->orWhere('description', 'like', $search);
+                    ->orWhere('description', 'like', $search);
             });
         }
 
@@ -66,7 +66,7 @@ class BannerService
             $placement = $data['placement'] ?? 'login';
 
             // Auto-assign next order number if not specified
-            if (!isset($data['order'])) {
+            if (! isset($data['order'])) {
                 $maxOrder = Banner::where('placement', $placement)->max('order') ?? 0;
                 $data['order'] = $maxOrder + 1;
             }
@@ -137,7 +137,7 @@ class BannerService
     public function toggleActive(Banner $banner): Banner
     {
         $banner->update([
-            'is_active' => !$banner->is_active,
+            'is_active' => ! $banner->is_active,
         ]);
 
         return $banner;
@@ -146,7 +146,7 @@ class BannerService
     /**
      * Reorder banners based on an array of IDs in order.
      *
-     * @param list<string> $orderedIds
+     * @param  list<string>  $orderedIds
      */
     public function reorderBanners(array $orderedIds): void
     {
@@ -164,6 +164,7 @@ class BannerService
     {
         return DB::transaction(function () use ($banner) {
             $this->imageService->delete($banner->image_path);
+
             return (bool) $banner->delete();
         });
     }

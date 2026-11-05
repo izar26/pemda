@@ -30,12 +30,12 @@ class TujuanPenilaianService
      */
     public function resolvePeriodeId(?string $periodeId = null): string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$active) {
+        if (! $active) {
             throw ValidationException::withMessages([
                 'periode' => 'Tidak ada periode penilaian yang aktif saat ini. Silakan aktifkan periode penilaian terlebih dahulu.',
             ]);
@@ -49,7 +49,7 @@ class TujuanPenilaianService
      */
     public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
@@ -61,7 +61,7 @@ class TujuanPenilaianService
     /**
      * Get paginated list of evaluation goals.
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedTujuan(
         array $filters = [],
@@ -70,7 +70,7 @@ class TujuanPenilaianService
         string $sortDirection = 'asc'
     ): LengthAwarePaginator {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
+        if (! $periodeId) {
             return TujuanPenilaian::query()->whereRaw('1 = 0')->paginate($perPage);
         }
         $filters['periode_penilaian_id'] = $periodeId;
@@ -90,14 +90,14 @@ class TujuanPenilaianService
     /**
      * Get all evaluation goals without pagination (dropdown or reporting).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return Collection<int, TujuanPenilaian>
      */
     public function getAllTujuan(array $filters = []): Collection
     {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
-            return new Collection();
+        if (! $periodeId) {
+            return new Collection;
         }
         $filters['periode_penilaian_id'] = $periodeId;
 
@@ -127,7 +127,7 @@ class TujuanPenilaianService
         $periode = $resolvedId ? PeriodePenilaian::find($resolvedId) : null;
         $totalOpd = Opd::count();
 
-        if (!$resolvedId) {
+        if (! $resolvedId) {
             return [
                 'total_tujuan' => 0,
                 'total_sasaran' => 0,
@@ -189,14 +189,14 @@ class TujuanPenilaianService
     /**
      * Create a new evaluation goal.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createTujuan(array $data, ?User $creator = null): TujuanPenilaian
     {
         $data['periode_penilaian_id'] = $this->resolvePeriodeId($data['periode_penilaian_id'] ?? null);
         $data['created_by'] = $creator?->id ?? auth('sanctum')->id();
 
-        if (!empty($data['sumber_data_id']) && empty($data['keterangan'])) {
+        if (! empty($data['sumber_data_id']) && empty($data['keterangan'])) {
             $sumber = MasterSumberData::find($data['sumber_data_id']);
             if ($sumber) {
                 $data['keterangan'] = $sumber->nama;
@@ -227,11 +227,11 @@ class TujuanPenilaianService
     /**
      * Update an evaluation goal.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function updateTujuan(TujuanPenilaian $tujuan, array $data): TujuanPenilaian
     {
-        if (!empty($data['opd_id']) && $data['opd_id'] !== $tujuan->opd_id) {
+        if (! empty($data['opd_id']) && $data['opd_id'] !== $tujuan->opd_id) {
             if ($tujuan->sasarans()->exists() || $tujuan->konteksPenilaians()->exists()) {
                 throw ValidationException::withMessages([
                     'opd_id' => 'Tidak dapat mengubah Perangkat Daerah (OPD) pada Tujuan ini karena sudah memiliki Sasaran atau digunakan pada Konteks Penilaian (Form 2B). Bersihkan data turunannya terlebih dahulu dari bawah.',
@@ -247,7 +247,7 @@ class TujuanPenilaianService
             }
         }
 
-        if (!empty($data['sumber_data_id']) && empty($data['keterangan'])) {
+        if (! empty($data['sumber_data_id']) && empty($data['keterangan'])) {
             $sumber = MasterSumberData::find($data['sumber_data_id']);
             if ($sumber) {
                 $data['keterangan'] = $sumber->nama;
@@ -297,7 +297,7 @@ class TujuanPenilaianService
     /**
      * Reorder evaluation goals within their OPD scope.
      *
-     * @param array<int, string> $orderedIds
+     * @param  array<int, string>  $orderedIds
      */
     public function reorderTujuan(array $orderedIds): void
     {
@@ -331,7 +331,7 @@ class TujuanPenilaianService
             ->where('periode_penilaian_id', $sourcePeriodeId)
             ->whereHas('opd', fn ($q) => $q->where('is_active', true));
 
-        if (!empty($opdId)) {
+        if (! empty($opdId)) {
             $query->where('opd_id', $opdId);
         }
 
@@ -343,7 +343,7 @@ class TujuanPenilaianService
         }
 
         foreach ($sourceItems as $item) {
-            if ($item->sumberData && !$item->sumberData->is_active) {
+            if ($item->sumberData && ! $item->sumberData->is_active) {
                 throw ValidationException::withMessages([
                     'source_periode_id' => "Tidak dapat menyalin Tujuan '{$item->tujuan}' karena Sumber Data '{$item->sumberData->nama}' saat ini berstatus nonaktif. Aktifkan Sumber Data tersebut terlebih dahulu.",
                 ]);
@@ -361,7 +361,7 @@ class TujuanPenilaianService
                     ->where('tujuan', $item->tujuan)
                     ->first();
 
-                if (!$targetTujuan) {
+                if (! $targetTujuan) {
                     $maxUrutan = TujuanPenilaian::where('periode_penilaian_id', $targetPeriodeId)
                         ->where('opd_id', $item->opd_id)
                         ->max('urutan');
@@ -387,7 +387,7 @@ class TujuanPenilaianService
                         ->where('sasaran', $sourceSasaran->sasaran)
                         ->first();
 
-                    if (!$targetSasaran) {
+                    if (! $targetSasaran) {
                         $maxSasUrutan = SasaranPenilaian::where('periode_penilaian_id', $targetPeriodeId)
                             ->where('tujuan_penilaian_id', $targetTujuan->id)
                             ->max('urutan');
@@ -410,7 +410,7 @@ class TujuanPenilaianService
                             ->where('indikator', $sourceInd->indikator)
                             ->exists();
 
-                        if (!$indExists) {
+                        if (! $indExists) {
                             $maxIndUrutan = IndikatorPenilaian::where('periode_penilaian_id', $targetPeriodeId)
                                 ->where('sasaran_penilaian_id', $targetSasaran->id)
                                 ->max('urutan');
@@ -439,7 +439,7 @@ class TujuanPenilaianService
     /**
      * Stream export goals (and cascading sasarans/indikators) to Excel (.xlsx).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function exportTujuan(array $filters = []): StreamedResponse
     {
@@ -452,21 +452,21 @@ class TujuanPenilaianService
                 ->orderBy('urutan', 'asc')
                 ->get();
         } else {
-            $items = new Collection();
+            $items = new Collection;
         }
 
         $periode = $periodeId ? PeriodePenilaian::find($periodeId) : null;
         $periodeLabel = $periode ? "{$periode->nama_periode}_Tahun_{$periode->tahun_penilaian}" : 'Semua';
-        $fileName = 'Data_Tujuan_Sasaran_Indikator_OPD_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $periodeLabel) . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'Data_Tujuan_Sasaran_Indikator_OPD_'.preg_replace('/[^a-zA-Z0-9_-]/', '_', $periodeLabel).'_'.date('Ymd_His').'.xlsx';
 
         return response()->streamDownload(function () use ($items) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
             $headerBorder = new Border(
                 new BorderPart(Border::BOTTOM, Color::rgb(0, 0, 0), Border::WIDTH_THIN, Border::STYLE_SOLID)
             );
-            $headerStyle = (new Style())
+            $headerStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(11)
                 ->setBackgroundColor(Color::rgb(220, 240, 225))
@@ -503,6 +503,7 @@ class TujuanPenilaianService
                         $item->periode?->nama_periode ?? '-',
                         $item->periode?->tahun_penilaian ?? '-',
                     ]));
+
                     continue;
                 }
 
@@ -520,6 +521,7 @@ class TujuanPenilaianService
                             $item->periode?->nama_periode ?? '-',
                             $item->periode?->tahun_penilaian ?? '-',
                         ]));
+
                         continue;
                     }
 

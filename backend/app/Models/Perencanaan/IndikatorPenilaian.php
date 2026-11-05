@@ -111,7 +111,7 @@ class IndikatorPenilaian extends Model
     /**
      * Scope query ke periode yang aktif saat ini.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeForActivePeriode(Builder $query): Builder
@@ -124,7 +124,7 @@ class IndikatorPenilaian extends Model
     /**
      * Scope query khusus Indikator Kinerja Utama (IKU).
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeIku(Builder $query): Builder
@@ -135,7 +135,7 @@ class IndikatorPenilaian extends Model
     /**
      * Scope query khusus Indikator Renstra Biasa.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeBiasa(Builder $query): Builder
@@ -146,13 +146,13 @@ class IndikatorPenilaian extends Model
     /**
      * Scope query untuk filter pencarian, OPD, Sasaran, Tujuan, Periode, dan Jenis.
      *
-     * @param Builder<self> $query
-     * @param array<string, mixed> $filters
+     * @param  Builder<self>  $query
+     * @param  array<string, mixed>  $filters
      * @return Builder<self>
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $query->where(function (Builder $q) use ($search) {
                 $q->where('indikator', 'ilike', "%{$search}%")
@@ -172,23 +172,23 @@ class IndikatorPenilaian extends Model
             });
         }
 
-        if (!empty($filters['periode_penilaian_id'])) {
+        if (! empty($filters['periode_penilaian_id'])) {
             $query->where('periode_penilaian_id', $filters['periode_penilaian_id']);
         }
 
-        if (!empty($filters['opd_id']) && $filters['opd_id'] !== 'all') {
+        if (! empty($filters['opd_id']) && $filters['opd_id'] !== 'all') {
             $query->where('opd_id', $filters['opd_id']);
         }
 
-        if (!empty($filters['tujuan_penilaian_id']) && $filters['tujuan_penilaian_id'] !== 'all') {
+        if (! empty($filters['tujuan_penilaian_id']) && $filters['tujuan_penilaian_id'] !== 'all') {
             $query->where('tujuan_penilaian_id', $filters['tujuan_penilaian_id']);
         }
 
-        if (!empty($filters['sasaran_penilaian_id']) && $filters['sasaran_penilaian_id'] !== 'all') {
+        if (! empty($filters['sasaran_penilaian_id']) && $filters['sasaran_penilaian_id'] !== 'all') {
             $query->where('sasaran_penilaian_id', $filters['sasaran_penilaian_id']);
         }
 
-        if (!empty($filters['jenis']) && $filters['jenis'] !== 'all') {
+        if (! empty($filters['jenis']) && $filters['jenis'] !== 'all') {
             $query->where('jenis', $filters['jenis']);
         }
 

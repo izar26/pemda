@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Risiko;
 
+use App\Models\Risiko\KonteksOperasional;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Risiko\KonteksOperasional
+ * @mixin KonteksOperasional
  */
 class KonteksOperasionalResource extends JsonResource
 {
@@ -58,6 +59,7 @@ class KonteksOperasionalResource extends JsonResource
             // Tujuan Strategis (diambil dari Form 2B yang telah ditetapkan)
             'tujuan_strategis' => $this->whenLoaded('konteksStrategis', function () {
                 $tujuan = $this->konteksStrategis?->tujuan;
+
                 return $tujuan ? [
                     'id' => $tujuan->id,
                     'kode_tujuan' => $tujuan->kode_tujuan,

@@ -4,13 +4,13 @@ namespace App\Models;
 
 use App\Models\Concerns\HasUuid7;
 use App\Models\Pengawasan\AuditorOpdAssignment;
+use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Traits\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -115,15 +115,14 @@ class User extends Authenticatable
         return $this->belongsTo(Opd::class, 'opd_id');
     }
 
-
     public function hasTwoFactorEnabled(): bool
     {
-        return !is_null($this->two_factor_confirmed_at) && !empty($this->two_factor_secret);
+        return ! is_null($this->two_factor_confirmed_at) && ! empty($this->two_factor_secret);
     }
 
     public function isLockedOut(): bool
     {
-        return !is_null($this->lockout_until) && $this->lockout_until->isFuture();
+        return ! is_null($this->lockout_until) && $this->lockout_until->isFuture();
     }
 
     public function isActive(): bool
@@ -133,7 +132,7 @@ class User extends Authenticatable
 
     public function hasAccount(): bool
     {
-        return !empty($this->password);
+        return ! empty($this->password);
     }
 
     public function isPendingActivation(): bool
@@ -143,8 +142,8 @@ class User extends Authenticatable
 
     public function hasValidActivationToken(): bool
     {
-        return !empty($this->activation_token)
-            && !is_null($this->activation_token_expires_at)
+        return ! empty($this->activation_token)
+            && ! is_null($this->activation_token_expires_at)
             && $this->activation_token_expires_at->isFuture();
     }
 
@@ -163,7 +162,7 @@ class User extends Authenticatable
     public function isScopedAuditor(): bool
     {
         return $this->hasRole('Auditor')
-            && !$this->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
+            && ! $this->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
     }
 
     /**
@@ -179,7 +178,7 @@ class User extends Authenticatable
             ->map(fn ($id) => (string) $id)
             ->all();
 
-        $fromSubmission = \App\Models\Risiko\PengajuanPenilaianRisiko::where('auditor_id', $this->id)
+        $fromSubmission = PengajuanPenilaianRisiko::where('auditor_id', $this->id)
             ->pluck('opd_id')
             ->map(fn ($id) => (string) $id)
             ->all();
@@ -193,7 +192,7 @@ class User extends Authenticatable
      */
     public function canReadOpdData(?string $opdId): bool
     {
-        if (!$this->isScopedAuditor()) {
+        if (! $this->isScopedAuditor()) {
             return true;
         }
 
@@ -211,10 +210,10 @@ class User extends Authenticatable
     }
 
     /**
-     * @return HasMany<\App\Models\Risiko\PengajuanPenilaianRisiko, $this>
+     * @return HasMany<PengajuanPenilaianRisiko, $this>
      */
     public function pengajuanRisikoAssigned(): HasMany
     {
-        return $this->hasMany(\App\Models\Risiko\PengajuanPenilaianRisiko::class, 'auditor_id');
+        return $this->hasMany(PengajuanPenilaianRisiko::class, 'auditor_id');
     }
 }

@@ -76,7 +76,7 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
-                      className={(header.column.columnDef.meta as any)?.className}
+                      className={header.column.columnDef.meta?.className}
                     >
                       {header.isPlaceholder
                         ? null
@@ -100,9 +100,7 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={
-                        (cell.column.columnDef.meta as any)?.tdClassName
-                      }
+                      className={cell.column.columnDef.meta?.tdClassName}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

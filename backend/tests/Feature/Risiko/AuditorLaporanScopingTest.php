@@ -17,10 +17,15 @@ class AuditorLaporanScopingTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $inspektoratUser;
+
     protected User $auditorUser;
+
     protected Opd $opdAssigned;
+
     protected Opd $opdUnassigned;
+
     protected PeriodePenilaian $activePeriode;
 
     protected function setUp(): void
@@ -127,7 +132,7 @@ class AuditorLaporanScopingTest extends TestCase
     public function test_scoped_auditor_can_access_current_form_2b_for_assigned_opd(): void
     {
         $response = $this->actingAs($this->auditorUser, 'sanctum')
-            ->getJson('/api/risiko/konteks-strategis/current?opd_id=' . $this->opdAssigned->id);
+            ->getJson('/api/risiko/konteks-strategis/current?opd_id='.$this->opdAssigned->id);
 
         $response->assertOk();
     }
@@ -135,7 +140,7 @@ class AuditorLaporanScopingTest extends TestCase
     public function test_scoped_auditor_cannot_access_current_form_2b_for_unassigned_opd(): void
     {
         $response = $this->actingAs($this->auditorUser, 'sanctum')
-            ->getJson('/api/risiko/konteks-strategis/current?opd_id=' . $this->opdUnassigned->id);
+            ->getJson('/api/risiko/konteks-strategis/current?opd_id='.$this->opdUnassigned->id);
 
         $response->assertForbidden();
     }
@@ -143,7 +148,7 @@ class AuditorLaporanScopingTest extends TestCase
     public function test_scoped_auditor_can_access_current_form_2c_for_assigned_opd(): void
     {
         $response = $this->actingAs($this->auditorUser, 'sanctum')
-            ->getJson('/api/risiko/konteks-operasional/current?opd_id=' . $this->opdAssigned->id);
+            ->getJson('/api/risiko/konteks-operasional/current?opd_id='.$this->opdAssigned->id);
 
         $response->assertOk();
     }
@@ -151,7 +156,7 @@ class AuditorLaporanScopingTest extends TestCase
     public function test_scoped_auditor_cannot_access_current_form_2c_for_unassigned_opd(): void
     {
         $response = $this->actingAs($this->auditorUser, 'sanctum')
-            ->getJson('/api/risiko/konteks-operasional/current?opd_id=' . $this->opdUnassigned->id);
+            ->getJson('/api/risiko/konteks-operasional/current?opd_id='.$this->opdUnassigned->id);
 
         $response->assertForbidden();
     }
@@ -185,7 +190,7 @@ class AuditorLaporanScopingTest extends TestCase
         ]);
 
         $response = $this->actingAs($bareAuditor, 'sanctum')
-            ->getJson('/api/risiko/konteks-operasional/current?opd_id=' . $opdBare->id . '&periode_penilaian_id=' . $this->activePeriode->id);
+            ->getJson('/api/risiko/konteks-operasional/current?opd_id='.$opdBare->id.'&periode_penilaian_id='.$this->activePeriode->id);
 
         $response->assertOk();
     }

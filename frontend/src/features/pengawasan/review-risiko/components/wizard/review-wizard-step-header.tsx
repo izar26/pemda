@@ -20,6 +20,7 @@ interface ReviewWizardStepHeaderProps {
   isRejected: boolean
   isDraftSubmission: boolean
   isPendingMutation: boolean
+  isPengawasTier?: boolean
   currentItem?: SubmissionItem
   onApprove: () => void
   onOpenReject: () => void
@@ -35,13 +36,14 @@ export function ReviewWizardStepHeader({
   isRejected,
   isDraftSubmission,
   isPendingMutation,
+  isPengawasTier,
   currentItem,
   onApprove,
   onOpenReject,
 }: ReviewWizardStepHeaderProps) {
   return (
     <>
-      {/* Step Header with Auditor Action Bar */}
+      {/* Step Header with Auditor / Pengawas Action Bar */}
       <div className='p-3.5 sm:p-4 border-b bg-muted/20 flex flex-col md:flex-row md:items-center justify-between gap-3'>
         <div className='space-y-0.5'>
           <div className='flex items-center gap-2 flex-wrap'>
@@ -56,24 +58,24 @@ export function ReviewWizardStepHeader({
           <p className='text-xs text-muted-foreground'>{stepSubtitle}</p>
         </div>
 
-        {/* Auditor Decision Actions for This Step */}
+        {/* Decision Actions for This Step */}
         <div className='flex items-center gap-2 shrink-0 flex-wrap'>
           {isApproved && (
             <Badge className='bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
               <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400' />
-              Form Telah Disetujui
+              {isPengawasTier ? 'Form Telah Disahkan Final' : 'Form Telah Disetujui'}
             </Badge>
           )}
           {isRejected && (
             <Badge className='bg-destructive/15 text-destructive border border-destructive/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
               <XCircle className='h-3.5 w-3.5 text-destructive' />
-              Perlu Revisi OPD
+              {isPengawasTier ? 'Ditolak ke Auditor' : 'Perlu Revisi OPD'}
             </Badge>
           )}
           {!isApproved && !isRejected && (
             <Badge className='bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
               <Clock className='h-3.5 w-3.5 text-amber-600 animate-pulse' />
-              Menunggu Penilaian
+              {isPengawasTier ? 'Menunggu Pengesahan Pengawas' : 'Menunggu Penilaian'}
             </Badge>
           )}
 
@@ -86,7 +88,13 @@ export function ReviewWizardStepHeader({
             className='h-8 text-xs gap-1.5 font-medium'
           >
             <XCircle className='h-3.5 w-3.5' />
-            <span>{isRejected ? 'Ubah Catatan Revisi' : 'Tolak / Minta Revisi'}</span>
+            <span>
+              {isRejected
+                ? 'Ubah Catatan'
+                : isPengawasTier
+                ? 'Kembalikan ke Auditor'
+                : 'Tolak ke Kepala OPD'}
+            </span>
           </Button>
 
           <Button
@@ -101,7 +109,15 @@ export function ReviewWizardStepHeader({
             ) : (
               <Check className='h-3.5 w-3.5' />
             )}
-            <span>{isApproved ? 'Sudah Disetujui' : `Setujui Form ${stepCode}`}</span>
+            <span>
+              {isApproved
+                ? isPengawasTier
+                  ? 'Sudah Disahkan'
+                  : 'Sudah Disetujui'
+                : isPengawasTier
+                ? `Sahkan Form ${stepCode}`
+                : `Setujui Form ${stepCode}`}
+            </span>
           </Button>
         </div>
       </div>

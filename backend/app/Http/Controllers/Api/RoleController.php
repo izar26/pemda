@@ -30,7 +30,7 @@ class RoleController extends Controller
     public function export(Request $request, ExcelExportService $exportService): StreamedResponse
     {
         $user = $request->user();
-        if (!$user->can('roles.view')) {
+        if (! $user->can('roles.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor data peran dan izin.');
         }
 
@@ -80,10 +80,10 @@ class RoleController extends Controller
     {
         $user = $request->user();
         if (
-            !$user->can('roles.view') &&
-            !$user->can('users.view') &&
-            !$user->can('users.create') &&
-            !$user->can('users.edit')
+            ! $user->can('roles.view') &&
+            ! $user->can('users.view') &&
+            ! $user->can('users.create') &&
+            ! $user->can('users.edit')
         ) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar peran.');
         }
@@ -98,7 +98,7 @@ class RoleController extends Controller
      */
     public function show(Request $request, Role $role): RoleResource
     {
-        if (!$request->user()->can('roles.view')) {
+        if (! $request->user()->can('roles.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat detail peran.');
         }
 
@@ -147,7 +147,7 @@ class RoleController extends Controller
      */
     public function destroy(Request $request, Role $role): JsonResponse
     {
-        if (!$request->user()->can('roles.delete')) {
+        if (! $request->user()->can('roles.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus peran.');
         }
 
@@ -165,9 +165,9 @@ class RoleController extends Controller
     {
         $user = $request->user();
         if (
-            !$user->can('roles.view') &&
-            !$user->can('roles.create') &&
-            !$user->can('roles.edit')
+            ! $user->can('roles.view') &&
+            ! $user->can('roles.create') &&
+            ! $user->can('roles.edit')
         ) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar hak akses.');
         }

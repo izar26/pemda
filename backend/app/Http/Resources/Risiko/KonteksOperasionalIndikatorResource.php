@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Risiko;
 
+use App\Models\Risiko\KonteksOperasionalIndikator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Risiko\KonteksOperasionalIndikator
+ * @mixin KonteksOperasionalIndikator
  */
 class KonteksOperasionalIndikatorResource extends JsonResource
 {

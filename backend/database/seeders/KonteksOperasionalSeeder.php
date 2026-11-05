@@ -23,7 +23,7 @@ class KonteksOperasionalSeeder extends Seeder
     public function run(): void
     {
         $activePeriode = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$activePeriode) {
+        if (! $activePeriode) {
             return;
         }
 
@@ -57,17 +57,17 @@ class KonteksOperasionalSeeder extends Seeder
                 ->orWhere('nama', 'like', "%{$cfg['opd_kode']}%")
                 ->first();
 
-            if (!$opd) {
+            if (! $opd) {
                 continue;
             }
 
-            $jsonPath = __DIR__ . '/' . $cfg['json_file'];
-            if (!File::exists($jsonPath)) {
+            $jsonPath = __DIR__.'/'.$cfg['json_file'];
+            if (! File::exists($jsonPath)) {
                 continue;
             }
 
             $itemsData = json_decode(File::get($jsonPath), true);
-            if (!is_array($itemsData)) {
+            if (! is_array($itemsData)) {
                 continue;
             }
 

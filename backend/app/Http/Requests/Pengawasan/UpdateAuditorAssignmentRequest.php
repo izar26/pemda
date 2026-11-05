@@ -62,7 +62,7 @@ class UpdateAuditorAssignmentRequest extends FormRequest
             $opdIds = (array) $this->input('opd_ids', []);
             $auditorId = (string) ($this->route('auditorId') ?? $this->route('auditor'));
 
-            if (!empty($opdIds)) {
+            if (! empty($opdIds)) {
                 $alreadyAssigned = AuditorOpdAssignment::whereIn('opd_id', $opdIds)
                     ->where('auditor_id', '!=', $auditorId)
                     ->with(['opd:id,nama', 'auditor:id,name'])

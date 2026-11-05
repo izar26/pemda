@@ -6,9 +6,9 @@ namespace Tests\Feature;
 
 use App\Models\Master\MasterKategoriRisiko;
 use App\Models\Master\MasterPemilikRisiko;
+use App\Models\Master\MasterSubUnsurSpip;
 use App\Models\Master\MasterSumberData;
 use App\Models\Master\MasterUnsurSpip;
-use App\Models\Master\MasterSubUnsurSpip;
 use App\Models\Opd;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
@@ -26,6 +26,7 @@ class MasterDataTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staffWithoutPerm;
 
     protected function setUp(): void
@@ -61,7 +62,7 @@ class MasterDataTest extends TestCase
     {
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/kategori-risiko');
 
         $response->assertStatus(403);
@@ -71,7 +72,7 @@ class MasterDataTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/unknown-entity-hacker');
 
         $response->assertStatus(404);
@@ -82,7 +83,7 @@ class MasterDataTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
         // Test Kategori Risiko
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/kategori-risiko');
 
         $response->assertStatus(200)
@@ -93,7 +94,7 @@ class MasterDataTest extends TestCase
         $this->assertGreaterThanOrEqual(8, count($response->json('data')));
 
         // Test Unsur SPIP with sub-unsur eager loading
-        $spipResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $spipResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/unsur-spip');
 
         $spipResponse->assertStatus(200)
@@ -116,7 +117,7 @@ class MasterDataTest extends TestCase
             'urutan' => 99,
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/kategori-risiko', $payload);
 
         $response->assertStatus(201)
@@ -140,7 +141,7 @@ class MasterDataTest extends TestCase
 
         $kategori = MasterKategoriRisiko::firstOrFail();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/master/kategori-risiko/{$kategori->id}", [
                 'kode' => $kategori->kode,
                 'nama' => 'Nama Kategori Diperbarui',
@@ -168,14 +169,14 @@ class MasterDataTest extends TestCase
         $item = MasterPemilikRisiko::firstOrFail();
         $initialStatus = $item->is_active;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->patchJson("/api/master/pemilik-risiko/{$item->id}/toggle");
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.is_active', !$initialStatus);
+            ->assertJsonPath('data.is_active', ! $initialStatus);
 
         $item->refresh();
-        $this->assertEquals(!$initialStatus, $item->is_active);
+        $this->assertEquals(! $initialStatus, $item->is_active);
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'MASTER_DATA_TOGGLE',
@@ -192,7 +193,7 @@ class MasterDataTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/master/pemilik-risiko/{$item->id}");
 
         $response->assertStatus(200);
@@ -211,7 +212,7 @@ class MasterDataTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/kategori-risiko', [
                 'nama' => '', // missing name & code
             ]);
@@ -225,22 +226,22 @@ class MasterDataTest extends TestCase
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
 
         // POST (create)
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/kategori-risiko', ['nama' => 'Hacker Risk', 'kode' => 'HR'])
             ->assertStatus(403);
 
         // PUT (update)
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/master/kategori-risiko/1', ['nama' => 'Hacker Risk', 'kode' => 'HR'])
             ->assertStatus(403);
 
         // PATCH (toggle)
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->patchJson('/api/master/kategori-risiko/1/toggle')
             ->assertStatus(403);
 
         // DELETE
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson('/api/master/kategori-risiko/1')
             ->assertStatus(403);
     }
@@ -250,9 +251,9 @@ class MasterDataTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
         // Unsur 1 has seeded sub-unsurs
-        $unsur = \App\Models\Master\MasterUnsurSpip::whereHas('subUnsurs')->firstOrFail();
+        $unsur = MasterUnsurSpip::whereHas('subUnsurs')->firstOrFail();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/master/unsur-spip/{$unsur->id}");
 
         $response->assertStatus(422)
@@ -264,7 +265,7 @@ class MasterDataTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
         // List OPDs
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/opd');
 
         $response->assertStatus(200)
@@ -274,7 +275,7 @@ class MasterDataTest extends TestCase
         $this->assertGreaterThanOrEqual(60, count($response->json('data')));
 
         // Create new OPD
-        $createResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $createResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/opd', [
                 'kode' => 'KEC-TEST',
                 'nama' => 'Kecamatan Contoh Baru',
@@ -320,7 +321,7 @@ class MasterDataTest extends TestCase
             'created_by' => $this->superadmin->id,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/master/sumber-data/{$sumberData->id}");
 
         $response->assertStatus(422);
@@ -357,7 +358,7 @@ class MasterDataTest extends TestCase
         ]);
 
         // Attempt toggle
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->patchJson("/api/master/sumber-data/{$sumberData->id}/toggle");
 
         $response->assertStatus(422);
@@ -365,7 +366,7 @@ class MasterDataTest extends TestCase
         $this->assertStringContainsString('periode penilaian aktif', $response->json('message'));
 
         // Attempt update with is_active = false
-        $updateResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $updateResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/master/sumber-data/{$sumberData->id}", [
                 'nama' => $sumberData->nama,
                 'is_active' => false,
@@ -385,7 +386,7 @@ class MasterDataTest extends TestCase
             'urutan' => 99,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/sub-unsur-spip', [
                 'unsur_spip_id' => $inactiveUnsur->id,
                 'kode' => '99.1',
@@ -415,7 +416,7 @@ class MasterDataTest extends TestCase
             'urutan' => 92,
         ]);
 
-        $sub1 = \App\Models\Master\MasterSubUnsurSpip::create([
+        $sub1 = MasterSubUnsurSpip::create([
             'unsur_spip_id' => $unsur1->id,
             'kode' => '91.1',
             'nama' => 'Sub 91.1',
@@ -423,7 +424,7 @@ class MasterDataTest extends TestCase
             'is_active' => true,
         ]);
 
-        $sub2 = \App\Models\Master\MasterSubUnsurSpip::create([
+        $sub2 = MasterSubUnsurSpip::create([
             'unsur_spip_id' => $unsur2->id,
             'kode' => '92.1',
             'nama' => 'Sub 92.1',
@@ -431,7 +432,7 @@ class MasterDataTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/sub-unsur-spip/reorder', [
                 'ids' => [$sub1->id, $sub2->id],
             ]);
@@ -452,7 +453,7 @@ class MasterDataTest extends TestCase
 
         $token = $opdUser->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/sumber-data');
 
         $response->assertStatus(200)
@@ -479,7 +480,7 @@ class MasterDataTest extends TestCase
         $token = $opdUser->createToken('test')->plainTextToken;
 
         // Query listing with ?is_active=all - must still NOT include inactive items for OPD
-        $listResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $listResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/sumber-data?is_active=all');
 
         $listResponse->assertStatus(200);
@@ -487,7 +488,7 @@ class MasterDataTest extends TestCase
         $this->assertNotContains($inactiveSumber->id, $ids);
 
         // Direct show by ID - must return 404 because query scopes to is_active = true
-        $showResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $showResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/master/sumber-data/{$inactiveSumber->id}");
 
         $showResponse->assertStatus(404);
@@ -505,7 +506,7 @@ class MasterDataTest extends TestCase
 
         $token = $opdUser->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/master/sumber-data/export');
 
         $response->assertStatus(403);
@@ -525,27 +526,27 @@ class MasterDataTest extends TestCase
         $token = $opdUser->createToken('test')->plainTextToken;
 
         // Cannot create
-        $createResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $createResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/sumber-data', ['nama' => 'Hacker Sumber']);
         $createResponse->assertStatus(403);
 
         // Cannot update
-        $updateResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $updateResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/master/sumber-data/{$sumber->id}", ['nama' => 'Hacked']);
         $updateResponse->assertStatus(403);
 
         // Cannot delete
-        $deleteResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $deleteResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/master/sumber-data/{$sumber->id}");
         $deleteResponse->assertStatus(403);
 
         // Cannot toggle
-        $toggleResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $toggleResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->patchJson("/api/master/sumber-data/{$sumber->id}/toggle");
         $toggleResponse->assertStatus(403);
 
         // Cannot reorder
-        $reorderResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $reorderResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/master/sumber-data/reorder', ['ids' => [$sumber->id]]);
         $reorderResponse->assertStatus(403);
     }

@@ -6,6 +6,7 @@ namespace Tests\Feature\Perencanaan;
 
 use App\Models\Master\MasterSumberData;
 use App\Models\Opd;
+use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
@@ -21,11 +22,17 @@ class IndikatorPenilaianTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $opdUser;
+
     protected PeriodePenilaian $activePeriode;
+
     protected PeriodePenilaian $pastPeriode;
+
     protected Opd $puprOpd;
+
     protected TujuanPenilaian $tujuanPupr;
+
     protected SasaranPenilaian $sasaranPupr;
 
     protected function setUp(): void
@@ -381,7 +388,7 @@ class IndikatorPenilaianTest extends TestCase
             'created_by' => $this->admin->id,
         ]);
 
-        \App\Models\Pengawasan\AuditorOpdAssignment::create([
+        AuditorOpdAssignment::create([
             'auditor_id' => $this->admin->id,
             'opd_id' => $this->puprOpd->id,
             'is_active' => true,

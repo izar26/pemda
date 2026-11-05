@@ -19,6 +19,7 @@ class BannerTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staffWithoutPerm;
 
     protected function setUp(): void

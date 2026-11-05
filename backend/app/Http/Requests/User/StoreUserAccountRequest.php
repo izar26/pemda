@@ -23,12 +23,12 @@ class StoreUserAccountRequest extends FormRequest
         if ($this->has('account_type')) {
             $merge['account_type'] = $this->account_type;
         } else {
-            $merge['account_type'] = !empty($this->pegawai_id) ? 'pegawai' : 'direct';
+            $merge['account_type'] = ! empty($this->pegawai_id) ? 'pegawai' : 'direct';
         }
 
         $accountType = $merge['account_type'] ?? $this->account_type;
         if ($accountType === 'direct') {
-            if (!$this->has('role') || empty($this->role)) {
+            if (! $this->has('role') || empty($this->role)) {
                 $merge['role'] = 'Executive';
             }
         }
@@ -59,7 +59,7 @@ class StoreUserAccountRequest extends FormRequest
             $merge['opd_id'] = null;
         }
 
-        if (!empty($merge)) {
+        if (! empty($merge)) {
             $this->merge($merge);
         }
     }
@@ -67,7 +67,7 @@ class StoreUserAccountRequest extends FormRequest
     public function rules(): array
     {
         $roleRule = ['required', 'string'];
-        if (!$this->user()?->hasRole('Superadmin')) {
+        if (! $this->user()?->hasRole('Superadmin')) {
             $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
                 $query->where('name', '!=', 'Superadmin');
             });
@@ -90,7 +90,7 @@ class StoreUserAccountRequest extends FormRequest
             ],
         ];
 
-        $accountType = $this->input('account_type', !empty($this->pegawai_id) ? 'pegawai' : 'direct');
+        $accountType = $this->input('account_type', ! empty($this->pegawai_id) ? 'pegawai' : 'direct');
 
         if ($accountType === 'pegawai') {
             $rules['pegawai_id'] = ['required', 'string', 'uuid', 'exists:users,id'];
@@ -118,9 +118,9 @@ class StoreUserAccountRequest extends FormRequest
                 return;
             }
 
-            if (!empty($this->pegawai_id)) {
+            if (! empty($this->pegawai_id)) {
                 $pegawai = User::find($this->pegawai_id);
-                if ($pegawai && $pegawai->opd && !$pegawai->opd->is_active) {
+                if ($pegawai && $pegawai->opd && ! $pegawai->opd->is_active) {
                     $validator->errors()->add('pegawai_id', "Tidak dapat membuat akun untuk pegawai ini karena instansi/OPD '{$pegawai->opd->nama}' saat ini berstatus nonaktif.");
                 }
             }

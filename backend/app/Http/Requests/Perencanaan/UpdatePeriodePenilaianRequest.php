@@ -6,6 +6,7 @@ namespace App\Http\Requests\Perencanaan;
 
 use App\Models\Perencanaan\PeriodePenilaian;
 use Carbon\Carbon;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -27,12 +28,12 @@ class UpdatePeriodePenilaianRequest extends FormRequest
         $tahunMulai = (int) $this->input('tahun_mulai');
         $tahunAkhir = (int) $this->input('tahun_akhir');
 
-        if ($tahunMulai && !$this->filled('tahun_akhir')) {
+        if ($tahunMulai && ! $this->filled('tahun_akhir')) {
             $tahunAkhir = $tahunMulai + 4;
             $this->merge(['tahun_akhir' => $tahunAkhir]);
         }
 
-        if (!$this->filled('nama_periode') && $tahunMulai && $tahunAkhir) {
+        if (! $this->filled('nama_periode') && $tahunMulai && $tahunAkhir) {
             $this->merge(['nama_periode' => "RPJMD {$tahunMulai} - {$tahunAkhir}"]);
         }
     }
@@ -40,7 +41,7 @@ class UpdatePeriodePenilaianRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -96,9 +97,9 @@ class UpdatePeriodePenilaianRequest extends FormRequest
             }
 
             // 0b. Cycle Lock: If activating this period while another active period has risk transactions, block activation
-            if ($status === 'aktif' && (!$periodeModel || $periodeModel->status !== 'aktif')) {
+            if ($status === 'aktif' && (! $periodeModel || $periodeModel->status !== 'aktif')) {
                 $activeWithRisk = PeriodePenilaian::where('status', 'aktif')
-                    ->when($currentId, fn($q) => $q->where('id', '!=', $currentId))
+                    ->when($currentId, fn ($q) => $q->where('id', '!=', $currentId))
                     ->first();
 
                 if ($activeWithRisk && $activeWithRisk->hasRisikoTransactions()) {
@@ -135,7 +136,7 @@ class UpdatePeriodePenilaianRequest extends FormRequest
             if ($tahunPenilaian && $status !== 'arsip') {
                 $collision = PeriodePenilaian::where('tahun_penilaian', $tahunPenilaian)
                     ->where('status', '!=', 'arsip')
-                    ->when($currentId, fn($q) => $q->where('id', '!=', $currentId))
+                    ->when($currentId, fn ($q) => $q->where('id', '!=', $currentId))
                     ->exists();
 
                 if ($collision) {

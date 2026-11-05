@@ -130,13 +130,13 @@ class AuditArchiveService
             function () use ($filters, $excludeIds) {
                 $query = DB::table('audit_logs');
 
-                if (!empty($excludeIds)) {
+                if (! empty($excludeIds)) {
                     $query->whereNotIn('id', $excludeIds);
                 }
 
                 $this->applyFilters($query, $filters);
 
-                if (!empty($filters['days'])) {
+                if (! empty($filters['days'])) {
                     $query->where('created_at', '<', now()->subDays((int) $filters['days'])->startOfDay());
                 }
 
@@ -174,13 +174,13 @@ class AuditArchiveService
     ): LengthAwarePaginator {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if (!$user?->hasRole('Superadmin') && !$user?->roles()->where('is_system', true)->exists()) {
+        if (! $user?->hasRole('Superadmin') && ! $user?->roles()->where('is_system', true)->exists()) {
             abort(403, 'Akses Ditolak. Hanya Superadmin yang memiliki hak akses ke Arsip Permanen.');
         }
 
         $query = AuditLogArchive::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $likeOperator = $this->likeOperator();
             $query->where(function ($q) use ($search, $likeOperator) {
@@ -194,19 +194,19 @@ class AuditArchiveService
             });
         }
 
-        if (!empty($filters['module']) && $filters['module'] !== 'all') {
+        if (! empty($filters['module']) && $filters['module'] !== 'all') {
             $query->where('module', $filters['module']);
         }
 
-        if (!empty($filters['action']) && $filters['action'] !== 'all') {
+        if (! empty($filters['action']) && $filters['action'] !== 'all') {
             $query->where('action', $filters['action']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
         }
 
@@ -243,23 +243,23 @@ class AuditArchiveService
      */
     private function applyFilters(Builder $query, array $filters): void
     {
-        if (!empty($filters['module']) && $filters['module'] !== 'all') {
+        if (! empty($filters['module']) && $filters['module'] !== 'all') {
             $query->where('module', $filters['module']);
         }
 
-        if (!empty($filters['action']) && $filters['action'] !== 'all') {
+        if (! empty($filters['action']) && $filters['action'] !== 'all') {
             $query->where('action', $filters['action']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $likeOperator = $this->likeOperator();
             $query->where(function ($q) use ($search, $likeOperator) {

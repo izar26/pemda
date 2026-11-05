@@ -17,13 +17,14 @@ class TurnstileService
     public function verify(?string $token, ?string $clientIp = null, string $expectedAction = 'login'): bool
     {
         $enabled = (bool) config('services.turnstile.enabled', true);
-        if (!$enabled) {
+        if (! $enabled) {
             return true;
         }
 
         $secretKey = (string) config('services.turnstile.secret_key');
         if (empty($secretKey)) {
             Log::warning('Turnstile secret key is not configured; skipping validation.');
+
             return true;
         }
 
@@ -40,20 +41,22 @@ class TurnstileService
                     'remoteip' => $clientIp,
                 ]));
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Cloudflare Turnstile verification HTTP error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
             $data = $response->json();
 
-            if (!isset($data['success']) || $data['success'] !== true) {
+            if (! isset($data['success']) || $data['success'] !== true) {
                 Log::info('Cloudflare Turnstile verification rejected', [
                     'error_codes' => $data['error-codes'] ?? [],
                 ]);
+
                 return false;
             }
 
@@ -63,26 +66,29 @@ class TurnstileService
                     'expected' => $expectedAction,
                     'received' => $data['action'],
                 ]);
+
                 return false;
             }
 
             // Verify hostname is in allowed hostnames
             $allowedHostnames = config('services.turnstile.hostnames', []);
-            if (!empty($allowedHostnames) && isset($data['hostname'])) {
-                if (!in_array($data['hostname'], $allowedHostnames, true)) {
+            if (! empty($allowedHostnames) && isset($data['hostname'])) {
+                if (! in_array($data['hostname'], $allowedHostnames, true)) {
                     Log::warning('Cloudflare Turnstile hostname mismatch', [
                         'allowed' => $allowedHostnames,
                         'received' => $data['hostname'],
                     ]);
+
                     return false;
                 }
             }
 
             return true;
         } catch (\Throwable $e) {
-            Log::error('Cloudflare Turnstile exception: ' . $e->getMessage(), [
+            Log::error('Cloudflare Turnstile exception: '.$e->getMessage(), [
                 'exception' => $e,
             ]);
+
             return false;
         }
     }

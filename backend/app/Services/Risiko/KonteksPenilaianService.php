@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Risiko;
 
 use App\Models\Opd;
-use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
-use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksOperasionalItem;
 use App\Models\Risiko\KonteksPenilaian;
@@ -15,10 +13,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Row;
-use OpenSpout\Common\Entity\Style\Border;
-use OpenSpout\Common\Entity\Style\BorderPart;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;
 use OpenSpout\Writer\XLSX\Writer;
@@ -31,12 +26,12 @@ class KonteksPenilaianService
      */
     public function resolvePeriodeId(?string $periodeId = null): string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
-        if (!$active) {
+        if (! $active) {
             throw ValidationException::withMessages([
                 'periode' => 'Tidak ada periode penilaian yang aktif saat ini. Silakan aktifkan periode penilaian terlebih dahulu.',
             ]);
@@ -50,18 +45,19 @@ class KonteksPenilaianService
      */
     public function resolveOptionalPeriodeId(?string $periodeId = null): ?string
     {
-        if (!empty($periodeId)) {
+        if (! empty($periodeId)) {
             return $periodeId;
         }
 
         $active = PeriodePenilaian::where('status', 'aktif')->first();
+
         return $active ? (string) $active->id : null;
     }
 
     /**
      * Get paginated list of context assessments (Form 2B).
      *
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedKonteks(
         array $filters = [],
@@ -70,7 +66,7 @@ class KonteksPenilaianService
         string $sortDirection = 'desc'
     ): LengthAwarePaginator {
         $periodeId = $this->resolveOptionalPeriodeId($filters['periode_penilaian_id'] ?? null);
-        if (!$periodeId) {
+        if (! $periodeId) {
             return KonteksPenilaian::query()->whereRaw('1 = 0')->paginate($perPage);
         }
         $filters['periode_penilaian_id'] = $periodeId;
@@ -94,7 +90,7 @@ class KonteksPenilaianService
     public function getKonteksByOpd(string $opdId, ?string $periodeId = null): ?KonteksPenilaian
     {
         $resolvedPeriodeId = $this->resolveOptionalPeriodeId($periodeId);
-        if (!$resolvedPeriodeId) {
+        if (! $resolvedPeriodeId) {
             return null;
         }
 
@@ -156,7 +152,7 @@ class KonteksPenilaianService
     /**
      * Save (create or update) context assessment (Form 2B).
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function saveKonteks(array $data, ?User $user = null): KonteksPenilaian
     {
@@ -175,13 +171,13 @@ class KonteksPenilaianService
                 'opd_id' => $opdId,
             ];
 
-            $resolvedNamaKepala = !empty($data['nama_kepala'])
+            $resolvedNamaKepala = ! empty($data['nama_kepala'])
                 ? $data['nama_kepala']
                 : ($kepalaPegawai?->name ?? $opd?->kepala);
-            $resolvedNipKepala = !empty($data['nip_kepala'])
+            $resolvedNipKepala = ! empty($data['nip_kepala'])
                 ? $data['nip_kepala']
                 : $kepalaPegawai?->nip;
-            $resolvedJabatanKepala = !empty($data['jabatan_kepala'])
+            $resolvedJabatanKepala = ! empty($data['jabatan_kepala'])
                 ? $data['jabatan_kepala']
                 : ($opd ? "Kepala {$opd->nama}" : null);
 
@@ -208,7 +204,7 @@ class KonteksPenilaianService
             }
 
             // Sync Sasarans
-            if (!empty($data['sasaran_ids'])) {
+            if (! empty($data['sasaran_ids'])) {
                 $sasaranSync = [];
                 $urutan = 1;
                 foreach ($data['sasaran_ids'] as $sasaranId) {
@@ -218,7 +214,7 @@ class KonteksPenilaianService
             }
 
             // Sync Indikators
-            if (!empty($data['indikator_ids'])) {
+            if (! empty($data['indikator_ids'])) {
                 $indikatorSync = [];
                 $urutan = 1;
                 foreach ($data['indikator_ids'] as $indikatorId) {
@@ -241,7 +237,7 @@ class KonteksPenilaianService
             ];
 
             if ($operasional) {
-                if (!empty($data['reset_operasional_items'])) {
+                if (! empty($data['reset_operasional_items'])) {
                     // Safe bottom-up deletion to avoid self-referencing foreign key constraint violations
                     KonteksOperasionalItem::where('konteks_operasional_id', $operasional->id)
                         ->where('jenis', 'sub_kegiatan')
@@ -304,23 +300,23 @@ class KonteksPenilaianService
 
         $opdNama = $konteks->opd?->nama ?? 'OPD';
         $tahun = $konteks->periode?->tahun_penilaian ?? date('Y');
-        $fileName = 'Form_2B_Penetapan_Konteks_Risiko_Strategis_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $opdNama) . '_' . $tahun . '.xlsx';
+        $fileName = 'Form_2B_Penetapan_Konteks_Risiko_Strategis_'.preg_replace('/[^a-zA-Z0-9_-]/', '_', $opdNama).'_'.$tahun.'.xlsx';
 
         return response()->streamDownload(function () use ($konteks) {
-            $writer = new Writer();
+            $writer = new Writer;
             $writer->openToFile('php://output');
 
-            $titleStyle = (new Style())
+            $titleStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(14)
                 ->setFontColor(Color::rgb(20, 50, 40));
 
-            $headerSectionStyle = (new Style())
+            $headerSectionStyle = (new Style)
                 ->setFontBold()
                 ->setFontSize(11)
                 ->setBackgroundColor(Color::rgb(240, 245, 242));
 
-            $boldStyle = (new Style())->setFontBold();
+            $boldStyle = (new Style)->setFontBold();
 
             // Row 1: Title
             $writer->addRow(Row::fromValues(['PENETAPAN KONTEKS RISIKO STRATEGIS OPD (FORM 2B)'], $titleStyle));
@@ -351,7 +347,7 @@ class KonteksPenilaianService
             $writer->addRow(Row::fromValues(['Indikator Kinerja Utama (IKU) Renstra OPD (Basis Risiko Strategis):'], $headerSectionStyle));
 
             $ikuIndikators = $konteks->indikators->filter(function ($ind) {
-                return !empty($ind->jenis) && strtoupper((string) $ind->jenis) === 'IKU';
+                return ! empty($ind->jenis) && strtoupper((string) $ind->jenis) === 'IKU';
             });
             $nonIkuIndikators = $konteks->indikators->filter(function ($ind) {
                 return empty($ind->jenis) || strtoupper((string) $ind->jenis) !== 'IKU';
@@ -390,7 +386,7 @@ class KonteksPenilaianService
             $writer->addRow(Row::fromValues(['', '', 'Kabupaten Cianjur']));
             $writer->addRow(Row::fromValues(['']));
             $writer->addRow(Row::fromValues(['']));
-            $writer->addRow(Row::fromValues(['', '', $konteks->nama_kepala ?? '(................................................)'] , $boldStyle));
+            $writer->addRow(Row::fromValues(['', '', $konteks->nama_kepala ?? '(................................................)'], $boldStyle));
             $writer->addRow(Row::fromValues(['', '', $konteks->nip_kepala ? "NIP. {$konteks->nip_kepala}" : 'NIP. -']));
 
             $writer->close();

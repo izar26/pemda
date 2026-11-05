@@ -18,6 +18,7 @@ class SystemSettingTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staffWithoutPerm;
 
     protected function setUp(): void
@@ -68,7 +69,7 @@ class SystemSettingTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/system-settings');
 
         $response->assertStatus(200)
@@ -90,7 +91,7 @@ class SystemSettingTest extends TestCase
     {
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/system-settings');
 
         $response->assertStatus(403);
@@ -100,7 +101,7 @@ class SystemSettingTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/system-settings', [
                 'settings' => [
                     'app_name' => 'Portal Resmi Pemda Unggul',
@@ -134,7 +135,7 @@ class SystemSettingTest extends TestCase
     {
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/system-settings', [
                 'settings' => [
                     'app_name' => 'Perubahan Ilegal',
@@ -151,7 +152,7 @@ class SystemSettingTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
         $file = UploadedFile::fake()->image('logo.png', 200, 200);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/system-settings/logo', [
                 'logo' => $file,
             ]);
@@ -180,7 +181,7 @@ class SystemSettingTest extends TestCase
         ]);
 
         // Delete logo
-        $deleteRes = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $deleteRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson('/api/system-settings/logo');
 
         $deleteRes->assertStatus(200);
@@ -204,7 +205,7 @@ class SystemSettingTest extends TestCase
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
         $file = UploadedFile::fake()->image('logo.png', 100, 100);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/system-settings/logo', [
                 'logo' => $file,
             ]);
@@ -219,7 +220,7 @@ class SystemSettingTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
         $fakePdf = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/system-settings/logo', [
                 'logo' => $fakePdf,
             ]);
@@ -233,7 +234,7 @@ class SystemSettingTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
         // 1. Invalid email
-        $resEmail = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $resEmail = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/system-settings', [
                 'settings' => [
                     'contact_email' => 'bukan-email-resmi',
@@ -242,7 +243,7 @@ class SystemSettingTest extends TestCase
         $resEmail->assertStatus(422)->assertJsonValidationErrors(['settings.contact_email']);
 
         // 2. Session lifetime out of range (< 5 minutes)
-        $resSession = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $resSession = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/system-settings', [
                 'settings' => [
                     'session_lifetime_minutes' => 2,
@@ -251,7 +252,7 @@ class SystemSettingTest extends TestCase
         $resSession->assertStatus(422)->assertJsonValidationErrors(['settings.session_lifetime_minutes']);
 
         // 3. Max login attempts out of range (> 20)
-        $resAttempts = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $resAttempts = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/system-settings', [
                 'settings' => [
                     'max_login_attempts' => 99,
@@ -260,7 +261,7 @@ class SystemSettingTest extends TestCase
         $resAttempts->assertStatus(422)->assertJsonValidationErrors(['settings.max_login_attempts']);
 
         // 4. Unknown/unregistered setting key
-        $resUnknown = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $resUnknown = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/system-settings', [
                 'settings' => [
                     'injected_malicious_key' => 'attack',

@@ -369,7 +369,7 @@ class PegawaiSeeder extends Seeder
 
         foreach ($dataset as $opdKode => $pegawais) {
             $opd = $opds->get($opdKode);
-            if (!$opd) {
+            if (! $opd) {
                 $opd = Opd::where('kode', $opdKode)->orWhere('nama', 'like', "%{$opdKode}%")->first();
             }
 

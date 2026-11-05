@@ -6,11 +6,14 @@ namespace App\Models;
 
 use App\Models\Concerns\HasUuid7;
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\Permission\Models\Role as SpatieRole;
+use Spatie\Permission\PermissionRegistrar;
 
 class Role extends SpatieRole
 {
     use Auditable, HasUuid7;
+
     protected $fillable = [
         'name',
         'guard_name',
@@ -25,13 +28,13 @@ class Role extends SpatieRole
         ];
     }
 
-    public function users(): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    public function users(): MorphToMany
     {
         return $this->morphedByMany(
             getModelForGuard($this->attributes['guard_name'] ?? 'web') ?: User::class,
             'model',
             config('permission.table_names.model_has_roles'),
-            app(\Spatie\Permission\PermissionRegistrar::class)->pivotRole,
+            app(PermissionRegistrar::class)->pivotRole,
             config('permission.column_names.model_morph_key')
         );
     }

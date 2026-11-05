@@ -14,6 +14,7 @@ class RolePermissionTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staff;
 
     protected function setUp(): void
@@ -44,7 +45,7 @@ class RolePermissionTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/roles');
 
         $response->assertStatus(200)
@@ -67,7 +68,7 @@ class RolePermissionTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/permissions');
 
         $response->assertStatus(200)
@@ -86,7 +87,7 @@ class RolePermissionTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/roles', [
                 'name' => 'Auditor Inspektorat',
                 'description' => 'Petugas audit internal pengawasan tata kelola',
@@ -121,8 +122,8 @@ class RolePermissionTest extends TestCase
         ]);
         $role->syncPermissions(['users.view']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $role->id, [
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$role->id, [
                 'name' => 'Bendahara Pengeluaran Pembantu',
                 'description' => 'Pengelola kas pembantu dinas',
                 'permissions' => ['users.view', 'audit.view'],
@@ -142,7 +143,7 @@ class RolePermissionTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/roles', [
                 'name' => 'Peran Kosong',
                 'description' => 'Peran tanpa hak akses',
@@ -166,8 +167,8 @@ class RolePermissionTest extends TestCase
         ]);
         $role->syncPermissions(['users.view']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $role->id, [
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$role->id, [
                 'name' => 'Peran Akan Dikosongkan',
                 'permissions' => [],
             ]);
@@ -185,8 +186,8 @@ class RolePermissionTest extends TestCase
 
         $superadminRole = Role::where('name', 'Superadmin')->firstOrFail();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $superadminRole->id, [
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$superadminRole->id, [
                 'name' => 'Nama Lain Superadmin',
                 'description' => 'Deskripsi baru',
                 'permissions' => ['users.view'],
@@ -202,8 +203,8 @@ class RolePermissionTest extends TestCase
 
         $superadminRole = Role::where('name', 'Superadmin')->firstOrFail();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->deleteJson('/api/roles/' . $superadminRole->id);
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->deleteJson('/api/roles/'.$superadminRole->id);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['role']);
@@ -220,8 +221,8 @@ class RolePermissionTest extends TestCase
         ]);
         $this->staff->assignRole($customRole);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->deleteJson('/api/roles/' . $customRole->id);
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->deleteJson('/api/roles/'.$customRole->id);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['role']);
@@ -237,8 +238,8 @@ class RolePermissionTest extends TestCase
             'is_system' => false,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->deleteJson('/api/roles/' . $customRole->id);
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->deleteJson('/api/roles/'.$customRole->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -254,7 +255,7 @@ class RolePermissionTest extends TestCase
     {
         $staffToken = $this->staff->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $staffToken)
+        $response = $this->withHeader('Authorization', 'Bearer '.$staffToken)
             ->postJson('/api/roles', [
                 'name' => 'Peran Ilegal',
                 'permissions' => ['users.view'],
@@ -273,8 +274,8 @@ class RolePermissionTest extends TestCase
             'is_system' => false,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $staffToken)
-            ->putJson('/api/roles/' . $customRole->id, [
+        $response = $this->withHeader('Authorization', 'Bearer '.$staffToken)
+            ->putJson('/api/roles/'.$customRole->id, [
                 'name' => 'Nama Baru Uji',
                 'permissions' => ['users.view'],
             ]);
@@ -292,8 +293,8 @@ class RolePermissionTest extends TestCase
             'is_system' => false,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $staffToken)
-            ->deleteJson('/api/roles/' . $customRole->id);
+        $response = $this->withHeader('Authorization', 'Bearer '.$staffToken)
+            ->deleteJson('/api/roles/'.$customRole->id);
 
         $response->assertStatus(403);
     }
@@ -304,8 +305,8 @@ class RolePermissionTest extends TestCase
 
         $superadminRole = Role::where('name', 'Superadmin')->firstOrFail();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $superadminRole->id, [
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$superadminRole->id, [
                 'name' => 'Superadmin',
                 'description' => 'Mencoba hapus hak akses',
                 'permissions' => ['users.view'],
@@ -330,29 +331,29 @@ class RolePermissionTest extends TestCase
         $superadminRole = Role::where('name', 'Superadmin')->firstOrFail();
 
         // 1. List roles: Superadmin role must not be present
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson('/api/roles');
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)->getJson('/api/roles');
         $response->assertStatus(200);
         $roleNames = collect($response->json('data'))->pluck('name')->all();
         $this->assertNotContains('Superadmin', $roleNames);
         $this->assertContains('Role Manager', $roleNames);
 
         // 2. Direct GET on Superadmin role: must return 404
-        $responseShow = $this->withHeader('Authorization', 'Bearer ' . $token)->getJson("/api/roles/{$superadminRole->id}");
+        $responseShow = $this->withHeader('Authorization', 'Bearer '.$token)->getJson("/api/roles/{$superadminRole->id}");
         $responseShow->assertStatus(404);
 
         // 3. Direct PUT on Superadmin role: must return 404
-        $responsePut = $this->withHeader('Authorization', 'Bearer ' . $token)->putJson("/api/roles/{$superadminRole->id}", [
+        $responsePut = $this->withHeader('Authorization', 'Bearer '.$token)->putJson("/api/roles/{$superadminRole->id}", [
             'name' => 'Superadmin',
             'permissions' => ['users.view'],
         ]);
         $responsePut->assertStatus(404);
 
         // 4. Direct DELETE on Superadmin role: must return 404
-        $responseDelete = $this->withHeader('Authorization', 'Bearer ' . $token)->deleteJson("/api/roles/{$superadminRole->id}");
+        $responseDelete = $this->withHeader('Authorization', 'Bearer '.$token)->deleteJson("/api/roles/{$superadminRole->id}");
         $responseDelete->assertStatus(404);
 
         // 5. Creating role named 'Superadmin' must fail validation
-        $responseCreate = $this->withHeader('Authorization', 'Bearer ' . $token)->postJson('/api/roles', [
+        $responseCreate = $this->withHeader('Authorization', 'Bearer '.$token)->postJson('/api/roles', [
             'name' => 'Superadmin',
             'permissions' => ['users.view'],
         ]);
@@ -361,7 +362,7 @@ class RolePermissionTest extends TestCase
         // 6. Superadmin user CAN still see Superadmin role in list
         app('auth')->forgetGuards();
         $superadminToken = $this->superadmin->createToken('test')->plainTextToken;
-        $responseSuper = $this->withHeader('Authorization', 'Bearer ' . $superadminToken)->getJson('/api/roles');
+        $responseSuper = $this->withHeader('Authorization', 'Bearer '.$superadminToken)->getJson('/api/roles');
         $responseSuper->assertStatus(200);
         $superRoleNames = collect($responseSuper->json('data'))->pluck('name')->all();
         $this->assertContains('Superadmin', $superRoleNames);
@@ -379,8 +380,8 @@ class RolePermissionTest extends TestCase
         $user->assignRole('Operator');
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $customRole->id, [
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$customRole->id, [
                 'name' => 'Operator',
                 'description' => 'Mencoba mengedit role sendiri',
                 'permissions' => ['roles.view', 'roles.edit', 'users.view'],
@@ -403,7 +404,7 @@ class RolePermissionTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         // 1. Cannot create role with roles.* permission
-        $responseCreate = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseCreate = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/roles', [
                 'name' => 'Junior Manager',
                 'description' => 'Testing role escalation',
@@ -419,8 +420,8 @@ class RolePermissionTest extends TestCase
             ['description' => 'Role target', 'is_system' => false]
         );
 
-        $responseUpdate = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $targetRole->id, [
+        $responseUpdate = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$targetRole->id, [
                 'name' => 'Target Role',
                 'description' => 'Testing escalation via update',
                 'permissions' => ['roles.edit', 'users.view'],
@@ -430,8 +431,8 @@ class RolePermissionTest extends TestCase
             ->assertJsonValidationErrors(['permissions']);
 
         // 3. CAN update another role with non-role permissions
-        $responseValid = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $targetRole->id, [
+        $responseValid = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$targetRole->id, [
                 'name' => 'Target Role',
                 'description' => 'Valid update',
                 'permissions' => ['users.view'],
@@ -440,4 +441,3 @@ class RolePermissionTest extends TestCase
         $responseValid->assertStatus(200);
     }
 }
-

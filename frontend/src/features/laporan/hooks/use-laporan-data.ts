@@ -16,7 +16,7 @@ export function useLaporanData() {
     if (Array.isArray(user?.roles)) return user.roles
     if (user?.role) return [user.role]
     return []
-  }, [user?.roles, user?.role])
+  }, [user])
 
   const isOpdRole = Boolean(
     userRoles.includes('OPD') &&

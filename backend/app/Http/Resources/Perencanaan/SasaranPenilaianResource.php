@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Perencanaan;
 
+use App\Models\Perencanaan\SasaranPenilaian;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Perencanaan\SasaranPenilaian
+ * @mixin SasaranPenilaian
  */
 class SasaranPenilaianResource extends JsonResource
 {

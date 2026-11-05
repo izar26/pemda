@@ -10,13 +10,19 @@ use App\Http\Controllers\Api\ExportJobController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\OpdController;
 use App\Http\Controllers\Api\PegawaiController;
+use App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController;
+use App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController;
 use App\Http\Controllers\Api\Perencanaan\PeriodePenilaianController;
+use App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController;
+use App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController;
+use App\Http\Controllers\Api\PublicAppConfigController;
+use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
+use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
+use App\Http\Controllers\Api\Risiko\PengajuanRisikoController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
-use App\Http\Controllers\Api\PublicAppConfigController;
 use App\Http\Controllers\Api\UserAccountController;
 use App\Http\Controllers\Api\UserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Health check endpoint
@@ -153,63 +159,66 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::apiResource('/periode', PeriodePenilaianController::class)->parameters(['periode' => 'periode']);
 
         // Fitur 14: Data Tujuan Renstra OPD
-        Route::get('/tujuan/stats', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'stats']);
-        Route::get('/tujuan/export', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'export']);
-        Route::post('/tujuan/copy', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'copy']);
-        Route::post('/tujuan/reorder', [\App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class, 'reorder']);
-        Route::apiResource('/tujuan', \App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController::class)->parameters(['tujuan' => 'tujuan']);
+        Route::get('/tujuan/stats', [TujuanPenilaianController::class, 'stats']);
+        Route::get('/tujuan/export', [TujuanPenilaianController::class, 'export']);
+        Route::post('/tujuan/copy', [TujuanPenilaianController::class, 'copy']);
+        Route::post('/tujuan/reorder', [TujuanPenilaianController::class, 'reorder']);
+        Route::apiResource('/tujuan', TujuanPenilaianController::class)->parameters(['tujuan' => 'tujuan']);
 
         // Fitur 15: Data Sasaran Renstra OPD
-        Route::get('/sasaran/stats', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'stats']);
-        Route::get('/sasaran/export', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'export']);
-        Route::post('/sasaran/copy', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'copy']);
-        Route::post('/sasaran/reorder', [\App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class, 'reorder']);
-        Route::apiResource('/sasaran', \App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController::class)->parameters(['sasaran' => 'sasaran']);
+        Route::get('/sasaran/stats', [SasaranPenilaianController::class, 'stats']);
+        Route::get('/sasaran/export', [SasaranPenilaianController::class, 'export']);
+        Route::post('/sasaran/copy', [SasaranPenilaianController::class, 'copy']);
+        Route::post('/sasaran/reorder', [SasaranPenilaianController::class, 'reorder']);
+        Route::apiResource('/sasaran', SasaranPenilaianController::class)->parameters(['sasaran' => 'sasaran']);
 
         // Fitur 16 & 17: Data IKU & Indikator Renstra OPD
-        Route::get('/iku/stats', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'stats']);
-        Route::get('/iku/export', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'export']);
-        Route::post('/iku/copy', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'copy']);
-        Route::post('/iku/reorder', [\App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class, 'reorder']);
-        Route::apiResource('/iku', \App\Http\Controllers\Api\Perencanaan\IndikatorPenilaianController::class)->parameters(['iku' => 'iku']);
+        Route::get('/iku/stats', [IndikatorPenilaianController::class, 'stats']);
+        Route::get('/iku/export', [IndikatorPenilaianController::class, 'export']);
+        Route::post('/iku/copy', [IndikatorPenilaianController::class, 'copy']);
+        Route::post('/iku/reorder', [IndikatorPenilaianController::class, 'reorder']);
+        Route::apiResource('/iku', IndikatorPenilaianController::class)->parameters(['iku' => 'iku']);
     });
 
     // Modul Pengelolaan Data Risiko (Fitur 26 - Form 2-10, RCA)
     Route::prefix('risiko')->group(function () {
         // Form 2B: Penetapan Konteks Risiko Strategis OPD
-        Route::get('/konteks-strategis/current', [\App\Http\Controllers\Api\Risiko\KonteksPenilaianController::class, 'current']);
-        Route::get('/konteks-strategis/{konteks}/export', [\App\Http\Controllers\Api\Risiko\KonteksPenilaianController::class, 'export']);
-        Route::apiResource('/konteks-strategis', \App\Http\Controllers\Api\Risiko\KonteksPenilaianController::class)->parameters(['konteks-strategis' => 'konteks']);
+        Route::get('/konteks-strategis/current', [KonteksPenilaianController::class, 'current']);
+        Route::get('/konteks-strategis/{konteks}/export', [KonteksPenilaianController::class, 'export']);
+        Route::apiResource('/konteks-strategis', KonteksPenilaianController::class)->parameters(['konteks-strategis' => 'konteks']);
 
         // Form 2C: Penetapan Konteks Risiko Operasional OPD
-        Route::get('/konteks-operasional/current', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'current']);
-        Route::get('/konteks-operasional/{konteks}/export', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'export']);
-        Route::post('/konteks-operasional/{konteks}/items/reorder', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'reorderItems']);
-        Route::post('/konteks-operasional/{konteks}/items', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'storeItem']);
-        Route::put('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'updateItem']);
-        Route::delete('/konteks-operasional/{konteks}/items/{item}', [\App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class, 'destroyItem']);
-        Route::apiResource('/konteks-operasional', \App\Http\Controllers\Api\Risiko\KonteksOperasionalController::class)->parameters(['konteks-operasional' => 'konteks']);
+        Route::get('/konteks-operasional/current', [KonteksOperasionalController::class, 'current']);
+        Route::get('/konteks-operasional/{konteks}/export', [KonteksOperasionalController::class, 'export']);
+        Route::post('/konteks-operasional/{konteks}/items/reorder', [KonteksOperasionalController::class, 'reorderItems']);
+        Route::post('/konteks-operasional/{konteks}/items', [KonteksOperasionalController::class, 'storeItem']);
+        Route::put('/konteks-operasional/{konteks}/items/{item}', [KonteksOperasionalController::class, 'updateItem']);
+        Route::delete('/konteks-operasional/{konteks}/items/{item}', [KonteksOperasionalController::class, 'destroyItem']);
+        Route::apiResource('/konteks-operasional', KonteksOperasionalController::class)->parameters(['konteks-operasional' => 'konteks']);
 
-        // Alur Pengajuan & Pemeriksaan Risiko (OPD)
-        Route::get('/pengajuan/status', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'status']);
-        Route::post('/pengajuan/submit', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'submit']);
+        // Alur Pengajuan & Pemeriksaan Risiko (OPD & Kepala OPD)
+        Route::get('/pengajuan/status', [PengajuanRisikoController::class, 'status']);
+        Route::post('/pengajuan/submit', [PengajuanRisikoController::class, 'submit']);
+        Route::post('/pengajuan/{id}/review-kepala', [PengajuanRisikoController::class, 'reviewKepalaOpd']);
+        Route::post('/pengajuan/{id}/delegate-operator', [PengajuanRisikoController::class, 'delegateOperator']);
     });
 
     // Modul Pengawasan & Pembinaan (Inspektorat / Penugasan Auditor & Review Risiko)
     Route::prefix('pengawasan')->group(function () {
-        Route::get('/penugasan-auditor/stats', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'stats']);
-        Route::get('/penugasan-auditor/auditors', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'auditors']);
-        Route::delete('/penugasan-auditor/auditor/{auditorId}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'destroyAuditor']);
-        Route::get('/penugasan-auditor', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'index']);
-        Route::post('/penugasan-auditor', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'store']);
-        Route::put('/penugasan-auditor/{auditorId}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'update']);
-        Route::delete('/penugasan-auditor/{id}', [\App\Http\Controllers\Api\Pengawasan\AuditorAssignmentController::class, 'destroy']);
+        Route::get('/penugasan-auditor/stats', [AuditorAssignmentController::class, 'stats']);
+        Route::get('/penugasan-auditor/auditors', [AuditorAssignmentController::class, 'auditors']);
+        Route::delete('/penugasan-auditor/auditor/{auditorId}', [AuditorAssignmentController::class, 'destroyAuditor']);
+        Route::get('/penugasan-auditor', [AuditorAssignmentController::class, 'index']);
+        Route::post('/penugasan-auditor', [AuditorAssignmentController::class, 'store']);
+        Route::put('/penugasan-auditor/{auditorId}', [AuditorAssignmentController::class, 'update']);
+        Route::delete('/penugasan-auditor/{id}', [AuditorAssignmentController::class, 'destroy']);
 
-        // Review & Persetujuan Lembar Kerja Risiko OPD (Auditor)
-        Route::get('/review-risiko', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'indexReviews']);
-        Route::get('/review-risiko/{id}', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'showReview']);
-        Route::post('/review-risiko/{id}/item', [\App\Http\Controllers\Api\Risiko\PengajuanRisikoController::class, 'reviewItem']);
+        // Review & Persetujuan Lembar Kerja Risiko OPD (Auditor & Pengawas APIP)
+        Route::get('/review-risiko', [PengajuanRisikoController::class, 'indexReviews']);
+        Route::get('/review-risiko/{id}', [PengajuanRisikoController::class, 'showReview']);
+        Route::post('/review-risiko/{id}/item', [PengajuanRisikoController::class, 'reviewItem']);
+        Route::post('/review-risiko/{id}/forward-revision', [PengajuanRisikoController::class, 'forwardRevisionAuditor']);
+        Route::post('/review-risiko/{id}/resubmit-pengawas', [PengajuanRisikoController::class, 'resubmitPengawas']);
+        Route::post('/review-risiko/{id}/review-pengawas', [PengajuanRisikoController::class, 'reviewPengawas']);
     });
 });
-
-

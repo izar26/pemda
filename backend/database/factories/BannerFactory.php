@@ -8,7 +8,7 @@ use App\Models\Banner;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Banner>
+ * @extends Factory<Banner>
  */
 class BannerFactory extends Factory
 {
@@ -24,7 +24,7 @@ class BannerFactory extends Factory
         return [
             'title' => fake()->sentence(3),
             'description' => fake()->paragraph(),
-            'image_path' => 'banners/login/' . fake()->uuid() . '.webp',
+            'image_path' => 'banners/login/'.fake()->uuid().'.webp',
             'placement' => 'login',
             'order' => fake()->numberBetween(1, 10),
             'is_active' => true,

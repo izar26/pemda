@@ -24,12 +24,11 @@ class ExcelExportService
     /**
      * Stream an Excel file (.xlsx) with professional formatting.
      *
-     * @param string $filename Base filename without extension or timestamp
-     * @param string $title Laporan Title (e.g. "LAPORAN DATA PEGAWAI - PEMDA")
-     * @param array<int, string> $headers Array of column header names
-     * @param iterable<array<int, mixed>> $rows Generator or array yielding rows of data
-     * @param array<string, string> $metadata Optional key-value metadata to display in header section
-     * @return StreamedResponse
+     * @param  string  $filename  Base filename without extension or timestamp
+     * @param  string  $title  Laporan Title (e.g. "LAPORAN DATA PEGAWAI - PEMDA")
+     * @param  array<int, string>  $headers  Array of column header names
+     * @param  iterable<array<int, mixed>>  $rows  Generator or array yielding rows of data
+     * @param  array<string, string>  $metadata  Optional key-value metadata to display in header section
      */
     public function streamExport(
         string $filename,
@@ -61,11 +60,11 @@ class ExcelExportService
     /**
      * Export Excel directly to a file on disk (for background async jobs).
      *
-     * @param string $destinationPath Absolute file path to write to
-     * @param string $title Title header
-     * @param array<int, string> $headers Column headers
-     * @param iterable<array<int, mixed>> $rows Generator or rows
-     * @param array<string, string> $metadata Metadata key-values
+     * @param  string  $destinationPath  Absolute file path to write to
+     * @param  string  $title  Title header
+     * @param  array<int, string>  $headers  Column headers
+     * @param  iterable<array<int, mixed>>  $rows  Generator or rows
+     * @param  array<string, string>  $metadata  Metadata key-values
      * @return int Total rows written
      */
     public function exportToFile(
@@ -90,9 +89,9 @@ class ExcelExportService
     /**
      * Inspects header and sample rows to build optimized column widths and layout options.
      *
-     * @param array<int, string> $headers
-     * @param iterable<array<int, mixed>> $rows
-     * @param array<string, string> $metadata
+     * @param  array<int, string>  $headers
+     * @param  iterable<array<int, mixed>>  $rows
+     * @param  array<string, string>  $metadata
      * @return array{0: Options, 1: iterable<array<int, mixed>>}
      */
     private function prepareOptionsAndRows(array $headers, iterable $rows, array $metadata): array
@@ -106,7 +105,7 @@ class ExcelExportService
             };
         } else {
             $iterator = $rows instanceof \IteratorAggregate ? $rows->getIterator() : $rows;
-            if (!($iterator instanceof \Iterator)) {
+            if (! ($iterator instanceof \Iterator)) {
                 $iterator = new \IteratorIterator($iterator);
                 $iterator->rewind();
             }
@@ -130,7 +129,7 @@ class ExcelExportService
             };
         }
 
-        $options = new Options();
+        $options = new Options;
         $numCols = max(1, count($headers));
 
         // 1. Calculate smart, proportional column widths
@@ -196,13 +195,9 @@ class ExcelExportService
     /**
      * Internal workbook structure and cell renderer.
      *
-     * @param Writer $writer
-     * @param Options $options
-     * @param string $title
-     * @param array<int, string> $headers
-     * @param iterable<array<int, mixed>> $rows
-     * @param array<string, string> $metadata
-     * @return int
+     * @param  array<int, string>  $headers
+     * @param  iterable<array<int, mixed>>  $rows
+     * @param  array<string, string>  $metadata
      */
     private function writeWorkbook(
         Writer $writer,
@@ -230,32 +225,32 @@ class ExcelExportService
         );
 
         // Header and Banner Styles Definition
-        $titleStyle = (new Style())
+        $titleStyle = (new Style)
             ->withFontBold(true)
             ->withFontSize(14)
             ->withFontColor(Color::rgb(30, 58, 138)) // Deep Navy Blue
             ->withCellVerticalAlignment(CellVerticalAlignment::CENTER);
 
-        $subTitleStyle = (new Style())
+        $subTitleStyle = (new Style)
             ->withFontSize(9)
             ->withFontItalic(true)
             ->withFontColor(Color::rgb(100, 116, 139)) // Slate Grey
             ->withCellVerticalAlignment(CellVerticalAlignment::CENTER);
 
-        $metaKeyStyle = (new Style())
+        $metaKeyStyle = (new Style)
             ->withFontBold(true)
             ->withFontSize(9)
             ->withFontColor(Color::rgb(71, 85, 105))
             ->withCellAlignment(CellAlignment::LEFT)
             ->withCellVerticalAlignment(CellVerticalAlignment::CENTER);
 
-        $metaValStyle = (new Style())
+        $metaValStyle = (new Style)
             ->withFontSize(9)
             ->withFontColor(Color::rgb(15, 23, 42))
             ->withCellAlignment(CellAlignment::LEFT)
             ->withCellVerticalAlignment(CellVerticalAlignment::CENTER);
 
-        $headerStyle = (new Style())
+        $headerStyle = (new Style)
             ->withFontBold(true)
             ->withFontSize(10)
             ->withFontColor(Color::WHITE)
@@ -265,7 +260,7 @@ class ExcelExportService
             ->withBorder($headerBorder);
 
         // Data Cell Styles (White Base and Subtle Zebra Tint)
-        $cellText = (new Style())
+        $cellText = (new Style)
             ->withFontSize(10)
             ->withFontColor(Color::rgb(15, 23, 42))
             ->withCellAlignment(CellAlignment::LEFT)
@@ -274,7 +269,7 @@ class ExcelExportService
 
         $cellTextZebra = $cellText->withBackgroundColor(Color::rgb(248, 250, 252));
 
-        $cellCenter = (new Style())
+        $cellCenter = (new Style)
             ->withFontSize(10)
             ->withFontColor(Color::rgb(15, 23, 42))
             ->withCellAlignment(CellAlignment::CENTER)
@@ -283,7 +278,7 @@ class ExcelExportService
 
         $cellCenterZebra = $cellCenter->withBackgroundColor(Color::rgb(248, 250, 252));
 
-        $cellRight = (new Style())
+        $cellRight = (new Style)
             ->withFontSize(10)
             ->withFontColor(Color::rgb(15, 23, 42))
             ->withCellAlignment(CellAlignment::RIGHT)
@@ -292,7 +287,7 @@ class ExcelExportService
 
         $cellRightZebra = $cellRight->withBackgroundColor(Color::rgb(248, 250, 252));
 
-        $cellWrap = (new Style())
+        $cellWrap = (new Style)
             ->withFontSize(10)
             ->withFontColor(Color::rgb(15, 23, 42))
             ->withCellAlignment(CellAlignment::LEFT)
@@ -315,7 +310,7 @@ class ExcelExportService
 
         foreach ($metadata as $key => $val) {
             $writer->addRow(new Row([
-                Cell::fromValue($key . ':', $metaKeyStyle),
+                Cell::fromValue($key.':', $metaKeyStyle),
                 Cell::fromValue((string) $val, $metaValStyle),
             ], 18.0));
         }
@@ -363,8 +358,8 @@ class ExcelExportService
                 } else {
                     $stringVal = (string) $val;
                     // Neutralize spreadsheet formula injection characters (=, +, -, @, tab, newline)
-                    if (!is_numeric($stringVal) && preg_match('/^[=\+\-@\t\r]/', $stringVal)) {
-                        $stringVal = "'" . $stringVal;
+                    if (! is_numeric($stringVal) && preg_match('/^[=\+\-@\t\r]/', $stringVal)) {
+                        $stringVal = "'".$stringVal;
                     }
                     $cells[] = Cell::fromValue($stringVal, $resolvedStyle);
                 }
@@ -379,7 +374,7 @@ class ExcelExportService
         // 5. Footer Summary Row
         $writer->addRow(Row::fromValues([]));
 
-        $footerMetaStyle = (new Style())
+        $footerMetaStyle = (new Style)
             ->withFontBold(true)
             ->withFontSize(9)
             ->withFontColor(Color::rgb(30, 58, 138))
@@ -393,7 +388,7 @@ class ExcelExportService
 
         $writer->addRow(new Row([
             Cell::fromValue('Total Rekam Data:', $metaKeyStyle),
-            Cell::fromValue(number_format($rowCount, 0, ',', '.') . ' Baris Data', $footerMetaStyle),
+            Cell::fromValue(number_format($rowCount, 0, ',', '.').' Baris Data', $footerMetaStyle),
         ], 22.0));
 
         return $rowCount;
@@ -439,6 +434,7 @@ class ExcelExportService
             ) {
                 return $isZebra ? $cellRightZebra : $cellRight;
             }
+
             return $isZebra ? $cellCenterZebra : $cellCenter;
         }
 

@@ -115,7 +115,7 @@ class TujuanPenilaian extends Model
     /**
      * Scope query ke periode yang aktif saat ini.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeForActivePeriode(Builder $query): Builder
@@ -128,13 +128,13 @@ class TujuanPenilaian extends Model
     /**
      * Scope query untuk filter pencarian, OPD, dan periode.
      *
-     * @param Builder<self> $query
-     * @param array<string, mixed> $filters
+     * @param  Builder<self>  $query
+     * @param  array<string, mixed>  $filters
      * @return Builder<self>
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = strtolower(trim((string) $filters['search']));
             $like = "%{$search}%";
             $query->where(function (Builder $q) use ($like) {
@@ -156,19 +156,18 @@ class TujuanPenilaian extends Model
             });
         }
 
-        if (!empty($filters['periode_penilaian_id'])) {
+        if (! empty($filters['periode_penilaian_id'])) {
             $query->where('periode_penilaian_id', $filters['periode_penilaian_id']);
         }
 
-        if (!empty($filters['opd_id']) && $filters['opd_id'] !== 'all') {
+        if (! empty($filters['opd_id']) && $filters['opd_id'] !== 'all') {
             $query->where('opd_id', $filters['opd_id']);
         }
 
-        if (!empty($filters['sumber_data_id']) && $filters['sumber_data_id'] !== 'all') {
+        if (! empty($filters['sumber_data_id']) && $filters['sumber_data_id'] !== 'all') {
             $query->where('sumber_data_id', $filters['sumber_data_id']);
         }
 
         return $query;
     }
 }
-

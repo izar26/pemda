@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Audit\AuditArchiveService;
 use Database\Seeders\RbacSeeder;
 use Database\Seeders\SystemSettingSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ class AuditLogArchiveTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $auditorUser;
 
     protected function setUp(): void
@@ -62,7 +64,7 @@ class AuditLogArchiveTest extends TestCase
 
         $token = $this->superadmin->createToken('test-super')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/audit-logs/archives');
 
         $response->assertStatus(200)
@@ -88,7 +90,7 @@ class AuditLogArchiveTest extends TestCase
     {
         $token = $this->auditorUser->createToken('test-auditor')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/audit-logs/archives');
 
         $response->assertStatus(403);
@@ -147,7 +149,7 @@ class AuditLogArchiveTest extends TestCase
 
         $token = $this->superadmin->createToken('test-super')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/audit-logs/archive-purge', [
                 'days' => 60,
             ]);
@@ -160,7 +162,7 @@ class AuditLogArchiveTest extends TestCase
     {
         $token = $this->auditorUser->createToken('test-auditor')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/audit-logs/archive-purge', [
                 'days' => 60,
             ]);
@@ -190,7 +192,7 @@ class AuditLogArchiveTest extends TestCase
 
         $token = $this->superadmin->createToken('test-super')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/audit-logs/archive-purge', [
                 'ids' => [$log1->id, $log2->id],
                 'exclude_ids' => [$log2->id],
@@ -235,7 +237,7 @@ class AuditLogArchiveTest extends TestCase
 
         $token = $this->superadmin->createToken('test-super')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/audit-logs/archive-purge', [
                 'filters' => [
                     'module' => 'Autentikasi',
@@ -308,7 +310,7 @@ class AuditLogArchiveTest extends TestCase
 
         $token = $this->superadmin->createToken('test-super')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/audit-logs/stats');
 
         $response->assertStatus(200)
@@ -342,7 +344,7 @@ class AuditLogArchiveTest extends TestCase
             'archived_at' => now(),
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         $this->expectExceptionMessage('Pelanggaran Integritas: Catatan pada kubah audit_log_archives bersifat permanen');
         DB::table('audit_log_archives')->where('id', $archive->id)->delete();
     }
@@ -351,7 +353,7 @@ class AuditLogArchiveTest extends TestCase
     {
         $token = $this->auditorUser->createToken('test-auditor')->plainTextToken;
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/audit-logs/stats')
             ->assertStatus(403);
     }
@@ -368,11 +370,11 @@ class AuditLogArchiveTest extends TestCase
 
         $token = $this->superadmin->createToken('test-super')->plainTextToken;
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/audit-logs/archive-purge', ['filters' => ['module' => '', 'search' => '']])
             ->assertStatus(422);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/audit-logs/archive-purge', ['ids' => []])
             ->assertStatus(422);
 

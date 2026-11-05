@@ -1,8 +1,31 @@
 import { FolderTree, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
+export interface OperasionalIndikator {
+  id?: string | number
+  indikator?: string
+  target?: string | number
+  satuan?: string
+}
+
+export interface OperasionalNode {
+  id?: string | number
+  kode?: string
+  nama?: string
+  indikator?: string
+  target?: string | number
+  satuan?: string
+  indikators?: OperasionalIndikator[]
+  children?: OperasionalNode[]
+}
+
+export interface Konteks2CData {
+  status?: string
+  programs?: OperasionalNode[]
+}
+
 interface ReviewStep2CProps {
-  konteks2C: any
+  konteks2C?: Konteks2CData | null
   isLoading: boolean
 }
 
@@ -24,11 +47,11 @@ export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
           </span>
           <p className='font-bold text-sm text-foreground font-mono'>
             {konteks2C?.programs?.reduce(
-              (acc: number, p: any) =>
+              (acc: number, p: OperasionalNode) =>
                 acc +
                 (p.children?.length || 0) +
                 (p.children?.reduce(
-                  (subAcc: number, c: any) => subAcc + (c.children?.length || 0),
+                  (subAcc: number, c: OperasionalNode) => subAcc + (c.children?.length || 0),
                   0
                 ) || 0),
               0
@@ -60,7 +83,7 @@ export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
           </div>
         ) : (konteks2C?.programs?.length || 0) > 0 ? (
           <div className='space-y-3'>
-            {konteks2C?.programs?.map((program: any) => {
+            {konteks2C?.programs?.map((program: OperasionalNode) => {
               const pIndikators = program.indikators || []
               return (
                 <div key={program.id} className='rounded-lg border bg-card p-3 space-y-2.5 shadow-2xs'>
@@ -76,7 +99,7 @@ export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
                       </div>
                       {pIndikators.length > 0 ? (
                         <div className='space-y-0.5 pl-1'>
-                          {pIndikators.map((ind: any, indIdx: number) => (
+                          {pIndikators.map((ind: OperasionalIndikator, indIdx: number) => (
                             <p key={ind.id || indIdx} className='text-[11px] text-muted-foreground font-mono'>
                               Indikator: <span className='text-foreground font-medium'>{ind.indikator}</span> • Target: <span className='text-foreground font-semibold'>{ind.target} {ind.satuan || ''}</span>
                             </p>
@@ -93,7 +116,7 @@ export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
                   {/* Kegiatan Children */}
                   {(program.children?.length || 0) > 0 && (
                     <div className='pl-3.5 space-y-2 border-l-2 border-primary/20'>
-                      {program.children?.map((kegiatan: any) => {
+                      {program.children?.map((kegiatan: OperasionalNode) => {
                         const kIndikators = kegiatan.indikators || []
                         return (
                           <div key={kegiatan.id} className='p-2.5 rounded-md bg-muted/20 border space-y-1.5'>
@@ -109,7 +132,7 @@ export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
                             </div>
                             {kIndikators.length > 0 && (
                               <div className='space-y-0.5 pl-2 border-l border-muted-foreground/30'>
-                                {kIndikators.map((ind: any, indIdx: number) => (
+                                {kIndikators.map((ind: OperasionalIndikator, indIdx: number) => (
                                   <p key={ind.id || indIdx} className='text-[10px] text-muted-foreground font-mono'>
                                     Indikator: <span className='text-foreground font-medium'>{ind.indikator}</span> • Target: <span className='text-foreground font-semibold'>{ind.target} {ind.satuan || ''}</span>
                                   </p>
@@ -120,7 +143,7 @@ export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
                             {/* Sub-kegiatans */}
                             {(kegiatan.children?.length || 0) > 0 && (
                               <div className='pl-3 space-y-1 border-l border-border'>
-                                {kegiatan.children?.map((sub: any) => {
+                                {kegiatan.children?.map((sub: OperasionalNode) => {
                                   const subInd = sub.indikators?.[0]
                                   return (
                                     <div key={sub.id} className='p-2 rounded-md bg-background border text-[11px] flex items-center justify-between gap-2 shadow-2xs'>

@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::dropIfExists('master_entitas_penilaians');
 
         // 2. Add urutan column to opds if not exists
-        if (!Schema::hasColumn('opds', 'urutan')) {
+        if (! Schema::hasColumn('opds', 'urutan')) {
             Schema::table('opds', function (Blueprint $table) {
                 $table->unsignedInteger('urutan')->default(0);
             });

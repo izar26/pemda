@@ -418,6 +418,8 @@ export function MasterGenericTable({ entity }: MasterGenericTableProps) {
     canEdit,
     canDelete,
     canReorder,
+    handleMoveUp,
+    handleMoveDown,
     localItems,
     toggleActive,
     isToggling,

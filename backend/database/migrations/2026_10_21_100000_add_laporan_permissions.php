@@ -15,7 +15,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('permissions') || !Schema::hasTable('roles')) {
+        if (! Schema::hasTable('permissions') || ! Schema::hasTable('roles')) {
             return;
         }
 
@@ -65,7 +65,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (!Schema::hasTable('permissions')) {
+        if (! Schema::hasTable('permissions')) {
             return;
         }
 

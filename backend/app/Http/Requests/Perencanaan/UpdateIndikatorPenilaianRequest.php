@@ -6,7 +6,7 @@ namespace App\Http\Requests\Perencanaan;
 
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
-use App\Models\Perencanaan\TujuanPenilaian;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -27,9 +27,9 @@ class UpdateIndikatorPenilaianRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
             $this->merge(['opd_id' => $user->opd_id]);
-        } elseif (!empty($this->sasaran_penilaian_id)) {
+        } elseif (! empty($this->sasaran_penilaian_id)) {
             $sasaran = SasaranPenilaian::find($this->sasaran_penilaian_id);
             if ($sasaran) {
                 if (empty($this->opd_id)) {
@@ -45,7 +45,7 @@ class UpdateIndikatorPenilaianRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -75,7 +75,7 @@ class UpdateIndikatorPenilaianRequest extends FormRequest
                 return;
             }
 
-            if (!empty($this->sasaran_penilaian_id)) {
+            if (! empty($this->sasaran_penilaian_id)) {
                 $sasaran = SasaranPenilaian::find($this->sasaran_penilaian_id);
                 if ($sasaran) {
                     $routeParam = $this->route('iku') ?? $this->route('indikator');
@@ -84,7 +84,7 @@ class UpdateIndikatorPenilaianRequest extends FormRequest
                     if ($targetOpdId && $sasaran->opd_id !== $targetOpdId) {
                         $validator->errors()->add('sasaran_penilaian_id', 'Sasaran strategis yang dipilih tidak berasal dari Perangkat Daerah (OPD) yang sama.');
                     }
-                    if (!empty($this->tujuan_penilaian_id) && $sasaran->tujuan_penilaian_id !== $this->tujuan_penilaian_id) {
+                    if (! empty($this->tujuan_penilaian_id) && $sasaran->tujuan_penilaian_id !== $this->tujuan_penilaian_id) {
                         $validator->errors()->add('sasaran_penilaian_id', 'Sasaran strategis yang dipilih tidak terhubung dengan Tujuan strategis terpilih.');
                     }
                 }

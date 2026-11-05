@@ -19,7 +19,7 @@ class TwoFactorService
 
     public function __construct()
     {
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
     }
 
     /**
@@ -42,7 +42,7 @@ class TwoFactorService
         $appName = config('app.name', 'PEMDA');
         $otpauthUrl = $this->google2fa->getQRCodeUrl($appName, $user->email, $secret);
 
-        $renderer = new ImageRenderer(new RendererStyle(220), new SvgImageBackEnd());
+        $renderer = new ImageRenderer(new RendererStyle(220), new SvgImageBackEnd);
         $writer = new Writer($renderer);
         $svgQr = $writer->writeString($otpauthUrl);
 
@@ -64,14 +64,14 @@ class TwoFactorService
         }
 
         $isValid = $this->google2fa->verifyKey($user->two_factor_secret, $code, 1);
-        if (!$isValid) {
+        if (! $isValid) {
             return null;
         }
 
         // Generate 8 cryptographically secure single-use recovery codes upon successful confirmation
         $recoveryCodes = [];
         for ($i = 0; $i < 8; $i++) {
-            $recoveryCodes[] = strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4));
+            $recoveryCodes[] = strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
         }
 
         $user->update([
@@ -92,7 +92,7 @@ class TwoFactorService
         $code = trim($code);
 
         // Anti-Replay: prevent OTP reuse within the valid time window
-        $replayKey = 'used_totp:' . $user->id . ':' . $code;
+        $replayKey = 'used_totp:'.$user->id.':'.$code;
         if (Cache::has($replayKey)) {
             return [
                 'valid' => false,
@@ -102,9 +102,10 @@ class TwoFactorService
         }
 
         // Check 6-digit TOTP
-        if (strlen($code) === 6 && ctype_digit($code) && !empty($user->two_factor_secret)) {
+        if (strlen($code) === 6 && ctype_digit($code) && ! empty($user->two_factor_secret)) {
             if ($this->google2fa->verifyKey($user->two_factor_secret, $code, 1)) {
                 Cache::put($replayKey, true, 90);
+
                 return [
                     'valid' => true,
                     'used_backup' => false,
@@ -114,7 +115,7 @@ class TwoFactorService
         }
 
         // Check Recovery Codes
-        if (!empty($user->two_factor_recovery_codes)) {
+        if (! empty($user->two_factor_recovery_codes)) {
             $cleanInput = strtoupper(str_replace(['-', ' '], '', $code));
             $codes = $user->two_factor_recovery_codes;
 

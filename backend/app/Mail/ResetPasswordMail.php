@@ -35,7 +35,7 @@ class ResetPasswordMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Permintaan Atur Ulang Kata Sandi Akun - ' . config('app.name', 'Portal Pemda'),
+            subject: 'Permintaan Atur Ulang Kata Sandi Akun - '.config('app.name', 'Portal Pemda'),
         );
     }
 
@@ -50,7 +50,7 @@ class ResetPasswordMail extends Mailable
                 'resetUrl' => $this->resetUrl,
                 'ipAddress' => $this->ipAddress,
                 'expiresInMinutes' => $this->expiresInMinutes,
-                'requestedAt' => now()->translatedFormat('d F Y, H:i') . ' WIB',
+                'requestedAt' => now()->translatedFormat('d F Y, H:i').' WIB',
             ],
         );
     }

@@ -20,8 +20,11 @@ class TujuanPenilaianTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $opdUser;
+
     protected PeriodePenilaian $activePeriode;
+
     protected Opd $puprOpd;
 
     protected function setUp(): void

@@ -17,6 +17,7 @@ class ProfileTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Opd $opd;
 
     protected function setUp(): void
@@ -47,7 +48,7 @@ class ProfileTest extends TestCase
 
         $targetOpd = Opd::where('kode', 'Diskominfo')->firstOrFail();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/auth/profile', [
                 'name' => 'Budi Santoso, M.Kom',
                 'nip' => '198801012015011002',
@@ -86,7 +87,7 @@ class ProfileTest extends TestCase
 
         $token = $this->user->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/auth/profile', [
                 'name' => 'Budi Santoso',
                 'nip' => '199002022018021001', // duplicate
@@ -123,7 +124,7 @@ class ProfileTest extends TestCase
         $token = $opdUser->createToken('test', ['*'])->plainTextToken;
 
         // OPD user attempts to move to DPUTR and escalate jabatan to Kepala OPD
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/auth/profile', [
                 'name' => 'Staf Diskominfo Updated',
                 'opd_id' => $dputr->id,

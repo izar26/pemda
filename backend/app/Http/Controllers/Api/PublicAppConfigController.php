@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\Setting\SystemSettingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class PublicAppConfigController extends Controller
 {
@@ -26,7 +27,7 @@ class PublicAppConfigController extends Controller
                 'data' => $config,
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('PublicAppConfigController@index failed: ' . $e->getMessage());
+            Log::warning('PublicAppConfigController@index failed: '.$e->getMessage());
 
             return response()->json([
                 'data' => [

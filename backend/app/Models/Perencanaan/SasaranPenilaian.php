@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SasaranPenilaian extends Model
 {
@@ -84,9 +85,9 @@ class SasaranPenilaian extends Model
     /**
      * Relasi ke Indikator Kinerja / IKU Renstra OPD.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<IndikatorPenilaian, self>
+     * @return HasMany<IndikatorPenilaian, self>
      */
-    public function indikators(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function indikators(): HasMany
     {
         return $this->hasMany(IndikatorPenilaian::class, 'sasaran_penilaian_id');
     }
@@ -109,7 +110,7 @@ class SasaranPenilaian extends Model
     /**
      * Scope query ke periode yang aktif saat ini.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeForActivePeriode(Builder $query): Builder
@@ -122,13 +123,13 @@ class SasaranPenilaian extends Model
     /**
      * Scope query untuk filter pencarian, OPD, Tujuan, dan Periode.
      *
-     * @param Builder<self> $query
-     * @param array<string, mixed> $filters
+     * @param  Builder<self>  $query
+     * @param  array<string, mixed>  $filters
      * @return Builder<self>
      */
     public function scopeFilter(Builder $query, array $filters): Builder
     {
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $query->where(function (Builder $q) use ($search) {
                 $q->where('sasaran', 'ilike', "%{$search}%")
@@ -144,15 +145,15 @@ class SasaranPenilaian extends Model
             });
         }
 
-        if (!empty($filters['periode_penilaian_id'])) {
+        if (! empty($filters['periode_penilaian_id'])) {
             $query->where('periode_penilaian_id', $filters['periode_penilaian_id']);
         }
 
-        if (!empty($filters['opd_id']) && $filters['opd_id'] !== 'all') {
+        if (! empty($filters['opd_id']) && $filters['opd_id'] !== 'all') {
             $query->where('opd_id', $filters['opd_id']);
         }
 
-        if (!empty($filters['tujuan_penilaian_id']) && $filters['tujuan_penilaian_id'] !== 'all') {
+        if (! empty($filters['tujuan_penilaian_id']) && $filters['tujuan_penilaian_id'] !== 'all') {
             $query->where('tujuan_penilaian_id', $filters['tujuan_penilaian_id']);
         }
 

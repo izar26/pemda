@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
-use App\Models\Master\MasterSumberData;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -31,7 +31,7 @@ class SaveKonteksPenilaianRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
             $this->merge(['opd_id' => $user->opd_id]);
         }
 
@@ -46,7 +46,7 @@ class SaveKonteksPenilaianRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -94,16 +94,17 @@ class SaveKonteksPenilaianRequest extends FormRequest
 
             // 1. Verify Tujuan matches OPD, Periode, and Sumber Data
             $tujuan = TujuanPenilaian::find($this->tujuan_penilaian_id);
-            if (!$tujuan || $tujuan->opd_id !== $this->opd_id || $tujuan->periode_penilaian_id !== $this->periode_penilaian_id) {
+            if (! $tujuan || $tujuan->opd_id !== $this->opd_id || $tujuan->periode_penilaian_id !== $this->periode_penilaian_id) {
                 $validator->errors()->add('tujuan_penilaian_id', 'Tujuan strategis yang dipilih tidak sesuai dengan OPD atau periode penilaian aktif.');
+
                 return;
             }
 
             if ($tujuan->sumber_data_id !== null && $tujuan->sumber_data_id !== $this->sumber_data_id) {
                 $validator->errors()->add('sumber_data_id', 'Sumber data yang dipilih tidak sesuai dengan sumber data pada Tujuan strategis terpilih.');
+
                 return;
             }
-
 
             // 2. Verify all selected Sasarans belong to selected Tujuan
             $sasaranCount = SasaranPenilaian::whereIn('id', $this->sasaran_ids)

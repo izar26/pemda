@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Perencanaan;
 
+use App\Models\Perencanaan\SasaranPenilaian;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class CopyIndikatorPenilaianRequest extends FormRequest
 {
@@ -23,7 +26,7 @@ class CopyIndikatorPenilaianRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $user = $this->user();
-        if ($user && $user->hasRole('OPD') && !$user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Bapperida'])) {
             $this->merge(['opd_id' => $user->opd_id]);
         }
     }
@@ -31,7 +34,7 @@ class CopyIndikatorPenilaianRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -50,16 +53,16 @@ class CopyIndikatorPenilaianRequest extends FormRequest
     /**
      * Custom after validation hook for cascading integrity.
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             if ($validator->errors()->isNotEmpty()) {
                 return;
             }
 
-            if (!empty($this->sasaran_penilaian_id)) {
-                $sasaran = \App\Models\Perencanaan\SasaranPenilaian::find($this->sasaran_penilaian_id);
-                if ($sasaran && !empty($this->opd_id) && $sasaran->opd_id !== $this->opd_id) {
+            if (! empty($this->sasaran_penilaian_id)) {
+                $sasaran = SasaranPenilaian::find($this->sasaran_penilaian_id);
+                if ($sasaran && ! empty($this->opd_id) && $sasaran->opd_id !== $this->opd_id) {
                     $validator->errors()->add('sasaran_penilaian_id', 'Sasaran strategis yang dipilih tidak berasal dari Perangkat Daerah (OPD) yang sama.');
                 }
             }

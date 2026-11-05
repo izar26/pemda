@@ -18,6 +18,7 @@ class AuditLogTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staffWithoutPerm;
 
     protected function setUp(): void
@@ -49,7 +50,7 @@ class AuditLogTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/audit-logs');
 
         $response->assertStatus(200)
@@ -75,7 +76,7 @@ class AuditLogTest extends TestCase
     {
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/audit-logs');
 
         $response->assertStatus(403);
@@ -278,7 +279,7 @@ class AuditLogTest extends TestCase
     {
         $token = $this->superadmin->createToken('test-session')->plainTextToken;
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/auth/logout')
             ->assertStatus(200);
 
@@ -299,8 +300,8 @@ class AuditLogTest extends TestCase
             'is_system' => false,
         ]);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->putJson('/api/roles/' . $role->id, [
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson('/api/roles/'.$role->id, [
                 'name' => 'Auditor Custom',
                 'description' => 'Role auditor yang diperbarui izinnya',
                 'permissions' => ['audit.view', 'users.view'],
@@ -326,7 +327,7 @@ class AuditLogTest extends TestCase
             'two_factor_confirmed_at' => now(),
         ]);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/users/{$targetUser->id}/reset-2fa")
             ->assertStatus(200);
 
@@ -377,7 +378,7 @@ class AuditLogTest extends TestCase
         ]);
 
         // 3. Auditor requests audit logs
-        $responseAuditor = $this->withHeader('Authorization', 'Bearer ' . $auditorToken)
+        $responseAuditor = $this->withHeader('Authorization', 'Bearer '.$auditorToken)
             ->getJson('/api/audit-logs');
 
         $responseAuditor->assertStatus(200);
@@ -388,7 +389,7 @@ class AuditLogTest extends TestCase
         // 4. Superadmin requests audit logs
         app('auth')->forgetGuards();
         $superadminToken = $this->superadmin->createToken('test-super')->plainTextToken;
-        $responseSuper = $this->withHeader('Authorization', 'Bearer ' . $superadminToken)
+        $responseSuper = $this->withHeader('Authorization', 'Bearer '.$superadminToken)
             ->getJson('/api/audit-logs');
 
         $responseSuper->assertStatus(200);

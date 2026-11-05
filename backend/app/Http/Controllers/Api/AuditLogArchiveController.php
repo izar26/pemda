@@ -39,7 +39,7 @@ class AuditLogArchiveController extends Controller
      */
     public function purge(Request $request): JsonResponse
     {
-        if (!$request->user()->can('audit.purge') && !$request->user()->hasRole('Superadmin') && !$request->user()->roles()->where('is_system', true)->exists()) {
+        if (! $request->user()->can('audit.purge') && ! $request->user()->hasRole('Superadmin') && ! $request->user()->roles()->where('is_system', true)->exists()) {
             abort(403, 'Akses Ditolak. Hanya pengguna dengan izin audit.purge atau Superadmin yang berwenang melakukan pengarsipan dan pembersihan log.');
         }
 
@@ -137,7 +137,7 @@ class AuditLogArchiveController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasRole('Superadmin') && !$user->roles()->where('is_system', true)->exists()) {
+        if (! $user->hasRole('Superadmin') && ! $user->roles()->where('is_system', true)->exists()) {
             abort(403, 'Akses Ditolak. Statistik siklus hidup log audit hanya untuk Superadmin.');
         }
 

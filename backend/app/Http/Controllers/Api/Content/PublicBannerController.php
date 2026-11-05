@@ -29,7 +29,7 @@ class PublicBannerController extends Controller
 
             return BannerResource::collection($banners);
         } catch (\Throwable $e) {
-            Log::warning('PublicBannerController@index failed: ' . $e->getMessage());
+            Log::warning('PublicBannerController@index failed: '.$e->getMessage());
 
             return response()->json([
                 'data' => [],

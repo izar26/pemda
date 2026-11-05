@@ -17,7 +17,7 @@ class SystemAssetService
 
     public function __construct()
     {
-        $this->imageManager = new ImageManager(new Driver());
+        $this->imageManager = new ImageManager(new Driver);
     }
 
     /**
@@ -43,7 +43,7 @@ class SystemAssetService
             $content = (string) file_get_contents($file->getRealPath());
             $sanitized = $this->sanitizeSvg($content);
 
-            $filename = 'logo-' . Str::uuid()->toString() . '.svg';
+            $filename = 'logo-'.Str::uuid()->toString().'.svg';
             $relativePath = "branding/{$filename}";
             Storage::disk('public')->put($relativePath, $sanitized);
 
@@ -76,7 +76,7 @@ class SystemAssetService
         }
 
         $encodedContent = (string) $encoded;
-        $filename = 'logo-' . Str::uuid()->toString() . '.' . $ext;
+        $filename = 'logo-'.Str::uuid()->toString().'.'.$ext;
         $relativePath = "branding/{$filename}";
 
         Storage::disk('public')->put($relativePath, $encodedContent);

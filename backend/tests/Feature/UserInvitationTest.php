@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
+use App\Models\Opd;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\OpdSeeder;
@@ -20,6 +20,7 @@ class UserInvitationTest extends TestCase
     use RefreshDatabase;
 
     protected User $superadmin;
+
     protected User $staffWithoutPerm;
 
     protected function setUp(): void
@@ -54,7 +55,7 @@ class UserInvitationTest extends TestCase
     {
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
-        $opd = \App\Models\Opd::first();
+        $opd = Opd::first();
 
         $payload = [
             'name' => 'Ahmad Dahlan, S.Kom',
@@ -65,7 +66,7 @@ class UserInvitationTest extends TestCase
             'notes' => 'Selamat bergabung di unit kerja Diskominfostandi.',
         ];
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/users/invite', $payload);
 
         $response->assertStatus(201)
@@ -92,7 +93,7 @@ class UserInvitationTest extends TestCase
     {
         $token = $this->staffWithoutPerm->createToken('test', ['*'])->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/users/invite', [
                 'name' => 'Ilegal Pegawai',
                 'email' => 'ilegal@pemda.go.id',
@@ -113,7 +114,7 @@ class UserInvitationTest extends TestCase
         ]);
         $user->assignRole('Staff');
 
-        $response = $this->getJson('/api/auth/validate-activation-token?token=' . $user->activation_token);
+        $response = $this->getJson('/api/auth/validate-activation-token?token='.$user->activation_token);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.name', 'Calon Pegawai')
@@ -129,7 +130,7 @@ class UserInvitationTest extends TestCase
             'activation_token_expires_at' => now()->subHour(),
         ]);
 
-        $response = $this->getJson('/api/auth/validate-activation-token?token=' . $user->activation_token);
+        $response = $this->getJson('/api/auth/validate-activation-token?token='.$user->activation_token);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['token']);
@@ -138,7 +139,7 @@ class UserInvitationTest extends TestCase
     public function test_user_can_activate_account_and_set_password(): void
     {
         $token = 'sample_activation_token_for_activate_test_1234567890abcdefghijklm';
-        $opd = \App\Models\Opd::first();
+        $opd = Opd::first();
 
         $user = User::factory()->create([
             'name' => 'Siti Nurhaliza',
@@ -194,7 +195,7 @@ class UserInvitationTest extends TestCase
         $token = $this->superadmin->createToken('test', ['*'])->plainTextToken;
 
         // Invite validation
-        $responseInvite = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $responseInvite = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/users/invite', []);
 
         $responseInvite->assertStatus(422)

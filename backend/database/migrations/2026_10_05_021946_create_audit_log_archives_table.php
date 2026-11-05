@@ -37,7 +37,7 @@ return new class extends Migration
 
         // PostgreSQL database-level immutability trigger (WORM - Write Once, Read Many)
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::unprepared(<<<SQL
+            DB::unprepared(<<<'SQL'
                 CREATE OR REPLACE FUNCTION prevent_audit_archive_tampering()
                 RETURNS TRIGGER AS $$
                 BEGIN
@@ -59,7 +59,7 @@ return new class extends Migration
     public function down(): void
     {
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::unprepared(<<<SQL
+            DB::unprepared(<<<'SQL'
                 DROP TRIGGER IF EXISTS trg_audit_log_archives_immutable ON audit_log_archives;
                 DROP FUNCTION IF EXISTS prevent_audit_archive_tampering();
             SQL);
