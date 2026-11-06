@@ -689,7 +689,7 @@ export function RisikoWizardHeader({
                           : isCompleted
                           ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                           : isLocked
-                          ? 'bg-muted/30 text-muted-foreground/40 border-transparent cursor-not-allowed opacity-60'
+                          ? 'bg-muted/40 text-muted-foreground/80 border-border/50 cursor-not-allowed hover:bg-muted/60'
                           : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border'
                       )}
                     >
@@ -701,25 +701,53 @@ export function RisikoWizardHeader({
                             : isCompleted
                             ? 'bg-emerald-600 text-white'
                             : isLocked
-                            ? 'bg-muted-foreground/20 text-muted-foreground/60'
+                            ? 'bg-muted-foreground/15 text-muted-foreground'
                             : 'bg-muted text-foreground'
                         )}
                       >
                         {step.stepNumber}
                       </span>
-                      <span className='font-mono text-[10px] font-semibold tracking-tight truncate'>
+                      <span
+                        className={cn(
+                          'font-mono text-[10px] font-semibold tracking-tight truncate',
+                          isLocked ? 'text-muted-foreground' : ''
+                        )}
+                      >
                         {step.code}
                       </span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side='bottom' className='text-xs max-w-xs'>
-                    <div className='space-y-0.5'>
-                      <p className='font-bold text-foreground'>
+                  <TooltipContent side='bottom' className='text-xs max-w-xs p-2.5 space-y-1.5'>
+                    <div className='flex items-center justify-between gap-2 border-b border-border/60 pb-1'>
+                      <span className='font-bold text-foreground text-xs'>
                         Langkah {step.stepNumber}: {cleanTitle}
-                      </p>
-                      <p className='text-[10px] text-muted-foreground'>
-                        Form {step.code} • {isCompleted ? '✓ Sudah Selesai' : isLocked ? '🔒 Masih Terkunci' : '📝 Siap Dikerjakan'}
-                      </p>
+                      </span>
+                      <Badge variant='outline' className='text-[10px] font-mono shrink-0'>
+                        Form {step.code}
+                      </Badge>
+                    </div>
+                    <div className='flex items-center gap-1.5 text-[11px]'>
+                      <span className='text-muted-foreground'>Status:</span>
+                      <span
+                        className={cn(
+                          'font-semibold',
+                          isCurrent
+                            ? 'text-primary'
+                            : isCompleted
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : isLocked
+                            ? 'text-muted-foreground'
+                            : 'text-foreground'
+                        )}
+                      >
+                        {isCompleted
+                          ? '✓ Sudah Selesai'
+                          : isLocked
+                          ? '🔒 Masih Terkunci'
+                          : isCurrent
+                          ? '⚡ Sedang Dikerjakan'
+                          : '📝 Siap Dikerjakan'}
+                      </span>
                     </div>
                   </TooltipContent>
                 </Tooltip>

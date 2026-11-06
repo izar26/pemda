@@ -244,9 +244,9 @@ export function ApprovalTierStepper({
       default:
         return {
           circle:
-            'bg-muted/60 text-muted-foreground border-border/80',
+            'bg-muted/60 text-muted-foreground border-border/80 group-hover:border-primary/50',
           line: 'bg-border/60',
-          text: 'text-muted-foreground font-normal',
+          text: 'text-muted-foreground font-medium group-hover:text-foreground',
           sub: 'text-muted-foreground/80',
           badge: 'bg-muted/40 text-muted-foreground border-border/40',
         }
@@ -284,7 +284,7 @@ export function ApprovalTierStepper({
             return (
               <Tooltip key={node.id}>
                 <TooltipTrigger asChild>
-                  <div className='relative flex flex-row sm:flex-col items-center sm:items-center text-left sm:text-center group cursor-default p-2 rounded-lg hover:bg-accent/30 transition-colors'>
+                  <div className='relative flex flex-row sm:flex-col items-center sm:items-center text-left sm:text-center group cursor-default p-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer'>
                     {/* Connecting line for desktop */}
                     {!isLast && (
                       <div
@@ -338,21 +338,32 @@ export function ApprovalTierStepper({
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side='bottom' className='max-w-xs text-xs p-3 space-y-1.5'>
-                  <p className='font-bold text-foreground'>
-                    {node.tierName}: {node.roleTitle}
-                  </p>
-                  <p className='text-muted-foreground leading-relaxed'>
+                <TooltipContent side='bottom' className='max-w-xs text-xs p-3 space-y-2'>
+                  <div className='flex items-center justify-between gap-2 border-b border-border/60 pb-1.5'>
+                    <span className='font-bold text-foreground text-xs'>
+                      {node.tierName}: {node.roleTitle}
+                    </span>
+                    <Badge
+                      variant='outline'
+                      className={cn('text-[10px] font-medium px-1.5 py-0 leading-tight', styles.badge)}
+                    >
+                      {node.statusLabel}
+                    </Badge>
+                  </div>
+                  <p className='text-muted-foreground leading-relaxed text-[11px]'>
                     {node.description}
                   </p>
-                  <div className='pt-1 border-t border-border/60 text-[11px] space-y-0.5'>
-                    <p>
-                      Penanggung Jawab: <strong>{node.actorName}</strong>
-                    </p>
-                    <p>
-                      Status: <strong>{node.statusLabel}</strong>
-                    </p>
-                    {node.dateText && <p>Waktu: {node.dateText}</p>}
+                  <div className='pt-1.5 border-t border-border/60 text-[11px] space-y-1'>
+                    <div className='flex items-center justify-between text-muted-foreground'>
+                      <span>Penanggung Jawab:</span>
+                      <span className='font-semibold text-foreground'>{node.actorName}</span>
+                    </div>
+                    {node.dateText && (
+                      <div className='flex items-center justify-between text-muted-foreground'>
+                        <span>Waktu Tindakan:</span>
+                        <span className='font-mono text-foreground'>{node.dateText}</span>
+                      </div>
+                    )}
                   </div>
                 </TooltipContent>
               </Tooltip>

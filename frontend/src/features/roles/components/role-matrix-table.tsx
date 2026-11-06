@@ -545,7 +545,7 @@ export function RoleMatrixTable({
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p className='font-semibold text-xs'>
+                                  <p className='font-semibold text-xs text-foreground'>
                                     {role.name}
                                   </p>
                                   {role.description && (
@@ -859,7 +859,7 @@ export function RoleMatrixTable({
                                           side='right'
                                           className='text-xs max-w-xs'
                                         >
-                                          <p className='font-semibold'>
+                                          <p className='font-semibold text-foreground'>
                                             {meta.label} ({perm.name})
                                           </p>
                                           <p className='text-muted-foreground mt-0.5'>

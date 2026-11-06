@@ -237,12 +237,12 @@ export function ReviewWizardHeader({
                       </button>
                     </TooltipTrigger>
 
-                    <TooltipContent side='bottom' className='text-xs space-y-1 p-2 max-w-xs shadow-md'>
-                      <div className='font-bold flex items-center justify-between gap-2 border-b border-border/50 pb-1'>
-                        <span>
+                    <TooltipContent side='bottom' className='text-xs space-y-1.5 p-2.5 max-w-xs shadow-md'>
+                      <div className='font-bold flex items-center justify-between gap-2 border-b border-border/60 pb-1'>
+                        <span className='text-foreground font-bold'>
                           Langkah {step.stepNumber}: {step.shortTitle}
                         </span>
-                        <Badge variant='outline' className='text-[10px] font-mono px-1 py-0'>
+                        <Badge variant='outline' className='text-[10px] font-mono px-1 py-0 shrink-0'>
                           Form {step.code}
                         </Badge>
                       </div>
