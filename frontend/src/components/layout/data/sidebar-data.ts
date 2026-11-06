@@ -104,7 +104,7 @@ export const sidebarData: SidebarData = {
       ],
     },
     {
-      title: 'Pengawasan (APIP)',
+      title: 'Pengawasan & Review',
       items: [
         {
           title: 'Penugasan Auditor',
@@ -113,7 +113,7 @@ export const sidebarData: SidebarData = {
           requiredPermission: 'penugasan_auditor.view',
         },
         {
-          title: 'Review',
+          title: 'Review Risiko',
           url: '/pengawasan/review-risiko',
           icon: ClipboardCheck,
           requiredPermission: 'review_risiko.view',

@@ -20,8 +20,8 @@ export interface SasaranItem {
 }
 
 export interface Konteks2BData {
-  sumber_data?: { nama?: string }
-  tujuan?: { tujuan?: string }
+  sumber_data?: { nama?: string } | null
+  tujuan?: { tujuan?: string } | null
   sasarans?: SasaranItem[]
   indikators?: SasaranIndikatorItem[]
 }

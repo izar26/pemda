@@ -5,7 +5,7 @@ export interface OperasionalIndikator {
   id?: string | number
   indikator?: string
   target?: string | number
-  satuan?: string
+  satuan?: string | null
 }
 
 export interface OperasionalNode {
@@ -14,7 +14,7 @@ export interface OperasionalNode {
   nama?: string
   indikator?: string
   target?: string | number
-  satuan?: string
+  satuan?: string | null
   indikators?: OperasionalIndikator[]
   children?: OperasionalNode[]
 }

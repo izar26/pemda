@@ -198,6 +198,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
 
         // Alur Pengajuan & Pemeriksaan Risiko (OPD & Kepala OPD)
         Route::get('/pengajuan/status', [PengajuanRisikoController::class, 'status']);
+        Route::get('/pengajuan/pending-counts', [PengajuanRisikoController::class, 'pendingCounts']);
         Route::post('/pengajuan/submit', [PengajuanRisikoController::class, 'submit']);
         Route::post('/pengajuan/{id}/review-kepala', [PengajuanRisikoController::class, 'reviewKepalaOpd']);
         Route::post('/pengajuan/{id}/delegate-operator', [PengajuanRisikoController::class, 'delegateOperator']);

@@ -95,7 +95,11 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     }
 
     // Priority 2: Also include any from the main table query data
-    const list = assignedAuditorsData?.data || []
+    const list = (assignedAuditorsData?.data || []) as Array<{
+      id: string
+      name: string
+      auditor_assignments?: Array<{ opd_id: string; is_active?: boolean }>
+    }>
     for (const auditor of list) {
       for (const assignment of auditor.auditor_assignments || []) {
         if (assignment.is_active !== false) {

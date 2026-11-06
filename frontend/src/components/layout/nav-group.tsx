@@ -19,7 +19,6 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Badge } from '../ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +34,7 @@ import {
   type NavGroup as NavGroupProps,
 } from './types'
 import { usePermissions } from '@/hooks/use-permissions'
+import { useAuthStore } from '@/stores/auth-store'
 import {
   useRisikoWizardProgress,
   type ResolvedWizardStep,
@@ -43,19 +43,36 @@ import {
 export function NavGroup({ title, items }: NavGroupProps) {
   const { state, isMobile } = useSidebar()
   const href = useLocation({ select: (location) => location.href })
-  const { hasPermission } = usePermissions()
+  const { hasPermission, hasRole, isSuperadmin } = usePermissions()
+  const user = useAuthStore((state) => state.auth.user)
   const isRisikoWizardGroup = title === 'Pengelolaan Risiko'
   const { steps: wizardSteps, completedCount, totalSteps } =
     useRisikoWizardProgress(isRisikoWizardGroup)
 
-  // Filter items and sub-items based on requiredPermission
+  function checkItemAccess(item: NavItem): boolean {
+    if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
+      return false
+    }
+    if (item.requiredRole) {
+      const roles = Array.isArray(item.requiredRole)
+        ? item.requiredRole
+        : [item.requiredRole]
+      const matchesRole = roles.some((r) => hasRole(r))
+      if (!matchesRole && !isSuperadmin) {
+        return false
+      }
+    }
+    if (item.requiresOpd && !isSuperadmin && !user?.opd_id) {
+      return false
+    }
+    return true
+  }
+
+  // Filter items and sub-items based on permissions, roles, and opd assignment
   const visibleItems = items
     .map((item) => {
       if (item.items) {
-        const permittedSubItems = item.items.filter((sub) => {
-          if (!sub.requiredPermission) return true
-          return hasPermission(sub.requiredPermission)
-        })
+        const permittedSubItems = item.items.filter((sub) => checkItemAccess(sub))
         return {
           ...item,
           items: permittedSubItems,
@@ -64,7 +81,7 @@ export function NavGroup({ title, items }: NavGroupProps) {
       return item
     })
     .filter((item) => {
-      if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
+      if (!checkItemAccess(item)) {
         return false
       }
       if (item.items && item.items.length === 0 && !item.url) {
@@ -94,15 +111,18 @@ export function NavGroup({ title, items }: NavGroupProps) {
 
           if (isRisikoWizardGroup && !item.items) {
             const matchedStep = wizardSteps.find((s) => s.url === item.url)
-            return (
-              <SidebarWizardMenuLink
-                key={key}
-                item={item}
-                href={href}
-                step={matchedStep}
-                isLast={idx === visibleItems.length - 1}
-              />
-            )
+            if (matchedStep) {
+              return (
+                <SidebarWizardMenuLink
+                  key={key}
+                  item={item}
+                  href={href}
+                  step={matchedStep}
+                  isLast={idx === visibleItems.length - 1}
+                />
+              )
+            }
+            return <SidebarMenuLink key={key} item={item} href={href} />
           }
 
           if (!item.items)
@@ -209,6 +229,7 @@ function SidebarWizardMenuLink({
               )}
             </span>
             <span className='truncate whitespace-nowrap flex-1'>{item.title}</span>
+            {item.badge && <NavBadge variant={item.badgeVariant}>{item.badge}</NavBadge>}
           </Link>
         </SidebarMenuButton>
       )}
@@ -216,8 +237,34 @@ function SidebarWizardMenuLink({
   )
 }
 
-function NavBadge({ children }: { children: ReactNode }) {
-  return <Badge className='rounded-full px-1 py-0 text-xs'>{children}</Badge>
+function NavBadge({
+  children,
+  variant,
+}: {
+  children: ReactNode
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning'
+}) {
+  let colorCls = 'bg-primary text-primary-foreground'
+  if (variant === 'destructive') {
+    colorCls = 'bg-destructive text-destructive-foreground'
+  } else if (variant === 'warning') {
+    colorCls = 'bg-amber-500 text-white dark:bg-amber-600'
+  } else if (variant === 'secondary') {
+    colorCls = 'bg-secondary text-secondary-foreground'
+  } else if (variant === 'outline') {
+    colorCls = 'border border-border text-foreground'
+  }
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold min-w-4.5 h-4.5 leading-none shrink-0 shadow-2xs',
+        colorCls
+      )}
+    >
+      {children}
+    </span>
+  )
 }
 
 function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
@@ -232,7 +279,7 @@ function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
         <Link to={item.url} onClick={() => setOpenMobile(false)}>
           {item.icon && <item.icon className="shrink-0" />}
           <span className="truncate whitespace-nowrap flex-1">{item.title}</span>
-          {item.badge && <NavBadge>{item.badge}</NavBadge>}
+          {item.badge && <NavBadge variant={item.badgeVariant}>{item.badge}</NavBadge>}
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>

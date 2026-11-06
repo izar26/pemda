@@ -69,8 +69,11 @@ export interface PengajuanPenilaianRisiko {
   current_tier: SubmissionTier
   submitted_at: string | null
   kepala_opd_approved_at?: string | null
+  approved_by_kepala_opd_at?: string | null
   auditor_reviewed_at?: string | null
+  approved_by_auditor_at?: string | null
   pengawas_approved_at?: string | null
+  approved_by_pengawas_at?: string | null
   approved_at: string | null
   catatan_umum: string | null
   opd?: {
@@ -210,7 +213,45 @@ export interface OpdReviewListResponse {
   }
 }
 
+export interface PendingApprovalItem {
+  id: string
+  opd_id: string
+  opd_nama: string
+  opd_kode: string
+  status: SubmissionStatus
+  tier: SubmissionTier
+  submitted_at: string | null
+  action_type: string
+  title: string
+  url: string
+  action_required_by?: 'operator' | 'kepala_opd' | 'auditor' | 'pengawas'
+  catatan_terakhir?: string | null
+  periode_nama?: string | null
+}
+
+export interface PendingCountsResponse {
+  kepala_opd_pending: number
+  auditor_pending: number
+  pengawas_pending: number
+  operator_action_required: boolean
+  my_pending_total: number
+  total_action_required?: number
+  pending_items: PendingApprovalItem[]
+}
+
 export const pengajuanRisikoService = {
+  /**
+   * Get real-time pending approval counts for current user.
+   */
+  async getPendingCounts(params?: {
+    periode_penilaian_id?: string
+  }): Promise<PendingCountsResponse> {
+    const response = await apiClient.get<{ data: PendingCountsResponse }>(
+      '/risiko/pengajuan/pending-counts',
+      { params }
+    )
+    return response.data.data
+  },
   /**
    * Get readiness & submission status for an OPD in current period.
    */

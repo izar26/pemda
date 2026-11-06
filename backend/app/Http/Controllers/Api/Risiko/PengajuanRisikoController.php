@@ -59,6 +59,22 @@ class PengajuanRisikoController extends Controller
     }
 
     /**
+     * Get real-time pending approval counts for current user.
+     */
+    public function pendingCounts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            abort(401);
+        }
+
+        $periodeId = $request->get('periode_penilaian_id');
+        $counts = $this->service->getPendingCounts($user, $periodeId ? (string) $periodeId : null);
+
+        return response()->json(['data' => $counts]);
+    }
+
+    /**
      * Submit completed risk forms from Operator to Kepala OPD.
      */
     public function submit(SubmitPengajuanRisikoRequest $request): JsonResponse

@@ -21,6 +21,7 @@ interface ReviewWizardStepHeaderProps {
   isDraftSubmission: boolean
   isPendingMutation: boolean
   isPengawasTier?: boolean
+  isKepalaTier?: boolean
   currentItem?: SubmissionItem
   onApprove: () => void
   onOpenReject: () => void
@@ -37,6 +38,7 @@ export function ReviewWizardStepHeader({
   isDraftSubmission,
   isPendingMutation,
   isPengawasTier,
+  isKepalaTier,
   currentItem,
   onApprove,
   onOpenReject,
@@ -60,65 +62,74 @@ export function ReviewWizardStepHeader({
 
         {/* Decision Actions for This Step */}
         <div className='flex items-center gap-2 shrink-0 flex-wrap'>
-          {isApproved && (
-            <Badge className='bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
-              <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400' />
-              {isPengawasTier ? 'Form Telah Disahkan Final' : 'Form Telah Disetujui'}
+          {isKepalaTier ? (
+            <Badge className='bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
+              <Clock className='h-3.5 w-3.5 text-sky-600 animate-pulse' />
+              Tahap Persetujuan Kepala OPD
             </Badge>
-          )}
-          {isRejected && (
-            <Badge className='bg-destructive/15 text-destructive border border-destructive/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
-              <XCircle className='h-3.5 w-3.5 text-destructive' />
-              {isPengawasTier ? 'Ditolak ke Auditor' : 'Perlu Revisi OPD'}
-            </Badge>
-          )}
-          {!isApproved && !isRejected && (
-            <Badge className='bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
-              <Clock className='h-3.5 w-3.5 text-amber-600 animate-pulse' />
-              {isPengawasTier ? 'Menunggu Pengesahan Pengawas' : 'Menunggu Penilaian'}
-            </Badge>
-          )}
+          ) : (
+            <>
+              {isApproved && (
+                <Badge className='bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
+                  <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400' />
+                  {isPengawasTier ? 'Form Telah Disahkan Final' : 'Form Telah Disetujui'}
+                </Badge>
+              )}
+              {isRejected && (
+                <Badge className='bg-destructive/15 text-destructive border border-destructive/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
+                  <XCircle className='h-3.5 w-3.5 text-destructive' />
+                  {isPengawasTier ? 'Ditolak ke Auditor' : 'Perlu Revisi OPD'}
+                </Badge>
+              )}
+              {!isApproved && !isRejected && (
+                <Badge className='bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
+                  <Clock className='h-3.5 w-3.5 text-amber-600 animate-pulse' />
+                  {isPengawasTier ? 'Menunggu Pengesahan Pengawas' : 'Menunggu Penilaian'}
+                </Badge>
+              )}
 
-          <Button
-            type='button'
-            variant={isRejected ? 'secondary' : 'destructive'}
-            size='sm'
-            disabled={isPendingMutation || isDraftSubmission}
-            onClick={onOpenReject}
-            className='h-8 text-xs gap-1.5 font-medium'
-          >
-            <XCircle className='h-3.5 w-3.5' />
-            <span>
-              {isRejected
-                ? 'Ubah Catatan'
-                : isPengawasTier
-                ? 'Kembalikan ke Auditor'
-                : 'Tolak ke Kepala OPD'}
-            </span>
-          </Button>
+              <Button
+                type='button'
+                variant={isRejected ? 'secondary' : 'destructive'}
+                size='sm'
+                disabled={isPendingMutation || isDraftSubmission}
+                onClick={onOpenReject}
+                className='h-8 text-xs gap-1.5 font-medium'
+              >
+                <XCircle className='h-3.5 w-3.5' />
+                <span>
+                  {isRejected
+                    ? 'Ubah Catatan'
+                    : isPengawasTier
+                    ? 'Kembalikan ke Auditor'
+                    : 'Tolak ke Kepala OPD'}
+                </span>
+              </Button>
 
-          <Button
-            type='button'
-            size='sm'
-            disabled={isPendingMutation || isApproved || isDraftSubmission}
-            onClick={onApprove}
-            className='h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold'
-          >
-            {isPendingMutation ? (
-              <Loader2 className='h-3.5 w-3.5 animate-spin' />
-            ) : (
-              <Check className='h-3.5 w-3.5' />
-            )}
-            <span>
-              {isApproved
-                ? isPengawasTier
-                  ? 'Sudah Disahkan'
-                  : 'Sudah Disetujui'
-                : isPengawasTier
-                ? `Sahkan Form ${stepCode}`
-                : `Setujui Form ${stepCode}`}
-            </span>
-          </Button>
+              <Button
+                type='button'
+                size='sm'
+                disabled={isPendingMutation || isApproved || isDraftSubmission}
+                onClick={onApprove}
+                className='h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold'
+              >
+                {isPendingMutation ? (
+                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                ) : (
+                  <Check className='h-3.5 w-3.5' />
+                )}
+                <span>
+                  {isApproved
+                    ? isPengawasTier
+                      ? 'Sudah Disahkan'
+                      : 'Sudah Disetujui'
+                    : isPengawasTier
+                    ? `Sahkan Form ${stepCode}`
+                    : `Setujui Form ${stepCode}`}
+                </span>
+              </Button>
+            </>
+          )}
         </div>
       </div>
 

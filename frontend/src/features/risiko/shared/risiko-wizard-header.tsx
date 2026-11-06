@@ -44,6 +44,7 @@ import {
   pengajuanRisikoService,
   type ReadinessResponse,
 } from '@/services/pengajuan-risiko-service'
+import { ApprovalTierStepper } from './approval-tier-stepper'
 
 interface RisikoWizardHeaderProps {
   pageTitle?: string
@@ -71,37 +72,152 @@ export function RisikoWorkflowBanners({
   if (!readiness) return null
 
   const hasAuditorWarning = !readiness.has_auditor
-  const isSubmittedToKepala = readiness.status === 'submitted_to_kepala_opd'
-  const isRevisionByKepala = readiness.status === 'revision_by_kepala_opd'
-  const isInAuditorReview =
-    readiness.status === 'submitted_to_auditor' ||
-    readiness.status === 'in_review_auditor' ||
-    readiness.status === 'submitted' ||
-    readiness.status === 'in_review'
-  const isRevisionByAuditor = readiness.status === 'revision_by_auditor'
-  const isRevisionToOperator = readiness.status === 'revision_to_operator'
-  const isInPengawasReview =
-    readiness.status === 'submitted_to_pengawas' ||
-    readiness.status === 'in_review_pengawas'
-  const isRevisionByPengawas = readiness.status === 'revision_by_pengawas'
-  const isApproved = readiness.status === 'approved'
+  const status = readiness.status
 
-  if (
-    !hasAuditorWarning &&
-    !isSubmittedToKepala &&
-    !isRevisionByKepala &&
-    !isInAuditorReview &&
-    !isRevisionByAuditor &&
-    !isRevisionToOperator &&
-    !isInPengawasReview &&
-    !isRevisionByPengawas &&
-    !isApproved
-  ) {
-    return null
+  const getContextGuidance = () => {
+    switch (status) {
+      case 'draft':
+        return null
+      case 'submitted_to_kepala_opd':
+        return {
+          title: 'Menunggu Persetujuan Internal Kepala OPD (Tier 2)',
+          badgeText: 'Review Internal',
+          borderCls: 'border-sky-500/30 bg-sky-500/5',
+          headerIcon: Clock,
+          headerIconCls: 'text-sky-600 dark:text-sky-400',
+          kondisi: `Lembar kerja telah diajukan kepada Kepala OPD (${readiness.kepala_opd?.name || 'Pimpinan OPD'}) dan sedang menunggu persetujuan internal.`,
+          tindakan: readiness.can_review_kepala
+            ? 'Sebagai Kepala OPD, Anda dapat memeriksa sasaran, program, dan indikator, lalu menyetujui (kirim ke Auditor) atau meminta perbaikan.'
+            : 'Lembar kerja berstatus read-only bagi Operator hingga Kepala OPD memberikan keputusan.',
+          langkahBerikutnya:
+            'Jika disetujui Kepala OPD, berkas diteruskan ke Auditor Pengawas Inspektorat. Jika ditolak, berkas dikembalikan ke Operator.',
+        }
+      case 'revision_by_kepala_opd':
+        return {
+          title: 'Permintaan Revisi Internal oleh Kepala OPD',
+          badgeText: 'Revisi Internal',
+          borderCls: 'border-destructive/30 bg-destructive/5',
+          headerIcon: AlertCircle,
+          headerIconCls: 'text-destructive',
+          kondisi:
+            'Kepala OPD mengembalikan lembar kerja dengan catatan perbaikan internal sebelum diteruskan ke APIP.',
+          tindakan:
+            'Operator OPD dapat membuka kembali formulir yang ditandai catatan revisi dan memperbaikinya.',
+          langkahBerikutnya:
+            'Setelah perbaikan selesai disimpan, Operator dapat mengajukan kembali berkas ke Kepala OPD.',
+        }
+      case 'submitted_to_auditor':
+      case 'in_review_auditor':
+      case 'submitted':
+      case 'in_review':
+        return {
+          title: 'Pemeriksaan Kepatuhan Teknis oleh Auditor Pengawas (Tier 3)',
+          badgeText: 'Pemeriksaan Auditor',
+          borderCls: 'border-amber-500/30 bg-amber-500/5',
+          headerIcon: Clock,
+          headerIconCls: 'text-amber-600 dark:text-amber-400',
+          kondisi: `Lembar kerja telah disetujui Kepala OPD dan sedang dalam pemeriksaan Auditor Pengawas (${readiness.assigned_auditor?.name || 'Inspektorat'}).`,
+          tindakan: readiness.can_review_auditor
+            ? 'Sebagai Auditor Pengawas, periksa lembar kerja risiko, lalu setujui ke Pengawas atau minta perbaikan ke OPD.'
+            : 'Lembar kerja berstatus read-only bagi OPD selama proses pemeriksaan berlangsung.',
+          langkahBerikutnya:
+            'Jika disetujui Auditor, berkas diajukan ke Pengawas APIP. Jika ada catatan, berkas dikembalikan ke Kepala OPD.',
+        }
+      case 'revision_by_auditor':
+        return {
+          title: 'Catatan Perbaikan dari Auditor Pengawas',
+          badgeText: 'Revisi Auditor',
+          borderCls: 'border-amber-500/30 bg-amber-500/5',
+          headerIcon: AlertCircle,
+          headerIconCls: 'text-amber-600',
+          kondisi:
+            'Auditor Pengawas menemukan hal yang perlu disempurnakan dan mengembalikan berkas ke Kepala OPD beserta catatan.',
+          tindakan: readiness.can_delegate_operator
+            ? 'Kepala OPD dapat mempelajari catatan auditor lalu mendelegasikan tugas perbaikan teknis kepada Operator OPD.'
+            : 'Operator OPD menunggu disposisi / delegasi instruksi perbaikan dari Kepala OPD.',
+          langkahBerikutnya:
+            'Kepala OPD mendelegasikan revisi kepada Operator agar formulir dapat dibuka kembali untuk diedit.',
+        }
+      case 'revision_to_operator':
+        return {
+          title: 'Perbaikan Telah Didelegasikan kepada Operator OPD',
+          badgeText: 'Perbaikan Didelegasikan',
+          borderCls: 'border-destructive/30 bg-destructive/5',
+          headerIcon: AlertCircle,
+          headerIconCls: 'text-destructive',
+          kondisi:
+            'Kepala OPD telah menginstruksikan Operator untuk menindaklanjuti catatan perbaikan teknis dari Auditor Pengawas.',
+          tindakan:
+            'Operator OPD dapat mengedit formulir yang ditandai dan memperbaiki data sesuai catatan perbaikan.',
+          langkahBerikutnya:
+            'Setelah perbaikan disimpan, Operator mengajukan kembali ke Kepala OPD untuk diteruskan ke Auditor.',
+        }
+      case 'submitted_to_pengawas':
+      case 'in_review_pengawas':
+        return {
+          title: 'Tahap Pengesahan Akhir oleh Pengawas APIP (Tier 4)',
+          badgeText: 'Pengesahan APIP',
+          borderCls: 'border-purple-500/30 bg-purple-500/5',
+          headerIcon: Clock,
+          headerIconCls: 'text-purple-600 dark:text-purple-400',
+          kondisi:
+            'Seluruh lembar kerja telah disetujui oleh Auditor Pengawas dan kini berada pada meja Pengawas Inspektorat untuk pengesahan akhir.',
+          tindakan: readiness.can_review_pengawas
+            ? 'Sebagai Pengawas APIP, Anda dapat mengesahkan berkas secara final atau mengembalikan ke Auditor jika ada klarifikasi.'
+            : 'Lembar kerja berstatus read-only bagi OPD dan Auditor.',
+          langkahBerikutnya:
+            'Jika disahkan oleh Pengawas, dokumen menjadi resmi dan sah. Jika dikembalikan, Auditor akan menindaklanjuti klarifikasi.',
+        }
+      case 'revision_by_pengawas':
+        return {
+          title: 'Pengawas Mengembalikan Berkas ke Auditor',
+          badgeText: 'Klarifikasi APIP',
+          borderCls: 'border-amber-500/30 bg-amber-500/5',
+          headerIcon: AlertCircle,
+          headerIconCls: 'text-amber-600',
+          kondisi:
+            'Pengawas APIP meminta klarifikasi teknis kepada Auditor Pengawas sebelum pengesahan final diterbitkan.',
+          tindakan:
+            readiness.can_forward_revision_auditor || readiness.can_review_auditor
+              ? 'Auditor Pengawas dapat meninjau catatan pengawas, meneruskan perbaikan ke OPD, atau mengajukan kembali ke Pengawas.'
+              : 'Berkas sedang dalam penanganan klarifikasi teknis antara Pengawas dan Auditor.',
+          langkahBerikutnya:
+            'Auditor menyelesaikan klarifikasi teknis atau meneruskan revisi ke OPD jika data awal memerlukan penyesuaian.',
+        }
+      case 'approved':
+        return {
+          title: 'Dokumen Manajemen Risiko Telah Disahkan Final',
+          badgeText: 'Disahkan Final',
+          borderCls: 'border-emerald-500/30 bg-emerald-500/5',
+          headerIcon: CheckCircle2,
+          headerIconCls: 'text-emerald-600 dark:text-emerald-400',
+          kondisi:
+            'Dokumen Pengelolaan Risiko periode ini telah melalui verifikasi 4 tingkat dan resmi disahkan oleh Inspektorat.',
+          tindakan:
+            'Dokumen resmi berstatus terkunci permanen dan dapat diunduh untuk lampiran laporan kinerja pemda.',
+          langkahBerikutnya:
+            'Pelaksanaan rencana tindak pengendalian (RTP) dan pemantauan risiko berkala sepanjang tahun berjalan.',
+        }
+      default:
+        return null
+    }
   }
 
+  const guidance = getContextGuidance()
+
+  // Collect itemized rejected notes
+  const rejectedItems =
+    readiness.submission?.items?.filter(
+      (i) =>
+        i.status === 'rejected' ||
+        i.status_kepala_opd === 'rejected' ||
+        i.status_auditor === 'rejected' ||
+        i.status_pengawas === 'rejected'
+    ) || []
+
   return (
-    <div className='space-y-3 mb-2'>
+    <div className='space-y-3 mb-3'>
+      {/* 1. Missing Auditor Warning */}
       {hasAuditorWarning && (
         <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
           <ShieldAlert className='h-4.5 w-4.5 shrink-0 mt-0.5' />
@@ -116,157 +232,96 @@ export function RisikoWorkflowBanners({
         </div>
       )}
 
-      {/* Tier 2: Menunggu Review Kepala OPD */}
-      {isSubmittedToKepala && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400 text-start'>
-          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Menunggu Persetujuan Internal Kepala OPD
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Seluruh lembar kerja telah diajukan kepada Kepala OPD (<strong>{readiness.kepala_opd?.name || 'Pimpinan OPD'}</strong>) untuk ditinjau secara internal sebelum diteruskan kepada Auditor Pengawas.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* 2. Visual 4-Tier Approval Stepper */}
+      <ApprovalTierStepper readiness={readiness} />
 
-      {/* Tier 2: Revisi dari Kepala OPD */}
-      {isRevisionByKepala && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-1.5 text-xs flex-1'>
-            <p className='font-bold text-foreground'>
-              Kepala OPD Meminta Revisi Internal
-            </p>
-            <div className='space-y-1.5'>
-              {readiness.submission?.items
-                ?.filter((i) => i.status_kepala_opd === 'rejected' || i.status === 'rejected')
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className='p-2 rounded-md bg-background/80 border text-[11px] text-foreground space-y-0.5'
-                  >
-                    <span className='font-bold uppercase text-destructive mr-2'>
-                      Form {item.form_code}:
-                    </span>
-                    <span className='text-muted-foreground'>
-                      {item.catatan_kepala_opd || item.catatan_revisi || 'Perlu perbaikan internal.'}
-                    </span>
-                  </div>
-                ))}
+      {/* 3. Smart 3-Section Contextual Guidance Box */}
+      {guidance && (
+        <div
+          className={cn(
+            'rounded-xl border p-3.5 sm:p-4 text-xs transition-colors shadow-2xs',
+            guidance.borderCls
+          )}
+        >
+          <div className='flex items-center justify-between gap-2 pb-2.5 border-b border-border/50'>
+            <div className='flex items-center gap-2'>
+              <guidance.headerIcon
+                className={cn('h-4 w-4 shrink-0', guidance.headerIconCls)}
+              />
+              <span className='font-bold text-foreground text-xs sm:text-sm'>
+                {guidance.title}
+              </span>
             </div>
-            <p className='text-[11px] text-muted-foreground'>
-              Silakan lakukan perbaikan yang diminta, lalu ajukan kembali kepada Kepala OPD.
-            </p>
+            <Badge variant='outline' className='text-[10px] font-medium'>
+              {guidance.badgeText}
+            </Badge>
           </div>
-        </div>
-      )}
 
-      {/* Tier 3: Auditor In Review */}
-      {isInAuditorReview && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
-          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Formulir Sedang Dalam Pemeriksaan Auditor Pengawas
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Lembar kerja telah disetujui Kepala OPD dan sedang diperiksa oleh Auditor Pengawas (<strong>{readiness.assigned_auditor?.name || 'Inspektorat'}</strong>). Formulir berstatus read-only.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Tier 3: Revisi dari Auditor (Menunggu Delegasi Kepala OPD) */}
-      {isRevisionByAuditor && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-start'>
-          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5 text-amber-600' />
-          <div className='space-y-1 text-xs flex-1'>
-            <p className='font-bold text-foreground'>
-              Auditor Meminta Perbaikan (Menunggu Arahan Kepala OPD)
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Auditor Pengawas mengembalikan lembar kerja kepada Kepala OPD dengan catatan perbaikan. Operator OPD menunggu arahan delegasi perbaikan dari Kepala OPD.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Tier 3: Revisi Didelegasikan ke Operator */}
-      {isRevisionToOperator && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-1.5 text-xs flex-1'>
-            <p className='font-bold text-foreground'>
-              Perbaikan Lembar Kerja Telah Didelegasikan kepada Operator
-            </p>
-            <div className='space-y-1.5'>
-              {readiness.submission?.items
-                ?.filter((i) => i.status_auditor === 'rejected' || i.status === 'rejected')
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className='p-2 rounded-md bg-background/80 border text-[11px] text-foreground space-y-0.5'
-                  >
-                    <span className='font-bold uppercase text-destructive mr-2'>
-                      Form {item.form_code}:
-                    </span>
-                    <span className='text-muted-foreground'>
-                      {item.catatan_auditor || item.catatan_revisi || 'Perlu perbaikan.'}
-                    </span>
-                  </div>
-                ))}
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 text-[11px] leading-relaxed'>
+            {/* Section 1: Kondisi Berkas Terkini */}
+            <div className='space-y-1 p-2 rounded-lg bg-background/60 border border-border/40'>
+              <div className='flex items-center gap-1.5 font-bold text-foreground'>
+                <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary'>
+                  1
+                </span>
+                <span>Kondisi Berkas Terkini</span>
+              </div>
+              <p className='text-muted-foreground'>{guidance.kondisi}</p>
             </div>
-            <p className='text-[11px] text-muted-foreground'>
-              Silakan lakukan perbaikan pada form yang ditandai, kemudian ajukan kembali kepada Kepala OPD.
-            </p>
-          </div>
-        </div>
-      )}
 
-      {/* Tier 4: Pengawas In Review */}
-      {isInPengawasReview && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-400 text-start'>
-          <Clock className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Menunggu Pengesahan Akhir Pengawas (Inspektorat)
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Seluruh formulir telah disetujui oleh Auditor Pengawas dan kini sedang dalam tahap pengesahan akhir oleh Pengawas APIP (Inspektorat).
-            </p>
-          </div>
-        </div>
-      )}
+            {/* Section 2: Tindakan Anda */}
+            <div className='space-y-1 p-2 rounded-lg bg-background/60 border border-border/40'>
+              <div className='flex items-center gap-1.5 font-bold text-foreground'>
+                <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary'>
+                  2
+                </span>
+                <span>Tindakan Anda</span>
+              </div>
+              <p className='text-muted-foreground'>{guidance.tindakan}</p>
+            </div>
 
-      {/* Tier 4: Revisi Pengawas */}
-      {isRevisionByPengawas && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-start'>
-          <AlertCircle className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Pengawas Mengembalikan Berkas ke Auditor
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Pengawas APIP meminta klarifikasi atau perbaikan teknis kepada Auditor Pengawas sebelum pengesahan final.
-            </p>
+            {/* Section 3: Langkah Selanjutnya */}
+            <div className='space-y-1 p-2 rounded-lg bg-background/60 border border-border/40'>
+              <div className='flex items-center gap-1.5 font-bold text-foreground'>
+                <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary'>
+                  3
+                </span>
+                <span>Langkah Selanjutnya</span>
+              </div>
+              <p className='text-muted-foreground'>{guidance.langkahBerikutnya}</p>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Tier 5 / Approved: Disetujui Final */}
-      {isApproved && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-start'>
-          <CheckCircle2 className='h-4.5 w-4.5 shrink-0 mt-0.5' />
-          <div className='space-y-0.5 text-xs'>
-            <p className='font-bold text-foreground'>
-              Lembar Kerja Resmi Disahkan oleh Pengawas Inspektorat
-            </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Seluruh formulir pengelolaan risiko periode ini telah melalui verifikasi 4 tingkat (Operator $\rightarrow$ Kepala OPD $\rightarrow$ Auditor $\rightarrow$ Pengawas) dan disahkan secara final. Data terkunci permanen.
-            </p>
-          </div>
+          {/* Itemized Rejection Notes if present */}
+          {rejectedItems.length > 0 && (
+            <div className='mt-3 pt-2.5 border-t border-border/50 space-y-2'>
+              <span className='font-bold text-destructive text-[11px] uppercase tracking-wide flex items-center gap-1.5'>
+                <AlertCircle className='h-3.5 w-3.5' />
+                Rincian Catatan Perbaikan Formulir:
+              </span>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                {rejectedItems.map((item) => {
+                  const note =
+                    item.catatan_kepala_opd ||
+                    item.catatan_auditor ||
+                    item.catatan_pengawas ||
+                    item.catatan_revisi ||
+                    'Perlu perbaikan data formulir.'
+                  return (
+                    <div
+                      key={item.id}
+                      className='p-2 rounded-md bg-destructive/10 border border-destructive/20 text-[11px] text-foreground space-y-0.5'
+                    >
+                      <span className='font-bold uppercase text-destructive mr-1.5'>
+                        Form {item.form_code}:
+                      </span>
+                      <span className='text-muted-foreground'>{note}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -612,7 +667,7 @@ export function RisikoWizardHeader({
         <TooltipProvider delayDuration={150}>
           <nav
             aria-label='Progress Pengisian Risiko'
-            className='hidden sm:flex items-center gap-1.5 py-1.5 overflow-x-auto no-scrollbar'
+            className='hidden sm:flex items-center justify-between gap-1 w-full py-1'
           >
             {steps.map((step) => {
               const isCurrent = step.id === currentStepId
@@ -628,21 +683,21 @@ export function RisikoWizardHeader({
                       onClick={() => handleStepClick(step)}
                       disabled={isLocked}
                       className={cn(
-                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 border select-none',
+                        'flex-1 min-w-0 flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-[11px] font-medium transition-all border select-none',
                         isCurrent
-                          ? 'bg-primary text-primary-foreground border-primary font-bold shadow-xs'
+                          ? 'bg-primary text-primary-foreground border-primary font-bold shadow-xs ring-1 ring-primary/40'
                           : isCompleted
                           ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                           : isLocked
-                          ? 'bg-muted/40 text-muted-foreground/50 border-transparent cursor-not-allowed'
+                          ? 'bg-muted/30 text-muted-foreground/40 border-transparent cursor-not-allowed opacity-60'
                           : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-border'
                       )}
                     >
                       <span
                         className={cn(
-                          'w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0',
+                          'w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-mono shrink-0 font-bold',
                           isCurrent
-                            ? 'bg-primary-foreground text-primary font-bold'
+                            ? 'bg-primary-foreground text-primary'
                             : isCompleted
                             ? 'bg-emerald-600 text-white'
                             : isLocked
@@ -652,16 +707,20 @@ export function RisikoWizardHeader({
                       >
                         {step.stepNumber}
                       </span>
-                      <span className='truncate max-w-[120px]'>{cleanTitle}</span>
+                      <span className='font-mono text-[10px] font-semibold tracking-tight truncate'>
+                        {step.code}
+                      </span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side='bottom' className='text-xs'>
-                    <p className='font-bold'>
-                      Langkah {step.stepNumber}: {cleanTitle}
-                    </p>
-                    <p className='text-[10px] text-muted-foreground'>
-                      Form {step.code} • {isCompleted ? 'Sudah Diisi' : isLocked ? 'Terkunci' : 'Siap Diisi'}
-                    </p>
+                  <TooltipContent side='bottom' className='text-xs max-w-xs'>
+                    <div className='space-y-0.5'>
+                      <p className='font-bold text-foreground'>
+                        Langkah {step.stepNumber}: {cleanTitle}
+                      </p>
+                      <p className='text-[10px] text-muted-foreground'>
+                        Form {step.code} • {isCompleted ? '✓ Sudah Selesai' : isLocked ? '🔒 Masih Terkunci' : '📝 Siap Dikerjakan'}
+                      </p>
+                    </div>
                   </TooltipContent>
                 </Tooltip>
               )

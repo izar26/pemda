@@ -26,6 +26,13 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import {
   Table,
@@ -50,12 +57,14 @@ import { perencanaanService } from '@/services/perencanaan-service'
 import { ReviewRisikoWizard } from './components/review-risiko-wizard'
 
 type StatusFilter = 'semua' | 'submitted' | 'revision_requested' | 'approved' | 'belum_mengirim'
+type TierFilter = 'all' | 'kepala' | 'auditor' | 'pengawas' | 'approved' | 'opd'
 
 export function ReviewRisikoManagement() {
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('semua')
+  const [tierFilter, setTierFilter] = useState<TierFilter>('all')
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -99,7 +108,7 @@ export function ReviewRisikoManagement() {
     staleTime: 30_000,
   })
 
-  const rawOpdList = reviewResponse?.data || []
+  const rawOpdList = useMemo(() => reviewResponse?.data || [], [reviewResponse?.data])
 
   // Calculate accurate summary metrics
   const metrics = useMemo(() => {
@@ -137,6 +146,38 @@ export function ReviewRisikoManagement() {
     }
 
     return { total, menunggu, revisi, disetujui, belumKirim }
+  }, [rawOpdList])
+
+  // Tier Counts for Berjenjang Tabs
+  const tierCounts = useMemo(() => {
+    let kepala = 0
+    let auditor = 0
+    let pengawas = 0
+    let approved = 0
+    let opd = 0
+
+    for (const item of rawOpdList) {
+      const s = item.pengajuan_risiko?.[0]?.status
+      if (s === 'submitted_to_kepala_opd' || s === 'revision_by_auditor') {
+        kepala++
+      } else if (
+        s === 'submitted_to_auditor' ||
+        s === 'in_review_auditor' ||
+        s === 'revision_by_pengawas' ||
+        s === 'submitted' ||
+        s === 'in_review'
+      ) {
+        auditor++
+      } else if (s === 'submitted_to_pengawas' || s === 'in_review_pengawas') {
+        pengawas++
+      } else if (s === 'approved') {
+        approved++
+      } else {
+        opd++
+      }
+    }
+
+    return { all: rawOpdList.length, kepala, auditor, pengawas, approved, opd }
   }, [rawOpdList])
 
   // KPI Items using the standard unified KpiStatsCards
@@ -251,8 +292,41 @@ export function ReviewRisikoManagement() {
       })
     }
 
+    if (tierFilter !== 'all') {
+      list = list.filter((opd) => {
+        const s = opd.pengajuan_risiko?.[0]?.status
+        if (tierFilter === 'kepala') {
+          return s === 'submitted_to_kepala_opd' || s === 'revision_by_auditor'
+        }
+        if (tierFilter === 'auditor') {
+          return (
+            s === 'submitted_to_auditor' ||
+            s === 'in_review_auditor' ||
+            s === 'revision_by_pengawas' ||
+            s === 'submitted' ||
+            s === 'in_review'
+          )
+        }
+        if (tierFilter === 'pengawas') {
+          return s === 'submitted_to_pengawas' || s === 'in_review_pengawas'
+        }
+        if (tierFilter === 'approved') {
+          return s === 'approved'
+        }
+        if (tierFilter === 'opd') {
+          return (
+            !s ||
+            s === 'draft' ||
+            s === 'revision_by_kepala_opd' ||
+            s === 'revision_to_operator'
+          )
+        }
+        return true
+      })
+    }
+
     return list
-  }, [rawOpdList, debouncedSearchTerm, statusFilter])
+  }, [rawOpdList, debouncedSearchTerm, statusFilter, tierFilter])
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
@@ -378,11 +452,11 @@ export function ReviewRisikoManagement() {
                 <div className='flex items-center gap-2.5 flex-wrap'>
                   <h2 className='text-2xl font-bold tracking-tight text-foreground flex items-center gap-2'>
                     <ClipboardCheck className='h-6 w-6 text-primary' />
-                    Review Risiko OPD
+                    Review & Persetujuan Risiko Perangkat Daerah
                   </h2>
                 </div>
                 <p className='text-xs text-muted-foreground'>
-                  Pemeriksaan, pemberian catatan revisi, dan persetujuan lembar kerja pengelolaan risiko perangkat daerah binaan Inspektorat.
+                  Telaah berjenjang internal pimpinan OPD, pemeriksaan kepatuhan auditor APIP, dan pengesahan final Pengawas Inspektorat.
                 </p>
               </div>
 
@@ -410,10 +484,10 @@ export function ReviewRisikoManagement() {
               className='grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
             />
 
-            {/* 3. Filter Toolbar & Tabs */}
-            <div className='flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3'>
-              {/* Search input with clear button */}
-              <div className='relative flex-1 max-w-md'>
+            {/* 3. Standard Filter Toolbar (Search + 2 Dropdown Filters) */}
+            <div className='flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3'>
+              {/* Left: Search input with clear button */}
+              <div className='relative flex-1 max-w-sm'>
                 <SearchIcon className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
                 <Input
                   type='text'
@@ -433,37 +507,81 @@ export function ReviewRisikoManagement() {
                 )}
               </div>
 
-              {/* Status Tabs with count badges */}
-              <div className='flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0'>
-                {[
-                  { id: 'semua', label: 'Semua', count: metrics.total },
-                  { id: 'submitted', label: 'Menunggu Review', count: metrics.menunggu },
-                  { id: 'revision_requested', label: 'Perlu Revisi', count: metrics.revisi },
-                  { id: 'approved', label: 'Disetujui', count: metrics.disetujui },
-                  { id: 'belum_mengirim', label: 'Belum Mengirim', count: metrics.belumKirim },
-                ].map((tab) => {
-                  const isActive = statusFilter === tab.id
-                  return (
-                    <Button
-                      key={tab.id}
-                      variant={isActive ? 'default' : 'outline'}
-                      size='sm'
-                      className='h-8 text-xs shrink-0 gap-1.5 font-medium'
-                      onClick={() => setStatusFilter(tab.id as StatusFilter)}
-                    >
-                      <span>{tab.label}</span>
-                      <span
-                        className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                          isActive
-                            ? 'bg-primary-foreground/20 text-primary-foreground font-bold'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {tab.count}
-                      </span>
-                    </Button>
-                  )
-                })}
+              {/* Right: Dropdown 1 (Tahap Approval) + Dropdown 2 (Status Review) + Reset */}
+              <div className='flex items-center gap-2 flex-wrap sm:flex-nowrap'>
+                {/* Dropdown 1: Tahap Approval */}
+                <Select
+                  value={tierFilter}
+                  onValueChange={(val) => setTierFilter(val as TierFilter)}
+                >
+                  <SelectTrigger className='w-full sm:w-[220px] h-9 text-xs'>
+                    <SelectValue placeholder='Tahap Approval' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all' className='text-xs'>
+                      Semua Tahap ({tierCounts.all})
+                    </SelectItem>
+                    <SelectItem value='kepala' className='text-xs'>
+                      Tier 2: Kepala OPD ({tierCounts.kepala})
+                    </SelectItem>
+                    <SelectItem value='auditor' className='text-xs'>
+                      Tier 3: Auditor ({tierCounts.auditor})
+                    </SelectItem>
+                    <SelectItem value='pengawas' className='text-xs'>
+                      Tier 4: Pengawas ({tierCounts.pengawas})
+                    </SelectItem>
+                    <SelectItem value='approved' className='text-xs'>
+                      Disahkan Final ({tierCounts.approved})
+                    </SelectItem>
+                    <SelectItem value='opd' className='text-xs'>
+                      Tier 1: Draf Operator ({tierCounts.opd})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Dropdown 2: Status Review */}
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) => setStatusFilter(val as StatusFilter)}
+                >
+                  <SelectTrigger className='w-full sm:w-[190px] h-9 text-xs'>
+                    <SelectValue placeholder='Status Review' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='semua' className='text-xs'>
+                      Semua Status ({metrics.total})
+                    </SelectItem>
+                    <SelectItem value='submitted' className='text-xs'>
+                      Menunggu Review ({metrics.menunggu})
+                    </SelectItem>
+                    <SelectItem value='revision_requested' className='text-xs'>
+                      Perlu Revisi ({metrics.revisi})
+                    </SelectItem>
+                    <SelectItem value='approved' className='text-xs'>
+                      Telah Disetujui ({metrics.disetujui})
+                    </SelectItem>
+                    <SelectItem value='belum_mengirim' className='text-xs'>
+                      Belum Mengirim ({metrics.belumKirim})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Reset Filter Button */}
+                {(searchTerm || statusFilter !== 'semua' || tierFilter !== 'all') && (
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    className='h-9 text-xs text-muted-foreground hover:text-foreground gap-1.5 shrink-0 px-2.5'
+                    onClick={() => {
+                      setSearchTerm('')
+                      setStatusFilter('semua')
+                      setTierFilter('all')
+                    }}
+                  >
+                    <X className='h-3.5 w-3.5' />
+                    <span>Reset</span>
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -530,6 +648,7 @@ export function ReviewRisikoManagement() {
                         Boolean(submission?.status && submission.status !== 'draft')
 
                       const isPendingReview =
+                        submission?.status === 'submitted_to_kepala_opd' ||
                         submission?.status === 'submitted_to_auditor' ||
                         submission?.status === 'in_review_auditor' ||
                         submission?.status === 'submitted_to_pengawas' ||
@@ -580,7 +699,27 @@ export function ReviewRisikoManagement() {
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell>{getStatusBadge(submission)}</TableCell>
+                          <TableCell>
+                            <div className='flex flex-col items-start gap-1'>
+                              {getStatusBadge(submission)}
+                              {/* Post-Revision Change Detection Highlight */}
+                              {submission?.histories?.some(
+                                (h) =>
+                                  h.action.includes('reject') ||
+                                  h.action.includes('revision')
+                              ) &&
+                                (submission.status === 'submitted_to_auditor' ||
+                                  submission.status === 'submitted_to_pengawas') && (
+                                  <Badge
+                                    variant='outline'
+                                    className='bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] gap-1 py-0 px-1.5 font-medium'
+                                  >
+                                    <RefreshCw className='h-2.5 w-2.5' />
+                                    Revisi Selesai Diperbaiki
+                                  </Badge>
+                                )}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className='flex items-center gap-1.5'>
                               <Badge

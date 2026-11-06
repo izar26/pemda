@@ -365,6 +365,21 @@ class PengajuanRisikoService
                 'created_at' => now(),
             ]);
 
+            $this->auditLogService->log(
+                action: 'SUBMIT_TO_KEPALA_OPD',
+                module: 'Pengelolaan Risiko',
+                description: "Operator {$user->name} mengajukan lembar kerja risiko OPD {$lockedSubmission->opd?->nama} ke Kepala OPD",
+                user: $user,
+                context: [
+                    'pengajuan_id' => $lockedSubmission->id,
+                    'opd_id' => $lockedSubmission->opd_id,
+                    'periode_penilaian_id' => $lockedSubmission->periode_penilaian_id,
+                    'catatan' => $catatan,
+                ],
+                auditableType: PengajuanPenilaianRisiko::class,
+                auditableId: $lockedSubmission->id,
+            );
+
             return $lockedSubmission->fresh([
                 'opd',
                 'periodePenilaian',
@@ -453,6 +468,20 @@ class PengajuanRisikoService
                     'user_id' => $kepalaOpdUser->id,
                     'created_at' => now(),
                 ]);
+
+                $this->auditLogService->log(
+                    action: 'KEPALA_OPD_REJECTED',
+                    module: 'Pengelolaan Risiko',
+                    description: "Kepala OPD {$kepalaOpdUser->name} meminta revisi internal lembar kerja OPD {$lockedSubmission->opd?->nama}: {$catatan}",
+                    user: $kepalaOpdUser,
+                    context: [
+                        'pengajuan_id' => $lockedSubmission->id,
+                        'opd_id' => $lockedSubmission->opd_id,
+                        'catatan' => $catatan,
+                    ],
+                    auditableType: PengajuanPenilaianRisiko::class,
+                    auditableId: $lockedSubmission->id,
+                );
             } else {
                 $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
@@ -476,6 +505,20 @@ class PengajuanRisikoService
                     'user_id' => $kepalaOpdUser->id,
                     'created_at' => now(),
                 ]);
+
+                $this->auditLogService->log(
+                    action: 'KEPALA_OPD_APPROVED',
+                    module: 'Pengelolaan Risiko',
+                    description: "Kepala OPD {$kepalaOpdUser->name} menyetujui lembar kerja OPD {$lockedSubmission->opd?->nama} dan meneruskannya ke Auditor Pengawas",
+                    user: $kepalaOpdUser,
+                    context: [
+                        'pengajuan_id' => $lockedSubmission->id,
+                        'opd_id' => $lockedSubmission->opd_id,
+                        'catatan' => $catatan,
+                    ],
+                    auditableType: PengajuanPenilaianRisiko::class,
+                    auditableId: $lockedSubmission->id,
+                );
             }
 
             return $lockedSubmission->fresh([
@@ -528,6 +571,20 @@ class PengajuanRisikoService
                 'user_id' => $kepalaOpdUser->id,
                 'created_at' => now(),
             ]);
+
+            $this->auditLogService->log(
+                action: 'KEPALA_OPD_DELEGATED_TO_OPERATOR',
+                module: 'Pengelolaan Risiko',
+                description: "Kepala OPD {$kepalaOpdUser->name} mendelegasikan instruksi revisi Auditor OPD {$lockedSubmission->opd?->nama} kepada Operator",
+                user: $kepalaOpdUser,
+                context: [
+                    'pengajuan_id' => $lockedSubmission->id,
+                    'opd_id' => $lockedSubmission->opd_id,
+                    'catatan' => $catatan,
+                ],
+                auditableType: PengajuanPenilaianRisiko::class,
+                auditableId: $lockedSubmission->id,
+            );
 
             return $lockedSubmission->fresh([
                 'opd',
@@ -628,6 +685,21 @@ class PengajuanRisikoService
                 'created_at' => now(),
             ]);
 
+            $this->auditLogService->log(
+                action: $status === PengajuanPenilaianRisikoItem::STATUS_APPROVED ? 'AUDITOR_APPROVE_ITEM' : 'AUDITOR_REJECT_ITEM',
+                module: 'Pengawasan Risiko',
+                description: "Auditor {$auditorUser->name} ".($status === PengajuanPenilaianRisikoItem::STATUS_APPROVED ? 'menyetujui' : 'menolak')." Form {$cleanFormCode} OPD {$lockedSubmission->opd?->nama}",
+                user: $auditorUser,
+                context: [
+                    'pengajuan_id' => $lockedSubmission->id,
+                    'form_code' => $cleanFormCode,
+                    'status' => $status,
+                    'catatan' => $catatanRevisi,
+                ],
+                auditableType: PengajuanPenilaianRisikoItem::class,
+                auditableId: $item->id,
+            );
+
             // Re-evaluate parent submission status across all items
             $allItems = PengajuanPenilaianRisikoItem::where('pengajuan_id', $lockedSubmission->id)->get();
             $hasAnyRejected = $allItems->contains('status_auditor', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
@@ -651,6 +723,19 @@ class PengajuanRisikoService
                     'user_id' => $auditorUser->id,
                     'created_at' => now(),
                 ]);
+
+                $this->auditLogService->log(
+                    action: 'AUDITOR_REJECTED_SUBMISSION',
+                    module: 'Pengawasan Risiko',
+                    description: "Auditor {$auditorUser->name} mengembalikan berkas OPD {$lockedSubmission->opd?->nama} ke Kepala OPD untuk perbaikan",
+                    user: $auditorUser,
+                    context: [
+                        'pengajuan_id' => $lockedSubmission->id,
+                        'form_code' => $cleanFormCode,
+                    ],
+                    auditableType: PengajuanPenilaianRisiko::class,
+                    auditableId: $lockedSubmission->id,
+                );
             } elseif ($allRequiredApproved) {
                 $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
@@ -672,6 +757,18 @@ class PengajuanRisikoService
                     'user_id' => $auditorUser->id,
                     'created_at' => now(),
                 ]);
+
+                $this->auditLogService->log(
+                    action: 'AUDITOR_FORWARDED_TO_PENGAWAS',
+                    module: 'Pengawasan Risiko',
+                    description: "Auditor {$auditorUser->name} menyetujui seluruh lembar kerja OPD {$lockedSubmission->opd?->nama} dan meneruskannya ke Pengawas APIP",
+                    user: $auditorUser,
+                    context: [
+                        'pengajuan_id' => $lockedSubmission->id,
+                    ],
+                    auditableType: PengajuanPenilaianRisiko::class,
+                    auditableId: $lockedSubmission->id,
+                );
             } else {
                 $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
@@ -739,6 +836,19 @@ class PengajuanRisikoService
                 'created_at' => now(),
             ]);
 
+            $this->auditLogService->log(
+                action: 'AUDITOR_FORWARD_REVISION_TO_KEPALA',
+                module: 'Pengawasan Risiko',
+                description: "Auditor {$auditorUser->name} meneruskan catatan penolakan pengawas OPD {$lockedSubmission->opd?->nama} kepada Kepala OPD",
+                user: $auditorUser,
+                context: [
+                    'pengajuan_id' => $lockedSubmission->id,
+                    'catatan' => $catatan,
+                ],
+                auditableType: PengajuanPenilaianRisiko::class,
+                auditableId: $lockedSubmission->id,
+            );
+
             return $lockedSubmission->fresh([
                 'opd',
                 'periodePenilaian',
@@ -787,6 +897,14 @@ class PengajuanRisikoService
                 'current_tier' => PengajuanPenilaianRisiko::TIER_PENGAWAS,
             ]);
 
+            // Reset rejected pengawas items back to submitted so Pengawas can re-review them
+            PengajuanPenilaianRisikoItem::where('pengajuan_id', $lockedSubmission->id)
+                ->where('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_REJECTED)
+                ->update([
+                    'status_pengawas' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
+                    'status' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
+                ]);
+
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $lockedSubmission->id,
                 'action' => 'resubmitted_to_pengawas',
@@ -794,6 +912,19 @@ class PengajuanRisikoService
                 'user_id' => $auditorUser->id,
                 'created_at' => now(),
             ]);
+
+            $this->auditLogService->log(
+                action: 'AUDITOR_RESUBMIT_TO_PENGAWAS',
+                module: 'Pengawasan Risiko',
+                description: "Auditor {$auditorUser->name} mengirimkan kembali berkas OPD {$lockedSubmission->opd?->nama} kepada Pengawas APIP setelah klarifikasi",
+                user: $auditorUser,
+                context: [
+                    'pengajuan_id' => $lockedSubmission->id,
+                    'catatan' => $catatan,
+                ],
+                auditableType: PengajuanPenilaianRisiko::class,
+                auditableId: $lockedSubmission->id,
+            );
 
             return $lockedSubmission->fresh([
                 'opd',
@@ -886,6 +1017,21 @@ class PengajuanRisikoService
                 'created_at' => now(),
             ]);
 
+            $this->auditLogService->log(
+                action: $status === PengajuanPenilaianRisikoItem::STATUS_APPROVED ? 'PENGAWAS_APPROVE_ITEM' : 'PENGAWAS_REJECT_ITEM',
+                module: 'Pengawasan Risiko',
+                description: "Pengawas {$pengawasUser->name} ".($status === PengajuanPenilaianRisikoItem::STATUS_APPROVED ? 'mengesahkan' : 'menolak')." Form {$cleanFormCode} OPD {$lockedSubmission->opd?->nama}",
+                user: $pengawasUser,
+                context: [
+                    'pengajuan_id' => $lockedSubmission->id,
+                    'form_code' => $cleanFormCode,
+                    'status' => $status,
+                    'catatan' => $catatanRevisi,
+                ],
+                auditableType: PengajuanPenilaianRisikoItem::class,
+                auditableId: $item->id,
+            );
+
             // Re-evaluate parent submission status
             $allItems = PengajuanPenilaianRisikoItem::where('pengajuan_id', $lockedSubmission->id)->get();
             $hasAnyRejected = $allItems->contains('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
@@ -909,6 +1055,19 @@ class PengajuanRisikoService
                     'user_id' => $pengawasUser->id,
                     'created_at' => now(),
                 ]);
+
+                $this->auditLogService->log(
+                    action: 'PENGAWAS_REJECTED_SUBMISSION',
+                    module: 'Pengawasan Risiko',
+                    description: "Pengawas {$pengawasUser->name} mengembalikan berkas OPD {$lockedSubmission->opd?->nama} ke Auditor untuk ditindaklanjuti",
+                    user: $pengawasUser,
+                    context: [
+                        'pengajuan_id' => $lockedSubmission->id,
+                        'form_code' => $cleanFormCode,
+                    ],
+                    auditableType: PengajuanPenilaianRisiko::class,
+                    auditableId: $lockedSubmission->id,
+                );
             } elseif ($allRequiredApproved) {
                 $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_APPROVED,
@@ -926,6 +1085,18 @@ class PengajuanRisikoService
                     'user_id' => $pengawasUser->id,
                     'created_at' => now(),
                 ]);
+
+                $this->auditLogService->log(
+                    action: 'PENGAWAS_FINAL_APPROVED',
+                    module: 'Pengawasan Risiko',
+                    description: "Pengawas {$pengawasUser->name} mengesahkan secara final dokumen pengelolaan risiko OPD {$lockedSubmission->opd?->nama}",
+                    user: $pengawasUser,
+                    context: [
+                        'pengajuan_id' => $lockedSubmission->id,
+                    ],
+                    auditableType: PengajuanPenilaianRisiko::class,
+                    auditableId: $lockedSubmission->id,
+                );
             } else {
                 $lockedSubmission->update([
                     'status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
@@ -1167,5 +1338,177 @@ class PengajuanRisikoService
                 }
             }
         }
+    }
+
+    /**
+     * Get real-time pending approval counts and actionable items for current user.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPendingCounts(User $user, ?string $periodeId = null): array
+    {
+        $resolvedPeriodeId = $this->resolvePeriodeId($periodeId);
+
+        $isSuperadmin = $user->hasRole(['Superadmin', 'Admin Office']);
+        $isExecutive = $user->hasRole('Executive');
+        $isAuditor = $user->hasRole('Auditor');
+        $isPengawas = $user->hasRole('Inspektorat');
+        $isOpd = $user->hasRole('OPD');
+
+        $kepalaOpdPending = 0;
+        $auditorPending = 0;
+        $pengawasPending = 0;
+        $operatorActionRequired = false;
+        $myPendingTotal = 0;
+        $pendingItems = [];
+
+        // 1. Kepala OPD pending logic
+        if ($isSuperadmin || ($isExecutive && $user->opd_id)) {
+            $query = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
+                ->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
+                ->whereIn('status', [
+                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA,
+                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
+                ]);
+
+            if ($user->opd_id && ! $isSuperadmin) {
+                $query->where('opd_id', $user->opd_id);
+            }
+
+            $kepalaOpdPending = $query->count();
+
+            if ($isExecutive && $user->opd_id) {
+                $myPendingTotal += $kepalaOpdPending;
+                $items = (clone $query)->with('opd:id,nama,kode')->limit(5)->get();
+                foreach ($items as $item) {
+                    $pendingItems[] = [
+                        'id' => $item->id,
+                        'opd_id' => $item->opd_id,
+                        'opd_nama' => $item->opd?->nama ?? 'Perangkat Daerah',
+                        'opd_kode' => $item->opd?->kode ?? '',
+                        'status' => $item->status,
+                        'tier' => $item->current_tier,
+                        'submitted_at' => $item->submitted_at?->toISOString(),
+                        'action_type' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR ? 'delegate_revision' : 'review_internal',
+                        'title' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR ? 'Delegasikan Revisi Auditor' : 'Persetujuan Internal OPD',
+                        'url' => '/pengawasan/review-risiko',
+                    ];
+                }
+            }
+        } elseif ($isExecutive && ! $user->opd_id) {
+            $kepalaOpdPending = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
+                ->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
+                ->count();
+        }
+
+        // 2. Auditor pending logic
+        if ($isSuperadmin || $isAuditor || $isPengawas) {
+            $auditorQuery = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
+                ->where('current_tier', PengajuanPenilaianRisiko::TIER_AUDITOR)
+                ->whereIn('status', [
+                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
+                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
+                    PengajuanPenilaianRisiko::STATUS_SUBMITTED,
+                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
+                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
+                ]);
+
+            if ($isAuditor && ! $isSuperadmin && ! $isPengawas) {
+                $assignedOpds = $user->activeAssignedOpdIds();
+                $auditorQuery->whereIn('opd_id', $assignedOpds);
+            }
+
+            $auditorPending = $auditorQuery->count();
+
+            if ($isAuditor && ! $isPengawas && ! $isSuperadmin) {
+                $myPendingTotal += $auditorPending;
+                $items = (clone $auditorQuery)->with('opd:id,nama,kode')->limit(5)->get();
+                foreach ($items as $item) {
+                    $pendingItems[] = [
+                        'id' => $item->id,
+                        'opd_id' => $item->opd_id,
+                        'opd_nama' => $item->opd?->nama ?? 'Perangkat Daerah',
+                        'opd_kode' => $item->opd?->kode ?? '',
+                        'status' => $item->status,
+                        'tier' => $item->current_tier,
+                        'submitted_at' => $item->submitted_at?->toISOString(),
+                        'action_type' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS ? 'auditor_resolve_rejection' : 'auditor_review',
+                        'title' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS ? 'Tindak Lanjut Revisi Pengawas' : 'Pemeriksaan Risiko OPD',
+                        'url' => '/pengawasan/review-risiko',
+                    ];
+                }
+            }
+        }
+
+        // 3. Pengawas (Inspektorat) pending logic
+        if ($isSuperadmin || $isPengawas) {
+            $pengawasQuery = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
+                ->where('current_tier', PengajuanPenilaianRisiko::TIER_PENGAWAS)
+                ->whereIn('status', [
+                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
+                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
+                ]);
+
+            $pengawasPending = $pengawasQuery->count();
+
+            if ($isPengawas && ! $isSuperadmin) {
+                $myPendingTotal += $pengawasPending;
+                $items = (clone $pengawasQuery)->with('opd:id,nama,kode')->limit(5)->get();
+                foreach ($items as $item) {
+                    $pendingItems[] = [
+                        'id' => $item->id,
+                        'opd_id' => $item->opd_id,
+                        'opd_nama' => $item->opd?->nama ?? 'Perangkat Daerah',
+                        'opd_kode' => $item->opd?->kode ?? '',
+                        'status' => $item->status,
+                        'tier' => $item->current_tier,
+                        'submitted_at' => $item->submitted_at?->toISOString(),
+                        'action_type' => 'pengawas_approval',
+                        'title' => 'Pengesahan Akhir Pengawas APIP',
+                        'url' => '/pengawasan/review-risiko',
+                    ];
+                }
+            }
+        }
+
+        // 4. Operator (OPD) action required logic
+        if ($isOpd && $user->opd_id) {
+            $opdSubmission = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
+                ->where('opd_id', $user->opd_id)
+                ->first();
+
+            if ($opdSubmission && in_array($opdSubmission->status, [
+                PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
+                PengajuanPenilaianRisiko::STATUS_REVISION_BY_KEPALA,
+            ], true)) {
+                $operatorActionRequired = true;
+                $myPendingTotal = 1;
+                $pendingItems[] = [
+                    'id' => $opdSubmission->id,
+                    'opd_id' => $opdSubmission->opd_id,
+                    'opd_nama' => $user->opd?->nama ?? 'Perangkat Daerah Saya',
+                    'opd_kode' => $user->opd?->kode ?? '',
+                    'status' => $opdSubmission->status,
+                    'tier' => $opdSubmission->current_tier,
+                    'submitted_at' => $opdSubmission->submitted_at?->toISOString(),
+                    'action_type' => 'operator_revision',
+                    'title' => 'Perbaikan Lembar Kerja Risiko',
+                    'url' => '/risiko/konteks-strategis',
+                ];
+            }
+        }
+
+        if ($isSuperadmin) {
+            $myPendingTotal = $kepalaOpdPending + $auditorPending + $pengawasPending;
+        }
+
+        return [
+            'kepala_opd_pending' => $kepalaOpdPending,
+            'auditor_pending' => $auditorPending,
+            'pengawas_pending' => $pengawasPending,
+            'operator_action_required' => $operatorActionRequired,
+            'my_pending_total' => $myPendingTotal,
+            'pending_items' => $pendingItems,
+        ];
     }
 }

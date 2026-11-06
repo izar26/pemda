@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { RiskHeatmap } from './components/risk-heatmap'
 import { RecentActivityFeed } from './components/recent-activity-feed'
+import { ApprovalActionInbox } from './components/approval-action-inbox'
 
 export function Dashboard() {
   const queryClient = useQueryClient()
@@ -35,6 +36,7 @@ export function Dashboard() {
   function handleRefresh() {
     refetch()
     queryClient.invalidateQueries({ queryKey: ['dashboard-audit-logs'] })
+    queryClient.invalidateQueries({ queryKey: ['risiko-pending-counts'] })
   }
 
   // Executive KPI Stat Cards (1. Jumlah OPD, 2. Jumlah Users, 3. Risiko Tinggi & Kritis, 4. Jumlah IKU)
@@ -111,6 +113,9 @@ export function Dashboard() {
 
         {/* Executive KPI Stat Cards */}
         <KpiStatsCards items={kpiItems} isLoading={isLoadingStats} />
+
+        {/* Real-time Approval Action Hub / Pending Actions Inbox */}
+        <ApprovalActionInbox />
 
         {/* Dashboard Content Grid: Risk Heatmap & Recent Activity Feed */}
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-6'>

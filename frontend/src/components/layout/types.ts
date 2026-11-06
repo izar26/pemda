@@ -14,10 +14,15 @@ type Team = {
 
 type BaseNavItem = {
   title: string
-  badge?: string
+  badge?: string | number | React.ReactNode
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning'
   icon?: React.ElementType
   /** If set, this item only renders when the user holds this permission */
   requiredPermission?: string
+  /** If set, this item only renders when user holds one of these roles */
+  requiredRole?: string | string[]
+  /** If true, user must have an assigned opd_id (e.g. Kepala OPD) */
+  requiresOpd?: boolean
 }
 
 type NavLink = BaseNavItem & {
