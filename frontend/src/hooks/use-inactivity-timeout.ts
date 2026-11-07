@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useAppConfig } from '@/hooks/use-app-config'
 
@@ -53,6 +54,7 @@ export function useInactivityTimeout() {
       if (idleDuration >= timeoutMs) {
         hasLoggedOutRef.current = true
         reset()
+        queryClient.clear()
         toast.error(
           `Sesi Anda telah berakhir karena tidak ada aktivitas selama ${sessionLifetimeMinutes} menit. Silakan masuk kembali.`
         )

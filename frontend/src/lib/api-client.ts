@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { queryClient } from '@/lib/query-client'
 import { syncServerTime } from '@/lib/server-time'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -36,6 +37,7 @@ apiClient.interceptors.response.use(
       const isLoginRoute = window.location.pathname.includes('/sign-in')
       if (!isLoginRoute && !skipRedirect) {
         useAuthStore.getState().auth.reset()
+        queryClient.clear()
         window.location.href = `/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
       }
     }

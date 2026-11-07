@@ -2,12 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { History, Loader2, Activity } from 'lucide-react'
-import { auditService } from '@/services/audit-service'
+import { dashboardService } from '@/services/dashboard-service'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function RecentActivityFeed() {
+  const user = useAuthStore((state) => state.auth.user)
+
   const { data: logsResponse, isLoading } = useQuery({
-    queryKey: ['dashboard-audit-logs'],
-    queryFn: () => auditService.getLogs({ per_page: 6 }),
+    queryKey: ['dashboard-recent-activities', user?.id],
+    queryFn: () => dashboardService.getRecentActivities(6),
+    staleTime: 15_000,
   })
 
   const logs = logsResponse?.data || []

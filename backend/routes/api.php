@@ -79,6 +79,7 @@ Route::prefix('auth')->group(function () {
 Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(function () {
     // Dashboard Endpoints
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+    Route::get('/dashboard/recent-activities', [DashboardController::class, 'recentActivities']);
 
     // Excel Export Endpoints (High Performance Streaming & Async Job Downloads)
     Route::get('/dashboard/export', [DashboardController::class, 'export']);

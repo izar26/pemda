@@ -397,4 +397,99 @@ class AuditLogTest extends TestCase
         $this->assertContains('Superadmin membuat OPD baru', $superDescriptions);
         $this->assertContains('Staf memperbarui kontak OPD', $superDescriptions);
     }
+
+    public function test_non_superadmin_cannot_see_administrator_system_logs(): void
+    {
+        $auditorRole = Role::firstOrCreate(
+            ['name' => 'Auditor', 'guard_name' => 'web'],
+            ['is_system' => false]
+        );
+        $auditorRole->syncPermissions(['audit.view']);
+
+        $auditor = User::factory()->create([
+            'name' => 'Petugas Audit',
+            'email' => 'auditor2@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $auditor->assignRole('Auditor');
+        $auditorToken = $auditor->createToken('test-auditor2')->plainTextToken;
+
+        // Log initiated by Administrator
+        AuditLog::create([
+            'user_id' => $this->superadmin->id,
+            'user_name' => 'Administrator',
+            'user_email' => 'administrator@pemda.go.id',
+            'action' => 'AUTH_LOGIN_SUCCESS',
+            'module' => 'Autentikasi',
+            'description' => 'Pegawai Administrator berhasil masuk ke sistem',
+            'created_at' => now(),
+        ]);
+
+        // Log initiated by regular staff
+        AuditLog::create([
+            'user_id' => $this->staffWithoutPerm->id,
+            'user_name' => 'Operator OPD',
+            'user_email' => $this->staffWithoutPerm->email,
+            'action' => 'FORM_SUBMIT',
+            'module' => 'Pengelolaan Risiko',
+            'description' => 'Operator OPD mengajukan Form 2A',
+            'created_at' => now(),
+        ]);
+
+        $responseAuditor = $this->withHeader('Authorization', 'Bearer '.$auditorToken)
+            ->getJson('/api/audit-logs');
+
+        $responseAuditor->assertStatus(200);
+        $descriptions = collect($responseAuditor->json('data'))->pluck('description')->all();
+        $this->assertContains('Operator OPD mengajukan Form 2A', $descriptions);
+        $this->assertNotContains('Pegawai Administrator berhasil masuk ke sistem', $descriptions);
+    }
+
+    public function test_dashboard_recent_activities_accessible_by_all_authenticated_roles_with_ghost_filter(): void
+    {
+        // 1. Regular staff without audit.view permission
+        $staffToken = $this->staffWithoutPerm->createToken('test-staff')->plainTextToken;
+
+        // Create log by Administrator
+        AuditLog::create([
+            'user_id' => $this->superadmin->id,
+            'user_name' => 'Administrator',
+            'user_email' => 'administrator@pemda.go.id',
+            'action' => 'AUTH_LOGIN_SUCCESS',
+            'module' => 'Autentikasi',
+            'description' => 'Pegawai Administrator berhasil masuk ke sistem',
+            'created_at' => now(),
+        ]);
+
+        // Create log by another staff member
+        AuditLog::create([
+            'user_id' => $this->staffWithoutPerm->id,
+            'user_name' => 'Pengawas Lapangan',
+            'user_email' => $this->staffWithoutPerm->email,
+            'action' => 'RISK_VERIFIED',
+            'module' => 'Pengawasan Risiko',
+            'description' => 'Pengawas Lapangan menyetujui lembar kerja OPD',
+            'created_at' => now(),
+        ]);
+
+        // Staff visits dashboard recent activities - should succeed (200) without 403
+        $responseStaff = $this->withHeader('Authorization', 'Bearer '.$staffToken)
+            ->getJson('/api/dashboard/recent-activities?limit=6');
+
+        $responseStaff->assertStatus(200);
+        $descriptions = collect($responseStaff->json('data'))->pluck('description')->all();
+        $this->assertContains('Pengawas Lapangan menyetujui lembar kerja OPD', $descriptions);
+        $this->assertNotContains('Pegawai Administrator berhasil masuk ke sistem', $descriptions);
+
+        // Administrator visits dashboard recent activities - should see Administrator logs
+        app('auth')->forgetGuards();
+        $superadminToken = $this->superadmin->createToken('test-super-dashboard')->plainTextToken;
+        $responseSuper = $this->withHeader('Authorization', 'Bearer '.$superadminToken)
+            ->getJson('/api/dashboard/recent-activities?limit=6');
+
+        $responseSuper->assertStatus(200);
+        $superDescriptions = collect($responseSuper->json('data'))->pluck('description')->all();
+        $this->assertContains('Pegawai Administrator berhasil masuk ke sistem', $superDescriptions);
+        $this->assertContains('Pengawas Lapangan menyetujui lembar kerja OPD', $superDescriptions);
+    }
 }

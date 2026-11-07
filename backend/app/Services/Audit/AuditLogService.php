@@ -7,6 +7,7 @@ namespace App\Services\Audit;
 use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -107,19 +108,23 @@ class AuditLogService
             return;
         }
 
-        $systemRoleIds = Role::where('is_system', true)->orWhere('name', 'Superadmin')->pluck('id')->all();
+        $systemRoleIds = Role::where('is_system', true)
+            ->orWhere('name', 'Superadmin')
+            ->orWhere('name', 'Administrator')
+            ->pluck('id')
+            ->all();
 
-        $systemUserIds = User::whereHas('roles', function ($q) use ($systemRoleIds) {
+        $systemUsers = User::whereHas('roles', function ($q) use ($systemRoleIds) {
             $q->whereIn('id', $systemRoleIds);
-        })->orWhere('role', 'Superadmin')->pluck('id')->all();
+        })->orWhereIn('role', ['Superadmin', 'Administrator'])
+            ->orWhere('email', 'administrator@pemda.go.id')
+            ->get(['id', 'email', 'name']);
 
-        $systemEmails = User::whereHas('roles', function ($q) use ($systemRoleIds) {
-            $q->whereIn('id', $systemRoleIds);
-        })->orWhere('role', 'Superadmin')->pluck('email')->all();
+        $systemUserIds = $systemUsers->pluck('id')->filter()->all();
+        $systemEmails = $systemUsers->pluck('email')->filter()->all();
+        $systemNames = $systemUsers->pluck('name')->filter()->all();
 
-        $systemNames = User::whereHas('roles', function ($q) use ($systemRoleIds) {
-            $q->whereIn('id', $systemRoleIds);
-        })->orWhere('role', 'Superadmin')->pluck('name')->all();
+        $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'not ilike' : 'not like';
 
         // 1. Exclude logs initiated by a System user ID
         if (! empty($systemUserIds)) {
@@ -137,7 +142,7 @@ class AuditLogService
             });
         }
 
-        // 3. Exclude logs where user_name is System user names or Sistem / System automated actor
+        // 3. Exclude logs where user_name is System user names or automated system actor
         if (! empty($systemNames)) {
             $query->where(function ($q) use ($systemNames) {
                 $q->whereNotIn('user_name', $systemNames)
@@ -145,12 +150,13 @@ class AuditLogService
             });
         }
 
-        $query->where(function ($q) {
+        $query->where(function ($q) use ($likeOperator) {
             $q->whereNull('user_name')
-                ->orWhere(function ($sub) {
+                ->orWhere(function ($sub) use ($likeOperator) {
                     $sub->where('user_name', '!=', 'Sistem')
                         ->where('user_name', '!=', 'System')
-                        ->where('user_name', 'not like', '%Superadmin%');
+                        ->where('user_name', $likeOperator, '%Superadmin%')
+                        ->where('user_name', $likeOperator, '%Administrator%');
                 });
         });
 
@@ -172,8 +178,24 @@ class AuditLogService
             });
         }
 
-        // 6. Exclude logs whose description reveals Superadmin
-        $query->where('description', 'not like', '%Superadmin%');
+        // 6. Exclude logs whose description reveals Superadmin or Administrator
+        $query->where('description', $likeOperator, '%Superadmin%')
+            ->where('description', $likeOperator, '%Administrator%');
+    }
+
+    /**
+     * Get recent public activity logs for dashboard feed with ghost filter applied.
+     *
+     * @return Collection<int, AuditLog>
+     */
+    public function getRecentDashboardActivities(?User $currentUser = null, int $limit = 6)
+    {
+        $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
+        $query = AuditLog::query()->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+
+        $this->applyGhostFilter($query, $user);
+
+        return $query->limit($limit)->get();
     }
 
     /**

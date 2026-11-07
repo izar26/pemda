@@ -5,16 +5,39 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AuditLogResource;
 use App\Models\Opd;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\User;
+use App\Services\Audit\AuditLogService;
 use App\Services\Export\ExcelExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
+    /**
+     * Get recent public activity logs for dashboard feed with ghost filter applied.
+     */
+    public function recentActivities(Request $request, AuditLogService $auditLogService): AnonymousResourceCollection
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+        if (! $user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $limit = (int) $request->input('limit', 6);
+        if ($limit < 1 || $limit > 20) {
+            $limit = 6;
+        }
+
+        $logs = $auditLogService->getRecentDashboardActivities($user, $limit);
+
+        return AuditLogResource::collection($logs);
+    }
+
     /**
      * Get summary metrics for the executive dashboard.
      */

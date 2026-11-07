@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from '@tanstack/react-router'
+import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { authService } from '@/services/auth-service'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -20,6 +21,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
       // Ignore network errors on logout to allow clean local exit
     } finally {
       auth.reset()
+      queryClient.clear()
       const currentPath = location.href
       navigate({
         to: '/sign-in',
