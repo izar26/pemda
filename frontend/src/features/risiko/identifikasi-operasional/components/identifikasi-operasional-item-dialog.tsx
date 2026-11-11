@@ -69,11 +69,7 @@ export function IdentifikasiOperasionalItemDialog({
 }: IdentifikasiOperasionalItemDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Sub-Kegiatan states
-  const [isCustomSubKegiatan, setIsCustomSubKegiatan] = useState(false)
   const [selectedSubKegiatanId, setSelectedSubKegiatanId] = useState<string>('')
-  const [subKegiatanKustom, setSubKegiatanKustom] = useState<string>('')
-  const [indikatorKeluaranKustom, setIndikatorKeluaranKustom] = useState<string>('')
 
   // Probis & Risk fields
   const [probis, setProbis] = useState<string>('Pelaksanaan')
@@ -82,25 +78,15 @@ export function IdentifikasiOperasionalItemDialog({
 
   const [kategoriRisiko, setKategoriRisiko] = useState<KategoriRisikoPemda>('Risiko Operasional')
   const [pernyataanRisiko, setPernyataanRisiko] = useState<string>('')
-  const [pemilikRisiko, setPemilikRisiko] = useState<string>('Sekretaris / Kepala Bidang')
+  const [pemilikRisiko, setPemilikRisiko] = useState<string>('')
   const [sifatRisiko, setSifatRisiko] = useState<SifatRisiko>('C')
   const [uraianDampak, setUraianDampak] = useState<string>('')
-  const [pihakTerkena, setPihakTerkena] = useState<string>('OPD / Masyarakat')
+  const [pihakTerkena, setPihakTerkena] = useState<string>('')
 
   // Reset or populate on open
   useEffect(() => {
     if (itemToEdit) {
-      if (itemToEdit.sub_kegiatan_kustom) {
-        setIsCustomSubKegiatan(true)
-        setSubKegiatanKustom(itemToEdit.sub_kegiatan_kustom)
-        setSelectedSubKegiatanId('')
-      } else {
-        setIsCustomSubKegiatan(false)
-        setSelectedSubKegiatanId(itemToEdit.operasional_sub_kegiatan_id || '')
-        setSubKegiatanKustom('')
-      }
-
-      setIndikatorKeluaranKustom(itemToEdit.indikator_keluaran_kustom || '')
+      setSelectedSubKegiatanId(itemToEdit.operasional_sub_kegiatan_id || '')
 
       const knownProbis = (meta?.probis_options || DEFAULT_PROBIS_OPTIONS).includes(itemToEdit.probis)
       if (knownProbis) {
@@ -115,24 +101,21 @@ export function IdentifikasiOperasionalItemDialog({
 
       setKategoriRisiko(itemToEdit.kategori_risiko || 'Risiko Operasional')
       setPernyataanRisiko(itemToEdit.pernyataan_risiko || '')
-      setPemilikRisiko(itemToEdit.pemilik_risiko || 'Sekretaris / Kepala Bidang')
+      setPemilikRisiko(itemToEdit.pemilik_risiko || '')
       setSifatRisiko(itemToEdit.sifat_risiko || 'C')
       setUraianDampak(itemToEdit.uraian_dampak || '')
-      setPihakTerkena(itemToEdit.pihak_terkena || 'OPD / Masyarakat')
+      setPihakTerkena(itemToEdit.pihak_terkena || '')
     } else {
-      setIsCustomSubKegiatan(false)
-      setSelectedSubKegiatanId('')
-      setSubKegiatanKustom('')
-      setIndikatorKeluaranKustom('')
+      setSelectedSubKegiatanId(meta?.sub_kegiatans_from_2c?.[0]?.id || '')
       setProbis('Pelaksanaan')
       setIsCustomProbis(false)
       setCustomProbisText('')
       setKategoriRisiko('Risiko Operasional')
       setPernyataanRisiko('')
-      setPemilikRisiko('Sekretaris / Kepala Bidang')
+      setPemilikRisiko(meta?.pemilik_risiko_options?.[0]?.nama || '')
       setSifatRisiko('C')
       setUraianDampak('')
-      setPihakTerkena('OPD / Masyarakat')
+      setPihakTerkena('')
     }
   }, [itemToEdit, open, meta])
 
@@ -145,23 +128,21 @@ export function IdentifikasiOperasionalItemDialog({
   }, [meta?.sub_kegiatans_from_2c])
 
   const selectedSubKegiatanDetail = useMemo(() => {
-    if (isCustomSubKegiatan || !selectedSubKegiatanId) return null
+    if (!selectedSubKegiatanId) return null
     return (meta?.sub_kegiatans_from_2c || []).find((s) => s.id === selectedSubKegiatanId) || null
-  }, [isCustomSubKegiatan, selectedSubKegiatanId, meta?.sub_kegiatans_from_2c])
+  }, [selectedSubKegiatanId, meta?.sub_kegiatans_from_2c])
 
   const probisList = meta?.probis_options || DEFAULT_PROBIS_OPTIONS
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    // Validation
-    if (!isCustomSubKegiatan && !selectedSubKegiatanId) {
-      toast.warning('Silakan pilih Sub-Kegiatan dari Form 2C atau aktifkan opsi input manual.')
+    if (!selectedSubKegiatanId) {
+      toast.warning('Pilih sub-kegiatan dari Form 2C.')
       return
     }
-
-    if (isCustomSubKegiatan && !subKegiatanKustom.trim()) {
-      toast.warning('Silakan isi uraian Sub-Kegiatan secara manual.')
+    if (!pemilikRisiko) {
+      toast.warning('Pilih pemilik risiko dari master data.')
       return
     }
 
@@ -176,17 +157,22 @@ export function IdentifikasiOperasionalItemDialog({
       return
     }
 
+    if (!sifatRisiko) {
+      toast.warning('Pilih sifat risiko.')
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
       const payload = {
-        operasional_sub_kegiatan_id: !isCustomSubKegiatan && selectedSubKegiatanId ? selectedSubKegiatanId : null,
-        sub_kegiatan_kustom: isCustomSubKegiatan ? subKegiatanKustom.trim() : null,
-        indikator_keluaran_kustom: isCustomSubKegiatan && indikatorKeluaranKustom.trim() ? indikatorKeluaranKustom.trim() : null,
+        operasional_sub_kegiatan_id: selectedSubKegiatanId,
+        sub_kegiatan_kustom: null,
+        indikator_keluaran_kustom: null,
         probis: finalProbis,
         kategori_risiko: kategoriRisiko,
         pernyataan_risiko: pernyataanRisiko.trim(),
-        pemilik_risiko: pemilikRisiko.trim() || 'Sekretaris / Kepala Bidang',
+        pemilik_risiko: pemilikRisiko,
         sifat_risiko: sifatRisiko,
         uraian_dampak: uraianDampak.trim() || null,
         pihak_terkena: pihakTerkena.trim() || null,
@@ -212,7 +198,7 @@ export function IdentifikasiOperasionalItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
         <DialogHeader>
           <div className='flex items-center gap-2'>
             <div className='p-2 rounded-md bg-primary/10 text-primary'>
@@ -230,80 +216,19 @@ export function IdentifikasiOperasionalItemDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className='space-y-4 pt-2'>
-          {/* SECTION 1: SUB-KEGIATAN & INDIKATOR KELUARAN */}
-          <div className='p-3.5 rounded-lg border bg-muted/20 space-y-3'>
-            <div className='flex items-center justify-between gap-2'>
-              <Label className='text-xs font-bold text-foreground'>
-                1. Sub-Kegiatan Pelaksanaan <span className='text-destructive'>*</span>
-              </Label>
-              <Button
-                type='button'
-                variant='ghost'
-                size='sm'
-                onClick={() => setIsCustomSubKegiatan(!isCustomSubKegiatan)}
-                className='text-[11px] h-6 px-2 text-primary hover:text-primary font-medium'
-              >
-                {isCustomSubKegiatan ? 'Pilih dari Form 2C' : 'Input Manual / Kustom'}
-              </Button>
-            </div>
-
-            {!isCustomSubKegiatan ? (
-              <div className='space-y-2'>
-                <SearchableSelect
-                  options={subKegiatanOptions}
-                  value={selectedSubKegiatanId}
-                  onValueChange={setSelectedSubKegiatanId}
-                  placeholder='Pilih Sub-Kegiatan dari Form 2C...'
-                  searchPlaceholder='Cari kode atau nama sub-kegiatan...'
-                  className='text-xs'
-                />
-                {selectedSubKegiatanDetail && (
-                  <div className='p-2 rounded-md bg-background border text-[11px] space-y-1 text-muted-foreground'>
-                    {selectedSubKegiatanDetail.program_nama && (
-                      <div>
-                        <strong className='text-foreground'>Program:</strong> {selectedSubKegiatanDetail.program_nama}
-                      </div>
-                    )}
-                    {selectedSubKegiatanDetail.kegiatan_nama && (
-                      <div>
-                        <strong className='text-foreground'>Kegiatan:</strong> {selectedSubKegiatanDetail.kegiatan_nama}
-                      </div>
-                    )}
-                    {selectedSubKegiatanDetail.indikator_keluaran && (
-                      <div className='text-primary font-medium'>
-                        <strong>Indikator Keluaran:</strong> {selectedSubKegiatanDetail.indikator_keluaran}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {subKegiatanOptions.length === 0 && (
-                  <p className='text-[11px] text-amber-600 dark:text-amber-400'>
-                    Belum ada sub-kegiatan di Form 2C. Anda dapat menggunakan opsi <strong>Input Manual</strong>.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className='space-y-2.5'>
-                <div className='space-y-1'>
-                  <Label className='text-[11px] text-muted-foreground'>Nama Sub-Kegiatan Kustom</Label>
-                  <Input
-                    value={subKegiatanKustom}
-                    onChange={(e) => setSubKegiatanKustom(e.target.value)}
-                    placeholder='Contoh: Pemeliharaan Sarana Gedung Kantor'
-                    className='text-xs h-9'
-                  />
-                </div>
-                <div className='space-y-1'>
-                  <Label className='text-[11px] text-muted-foreground'>Indikator Keluaran Kustom (Opsional)</Label>
-                  <Input
-                    value={indikatorKeluaranKustom}
-                    onChange={(e) => setIndikatorKeluaranKustom(e.target.value)}
-                    placeholder='Contoh: Jumlah gedung yang terpelihara (Target: 2 Gedung)'
-                    className='text-xs h-9'
-                  />
-                </div>
+          <div className='space-y-3 rounded-lg border bg-muted/20 p-3.5'>
+            <Label className='text-xs font-bold'>1. Sub-Kegiatan Pelaksanaan <span className='text-destructive'>*</span></Label>
+            {itemToEdit?.sub_kegiatan_kustom && <p className='text-xs text-muted-foreground'>Sub-kegiatan sebelumnya: {itemToEdit.sub_kegiatan_kustom}</p>}
+            {itemToEdit?.indikator_keluaran_kustom && <p className='text-xs text-muted-foreground'>Indikator sebelumnya: {itemToEdit.indikator_keluaran_kustom}</p>}
+            <SearchableSelect options={subKegiatanOptions} value={selectedSubKegiatanId} onValueChange={setSelectedSubKegiatanId} placeholder='Pilih Sub-Kegiatan dari Form 2C...' searchPlaceholder='Cari kode atau nama sub-kegiatan...' className='text-xs' />
+            {selectedSubKegiatanDetail && (
+              <div className='space-y-1 rounded-md border bg-background p-3 text-xs text-muted-foreground'>
+                <p><strong className='text-foreground'>Program:</strong> {selectedSubKegiatanDetail.program_nama || '-'}</p>
+                <p><strong className='text-foreground'>Kegiatan:</strong> {selectedSubKegiatanDetail.kegiatan_nama || '-'}</p>
+                <p><strong className='text-foreground'>Indikator keluaran:</strong> {selectedSubKegiatanDetail.indikator_keluaran || 'Belum tersedia di Form 2C'}</p>
               </div>
             )}
+            {subKegiatanOptions.length === 0 && <p className='text-xs text-amber-600'>Tambahkan sub-kegiatan di Form 2C terlebih dahulu.</p>}
           </div>
 
           {/* SECTION 2: PROBIS & KATEGORI RISIKO */}
@@ -389,15 +314,16 @@ export function IdentifikasiOperasionalItemDialog({
               <Label className='text-xs font-bold text-foreground'>
                 5. Pemilik Risiko <span className='text-destructive'>*</span>
               </Label>
-              <Input
+              {itemToEdit?.pemilik_risiko && !(meta?.pemilik_risiko_options || []).some((p) => p.nama === itemToEdit.pemilik_risiko) && (
+                <p className='text-xs text-muted-foreground'>Pemilik sebelumnya: {itemToEdit.pemilik_risiko}. Pilih pemilik dari master data.</p>
+              )}
+              <SearchableSelect
+                options={(meta?.pemilik_risiko_options || []).map((p) => ({ value: p.nama, label: p.nama }))}
                 value={pemilikRisiko}
-                onChange={(e) => setPemilikRisiko(e.target.value)}
-                placeholder='Sekretaris / Kepala Bidang'
-                className='text-xs h-9'
+                onValueChange={setPemilikRisiko}
+                placeholder='Pilih pemilik risiko dari master data'
+                className='text-xs'
               />
-              <p className='text-[10px] text-muted-foreground'>
-                Default BPKP: Sekretaris / Kepala Bidang pengampu kegiatan.
-              </p>
             </div>
 
             <div className='space-y-1.5'>

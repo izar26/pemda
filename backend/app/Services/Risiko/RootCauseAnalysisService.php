@@ -11,6 +11,7 @@ use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use App\Services\Risiko\Pengajuan\PengajuanReadinessService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -28,6 +29,11 @@ class RootCauseAnalysisService
      * @return Collection<int, RootCauseAnalysis>
      */
     public function getRcaListByOpd(string $opdId, ?string $periodeId = null, ?string $sourceType = null): Collection
+    {
+        return $this->queryRcaByOpd($opdId, $periodeId, $sourceType)->get();
+    }
+
+    public function queryRcaByOpd(string $opdId, ?string $periodeId = null, ?string $sourceType = null): Builder
     {
         $resolvedPeriodeId = $this->identifikasiService->resolvePeriodeId($periodeId);
 
@@ -84,7 +90,7 @@ class RootCauseAnalysisService
                 'updater',
             ]);
 
-        return $query->get();
+        return $query;
     }
 
     /**

@@ -68,6 +68,8 @@ export function RisikoWizardHeader({
     setKepalaAction,
     kepalaNotes,
     setKepalaNotes,
+    kepalaFormCode,
+    setKepalaFormCode,
     isKepalaDelegateOpen,
     setIsKepalaDelegateOpen,
     delegateNotes,
@@ -96,8 +98,8 @@ export function RisikoWizardHeader({
       <PageHeader className='space-y-2 pb-2.5 pt-3'>
         {/* Top summary row: Main page title, step badge, status pill, progress indicator & Actions */}
         <div className='flex items-center justify-between gap-2.5 pb-2 border-b border-border/60 flex-wrap sm:flex-nowrap'>
-          <div className='flex items-center gap-2 sm:gap-2.5 min-w-0'>
-            <h2 className='text-base sm:text-lg font-bold tracking-tight text-foreground truncate'>
+          <div className='flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5'>
+            <h2 className='text-base sm:text-lg font-bold tracking-tight text-foreground break-words'>
               {pageTitle || cleanActiveTitle}
             </h2>
             <Badge
@@ -108,7 +110,7 @@ export function RisikoWizardHeader({
             </Badge>
           </div>
 
-          <div className='flex items-center gap-2 sm:gap-2.5 ml-auto flex-wrap sm:flex-nowrap shrink-0'>
+          <div className='flex items-center gap-2 sm:gap-2.5 ml-auto min-w-0 flex-wrap sm:flex-nowrap'>
             {/* Status Pills */}
             {readiness?.status === 'approved' && (
               <Badge className='text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 py-0.5 px-2 gap-1 font-semibold'>
@@ -250,6 +252,8 @@ export function RisikoWizardHeader({
         setKepalaAction={setKepalaAction}
         kepalaNotes={kepalaNotes}
         setKepalaNotes={setKepalaNotes}
+        kepalaFormCode={kepalaFormCode}
+        setKepalaFormCode={setKepalaFormCode}
         isKepalaDelegateOpen={isKepalaDelegateOpen}
         setIsKepalaDelegateOpen={setIsKepalaDelegateOpen}
         delegateNotes={delegateNotes}

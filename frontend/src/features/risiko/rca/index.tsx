@@ -90,7 +90,7 @@ export function RcaPage() {
         <ProfileDropdown />
       </Header>
 
-      <Main className='py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto'>
+      <Main className='py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0'>
         {/* WIZARD HEADER & TIMELINE STEPPER */}
         <RisikoWizardHeader
           pageTitle='Root Cause Analysis (RCA)'
@@ -122,7 +122,7 @@ export function RcaPage() {
 
         {/* MAIN RCA CONTENT */}
         {!isLoadingWizard && !isLoadingRca && (
-          <div className='space-y-4 sm:space-y-5'>
+          <div className='min-w-0 space-y-4 sm:space-y-5'>
             {/* RCA TABLE */}
             <RcaTable
               rcaList={rcaList}
@@ -136,6 +136,7 @@ export function RcaPage() {
               hasAuditor={hasAuditor}
               isRcaApproved={isRcaApproved}
               allComplete={allComplete}
+              canContinue={Boolean(readiness?.is_rca_complete)}
               isLocked={isLocked}
             />
           </div>
@@ -146,6 +147,7 @@ export function RcaPage() {
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           rca={selectedRca}
+          canEdit={canEdit}
           onSuccess={handleRefreshAll}
         />
       </Main>

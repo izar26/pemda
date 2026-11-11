@@ -20,6 +20,7 @@ export interface OperasionalNode {
 }
 
 export interface Konteks2CData {
+  informasi_lain?: string | null
   status?: string
   programs?: OperasionalNode[]
 }
@@ -32,6 +33,7 @@ interface ReviewStep2CProps {
 export function ReviewStep2C({ konteks2C, isLoading }: ReviewStep2CProps) {
   return (
     <div className='space-y-4'>
+      {konteks2C?.informasi_lain && <div className='rounded-lg border bg-muted/20 p-3 text-xs'><span className='font-semibold'>Informasi lain:</span> {konteks2C.informasi_lain}</div>}
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
         <div className='p-3 rounded-lg border bg-muted/20 space-y-1'>
           <span className='text-[11px] text-muted-foreground block font-medium'>

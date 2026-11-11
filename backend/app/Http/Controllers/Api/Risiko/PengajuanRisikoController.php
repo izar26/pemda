@@ -9,9 +9,18 @@ use App\Http\Requests\Risiko\DelegateOperatorRequest;
 use App\Http\Requests\Risiko\ForwardRevisionAuditorRequest;
 use App\Http\Requests\Risiko\ResubmitPengawasRequest;
 use App\Http\Requests\Risiko\ReviewAuditorItemRequest;
+use App\Http\Requests\Risiko\ReviewFormRequest;
 use App\Http\Requests\Risiko\ReviewKepalaOpdRequest;
 use App\Http\Requests\Risiko\ReviewPengawasItemRequest;
 use App\Http\Requests\Risiko\SubmitPengajuanRisikoRequest;
+use App\Http\Resources\Risiko\IdentifikasiRisikoOpdOperasionalResource;
+use App\Http\Resources\Risiko\IdentifikasiRisikoOpdResource;
+use App\Http\Resources\Risiko\IdentifikasiRisikoPemdaResource;
+use App\Http\Resources\Risiko\KonteksOperasionalResource;
+use App\Http\Resources\Risiko\KonteksPenilaianResource;
+use App\Http\Resources\Risiko\RootCauseAnalysisResource;
+use App\Services\Risiko\AnalisisRisikoService;
+use App\Services\Risiko\Pengajuan\ReviewFormService;
 use App\Services\Risiko\PengajuanRisikoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -117,7 +126,8 @@ class PengajuanRisikoController extends Controller
             $id,
             $validated['status'],
             $validated['catatan'] ?? null,
-            $request->user()
+            $request->user(),
+            $validated['form_code'] ?? null
         );
 
         $actionText = $validated['status'] === 'approved'
@@ -187,6 +197,49 @@ class PengajuanRisikoController extends Controller
         $submission = $this->service->getSubmissionDetail($id, $user);
 
         return response()->json(['data' => $submission]);
+    }
+
+    public function reviewForm(ReviewFormRequest $request, string $id, string $form, ReviewFormService $forms, AnalisisRisikoService $analisis): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user?->can('review_risiko.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk memeriksa risiko.');
+        }
+        $submission = $this->service->getSubmissionDetail($id, $user);
+        $params = $request->validated();
+        if ($form === '4') {
+            $result = $analisis->list((string) $submission->opd_id, (string) $submission->periode_penilaian_id, $user, $params);
+
+            return response()->json(['data' => $result['items'], 'meta' => $result['pagination']]);
+        }
+        $result = $forms->getForm($submission, $form, (int) ($params['page'] ?? 1), (int) ($params['per_page'] ?? 20), $params['search'] ?? null, $params['source'] ?? null, $params['status'] ?? null);
+        $data = $result['data'];
+        if ($form === 'rca') {
+            return response()->json(['data' => RootCauseAnalysisResource::collection($data), 'meta' => $result['meta']]);
+        }
+        if (! $data) {
+            return response()->json(['data' => null, 'meta' => $result['meta']]);
+        }
+        $resource = match ($form) {
+            '2b' => new KonteksPenilaianResource($data),
+            '2c' => new KonteksOperasionalResource($data),
+            '3a' => new IdentifikasiRisikoPemdaResource($data),
+            '3b' => new IdentifikasiRisikoOpdResource($data),
+            '3c' => new IdentifikasiRisikoOpdOperasionalResource($data),
+            default => abort(404),
+        };
+
+        return response()->json(['data' => $resource, 'meta' => $result['meta']]);
+    }
+
+    public function startReview(Request $request, string $id): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user?->can('review_risiko.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk memeriksa risiko.');
+        }
+
+        return response()->json(['data' => $this->service->getSubmissionDetail($id, $user, true)]);
     }
 
     /**

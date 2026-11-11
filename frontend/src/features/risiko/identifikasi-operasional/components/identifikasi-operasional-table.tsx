@@ -61,11 +61,11 @@ export function IdentifikasiOperasionalTable({
   }
 
   return (
-    <div className='space-y-3'>
+    <div className='min-w-0 space-y-3'>
       {/* Table Action Bar */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2'>
         <div className='space-y-0.5'>
-          <h3 className='text-sm font-bold text-foreground flex items-center gap-2'>
+          <h3 className='text-sm font-bold text-foreground flex flex-wrap items-center gap-2'>
             <span>Daftar Risiko Operasional Perangkat Daerah</span>
             <Badge variant='outline' className='text-xs font-mono font-semibold'>
               {items.length} Risiko
@@ -89,9 +89,11 @@ export function IdentifikasiOperasionalTable({
         )}
       </div>
 
+      <p className='text-xs text-muted-foreground lg:hidden'>Geser tabel ke samping untuk melihat seluruh kolom.</p>
+
       {/* Table Container */}
-      <div className='rounded-lg border overflow-hidden shadow-2xs bg-card'>
-        <div className='overflow-x-auto'>
+      <div className='@container min-w-0 max-w-full rounded-lg border overflow-hidden shadow-2xs bg-card'>
+        <div className='max-w-full overflow-x-auto' role='region' aria-label='Tabel risiko, geser untuk melihat seluruh kolom' tabIndex={0}>
           <table className='w-full text-xs text-start'>
             <thead className='bg-muted/50 border-b text-muted-foreground font-semibold select-none'>
               <tr>
@@ -115,8 +117,8 @@ export function IdentifikasiOperasionalTable({
             <tbody className='divide-y divide-border/60'>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className='p-8 text-center text-muted-foreground'>
-                    <div className='flex flex-col items-center justify-center gap-2'>
+                  <td colSpan={11} className='p-0 text-center text-muted-foreground'>
+                    <div className='sticky left-0 flex w-[100cqw] max-w-full flex-col items-center justify-center gap-2 p-6'>
                       <HelpCircle className='h-8 w-8 text-muted-foreground/40' />
                       <p className='font-semibold'>Belum ada butir risiko operasional OPD yang ditambahkan.</p>
                       {canEdit && (
@@ -201,7 +203,7 @@ export function IdentifikasiOperasionalTable({
 
                       {/* 6. Pemilik Risiko */}
                       <td className='p-2.5 text-foreground align-top font-medium'>
-                        {item.pemilik_risiko || 'Sekretaris / Kepala Bidang'}
+                        {item.pemilik_risiko || '-'}
                       </td>
 
                       {/* 7. Uraian Sebab & Sumber (Terkoneksi dari RCA) */}

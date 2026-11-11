@@ -106,7 +106,7 @@ export function KonteksOperasionalPage() {
   const [targetJenis, setTargetJenis] =
     useState<KonteksOperasionalItemJenis>('program')
 
-  const [informasiLain, setInformasiLain] = useState<string>('-')
+  const [informasiLain, setInformasiLain] = useState<string>('')
   const [isSavingStep, setIsSavingStep] = useState(false)
   const [saveIntent, setSaveIntent] = useState<'save' | 'save_and_next'>('save')
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
@@ -158,7 +158,7 @@ export function KonteksOperasionalPage() {
   // Sync informasi_lain from loaded currentKonteks (resets properly on OPD switch)
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setInformasiLain(currentKonteks?.informasi_lain || '-')
+    setInformasiLain(currentKonteks?.informasi_lain || '')
   }, [currentKonteks?.id, currentKonteks?.informasi_lain])
 
   async function handleTreeMutated() {
@@ -214,7 +214,7 @@ export function KonteksOperasionalPage() {
         periode_penilaian_id: activePeriode.id,
         opd_id: effectiveOpdId,
         sumber_data_id: konteks2B?.sumber_data_id || undefined,
-        informasi_lain: informasiLain.trim() || '-',
+        informasi_lain: informasiLain.trim() || null,
         status: 'final',
       })
 
@@ -547,7 +547,7 @@ export function KonteksOperasionalPage() {
                   value={informasiLain}
                   onChange={(e) => setInformasiLain(e.target.value)}
                   disabled={!canEdit}
-                  placeholder='Tuliskan informasi lain atau catatan operasional terkait Form 2C (isi "-" bila tidak ada)...'
+                  placeholder='Tuliskan informasi lain atau catatan operasional terkait Form 2C...'
                   className='text-xs min-h-[90px] bg-background'
                 />
               </div>

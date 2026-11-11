@@ -61,63 +61,36 @@ export function IdentifikasiOpdItemDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form states
-  const [isCustomSasaran, setIsCustomSasaran] = useState(false)
   const [selectedSasaranId, setSelectedSasaranId] = useState<string>('')
-  const [sasaranKustom, setSasaranKustom] = useState<string>('')
-
-  const [isCustomIndikator, setIsCustomIndikator] = useState(false)
   const [selectedIndikatorId, setSelectedIndikatorId] = useState<string>('')
-  const [indikatorKustom, setIndikatorKustom] = useState<string>('')
 
   const [kategoriRisiko, setKategoriRisiko] = useState<KategoriRisikoOpd>('Risiko Strategis')
   const [pernyataanRisiko, setPernyataanRisiko] = useState<string>('')
-  const [pemilikRisiko, setPemilikRisiko] = useState<string>('Kepala OPD')
+  const [pemilikRisiko, setPemilikRisiko] = useState<string>('')
   const [sifatRisiko, setSifatRisiko] = useState<SifatRisiko>('C')
   const [uraianDampak, setUraianDampak] = useState<string>('')
-  const [pihakTerkena, setPihakTerkena] = useState<string>('OPD')
+  const [pihakTerkena, setPihakTerkena] = useState<string>('')
 
   // Reset or populate on open
   useEffect(() => {
     if (itemToEdit) {
-      if (itemToEdit.sasaran_kustom) {
-        setIsCustomSasaran(true)
-        setSasaranKustom(itemToEdit.sasaran_kustom)
-        setSelectedSasaranId('')
-      } else {
-        setIsCustomSasaran(false)
-        setSelectedSasaranId(itemToEdit.sasaran_penilaian_id || '')
-        setSasaranKustom('')
-      }
-
-      if (itemToEdit.indikator_kustom) {
-        setIsCustomIndikator(true)
-        setIndikatorKustom(itemToEdit.indikator_kustom)
-        setSelectedIndikatorId('')
-      } else {
-        setIsCustomIndikator(false)
-        setSelectedIndikatorId(itemToEdit.indikator_penilaian_id || '')
-        setIndikatorKustom('')
-      }
-
+      setSelectedSasaranId(itemToEdit.sasaran_penilaian_id || '')
+      setSelectedIndikatorId(itemToEdit.indikator_penilaian_id || '')
       setKategoriRisiko(itemToEdit.kategori_risiko)
       setPernyataanRisiko(itemToEdit.pernyataan_risiko)
-      setPemilikRisiko(itemToEdit.pemilik_risiko || 'Kepala OPD')
+      setPemilikRisiko(itemToEdit.pemilik_risiko || '')
       setSifatRisiko(itemToEdit.sifat_risiko || 'C')
       setUraianDampak(itemToEdit.uraian_dampak || '')
-      setPihakTerkena(itemToEdit.pihak_terkena || 'OPD')
+      setPihakTerkena(itemToEdit.pihak_terkena || '')
     } else {
-      setIsCustomSasaran(false)
       setSelectedSasaranId(meta?.sasarans_from_2b?.[0]?.id || '')
-      setSasaranKustom('')
-      setIsCustomIndikator(false)
       setSelectedIndikatorId(meta?.sasarans_from_2b?.[0]?.indikators?.[0]?.id || '')
-      setIndikatorKustom('')
       setKategoriRisiko('Risiko Strategis')
       setPernyataanRisiko('')
-      setPemilikRisiko('Kepala OPD')
+      setPemilikRisiko(meta?.pemilik_risiko_options?.[0]?.nama || '')
       setSifatRisiko('C')
       setUraianDampak('')
-      setPihakTerkena('OPD')
+      setPihakTerkena('')
     }
   }, [itemToEdit, open, meta])
 
@@ -153,27 +126,26 @@ export function IdentifikasiOpdItemDialog({
       return
     }
 
-    if (isCustomSasaran && !sasaranKustom.trim()) {
-      toast.warning('Teks sasaran kustom wajib diisi.')
+    if (!selectedSasaranId || !selectedIndikatorId) {
+      toast.warning('Pilih sasaran dan indikator dari Form 2B.')
       return
     }
-
-    if (!isCustomSasaran && !selectedSasaranId && (meta?.sasarans_from_2b?.length || 0) > 0) {
-      toast.warning('Silakan pilih Sasaran Strategis dari Form 2B.')
+    if (!pemilikRisiko || !sifatRisiko) {
+      toast.warning('Pilih pemilik dan sifat risiko.')
       return
     }
 
     const payload = {
-      sasaran_penilaian_id: !isCustomSasaran && selectedSasaranId ? selectedSasaranId : null,
-      sasaran_kustom: isCustomSasaran ? sasaranKustom : null,
-      indikator_penilaian_id: !isCustomIndikator && selectedIndikatorId ? selectedIndikatorId : null,
-      indikator_kustom: isCustomIndikator ? indikatorKustom : null,
+      sasaran_penilaian_id: selectedSasaranId,
+      sasaran_kustom: null,
+      indikator_penilaian_id: selectedIndikatorId,
+      indikator_kustom: null,
       kategori_risiko: kategoriRisiko,
       pernyataan_risiko: pernyataanRisiko.trim(),
-      pemilik_risiko: pemilikRisiko.trim() || 'Kepala OPD',
+      pemilik_risiko: pemilikRisiko,
       sifat_risiko: sifatRisiko,
       uraian_dampak: uraianDampak.trim() || null,
-      pihak_terkena: pihakTerkena.trim() || 'OPD',
+      pihak_terkena: pihakTerkena.trim() || null,
     }
 
     try {
@@ -197,7 +169,7 @@ export function IdentifikasiOpdItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
         <DialogHeader>
           <DialogTitle className='text-base font-bold'>
             {itemToEdit ? `Edit Butir Risiko: ${itemToEdit.kode_risiko}` : 'Tambah Risiko Strategis OPD Baru'}
@@ -210,112 +182,17 @@ export function IdentifikasiOpdItemDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className='space-y-4 py-2 text-xs'>
-          {/* 1. Sasaran Strategis */}
+          {itemToEdit?.sasaran_kustom && <p className='text-xs text-muted-foreground'>Sasaran sebelumnya: {itemToEdit.sasaran_kustom}</p>}
+          {itemToEdit?.indikator_kustom && <p className='text-xs text-muted-foreground'>Indikator sebelumnya: {itemToEdit.indikator_kustom}</p>}
           <div className='space-y-2 p-3 rounded-lg border bg-muted/20'>
-            <div className='flex items-center justify-between'>
-              <Label className='text-xs font-bold text-foreground'>
-                1. Sasaran Strategis <span className='text-destructive'>*</span>
-              </Label>
-              <div className='flex items-center gap-3 text-xs'>
-                <label className='flex items-center gap-1.5 cursor-pointer'>
-                  <input
-                    type='radio'
-                    name='sasaran_source'
-                    checked={!isCustomSasaran}
-                    onChange={() => setIsCustomSasaran(false)}
-                    className='text-primary'
-                  />
-                  <span>Dari Form 2B</span>
-                </label>
-                <label className='flex items-center gap-1.5 cursor-pointer'>
-                  <input
-                    type='radio'
-                    name='sasaran_source'
-                    checked={isCustomSasaran}
-                    onChange={() => setIsCustomSasaran(true)}
-                    className='text-primary'
-                  />
-                  <span>Input Manual</span>
-                </label>
-              </div>
-            </div>
-
-            {!isCustomSasaran ? (
-              sasaranOptions.length > 0 ? (
-                <SearchableSelect
-                  options={sasaranOptions}
-                  value={selectedSasaranId}
-                  onValueChange={handleSasaranChange}
-                  placeholder='Pilih Sasaran dari Form 2B...'
-                  className='text-xs h-8'
-                />
-              ) : (
-                <div className='text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded border border-amber-200 dark:border-amber-900'>
-                  Belum ada sasaran di Form 2B. Silakan beralih ke pilihan <strong>Input Manual</strong>.
-                </div>
-              )
-            ) : (
-              <Textarea
-                value={sasaranKustom}
-                onChange={(e) => setSasaranKustom(e.target.value)}
-                placeholder='Tuliskan rumusan sasaran strategis...'
-                className='text-xs min-h-[60px]'
-              />
-            )}
+            <Label className='text-xs font-bold'>1. Sasaran Strategis <span className='text-destructive'>*</span></Label>
+            <SearchableSelect options={sasaranOptions} value={selectedSasaranId} onValueChange={handleSasaranChange} placeholder='Pilih Sasaran dari Form 2B...' className='text-xs h-8' />
+            {sasaranOptions.length === 0 && <p className='text-xs text-amber-600'>Tambahkan sasaran di Form 2B terlebih dahulu.</p>}
           </div>
-
-          {/* 2. Indikator Kinerja */}
           <div className='space-y-2 p-3 rounded-lg border bg-muted/20'>
-            <div className='flex items-center justify-between'>
-              <Label className='text-xs font-bold text-foreground'>
-                2. Indikator Kinerja Sasaran <span className='text-destructive'>*</span>
-              </Label>
-              <div className='flex items-center gap-3 text-xs'>
-                <label className='flex items-center gap-1.5 cursor-pointer'>
-                  <input
-                    type='radio'
-                    name='indikator_source'
-                    checked={!isCustomIndikator}
-                    onChange={() => setIsCustomIndikator(false)}
-                    className='text-primary'
-                  />
-                  <span>Dari Form 2B</span>
-                </label>
-                <label className='flex items-center gap-1.5 cursor-pointer'>
-                  <input
-                    type='radio'
-                    name='indikator_source'
-                    checked={isCustomIndikator}
-                    onChange={() => setIsCustomIndikator(true)}
-                    className='text-primary'
-                  />
-                  <span>Input Manual</span>
-                </label>
-              </div>
-            </div>
-
-            {!isCustomIndikator ? (
-              indikatorOptions.length > 0 ? (
-                <SearchableSelect
-                  options={indikatorOptions}
-                  value={selectedIndikatorId}
-                  onValueChange={(val: string) => setSelectedIndikatorId(val)}
-                  placeholder='Pilih Indikator dari Form 2B...'
-                  className='text-xs h-8'
-                />
-              ) : (
-                <div className='text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded border border-amber-200 dark:border-amber-900'>
-                  Tidak ada indikator untuk sasaran ini di Form 2B. Silakan gunakan <strong>Input Manual</strong>.
-                </div>
-              )
-            ) : (
-              <Textarea
-                value={indikatorKustom}
-                onChange={(e) => setIndikatorKustom(e.target.value)}
-                placeholder='Tuliskan rumusan indikator kinerja sasaran...'
-                className='text-xs min-h-[60px]'
-              />
-            )}
+            <Label className='text-xs font-bold'>2. Indikator Kinerja Sasaran <span className='text-destructive'>*</span></Label>
+            <SearchableSelect options={indikatorOptions} value={selectedIndikatorId} onValueChange={setSelectedIndikatorId} placeholder='Pilih Indikator dari Form 2B...' className='text-xs h-8' />
+            {indikatorOptions.length === 0 && <p className='text-xs text-amber-600'>Tambahkan indikator untuk sasaran di Form 2B.</p>}
           </div>
 
           {/* 3. Kategori Risiko & Sifat (C/UC) */}
@@ -384,10 +261,14 @@ export function IdentifikasiOpdItemDialog({
           <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
             <div className='space-y-1.5'>
               <Label className='text-xs font-semibold'>6. Pemilik Risiko</Label>
-              <Input
+              {itemToEdit?.pemilik_risiko && !(meta?.pemilik_risiko_options || []).some((p) => p.nama === itemToEdit.pemilik_risiko) && (
+                <p className='text-xs text-muted-foreground'>Pemilik sebelumnya: {itemToEdit.pemilik_risiko}. Pilih pemilik dari master data.</p>
+              )}
+              <SearchableSelect
+                options={(meta?.pemilik_risiko_options || []).map((p) => ({ value: p.nama, label: p.nama }))}
                 value={pemilikRisiko}
-                onChange={(e) => setPemilikRisiko(e.target.value)}
-                placeholder='Kepala OPD'
+                onValueChange={setPemilikRisiko}
+                placeholder='Pilih pemilik risiko dari master data'
                 className='text-xs h-8'
               />
             </div>

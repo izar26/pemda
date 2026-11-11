@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Building2, Calendar, FileText, Landmark, Save, Loader2, CheckCircle2 } from 'lucide-react'
+import { Building2, Calendar, FileText, Landmark, Loader2, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 import { SearchableSelect } from '@/components/searchable-select'
 import type { IdentifikasiRisikoPemda, IdentifikasiRisikoPemdaMeta } from '@/types/risiko'
 import { risikoService } from '@/services/risiko-service'
@@ -35,9 +34,7 @@ export function IdentifikasiPemdaIdentityCard({
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    if (dokumen?.master_urusan_pemerintahan_id) {
-      setSelectedUrusanId(dokumen.master_urusan_pemerintahan_id)
-    }
+    setSelectedUrusanId(dokumen?.master_urusan_pemerintahan_id || '')
   }, [dokumen?.master_urusan_pemerintahan_id])
 
   const urusanOptions = (meta?.urusan_pemerintahans || []).map((u) => ({
@@ -45,25 +42,21 @@ export function IdentifikasiPemdaIdentityCard({
     label: `${u.kode} - ${u.nama}`,
   }))
 
-  const hasChanged = selectedUrusanId !== (dokumen?.master_urusan_pemerintahan_id || '')
-
-  async function handleSaveHeader() {
-    if (!selectedUrusanId) {
-      toast.warning('Silakan pilih Urusan Pemerintahan dari master data terlebih dahulu.')
-      return
-    }
-
+  async function handleSaveHeader(urusanId: string) {
+    if (!urusanId || urusanId === dokumen?.master_urusan_pemerintahan_id) return
+    setSelectedUrusanId(urusanId)
     try {
       setIsSaving(true)
       await risikoService.saveIdentifikasiPemdaHeader({
         opd_id: opdId,
         periode_penilaian_id: periodeId,
-        master_urusan_pemerintahan_id: selectedUrusanId,
+        master_urusan_pemerintahan_id: urusanId,
         nama_pemda: dokumen?.nama_pemda || 'Pemerintah Kabupaten Cianjur',
       })
       toast.success('Urusan Pemerintahan berhasil disimpan.')
       onSaved()
     } catch (err: unknown) {
+      setSelectedUrusanId(dokumen?.master_urusan_pemerintahan_id || '')
       const msg = err instanceof Error ? err.message : 'Gagal menyimpan identitas dokumen.'
       toast.error(msg)
     } finally {
@@ -133,25 +126,15 @@ export function IdentifikasiPemdaIdentityCard({
               <Label className='text-[11px] font-bold text-foreground flex items-center gap-1'>
                 <FileText className='h-3.5 w-3.5 text-primary' /> Urusan Pemerintahan <span className='text-destructive'>*</span>
               </Label>
-              {canEdit && hasChanged && (
-                <Button
-                  type='button'
-                  size='sm'
-                  onClick={handleSaveHeader}
-                  disabled={isSaving || !selectedUrusanId}
-                  className='h-6 px-2 text-[10px] gap-1 font-semibold'
-                >
-                  {isSaving ? <Loader2 className='h-3 w-3 animate-spin' /> : <Save className='h-3 w-3' />}
-                  Simpan
-                </Button>
-              )}
+              {isSaving && <span className='flex items-center gap-1 text-muted-foreground'><Loader2 className='h-3 w-3 animate-spin' /> Menyimpan...</span>}
             </div>
 
             {canEdit ? (
               <SearchableSelect
                 options={urusanOptions}
                 value={selectedUrusanId}
-                onValueChange={(val: string) => setSelectedUrusanId(val)}
+                onValueChange={handleSaveHeader}
+                disabled={isSaving}
                 placeholder='Pilih Urusan Pemerintahan...'
                 className='text-xs h-8'
               />

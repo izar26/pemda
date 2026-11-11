@@ -29,6 +29,7 @@ export function IdentifikasiOpdPage() {
     opds,
     effectiveOpdId,
     activePeriode,
+    dokumen3A,
     dokumen3B,
     meta3B,
     steps,
@@ -84,7 +85,7 @@ export function IdentifikasiOpdPage() {
         <ProfileDropdown />
       </Header>
 
-      <Main className='py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto'>
+      <Main className='py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0'>
         {/* WIZARD HEADER & TIMELINE STEPPER */}
         <RisikoWizardHeader
           pageTitle='Identifikasi Risiko Strategis Perangkat Daerah'
@@ -116,11 +117,11 @@ export function IdentifikasiOpdPage() {
 
         {/* MAIN FORM CONTENT */}
         {!isLoading && (
-          <div className='space-y-4 sm:space-y-5'>
+          <div className='min-w-0 space-y-4 sm:space-y-5'>
             {/* 1. IDENTITY CARD */}
             <IdentifikasiOpdIdentityCard
               dokumen={dokumen3B}
-              meta={meta3B}
+              urusan={dokumen3A?.urusan_pemerintahan ?? null}
               opdName={resolvedOpdName}
               opdId={effectiveOpdId}
               periodeId={activePeriode?.id}
@@ -148,10 +149,10 @@ export function IdentifikasiOpdPage() {
               <div className='p-6 rounded-lg border bg-muted/20 text-center space-y-2'>
                 <AlertCircle className='h-6 w-6 text-primary mx-auto' />
                 <h4 className='text-xs sm:text-sm font-bold text-foreground'>
-                  Pilih Urusan Pemerintahan Terlebih Dahulu
+                  Menyiapkan Identitas Form
                 </h4>
                 <p className='text-xs text-muted-foreground max-w-md mx-auto'>
-                  Silakan tentukan Urusan Pemerintahan dari dropdown master data di atas, lalu klik <strong>Simpan</strong> untuk mulai menambahkan butir-butir risiko strategis OPD.
+                  Pastikan urusan pemerintahan sudah dipilih pada Form 3A.
                 </p>
               </div>
             )}

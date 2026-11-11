@@ -4,10 +4,11 @@ import type { IdentifikasiRisikoOpdOperasional } from '@/types/risiko'
 
 interface ReviewStep3CProps {
   dokumen3C?: IdentifikasiRisikoOpdOperasional | null
+  urusan?: { kode: string; nama: string } | null
   isLoading: boolean
 }
 
-export function ReviewStep3C({ dokumen3C, isLoading }: ReviewStep3CProps) {
+export function ReviewStep3C({ dokumen3C, urusan, isLoading }: ReviewStep3CProps) {
   if (isLoading) {
     return (
       <div className='flex items-center justify-center p-12 text-xs text-muted-foreground gap-2'>
@@ -50,8 +51,8 @@ export function ReviewStep3C({ dokumen3C, isLoading }: ReviewStep3CProps) {
           </span>
           <p className='font-bold text-foreground flex items-center gap-1.5'>
             <FolderKanban className='h-3.5 w-3.5 text-primary' />
-            {dokumen3C?.urusan_pemerintahan
-              ? `${dokumen3C.urusan_pemerintahan.kode} - ${dokumen3C.urusan_pemerintahan.nama}`
+            {urusan
+              ? `${urusan.kode} - ${urusan.nama}`
               : 'Belum ditentukan'}
           </p>
         </div>
@@ -111,7 +112,7 @@ export function ReviewStep3C({ dokumen3C, isLoading }: ReviewStep3CProps) {
                         variant='outline'
                         className='text-[10px] font-semibold bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border-sky-300'
                       >
-                        {item.probis || 'Pelaksanaan'}
+                        {item.probis || '-'}
                       </Badge>
                     </td>
                     <td className='p-2.5 space-y-1 align-top'>
@@ -128,7 +129,7 @@ export function ReviewStep3C({ dokumen3C, isLoading }: ReviewStep3CProps) {
                       {item.pernyataan_risiko}
                     </td>
                     <td className='p-2.5 align-top text-foreground'>
-                      {item.pemilik_risiko || 'Sekretaris / Kepala Bidang'}
+                      {item.pemilik_risiko || '-'}
                     </td>
                     <td className='p-2.5 align-top bg-amber-500/5 dark:bg-amber-500/10 border-x border-amber-500/20 space-y-1'>
                       {item.uraian_sebab ? (

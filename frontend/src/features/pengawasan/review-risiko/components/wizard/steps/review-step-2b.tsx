@@ -20,6 +20,7 @@ export interface SasaranItem {
 }
 
 export interface Konteks2BData {
+  informasi_lain?: string | null
   sumber_data?: { nama?: string } | null
   tujuan?: { tujuan?: string } | null
   sasarans?: SasaranItem[]
@@ -34,6 +35,7 @@ interface ReviewStep2BProps {
 export function ReviewStep2B({ konteks2B, isLoading }: ReviewStep2BProps) {
   return (
     <div className='space-y-4'>
+      {konteks2B?.informasi_lain && <div className='rounded-lg border bg-muted/20 p-3 text-xs'><span className='font-semibold'>Informasi lain:</span> {konteks2B.informasi_lain}</div>}
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
         <div className='p-3 rounded-lg border bg-muted/20 space-y-1'>
           <span className='text-[11px] text-muted-foreground block font-medium'>

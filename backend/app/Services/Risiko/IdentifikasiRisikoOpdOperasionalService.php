@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko;
 
+use App\Models\Master\MasterPemilikRisiko;
 use App\Models\Opd;
 use App\Models\Perencanaan\PeriodePenilaian;
-use App\Models\Risiko\IdentifikasiRisikoOpd;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
+use App\Models\Risiko\KonteksOperasionalItem;
 use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use App\Services\Risiko\Pengajuan\PengajuanReadinessService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -97,16 +99,11 @@ class IdentifikasiRisikoOpdOperasionalService
             $isNew = ! $dokumen->exists;
             $opd = Opd::find($opdId);
 
-            // Default urusan pemerintahan from Form 3B or 3A if not provided
-            $urusanId = $data['master_urusan_pemerintahan_id'] ?? null;
-            if (empty($urusanId) && $isNew) {
-                $dokumen3b = IdentifikasiRisikoOpd::where('opd_id', $opdId)
-                    ->where('periode_penilaian_id', $periodeId)
-                    ->first();
-                $dokumen3a = IdentifikasiRisikoPemda::where('opd_id', $opdId)
-                    ->where('periode_penilaian_id', $periodeId)
-                    ->first();
-                $urusanId = $dokumen3b?->master_urusan_pemerintahan_id ?? $dokumen3a?->master_urusan_pemerintahan_id;
+            $urusanId = IdentifikasiRisikoPemda::where('opd_id', $opdId)
+                ->where('periode_penilaian_id', $periodeId)
+                ->value('master_urusan_pemerintahan_id');
+            if (! $urusanId) {
+                throw ValidationException::withMessages(['master_urusan_pemerintahan_id' => 'Pilih urusan pemerintahan pada Form 3A terlebih dahulu.']);
             }
 
             $singkatanOpd = $data['singkatan_opd'] ?? null;
@@ -131,12 +128,31 @@ class IdentifikasiRisikoOpdOperasionalService
         });
     }
 
+    public function pemilikRisikoOptions(): Collection
+    {
+        return MasterPemilikRisiko::where('is_active', true)->orderBy('urutan')->get(['id', 'nama']);
+    }
+
+    private function assertSubKegiatanForm2c(IdentifikasiRisikoOpdOperasional $dokumen, array $data): void
+    {
+        $exists = KonteksOperasionalItem::whereKey($data['operasional_sub_kegiatan_id'])
+            ->where('jenis', 'sub_kegiatan')
+            ->whereHas('konteks', fn ($query) => $query->where('opd_id', $dokumen->opd_id)
+                ->where('periode_penilaian_id', $dokumen->periode_penilaian_id))
+            ->exists();
+        if (! $exists) {
+            throw ValidationException::withMessages(['operasional_sub_kegiatan_id' => 'Sub-kegiatan harus berasal dari Form 2C OPD dan periode ini.']);
+        }
+    }
+
     /**
      * Store new operational risk item in Form 3C and automatically create its RCA slot.
      */
     public function storeItem(IdentifikasiRisikoOpdOperasional $dokumen, array $data, ?User $user = null): IdentifikasiRisikoOpdOperasionalItem
     {
         $this->readinessService->assertOpdCanEdit((string) $dokumen->opd_id, (string) $dokumen->periode_penilaian_id, $user, '3c');
+
+        $this->assertSubKegiatanForm2c($dokumen, $data);
 
         return DB::transaction(function () use ($dokumen, $data, $user) {
             $lastItem = $dokumen->items()->orderBy('urutan', 'desc')->first();
@@ -164,10 +180,10 @@ class IdentifikasiRisikoOpdOperasionalService
             $item->nomor_urut = $nextNumber;
             $item->pernyataan_risiko = trim((string) $data['pernyataan_risiko']);
             $item->kode_risiko = $kodeRisiko;
-            $item->pemilik_risiko = ! empty($data['pemilik_risiko']) ? trim((string) $data['pemilik_risiko']) : 'Sekretaris / Kepala Bidang';
+            $item->pemilik_risiko = ! empty($data['pemilik_risiko']) ? trim((string) $data['pemilik_risiko']) : null;
             $item->sifat_risiko = $data['sifat_risiko'] ?? 'C';
             $item->uraian_dampak = ! empty($data['uraian_dampak']) ? trim((string) $data['uraian_dampak']) : null;
-            $item->pihak_terkena = ! empty($data['pihak_terkena']) ? trim((string) $data['pihak_terkena']) : 'Dinas / Masyarakat';
+            $item->pihak_terkena = ! empty($data['pihak_terkena']) ? trim((string) $data['pihak_terkena']) : null;
             $item->urutan = $nextUrutan;
             $item->created_by = $user?->id;
             $item->updated_by = $user?->id;
@@ -192,6 +208,8 @@ class IdentifikasiRisikoOpdOperasionalService
         $dokumen = $item->dokumen;
         $this->readinessService->assertOpdCanEdit((string) $dokumen->opd_id, (string) $dokumen->periode_penilaian_id, $user, '3c');
 
+        $this->assertSubKegiatanForm2c($dokumen, $data);
+
         return DB::transaction(function () use ($item, $dokumen, $data, $user) {
             $tahunPenilaian = (string) ($dokumen->periode->tahun_mulai ?? date('Y'));
             $singkatanOpd = $dokumen->singkatan_opd ?: ($dokumen->opd?->singkatan ?: 'OPD');
@@ -208,12 +226,12 @@ class IdentifikasiRisikoOpdOperasionalService
             }
 
             $item->operasional_sub_kegiatan_id = array_key_exists('operasional_sub_kegiatan_id', $data) ? $data['operasional_sub_kegiatan_id'] : $item->operasional_sub_kegiatan_id;
-            $item->sub_kegiatan_kustom = array_key_exists('sub_kegiatan_kustom', $data) ? $data['sub_kegiatan_kustom'] : $item->sub_kegiatan_kustom;
-            $item->indikator_keluaran_kustom = array_key_exists('indikator_keluaran_kustom', $data) ? $data['indikator_keluaran_kustom'] : $item->indikator_keluaran_kustom;
+            $item->sub_kegiatan_kustom = null;
+            $item->indikator_keluaran_kustom = null;
             $item->probis = array_key_exists('probis', $data) ? $data['probis'] : $item->probis;
             $item->kategori_risiko = $kategoriRisiko;
             $item->pernyataan_risiko = trim((string) $data['pernyataan_risiko']);
-            $item->pemilik_risiko = ! empty($data['pemilik_risiko']) ? trim((string) $data['pemilik_risiko']) : $item->pemilik_risiko;
+            $item->pemilik_risiko = ! empty($data['pemilik_risiko']) ? trim((string) $data['pemilik_risiko']) : null;
             $item->sifat_risiko = $data['sifat_risiko'] ?? $item->sifat_risiko;
             $item->uraian_dampak = ! empty($data['uraian_dampak']) ? trim((string) $data['uraian_dampak']) : null;
             $item->pihak_terkena = ! empty($data['pihak_terkena']) ? trim((string) $data['pihak_terkena']) : null;

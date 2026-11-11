@@ -185,6 +185,56 @@ class IdentifikasiRisikoPemdaDanRcaTest extends TestCase
         ]);
     }
 
+    public function test_urusan_3a_is_inherited_and_changes_sync_to_existing_forms(): void
+    {
+        Sanctum::actingAs($this->opdUser);
+        $payload = [
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ];
+        $this->postJson('/api/risiko/identifikasi-pemda/header', $payload)->assertOk();
+        $header = ['periode_penilaian_id' => $this->activePeriode->id, 'opd_id' => $this->opd->id];
+        $this->postJson('/api/risiko/identifikasi-opd/header', $header)->assertOk()
+            ->assertJsonPath('data.master_urusan_pemerintahan_id', $this->urusan->id);
+        $this->postJson('/api/risiko/identifikasi-operasional/header', $header)->assertOk()
+            ->assertJsonPath('data.master_urusan_pemerintahan_id', $this->urusan->id);
+
+        $newUrusan = MasterUrusanPemerintahan::create([
+            'kode' => '04', 'nama' => 'Urusan lain', 'is_active' => true, 'urutan' => 4,
+        ]);
+        $payload['master_urusan_pemerintahan_id'] = $newUrusan->id;
+        $this->postJson('/api/risiko/identifikasi-pemda/header', $payload)->assertOk();
+        foreach (['identifikasi_risiko_opds', 'identifikasi_risiko_opd_operasionals'] as $table) {
+            $this->assertDatabaseHas($table, [
+                'opd_id' => $this->opd->id,
+                'periode_penilaian_id' => $this->activePeriode->id,
+                'master_urusan_pemerintahan_id' => $newUrusan->id,
+            ]);
+        }
+    }
+
+    public function test_header_3b_and_3c_require_urusan_from_3a(): void
+    {
+        Sanctum::actingAs($this->opdUser);
+        $payload = ['periode_penilaian_id' => $this->activePeriode->id, 'opd_id' => $this->opd->id];
+        $this->postJson('/api/risiko/identifikasi-opd/header', $payload)->assertUnprocessable();
+        $this->postJson('/api/risiko/identifikasi-operasional/header', $payload)->assertUnprocessable();
+    }
+
+    public function test_urusan_cannot_be_changed_without_assigned_auditor(): void
+    {
+        Sanctum::actingAs($this->opdUser);
+        AuditorOpdAssignment::where('opd_id', $this->opd->id)->delete();
+
+        $this->postJson('/api/risiko/identifikasi-pemda/header', [
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ])->assertForbidden();
+        $this->assertDatabaseMissing('identifikasi_risiko_pemdas', ['opd_id' => $this->opd->id]);
+    }
+
     public function test_opd_can_add_item_and_it_auto_generates_kode_risiko_and_rca(): void
     {
         Sanctum::actingAs($this->opdUser);

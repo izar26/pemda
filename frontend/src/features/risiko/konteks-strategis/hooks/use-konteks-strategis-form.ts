@@ -62,7 +62,7 @@ export function useKonteksStrategisForm({
       tujuan_penilaian_id: '',
       sasaran_ids: [],
       indikator_ids: [],
-      informasi_lain: '-',
+      informasi_lain: '',
     },
   })
 
@@ -79,7 +79,7 @@ export function useKonteksStrategisForm({
         tujuan_penilaian_id: konteks2B.tujuan_penilaian_id || '',
         sasaran_ids: konteks2B.sasarans?.map((s) => s.id) || [],
         indikator_ids: konteks2B.indikators?.map((i) => i.id) || [],
-        informasi_lain: konteks2B.informasi_lain || '-',
+        informasi_lain: konteks2B.informasi_lain || '',
       })
     } else {
       form.reset({
@@ -87,7 +87,7 @@ export function useKonteksStrategisForm({
         tujuan_penilaian_id: '',
         sasaran_ids: [],
         indikator_ids: [],
-        informasi_lain: '-',
+        informasi_lain: '',
       })
     }
   }, [konteks2B, effectiveOpdId, form])
@@ -292,7 +292,7 @@ export function useKonteksStrategisForm({
         tujuan_penilaian_id: values.tujuan_penilaian_id,
         sasaran_ids: values.sasaran_ids,
         indikator_ids: values.indikator_ids,
-        informasi_lain: values.informasi_lain?.trim() || '-',
+        informasi_lain: values.informasi_lain?.trim() || undefined,
         status: 'final',
         reset_operasional_items: resetOperasionalItems,
       }

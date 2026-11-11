@@ -58,7 +58,7 @@ class SaveIdentifikasiRisikoOpdOperasionalHeaderRequest extends FormRequest
                 Rule::exists('opds', 'id')->where('is_active', true),
             ],
             'master_urusan_pemerintahan_id' => [
-                'required',
+                'sometimes',
                 'uuid',
                 Rule::exists('master_urusan_pemerintahans', 'id')->where('is_active', true),
             ],

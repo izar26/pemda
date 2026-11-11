@@ -150,6 +150,8 @@ export interface ReadinessResponse {
   is_3a_complete?: boolean
   is_3b_complete?: boolean
   is_3c_complete?: boolean
+  is_4_complete?: boolean
+  is_4_approved?: boolean
   is_rca_complete?: boolean
   is_2b_approved?: boolean
   is_2c_approved?: boolean
@@ -308,6 +310,7 @@ export const pengajuanRisikoService = {
     payload: {
       status: 'approved' | 'rejected'
       catatan?: string
+      form_code?: string
     }
   ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     const response = await apiClient.post<{
@@ -349,6 +352,21 @@ export const pengajuanRisikoService = {
   /**
    * Get detail of an OPD risk submission.
    */
+  async getReviewPage<T>(submissionId: string, form: '3a' | '3b' | '3c' | 'rca' | '4', page: number, search: string, source = '', status = ''): Promise<{ data: T; meta: { current_page: number; last_page: number; per_page: number; total: number } | null }> {
+    const response = await apiClient.get<{ data: T; meta: { current_page: number; last_page: number; per_page: number; total: number } | null }>(`/pengawasan/review-risiko/${submissionId}/forms/${form}`, { params: { page, per_page: 20, search: search || undefined, source: source || undefined, status: status || undefined } })
+    return response.data
+  },
+
+  async getReviewForm<T>(submissionId: string, form: '2b' | '2c' | '3a' | '3b' | '3c' | 'rca' | '4'): Promise<T> {
+    const response = await apiClient.get<{ data: T }>(`/pengawasan/review-risiko/${submissionId}/forms/${form}`)
+    return response.data.data
+  },
+
+  async startReview(submissionId: string): Promise<PengajuanPenilaianRisiko> {
+    const response = await apiClient.post<{ data: PengajuanPenilaianRisiko }>(`/pengawasan/review-risiko/${submissionId}/start`)
+    return response.data.data
+  },
+
   async getSubmissionDetail(
     submissionId: string
   ): Promise<PengajuanPenilaianRisiko> {

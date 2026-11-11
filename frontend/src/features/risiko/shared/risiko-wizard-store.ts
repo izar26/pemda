@@ -13,6 +13,7 @@ export type RisikoWizardStepId =
   | '3b'
   | '3c'
   | 'rca'
+  | '4'
 
 export interface RisikoWizardStepConfig {
   stepNumber: number
@@ -95,6 +96,17 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     subtitle: 'Analisis Mendalam Akar Masalah (5-Whys) untuk Risiko 3A, 3B & 3C',
     url: '/risiko/rca',
     requiredPermission: 'rca.view',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 7,
+    id: '4',
+    code: '4',
+    title: 'Analisis dan Evaluasi Risiko (4)',
+    shortTitle: 'Analisis Risiko',
+    subtitle: 'Penilaian risiko inheren dan residual',
+    url: '/risiko/analisis-risiko',
+    requiredPermission: 'identifikasi_risiko_opd.view',
     isImplemented: true,
   },
 ]
@@ -379,6 +391,12 @@ export function useRisikoWizardProgress(enabled = true) {
         isUnlocked,
         status: !isUnlocked ? 'locked' : isStepRCACompleted ? 'completed' : 'available',
       }
+    }
+
+    if (step.id === '4') {
+      const isUnlocked = Boolean(activePeriode) && isStepRCACompleted
+      const isCompleted = Boolean(readiness?.is_4_complete)
+      return { ...step, isCompleted, isUnlocked, status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available' }
     }
 
     return {

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Risiko;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SaveIdentifikasiRisikoOpdItemRequest extends FormRequest
 {
@@ -38,13 +39,13 @@ class SaveIdentifikasiRisikoOpdItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sasaran_penilaian_id' => ['nullable', 'uuid', 'exists:sasaran_penilaians,id'],
-            'sasaran_kustom' => ['nullable', 'string', 'max:1000'],
-            'indikator_penilaian_id' => ['nullable', 'uuid', 'exists:indikator_penilaians,id'],
-            'indikator_kustom' => ['nullable', 'string', 'max:1000'],
+            'sasaran_penilaian_id' => ['required', 'uuid', 'exists:sasaran_penilaians,id'],
+            'sasaran_kustom' => ['prohibited'],
+            'indikator_penilaian_id' => ['required', 'uuid', 'exists:indikator_penilaians,id'],
+            'indikator_kustom' => ['prohibited'],
             'kategori_risiko' => ['required', 'string', 'in:'.implode(',', self::VALID_KATEGORI)],
             'pernyataan_risiko' => ['required', 'string', 'min:3', 'max:2000'],
-            'pemilik_risiko' => ['nullable', 'string', 'max:150'],
+            'pemilik_risiko' => ['required', 'string', 'max:150', Rule::exists('master_pemilik_risikos', 'nama')->where('is_active', true)],
             'sifat_risiko' => ['required', 'string', 'in:C,UC'],
             'uraian_dampak' => ['nullable', 'string', 'max:2000'],
             'pihak_terkena' => ['nullable', 'string', 'max:255'],

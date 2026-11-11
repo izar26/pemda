@@ -43,6 +43,10 @@ class IdentifikasiRisikoOpdOperasionalController extends Controller
             $targetOpdId = $user->opd_id;
         }
 
+        if ($user->isScopedAuditor() && ! empty($targetOpdId) && ! $user->canReadOpdData((string) $targetOpdId)) {
+            abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
+        }
+
         if (empty($targetOpdId)) {
             return response()->json([
                 'data' => null,
@@ -93,6 +97,7 @@ class IdentifikasiRisikoOpdOperasionalController extends Controller
             'meta' => [
                 'form_2c_exists' => $konteks2c !== null,
                 'sub_kegiatans_from_2c' => $form2cSubKegiatans,
+                'pemilik_risiko_options' => $this->service->pemilikRisikoOptions(),
                 'probis_options' => [
                     'Perencanaan',
                     'Penganggaran',

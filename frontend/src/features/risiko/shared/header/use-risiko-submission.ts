@@ -31,6 +31,7 @@ export function useRisikoSubmission({
   const [isKepalaReviewOpen, setIsKepalaReviewOpen] = useState(false)
   const [kepalaAction, setKepalaAction] = useState<'approved' | 'rejected'>('approved')
   const [kepalaNotes, setKepalaNotes] = useState('')
+  const [kepalaFormCode, setKepalaFormCode] = useState('')
 
   const [isKepalaDelegateOpen, setIsKepalaDelegateOpen] = useState(false)
   const [delegateNotes, setDelegateNotes] = useState('')
@@ -108,11 +109,13 @@ export function useRisikoSubmission({
       pengajuanRisikoService.reviewByKepalaOpd(readiness!.submission.id, {
         status: kepalaAction,
         catatan: kepalaNotes.trim(),
+        form_code: kepalaAction === 'rejected' ? kepalaFormCode : undefined,
       }),
     onSuccess: async (res) => {
       toast.success(res.message || 'Keputusan Kepala OPD berhasil disimpan.')
       setIsKepalaReviewOpen(false)
       setKepalaNotes('')
+      setKepalaFormCode('')
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
@@ -179,6 +182,8 @@ export function useRisikoSubmission({
     setKepalaAction,
     kepalaNotes,
     setKepalaNotes,
+    kepalaFormCode,
+    setKepalaFormCode,
     isKepalaDelegateOpen,
     setIsKepalaDelegateOpen,
     delegateNotes,

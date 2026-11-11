@@ -185,7 +185,7 @@ class KonteksPenilaianService
                 'sumber_data_id' => $data['sumber_data_id'] ?? null,
                 'tujuan_penilaian_id' => $data['tujuan_penilaian_id'],
                 'nama_pemda' => $data['nama_pemda'] ?? 'Pemerintah Kabupaten Cianjur',
-                'informasi_lain' => $data['informasi_lain'] ?? '-',
+                'informasi_lain' => $data['informasi_lain'] ?? null,
                 'nama_kepala' => $resolvedNamaKepala,
                 'nip_kepala' => $resolvedNipKepala,
                 'jabatan_kepala' => $resolvedJabatanKepala,
@@ -253,7 +253,7 @@ class KonteksPenilaianService
                 $operasional->update($operasionalValues);
             } else {
                 KonteksOperasional::create(array_merge($attributes, $operasionalValues, [
-                    'informasi_lain' => '-',
+                    'informasi_lain' => null,
                     'tanggal_penetapan' => $konteks->tanggal_penetapan ?? now()->toDateString(),
                     'status' => 'draft',
                     'created_by' => $userId,

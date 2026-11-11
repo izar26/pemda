@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko;
 
+use App\Models\Master\MasterPemilikRisiko;
 use App\Models\Opd;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\IdentifikasiRisikoOpd;
 use App\Models\Risiko\IdentifikasiRisikoOpdItem;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
+use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use App\Services\Risiko\Pengajuan\PengajuanReadinessService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -93,16 +96,14 @@ class IdentifikasiRisikoOpdService
             $isNew = ! $dokumen->exists;
             $opd = Opd::find($opdId);
 
-            // Default urusan pemerintahan from Form 3A if not provided
-            $urusanId = $data['master_urusan_pemerintahan_id'] ?? null;
-            if (empty($urusanId) && $isNew) {
-                $dokumen3a = IdentifikasiRisikoPemda::where('opd_id', $opdId)
-                    ->where('periode_penilaian_id', $periodeId)
-                    ->first();
-                $urusanId = $dokumen3a?->master_urusan_pemerintahan_id;
+            $urusanId = IdentifikasiRisikoPemda::where('opd_id', $opdId)
+                ->where('periode_penilaian_id', $periodeId)
+                ->value('master_urusan_pemerintahan_id');
+            if (! $urusanId) {
+                throw ValidationException::withMessages(['master_urusan_pemerintahan_id' => 'Pilih urusan pemerintahan pada Form 3A terlebih dahulu.']);
             }
 
-            $dokumen->master_urusan_pemerintahan_id = $urusanId ?: $dokumen->master_urusan_pemerintahan_id;
+            $dokumen->master_urusan_pemerintahan_id = $urusanId;
             $dokumen->nama_pemda = $data['nama_pemda'] ?? $dokumen->nama_pemda ?? 'Pemerintah Kabupaten Cianjur';
             $dokumen->singkatan_opd = $data['singkatan_opd'] ?? $dokumen->singkatan_opd ?? $opd?->singkatan ?? 'OPD';
             $dokumen->nama_kepala_opd = $data['nama_kepala_opd'] ?? $dokumen->nama_kepala_opd ?? $opd?->kepala;
@@ -119,12 +120,33 @@ class IdentifikasiRisikoOpdService
         });
     }
 
+    public function pemilikRisikoOptions(): Collection
+    {
+        return MasterPemilikRisiko::where('is_active', true)->orderBy('urutan')->get(['id', 'nama']);
+    }
+
+    private function assertReferensiForm2b(IdentifikasiRisikoOpd $dokumen, array $data): void
+    {
+        $konteks = KonteksPenilaian::where('opd_id', $dokumen->opd_id)
+            ->where('periode_penilaian_id', $dokumen->periode_penilaian_id)->first();
+        if (! $konteks || ! $konteks->sasarans()->reorder()->where('sasaran_penilaians.id', $data['sasaran_penilaian_id'])->exists()) {
+            throw ValidationException::withMessages(['sasaran_penilaian_id' => 'Sasaran harus berasal dari Form 2B.']);
+        }
+        $indikator = $konteks->indikators()->reorder()->where('indikator_penilaians.id', $data['indikator_penilaian_id'])
+            ->where('indikator_penilaians.sasaran_penilaian_id', $data['sasaran_penilaian_id'])->exists();
+        if (! $indikator) {
+            throw ValidationException::withMessages(['indikator_penilaian_id' => 'Indikator harus berasal dari sasaran pada Form 2B.']);
+        }
+    }
+
     /**
      * Add a new risk item to Form 3B.
      */
     public function storeItem(IdentifikasiRisikoOpd $dokumen, array $data, ?User $user = null): IdentifikasiRisikoOpdItem
     {
         $this->readinessService->assertOpdCanEdit((string) $dokumen->opd_id, (string) $dokumen->periode_penilaian_id, $user, '3b');
+
+        $this->assertReferensiForm2b($dokumen, $data);
 
         return DB::transaction(function () use ($dokumen, $data, $user) {
             $nextUrutan = ($dokumen->items()->max('urutan') ?? 0) + 1;
@@ -133,8 +155,6 @@ class IdentifikasiRisikoOpdService
             $tahunPenilaian = (string) ($dokumen->periode->tahun_mulai ?? date('Y'));
             $singkatanOpd = $dokumen->singkatan_opd ?: ($dokumen->opd?->singkatan ?: 'OPD');
             $kodeRisiko = $this->generateKodeRisiko($tahunPenilaian, $singkatanOpd, $data['kategori_risiko'], $nextNomorUrut);
-
-            $defaultPemilik = 'Kepala '.($dokumen->opd?->nama ?? 'Perangkat Daerah');
 
             $item = new IdentifikasiRisikoOpdItem;
             $item->identifikasi_risiko_opd_id = $dokumen->id;
@@ -146,7 +166,7 @@ class IdentifikasiRisikoOpdService
             $item->nomor_urut = $nextNomorUrut;
             $item->pernyataan_risiko = $data['pernyataan_risiko'];
             $item->kode_risiko = $kodeRisiko;
-            $item->pemilik_risiko = $data['pemilik_risiko'] ?: $defaultPemilik;
+            $item->pemilik_risiko = $data['pemilik_risiko'];
             $item->sifat_risiko = $data['sifat_risiko'] ?? 'C';
             $item->uraian_dampak = $data['uraian_dampak'] ?? null;
             $item->pihak_terkena = $data['pihak_terkena'] ?? null;
@@ -175,6 +195,8 @@ class IdentifikasiRisikoOpdService
         $dokumen = $item->dokumen;
         $this->readinessService->assertOpdCanEdit((string) $dokumen->opd_id, (string) $dokumen->periode_penilaian_id, $user, '3b');
 
+        $this->assertReferensiForm2b($dokumen, $data);
+
         return DB::transaction(function () use ($item, $dokumen, $data, $user) {
             $tahunPenilaian = (string) ($dokumen->periode->tahun_mulai ?? date('Y'));
             $singkatanOpd = $dokumen->singkatan_opd ?: ($dokumen->opd?->singkatan ?: 'OPD');
@@ -201,7 +223,7 @@ class IdentifikasiRisikoOpdService
                 $item->pernyataan_risiko = $data['pernyataan_risiko'];
             }
             if (array_key_exists('pemilik_risiko', $data)) {
-                $item->pemilik_risiko = $data['pemilik_risiko'] ?: $item->pemilik_risiko;
+                $item->pemilik_risiko = $data['pemilik_risiko'];
             }
             if (isset($data['sifat_risiko'])) {
                 $item->sifat_risiko = $data['sifat_risiko'];

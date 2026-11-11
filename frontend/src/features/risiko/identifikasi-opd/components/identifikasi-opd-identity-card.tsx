@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Building2, Calendar, FileText, Landmark, Save, Loader2, CheckCircle2, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { SearchableSelect } from '@/components/searchable-select'
-import type { IdentifikasiRisikoOpd, IdentifikasiRisikoOpdMeta } from '@/types/risiko'
+import type { IdentifikasiRisikoOpd } from '@/types/risiko'
 import { risikoService } from '@/services/risiko-service'
 
 interface IdentifikasiOpdIdentityCardProps {
   dokumen: IdentifikasiRisikoOpd | null
-  meta: IdentifikasiRisikoOpdMeta | null
+  urusan: { id: string; kode: string; nama: string } | null
   opdName: string
   opdId: string
   periodeId?: string
@@ -23,7 +22,7 @@ interface IdentifikasiOpdIdentityCardProps {
 
 export function IdentifikasiOpdIdentityCard({
   dokumen,
-  meta,
+  urusan,
   opdName,
   opdId,
   periodeId,
@@ -32,40 +31,35 @@ export function IdentifikasiOpdIdentityCard({
   canEdit,
   onSaved,
 }: IdentifikasiOpdIdentityCardProps) {
-  const [selectedUrusanId, setSelectedUrusanId] = useState<string>('')
+  const initialized = useRef('')
   const [singkatanOpd, setSingkatanOpd] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    if (dokumen?.master_urusan_pemerintahan_id) {
-      setSelectedUrusanId(dokumen.master_urusan_pemerintahan_id)
-    }
     if (dokumen?.singkatan_opd) {
       setSingkatanOpd(dokumen.singkatan_opd)
     }
-  }, [dokumen?.master_urusan_pemerintahan_id, dokumen?.singkatan_opd])
+  }, [dokumen?.singkatan_opd])
 
-  const urusanOptions = (meta?.urusan_pemerintahans || []).map((u) => ({
-    value: u.id,
-    label: `${u.kode} - ${u.nama}`,
-  }))
+  const hasChanged = singkatanOpd !== (dokumen?.singkatan_opd || '')
 
-  const hasUrusanChanged = selectedUrusanId !== (dokumen?.master_urusan_pemerintahan_id || '')
-  const hasSingkatanChanged = singkatanOpd !== (dokumen?.singkatan_opd || '')
-  const hasChanged = hasUrusanChanged || hasSingkatanChanged
+  useEffect(() => {
+    const key = `${opdId}:${periodeId}`
+    if (dokumen || !canEdit || !urusan || !opdId || !periodeId || initialized.current === key) return
+    initialized.current = key
+    void risikoService.saveIdentifikasiOpdHeader({ opd_id: opdId, periode_penilaian_id: periodeId })
+      .then(() => onSaved())
+      .catch((err: unknown) => {
+        toast.error(err instanceof Error ? err.message : 'Gagal menyiapkan identitas dokumen.')
+      })
+  }, [dokumen, canEdit, urusan, opdId, periodeId, onSaved])
 
   async function handleSaveHeader() {
-    if (!selectedUrusanId) {
-      toast.warning('Silakan pilih Urusan Pemerintahan dari master data terlebih dahulu.')
-      return
-    }
-
     try {
       setIsSaving(true)
       await risikoService.saveIdentifikasiOpdHeader({
         opd_id: opdId,
         periode_penilaian_id: periodeId,
-        master_urusan_pemerintahan_id: selectedUrusanId,
         nama_pemda: dokumen?.nama_pemda || 'Pemerintah Kabupaten Cianjur',
         singkatan_opd: singkatanOpd || undefined,
       })
@@ -166,7 +160,7 @@ export function IdentifikasiOpdIdentityCard({
                   type='button'
                   size='sm'
                   onClick={handleSaveHeader}
-                  disabled={isSaving || !selectedUrusanId}
+                  disabled={isSaving}
                   className='h-6 px-2 text-[10px] gap-1 font-semibold'
                 >
                   {isSaving ? <Loader2 className='h-3 w-3 animate-spin' /> : <Save className='h-3 w-3' />}
@@ -175,21 +169,9 @@ export function IdentifikasiOpdIdentityCard({
               )}
             </div>
 
-            {canEdit ? (
-              <SearchableSelect
-                options={urusanOptions}
-                value={selectedUrusanId}
-                onValueChange={(val: string) => setSelectedUrusanId(val)}
-                placeholder='Pilih Urusan Pemerintahan...'
-                className='text-xs h-8'
-              />
-            ) : (
-              <p className='font-semibold text-foreground py-1'>
-                {dokumen?.urusan_pemerintahan
-                  ? `${dokumen.urusan_pemerintahan.kode} - ${dokumen.urusan_pemerintahan.nama}`
-                  : 'Belum ditentukan'}
-              </p>
-            )}
+            <p className='font-semibold text-foreground py-1'>
+              {urusan ? `${urusan.kode} - ${urusan.nama}` : 'Belum ditentukan di Form 3A'}
+            </p>
           </div>
         </div>
       </CardContent>

@@ -19,7 +19,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
-  RISIKO_WIZARD_STEPS,
   type RisikoWizardStepConfig,
 } from '@/features/risiko/shared/risiko-wizard-store'
 import {
@@ -28,6 +27,7 @@ import {
 } from '@/services/pengajuan-risiko-service'
 
 interface ReviewWizardHeaderProps {
+  steps: RisikoWizardStepConfig[]
   submission?: PengajuanPenilaianRisiko
   currentStepIndex: number
   totalSteps: number
@@ -45,6 +45,7 @@ interface ReviewWizardHeaderProps {
 }
 
 export function ReviewWizardHeader({
+  steps,
   submission,
   currentStepIndex,
   totalSteps,
@@ -162,7 +163,7 @@ export function ReviewWizardHeader({
       <TooltipProvider delayDuration={150}>
         <nav aria-label='Progress' className='hidden sm:block pt-1.5 pb-0.5 border-t border-border/60'>
           <ol className='flex items-start w-full justify-between'>
-            {RISIKO_WIZARD_STEPS.map((step, index) => {
+            {steps.map((step, index) => {
               const { status } = getItemStatusForStep(step)
               const isCurrent = index === currentStepIndex
               const isApproved = status === 'approved'
@@ -314,7 +315,7 @@ export function ReviewWizardHeader({
       <div className='sm:hidden pt-1.5 space-y-2 border-t border-border/60'>
         {/* Segmented Micro Progress Bar (13 segments) */}
         <div className='flex items-center gap-1 h-1.5 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700'>
-          {RISIKO_WIZARD_STEPS.map((step, idx) => {
+          {steps.map((step, idx) => {
             const { status } = getItemStatusForStep(step)
             const isCurrent = idx === currentStepIndex
             const isApproved = status === 'approved'

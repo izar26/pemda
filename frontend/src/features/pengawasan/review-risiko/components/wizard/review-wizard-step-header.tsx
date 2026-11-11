@@ -22,6 +22,8 @@ interface ReviewWizardStepHeaderProps {
   isPendingMutation: boolean
   isPengawasTier?: boolean
   isKepalaTier?: boolean
+  informationOnly?: boolean
+  canDecide?: boolean
   currentItem?: SubmissionItem
   onApprove: () => void
   onOpenReject: () => void
@@ -39,6 +41,8 @@ export function ReviewWizardStepHeader({
   isPendingMutation,
   isPengawasTier,
   isKepalaTier,
+  informationOnly,
+  canDecide = true,
   currentItem,
   onApprove,
   onOpenReject,
@@ -62,7 +66,7 @@ export function ReviewWizardStepHeader({
 
         {/* Decision Actions for This Step */}
         <div className='flex items-center gap-2 shrink-0 flex-wrap'>
-          {isKepalaTier ? (
+          {informationOnly ? <Badge variant='outline'>Informasi saja</Badge> : isKepalaTier ? (
             <Badge className='bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 text-xs py-1 px-2.5 gap-1.5 font-semibold'>
               <Clock className='h-3.5 w-3.5 text-sky-600 animate-pulse' />
               Tahap Persetujuan Kepala OPD
@@ -88,7 +92,7 @@ export function ReviewWizardStepHeader({
                 </Badge>
               )}
 
-              <Button
+              {canDecide && <Button
                 type='button'
                 variant={isRejected ? 'secondary' : 'destructive'}
                 size='sm'
@@ -104,9 +108,9 @@ export function ReviewWizardStepHeader({
                     ? 'Kembalikan ke Auditor'
                     : 'Tolak ke Kepala OPD'}
                 </span>
-              </Button>
+              </Button>}
 
-              <Button
+              {canDecide && <Button
                 type='button'
                 size='sm'
                 disabled={isPendingMutation || isApproved || isDraftSubmission}
@@ -127,11 +131,13 @@ export function ReviewWizardStepHeader({
                     ? `Sahkan Form ${stepCode}`
                     : `Setujui Form ${stepCode}`}
                 </span>
-              </Button>
+              </Button>}
             </>
           )}
         </div>
       </div>
+
+      {informationOnly && <p className='mx-4 mt-3 rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground'>Form 4 belum menjadi bagian pengajuan ini. Data ditampilkan sebagai informasi dan tidak memengaruhi persetujuan.</p>}
 
       {/* Draft Notice if OPD has not submitted */}
       {isDraftSubmission && (
@@ -153,14 +159,14 @@ export function ReviewWizardStepHeader({
               <AlertCircle className='h-4 w-4 shrink-0' />
               <span>Instruksi Catatan Revisi Auditor untuk Form {stepCode}:</span>
             </div>
-            <Button
+            {canDecide && <Button
               variant='ghost'
               size='sm'
               onClick={onOpenReject}
               className='h-6 px-2 text-[11px] text-destructive hover:bg-destructive/15'
             >
               Ubah Catatan
-            </Button>
+            </Button>}
           </div>
           <p className='leading-relaxed pl-6 text-foreground font-medium'>
             "{currentItem.catatan_revisi}"

@@ -9,6 +9,7 @@ use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisikoHistory;
 use App\Models\Risiko\PengajuanPenilaianRisikoItem;
 use App\Models\User;
+use App\Policies\Risiko\PengajuanPenilaianRisikoPolicy;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
@@ -214,7 +215,7 @@ class PengajuanQueryService
     /**
      * Get review detail of an OPD submission.
      */
-    public function getSubmissionDetail(string $submissionId, User $user): PengajuanPenilaianRisiko
+    public function getSubmissionDetail(string $submissionId, User $user, bool $startReview = false): PengajuanPenilaianRisiko
     {
         $submission = PengajuanPenilaianRisiko::with([
             'opd:id,kode,nama,kategori',
@@ -228,28 +229,12 @@ class PengajuanQueryService
             'histories.user:id,name',
         ])->findOrFail($submissionId);
 
-        // Authorization check: If user is Auditor, verify assignment
-        $isSpecialAdmin = $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
-        if (! $isSpecialAdmin && $user->hasRole('Auditor')) {
-            $hasAssignment = AuditorOpdAssignment::where('auditor_id', $user->id)
-                ->where('opd_id', $submission->opd_id)
-                ->where('is_active', true)
-                ->exists() || ($submission->auditor_id === $user->id);
-
-            if (! $hasAssignment) {
-                abort(403, 'Anda tidak ditugaskan sebagai auditor pengawas untuk perangkat daerah ini.');
-            }
-        }
-
-        // Authorization check: If user is Executive, verify opd
-        if ($user->hasRole('Executive') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']) && $user->opd_id) {
-            if ((string) $user->opd_id !== (string) $submission->opd_id) {
-                abort(403, 'Anda tidak memiliki hak akses untuk memeriksa perangkat daerah lain.');
-            }
+        if (! app(PengajuanPenilaianRisikoPolicy::class)->view($user, $submission)) {
+            abort(403, 'Anda tidak memiliki hak akses untuk memeriksa pengajuan ini.');
         }
 
         // Auto-transition to in_review status if appropriate
-        if ($submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR
+        if ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR
             && $user->hasRole(['Auditor', 'Inspektorat', 'Superadmin'])) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR]);
             PengajuanPenilaianRisikoHistory::create([
@@ -259,7 +244,7 @@ class PengajuanQueryService
                 'user_id' => $user->id,
                 'created_at' => now(),
             ]);
-        } elseif ($submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS
+        } elseif ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS
             && $user->hasRole(['Inspektorat', 'Superadmin'])) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS]);
             PengajuanPenilaianRisikoHistory::create([
@@ -269,7 +254,7 @@ class PengajuanQueryService
                 'user_id' => $user->id,
                 'created_at' => now(),
             ]);
-        } elseif ($submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED
+        } elseif ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED
             && $user->hasRole(['Auditor', 'Inspektorat', 'Superadmin'])) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW]);
             PengajuanPenilaianRisikoHistory::create([

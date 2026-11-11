@@ -3,8 +3,11 @@
 namespace App\Services\Risiko\Pengajuan;
 
 use App\Models\Pengawasan\AuditorOpdAssignment;
+use App\Models\Risiko\AnalisisRisiko;
 use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoOpdItem;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksPenilaian;
@@ -102,6 +105,18 @@ class PengajuanReadinessService
             $dokumen3c->items_count > 0
         );
 
+        $ids3b = IdentifikasiRisikoOpdItem::whereHas('dokumen', fn ($q) => $q->where('opd_id', $opdId)->where('periode_penilaian_id', $resolvedPeriodeId))->pluck('id');
+        $ids3c = IdentifikasiRisikoOpdOperasionalItem::whereHas('dokumen', fn ($q) => $q->where('opd_id', $opdId)->where('periode_penilaian_id', $resolvedPeriodeId))->pluck('id');
+        $totalForm4 = $ids3b->count() + $ids3c->count();
+        $completeForm4 = AnalisisRisiko::where(fn ($q) => $q->whereIn('risiko_opd_item_id', $ids3b)->orWhereIn('risiko_operasional_item_id', $ids3c))
+            ->whereNotNull('kriteria_kemungkinan')->whereNotNull('inheren_kemungkinan')->whereNotNull('kriteria_dampak')->whereNotNull('inheren_dampak')
+            ->whereNotNull('residual_kriteria_kemungkinan')->where('residual_kriteria_kemungkinan', '!=', '')->whereNotNull('residual_kriteria_dampak')->where('residual_kriteria_dampak', '!=', '')
+            ->whereNotNull('residual_kemungkinan')->whereNotNull('residual_dampak')->whereNotNull('pengendalian_ada')
+            ->where(fn ($q) => $q->where('pengendalian_ada', false)->orWhere(fn ($q) => $q->where('pengendalian_ada', true)->whereNotNull('pengendalian_uraian')->where('pengendalian_uraian', '!=', '')->whereNotNull('sub_unsur_spip_id')->whereNotNull('pengendalian_memadai')))
+            ->count();
+        $is4Complete = $totalForm4 > 0 && $completeForm4 === $totalForm4;
+        $form4Required = ! $submission->isLockedForOperator() || $submission->items->contains('form_code', '4');
+
         // 7. Check Form RCA (Root Cause Analysis 5-Whys for 3A, 3B, & 3C)
         $totalRiskItemsCount = ($dokumen3a?->items_count ?? 0) + ($dokumen3b?->items_count ?? 0) + ($dokumen3c?->items_count ?? 0);
         $isRcaComplete = false;
@@ -197,6 +212,9 @@ class PengajuanReadinessService
                 'description' => 'Urusan Pemerintahan belum dipilih atau daftar risiko operasional OPD belum ditambahkan.',
             ];
         }
+        if ($form4Required && ! $is4Complete) {
+            $missingForms[] = ['code' => '4', 'name' => 'Analisis dan Evaluasi Risiko (Form 4)', 'description' => 'Lengkapi analisis seluruh risiko 3B dan 3C.'];
+        }
         if (! $isRcaComplete) {
             $missingForms[] = [
                 'code' => 'RCA',
@@ -229,7 +247,7 @@ class PengajuanReadinessService
             }
         }
 
-        $allFormsComplete = $is2bComplete && $is2cComplete && $is3aComplete && $is3bComplete && $is3cComplete && $isRcaComplete;
+        $allFormsComplete = $is2bComplete && $is2cComplete && $is3aComplete && $is3bComplete && $is3cComplete && $isRcaComplete && (! $form4Required || $is4Complete);
 
         // Permissions and state machine capabilities
         $currentTier = $submission->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR;
@@ -303,11 +321,13 @@ class PengajuanReadinessService
             'is_3b_complete' => $is3bComplete,
             'is_3c_complete' => $is3cComplete,
             'is_rca_complete' => $isRcaComplete,
+            'is_4_complete' => $is4Complete,
             'is_2b_approved' => ($formStatuses['2b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_2c_approved' => ($formStatuses['2c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_3a_approved' => ($formStatuses['3a'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_3b_approved' => ($formStatuses['3b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_3c_approved' => ($formStatuses['3c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_4_approved' => ($formStatuses['4'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_rca_approved' => ($formStatuses['rca'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'form_statuses' => $formStatuses,
             'form_details' => $formDetails,

@@ -380,7 +380,7 @@ export const risikoService = {
   async saveIdentifikasiOpdHeader(data: {
     opd_id: string
     periode_penilaian_id?: string
-    master_urusan_pemerintahan_id: string
+    master_urusan_pemerintahan_id?: string
     nama_pemda?: string
     singkatan_opd?: string
     nama_kepala_opd?: string
@@ -485,7 +485,7 @@ export const risikoService = {
   async saveIdentifikasiOperasionalHeader(data: {
     opd_id: string
     periode_penilaian_id?: string
-    master_urusan_pemerintahan_id: string
+    master_urusan_pemerintahan_id?: string
     nama_pemda?: string
     singkatan_opd?: string
     nama_kepala_opd?: string
@@ -510,7 +510,7 @@ export const risikoService = {
       probis: string
       kategori_risiko: string
       pernyataan_risiko: string
-      pemilik_risiko?: string
+      pemilik_risiko?: string | null
       sifat_risiko: 'C' | 'UC'
       uraian_dampak?: string | null
       pihak_terkena?: string | null
@@ -537,7 +537,7 @@ export const risikoService = {
       probis?: string
       kategori_risiko?: string
       pernyataan_risiko?: string
-      pemilik_risiko?: string
+      pemilik_risiko?: string | null
       sifat_risiko?: 'C' | 'UC'
       uraian_dampak?: string | null
       pihak_terkena?: string | null

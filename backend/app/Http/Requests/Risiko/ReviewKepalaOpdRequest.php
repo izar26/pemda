@@ -26,6 +26,7 @@ class ReviewKepalaOpdRequest extends FormRequest
     {
         return [
             'status' => ['required', 'string', 'in:approved,rejected'],
+            'form_code' => ['nullable', 'required_if:status,rejected', 'string', 'in:2b,2c,3a,3b,3c,rca,4'],
             'catatan' => ['nullable', 'string', 'required_if:status,rejected', 'min:5', 'max:2000'],
         ];
     }
@@ -38,6 +39,7 @@ class ReviewKepalaOpdRequest extends FormRequest
         return [
             'status.required' => 'Status persetujuan wajib ditentukan.',
             'status.in' => 'Status harus berupa disetujui (approved) atau ditolak (rejected).',
+            'form_code.required_if' => 'Pilih formulir yang perlu diperbaiki.',
             'catatan.required_if' => 'Catatan revisi wajib diisi minimal 5 karakter apabila draf ditolak.',
             'catatan.min' => 'Catatan revisi minimal 5 karakter.',
         ];

@@ -132,7 +132,7 @@ class KonteksOperasionalService
                 'sumber_data_id' => $konteksStrategis->sumber_data_id,
                 'konteks_penilaian_id' => $konteksStrategis->id,
                 'nama_pemda' => $konteksStrategis->nama_pemda ?? 'Pemerintah Kabupaten Cianjur',
-                'informasi_lain' => '-',
+                'informasi_lain' => null,
                 'nama_kepala' => $konteksStrategis->nama_kepala,
                 'nip_kepala' => $konteksStrategis->nip_kepala,
                 'jabatan_kepala' => $konteksStrategis->jabatan_kepala,
@@ -205,8 +205,8 @@ class KonteksOperasionalService
             $konteks = KonteksOperasional::where($attributes)->first();
 
             $informasiLain = array_key_exists('informasi_lain', $data)
-                ? (trim((string) $data['informasi_lain']) !== '' ? trim((string) $data['informasi_lain']) : '-')
-                : ($konteks?->informasi_lain ?? '-');
+                ? (trim((string) $data['informasi_lain']) !== '' ? trim((string) $data['informasi_lain']) : null)
+                : ($konteks?->informasi_lain);
 
             $values = [
                 'sumber_data_id' => $konteksStrategis->sumber_data_id,

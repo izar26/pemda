@@ -41,6 +41,10 @@ class RootCauseAnalysisController extends Controller
             $targetOpdId = $user->opd_id;
         }
 
+        if ($user->isScopedAuditor() && ! empty($targetOpdId) && ! $user->canReadOpdData((string) $targetOpdId)) {
+            abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
+        }
+
         if (empty($targetOpdId)) {
             return response()->json([
                 'data' => [],

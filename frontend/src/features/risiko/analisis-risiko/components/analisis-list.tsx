@@ -1,0 +1,31 @@
+import { ClipboardList, Search } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { AnalisisResponse, AnalisisRow } from '../api'
+
+interface Props {
+  data?: AnalisisResponse
+  isLoading: boolean
+  isError: boolean
+  source: string
+  search: string
+  status: string
+  onSource: (value: string) => void
+  onSearch: (value: string) => void
+  onStatus: (value: string) => void
+  onPage: (page: number) => void
+  onRetry: () => void
+  canEdit: (row: AnalisisRow) => boolean
+  onOpen: (row: AnalisisRow) => void
+}
+
+export function AnalisisList({ data, isLoading, isError, source, search, status, onSource, onSearch, onStatus, onPage, onRetry, canEdit, onOpen }: Props) {
+  return <section className='min-w-0 space-y-4' aria-label='Daftar analisis risiko'>
+    <div className='flex flex-wrap items-start justify-between gap-3'><div className='space-y-1'><h2 className='flex items-center gap-2 text-base font-bold'><ClipboardList className='h-4 w-4 text-primary' /> Analisis dan Evaluasi Risiko</h2><p className='text-sm text-muted-foreground'>Pilih risiko untuk menilai kondisi sebelum dan setelah pengendalian.</p></div>{data && <Badge variant='outline' className='text-xs'>{data.meta.complete_total} dari {data.meta.overall_total} analisis lengkap</Badge>}</div>
+    <div className='space-y-3 rounded-lg border bg-card p-3 sm:p-4'><div className='flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'><Tabs value={source} onValueChange={onSource} className='min-w-0'><TabsList className='flex h-auto w-full flex-wrap justify-start gap-1 p-1'><TabsTrigger value='all' className='min-h-8 text-xs'>Semua</TabsTrigger><TabsTrigger value='3b' className='min-h-8 text-xs'>OPD (3B)</TabsTrigger><TabsTrigger value='3c' className='min-h-8 text-xs'>Operasional (3C)</TabsTrigger></TabsList></Tabs><div className='relative w-full lg:max-w-xs'><Search aria-hidden='true' className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' /><Input aria-label='Cari risiko' placeholder='Cari kode atau pernyataan risiko' value={search} onChange={(event) => onSearch(event.target.value)} className='pl-9' /></div></div><div className='flex flex-wrap items-center justify-between gap-2'><label className='flex cursor-pointer items-center gap-2 text-sm'><input type='checkbox' checked={status === 'incomplete'} onChange={(event) => onStatus(event.target.checked ? 'incomplete' : '')} className='h-4 w-4 accent-primary' /> Hanya yang belum lengkap</label>{data && <span className='text-xs text-muted-foreground'>{data.meta.total} risiko sesuai filter</span>}</div></div>
+    {isLoading ? <div className='rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground' role='status'>Memuat data analisis...</div> : isError ? <div role='alert' className='space-y-3 rounded-lg border bg-card p-6 text-center text-sm'><p>Data analisis tidak dapat dimuat.</p><Button variant='outline' size='sm' onClick={onRetry}>Coba lagi</Button></div> : !data ? <p className='rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground'>Pilih perangkat daerah dan periode penilaian untuk melihat risiko.</p> : data.data.length === 0 ? <div className='rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground'>{data.meta.overall_total === 0 ? 'Belum ada risiko 3B atau 3C untuk dianalisis.' : 'Tidak ada risiko yang sesuai dengan filter. Ubah pencarian atau filter untuk melihat risiko lainnya.'}</div> : <ul className='space-y-3'>{data.data.map((row) => <li key={`${row.source}-${row.id}`} className='min-w-0 rounded-lg border bg-card p-4 shadow-xs'><div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'><div className='min-w-0 flex-1 space-y-2'><div className='flex flex-wrap items-center gap-2'><Badge variant='outline'>Form {row.source.toUpperCase()}</Badge><span className='break-all font-mono text-xs font-semibold'>{row.kode_risiko}</span><Badge variant='outline' className={row.complete ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-400' : 'border-amber-500/40 text-amber-700 dark:text-amber-400'}>{row.complete ? 'Lengkap' : 'Belum lengkap'}</Badge></div><p className='break-words text-sm font-semibold leading-relaxed'>{row.pernyataan_risiko}</p><p className='text-xs text-muted-foreground'>{row.kategori_risiko} · {row.pemilik_risiko || '-'}</p><div className='grid grid-cols-2 gap-3 rounded-md bg-muted/50 p-3 text-xs sm:grid-cols-4'><div><span className='block text-muted-foreground'>Skala inheren</span><strong>{row.skala_inheren ?? '-'}</strong></div><div><span className='block text-muted-foreground'>Skala residual</span><strong>{row.skala_residual ?? '-'}</strong></div><div><span className='block text-muted-foreground'>Peringkat</span><strong>{row.peringkat ?? '-'}</strong></div><div><span className='block text-muted-foreground'>Evaluasi</span><strong>{row.evaluasi || 'Belum dievaluasi'}</strong></div></div></div><Button type='button' variant={row.complete || !canEdit(row) ? 'outline' : 'default'} size='sm' onClick={() => onOpen(row)} className='w-full shrink-0 sm:w-auto'>{!canEdit(row) ? 'Lihat Analisis' : row.analysis ? 'Lihat / Ubah Analisis' : 'Mulai Analisis'}</Button></div></li>)}</ul>}
+    {data && data.meta.last_page > 1 && <div className='flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground'><span>{data.meta.total} risiko · Halaman {data.meta.current_page} dari {data.meta.last_page}</span><div className='flex gap-2'><Button type='button' variant='outline' size='sm' disabled={data.meta.current_page <= 1} onClick={() => onPage(data.meta.current_page - 1)}>Sebelumnya</Button><Button type='button' variant='outline' size='sm' disabled={data.meta.current_page >= data.meta.last_page} onClick={() => onPage(data.meta.current_page + 1)}>Berikutnya</Button></div></div>}
+  </section>
+}

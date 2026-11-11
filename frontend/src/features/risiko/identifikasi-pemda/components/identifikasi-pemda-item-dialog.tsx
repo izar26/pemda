@@ -64,7 +64,7 @@ export function IdentifikasiPemdaItemDialog({
   const [isCustomPemilik, setIsCustomPemilik] = useState(false)
   const [sifatRisiko, setSifatRisiko] = useState<SifatRisiko>('C')
   const [uraianDampak, setUraianDampak] = useState<string>('')
-  const [pihakTerkena, setPihakTerkena] = useState<string>('Pemda')
+  const [pihakTerkena, setPihakTerkena] = useState<string>('')
 
   // Reset or populate on open
   useEffect(() => {
@@ -127,7 +127,7 @@ export function IdentifikasiPemdaItemDialog({
 
       setSifatRisiko('C')
       setUraianDampak('')
-      setPihakTerkena('Pemda')
+      setPihakTerkena('')
     }
   }, [itemToEdit, open, meta])
 
@@ -167,6 +167,11 @@ export function IdentifikasiPemdaItemDialog({
 
     if (!pernyataanRisiko.trim()) {
       toast.warning('Pernyataan risiko wajib diisi.')
+      return
+    }
+
+    if (!sifatRisiko) {
+      toast.warning('Pilih sifat risiko.')
       return
     }
 
@@ -216,7 +221,7 @@ export function IdentifikasiPemdaItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
         <form onSubmit={handleSubmit} className='space-y-4'>
           <DialogHeader>
             <DialogTitle className='text-sm sm:text-base font-bold flex items-center gap-2'>

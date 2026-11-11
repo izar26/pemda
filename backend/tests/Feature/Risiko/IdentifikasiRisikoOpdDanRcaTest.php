@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Risiko;
 
+use App\Models\Master\MasterPemilikRisiko;
 use App\Models\Master\MasterSumberData;
 use App\Models\Master\MasterUrusanPemerintahan;
 use App\Models\Opd;
@@ -132,6 +133,7 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
             'is_active' => true,
             'urutan' => 3,
         ]);
+        MasterPemilikRisiko::create(['nama' => 'Kadis PUTR', 'is_active' => true, 'urutan' => 1]);
     }
 
     public function test_opd_can_get_current_3b_and_it_provides_2b_reference_metadata(): void
@@ -148,6 +150,7 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
                 'tujuan_strategis',
                 'sasarans_from_2b',
                 'urusan_pemerintahans',
+                'pemilik_risiko_options',
                 'kategori_options',
             ],
         ]);
@@ -160,6 +163,12 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
     public function test_opd_can_save_3b_header_with_singkatan_opd_and_urusan(): void
     {
         Sanctum::actingAs($this->opdUser);
+
+        IdentifikasiRisikoPemda::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
 
         $payload = [
             'periode_penilaian_id' => $this->activePeriode->id,
@@ -213,6 +222,42 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
             'identifikasi_risiko_opd_item_id' => $itemId,
             'source_type' => '3b',
         ]);
+    }
+
+    public function test_3b_rejects_manual_or_unrelated_references_and_unknown_owner(): void
+    {
+        Sanctum::actingAs($this->opdUser);
+        $dokumen = IdentifikasiRisikoOpd::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
+        $url = "/api/risiko/identifikasi-opd/{$dokumen->id}/items";
+        $payload = [
+            'sasaran_penilaian_id' => $this->sasaran->id,
+            'indikator_penilaian_id' => $this->indikator->id,
+            'kategori_risiko' => 'Risiko Strategis',
+            'pernyataan_risiko' => 'Risiko keterlambatan program',
+            'pemilik_risiko' => 'Kadis PUTR',
+            'sifat_risiko' => 'C',
+        ];
+        $this->postJson($url, array_merge($payload, ['sasaran_kustom' => 'Manual']))->assertUnprocessable()->assertJsonValidationErrors('sasaran_kustom');
+        $this->postJson($url, array_merge($payload, ['pemilik_risiko' => 'Tidak terdaftar']))->assertUnprocessable()->assertJsonValidationErrors('pemilik_risiko');
+        $konteks = KonteksPenilaian::where('opd_id', $this->opd->id)->firstOrFail();
+        $konteks->indikators()->detach($this->indikator->id);
+        $this->postJson($url, $payload)->assertUnprocessable()->assertJsonValidationErrors('indikator_penilaian_id');
+        $this->assertDatabaseCount('identifikasi_risiko_opd_items', 0);
+    }
+
+    public function test_3b_item_cannot_be_added_without_permission(): void
+    {
+        $dokumen = IdentifikasiRisikoOpd::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson("/api/risiko/identifikasi-opd/{$dokumen->id}/items", [])->assertForbidden();
     }
 
     public function test_rca_3b_auto_computes_deepest_akar_penyebab_and_reflects_in_3b(): void

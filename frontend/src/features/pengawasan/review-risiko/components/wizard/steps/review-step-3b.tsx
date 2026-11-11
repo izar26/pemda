@@ -4,10 +4,11 @@ import type { IdentifikasiRisikoOpd } from '@/types/risiko'
 
 interface ReviewStep3BProps {
   dokumen3B?: IdentifikasiRisikoOpd | null
+  urusan?: { kode: string; nama: string } | null
   isLoading: boolean
 }
 
-export function ReviewStep3B({ dokumen3B, isLoading }: ReviewStep3BProps) {
+export function ReviewStep3B({ dokumen3B, urusan, isLoading }: ReviewStep3BProps) {
   if (isLoading) {
     return (
       <div className='flex items-center justify-center p-12 text-xs text-muted-foreground gap-2'>
@@ -50,8 +51,8 @@ export function ReviewStep3B({ dokumen3B, isLoading }: ReviewStep3BProps) {
           </span>
           <p className='font-bold text-foreground flex items-center gap-1.5'>
             <Building2 className='h-3.5 w-3.5 text-primary' />
-            {dokumen3B?.urusan_pemerintahan
-              ? `${dokumen3B.urusan_pemerintahan.kode} - ${dokumen3B.urusan_pemerintahan.nama}`
+            {urusan
+              ? `${urusan.kode} - ${urusan.nama}`
               : 'Belum ditentukan'}
           </p>
         </div>
@@ -113,7 +114,7 @@ export function ReviewStep3B({ dokumen3B, isLoading }: ReviewStep3BProps) {
                       {item.pernyataan_risiko}
                     </td>
                     <td className='p-2.5 align-top text-foreground'>
-                      {item.pemilik_risiko || 'Kepala OPD'}
+                      {item.pemilik_risiko || '-'}
                     </td>
                     <td className='p-2.5 align-top bg-amber-500/5 dark:bg-amber-500/10 border-x border-amber-500/20 space-y-1'>
                       {item.uraian_sebab ? (

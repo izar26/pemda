@@ -19,7 +19,7 @@ class ReviewAuditorItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'form_code' => ['required', 'string', 'in:2b,2c,3a,3b,3c,rca'],
+            'form_code' => ['required', 'string', 'in:2b,2c,3a,3b,3c,rca,4'],
             'status' => ['required', 'string', 'in:approved,rejected'],
             'catatan_revisi' => ['nullable', 'string', 'required_if:status,rejected', 'min:5', 'max:2000'],
         ];
@@ -31,8 +31,8 @@ class ReviewAuditorItemRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'form_code.required' => 'Kode formulir wajib disertakan (2b, 2c, 3a, 3b, 3c, atau rca).',
-            'form_code.in' => 'Kode formulir harus 2b, 2c, 3a, 3b, 3c, atau rca.',
+            'form_code.required' => 'Kode formulir wajib disertakan (2b, 2c, 3a, 3b, 3c, rca, atau 4).',
+            'form_code.in' => 'Kode formulir harus 2b, 2c, 3a, 3b, 3c, rca, atau 4.',
             'status.required' => 'Status review wajib ditentukan.',
             'status.in' => 'Status harus berupa disetujui (approved) atau ditolak (rejected).',
             'catatan_revisi.required_if' => 'Catatan revisi wajib diisi minimal 5 karakter jika formulir ditolak.',

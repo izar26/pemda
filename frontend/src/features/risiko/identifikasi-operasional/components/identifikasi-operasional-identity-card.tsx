@@ -1,29 +1,27 @@
-import { useState, useEffect } from 'react'
-import { FolderKanban, Calendar, FileText, Landmark, Save, Loader2, CheckCircle2, Tag } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { FolderKanban, Calendar, FileText, Landmark, Loader2, CheckCircle2, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { SearchableSelect } from '@/components/searchable-select'
-import type { IdentifikasiRisikoOpdOperasional, IdentifikasiRisikoOpdOperasionalMeta } from '@/types/risiko'
+import type { IdentifikasiRisikoOpdOperasional } from '@/types/risiko'
 import { risikoService } from '@/services/risiko-service'
 
 interface IdentifikasiOperasionalIdentityCardProps {
   dokumen: IdentifikasiRisikoOpdOperasional | null
-  meta: IdentifikasiRisikoOpdOperasionalMeta | null
+  urusan: { id: string; kode: string; nama: string } | null
   opdName: string
   opdId: string
   periodeId?: string
   tahunPenilaian?: number | string
   rentangTahun?: string
   canEdit: boolean
-  onSaved: () => void
+  onSaved: () => Promise<void>
 }
 
 export function IdentifikasiOperasionalIdentityCard({
   dokumen,
-  meta,
+  urusan,
   opdName,
   opdId,
   periodeId,
@@ -32,47 +30,49 @@ export function IdentifikasiOperasionalIdentityCard({
   canEdit,
   onSaved,
 }: IdentifikasiOperasionalIdentityCardProps) {
-  const [selectedUrusanId, setSelectedUrusanId] = useState<string>('')
+  const initialized = useRef('')
   const [singkatanOpd, setSingkatanOpd] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    if (dokumen?.master_urusan_pemerintahan_id) {
-      setSelectedUrusanId(dokumen.master_urusan_pemerintahan_id)
-    }
     if (dokumen?.singkatan_opd) {
       setSingkatanOpd(dokumen.singkatan_opd)
     }
-  }, [dokumen?.master_urusan_pemerintahan_id, dokumen?.singkatan_opd])
+  }, [dokumen?.singkatan_opd])
 
-  const urusanOptions = (meta?.urusan_pemerintahans || []).map((u) => ({
-    value: u.id,
-    label: `${u.kode} - ${u.nama}`,
-  }))
-
-  const hasUrusanChanged = selectedUrusanId !== (dokumen?.master_urusan_pemerintahan_id || '')
-  const hasSingkatanChanged = singkatanOpd !== (dokumen?.singkatan_opd || '')
-  const hasChanged = hasUrusanChanged || hasSingkatanChanged
+  useEffect(() => {
+    const key = `${opdId}:${periodeId}`
+    if (dokumen || !canEdit || !urusan || !opdId || !periodeId || initialized.current === key) return
+    initialized.current = key
+    void risikoService.saveIdentifikasiOperasionalHeader({ opd_id: opdId, periode_penilaian_id: periodeId })
+      .then(() => onSaved())
+      .catch((err: unknown) => {
+        toast.error(err instanceof Error ? err.message : 'Gagal menyiapkan identitas dokumen.')
+      })
+  }, [dokumen, canEdit, urusan, opdId, periodeId, onSaved])
 
   async function handleSaveHeader() {
-    if (!selectedUrusanId) {
-      toast.warning('Silakan pilih Urusan Pemerintahan dari master data terlebih dahulu.')
+    if (!dokumen || isSaving) return
+    const value = singkatanOpd.trim().toUpperCase()
+    if (value === (dokumen.singkatan_opd || '')) return
+    if (!value) {
+      setSingkatanOpd(dokumen.singkatan_opd || '')
+      toast.error('Singkatan OPD tidak boleh kosong.')
       return
     }
 
     try {
+      setSingkatanOpd(value)
       setIsSaving(true)
       await risikoService.saveIdentifikasiOperasionalHeader({
         opd_id: opdId,
         periode_penilaian_id: periodeId,
-        master_urusan_pemerintahan_id: selectedUrusanId,
-        nama_pemda: dokumen?.nama_pemda || 'Pemerintah Kabupaten Cianjur',
-        singkatan_opd: singkatanOpd || undefined,
+        singkatan_opd: value,
       })
-      toast.success('Identitas Form 3C berhasil disimpan.')
-      onSaved()
+      await onSaved()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan identitas dokumen.'
+      setSingkatanOpd(dokumen.singkatan_opd || '')
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan singkatan OPD.'
       toast.error(msg)
     } finally {
       setIsSaving(false)
@@ -104,7 +104,7 @@ export function IdentifikasiOperasionalIdentityCard({
           )}
         </div>
 
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4'>
           {/* 1. Nama Pemda */}
           <div className='space-y-1.5'>
             <Label className='text-xs font-semibold text-muted-foreground flex items-center gap-1.5'>
@@ -142,11 +142,24 @@ export function IdentifikasiOperasionalIdentityCard({
             <Input
               value={singkatanOpd}
               onChange={(e) => setSingkatanOpd(e.target.value.toUpperCase())}
-              disabled={!canEdit}
+              onBlur={handleSaveHeader}
+              onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }}
+              disabled={!canEdit || !dokumen || isSaving}
               placeholder={dokumen?.opd?.singkatan || 'CONTOH: PUTR'}
               maxLength={15}
               className='font-mono font-bold text-xs h-9 uppercase'
             />
+            {isSaving && <span className='flex items-center gap-1 text-xs text-muted-foreground' role='status'><Loader2 className='h-3 w-3 animate-spin' /> Menyimpan...</span>}
+          </div>
+
+          <div className='space-y-1.5'>
+            <Label className='text-xs font-semibold text-muted-foreground flex items-center gap-1.5'>
+              <FileText className='h-3.5 w-3.5 text-primary' />
+              Urusan Pemerintahan
+            </Label>
+            <div className='min-h-9 rounded-md border bg-muted/40 px-3 py-2 text-xs font-medium break-words'>
+              {urusan ? `${urusan.kode} - ${urusan.nama}` : 'Belum ditentukan'}
+            </div>
           </div>
 
           {/* 4. Tahun Penilaian & Periode */}
@@ -172,50 +185,6 @@ export function IdentifikasiOperasionalIdentityCard({
           </div>
         </div>
 
-        {/* 5. Urusan Pemerintahan (Master Data) */}
-        <div className='pt-2 border-t flex flex-col md:flex-row md:items-end justify-between gap-3'>
-          <div className='space-y-1.5 flex-1 max-w-2xl'>
-            <Label className='text-xs font-semibold text-foreground flex items-center gap-1.5'>
-              <FileText className='h-3.5 w-3.5 text-primary' />
-              Urusan Pemerintahan (Master Data)
-              <span className='text-destructive'>*</span>
-            </Label>
-            <SearchableSelect
-              options={urusanOptions}
-              value={selectedUrusanId}
-              onValueChange={setSelectedUrusanId}
-              placeholder='Pilih Urusan Pemerintahan...'
-              searchPlaceholder='Cari kode atau nama urusan...'
-              disabled={!canEdit}
-              className='text-xs'
-            />
-            <p className='text-[11px] text-muted-foreground'>
-              Sesuai amanat BPKP/SPIP, urusan pemerintahan diambil langsung dari data master daerah.
-            </p>
-          </div>
-
-          {canEdit && (
-            <Button
-              type='button'
-              size='sm'
-              onClick={handleSaveHeader}
-              disabled={isSaving || !hasChanged || !selectedUrusanId}
-              className='h-9 px-4 gap-1.5 font-semibold shrink-0'
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  <Save className='h-3.5 w-3.5' />
-                  <span>Simpan Identitas</span>
-                </>
-              )}
-            </Button>
-          )}
-        </div>
       </CardContent>
     </Card>
   )

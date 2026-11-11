@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePermissions } from '@/hooks/use-permissions'
 import { format, parseISO } from 'date-fns'
 import { id as idLocale } from 'date-fns/locale'
 import {
@@ -27,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   RISIKO_WIZARD_STEPS,
@@ -36,7 +38,7 @@ import {
   pengajuanRisikoService,
   type SubmissionItem,
 } from '@/services/pengajuan-risiko-service'
-import { risikoService } from '@/services/risiko-service'
+import { useReviewFormData } from './use-review-form-data'
 import { ReviewWizardHeader } from './wizard/review-wizard-header'
 import { ReviewWizardStepHeader } from './wizard/review-wizard-step-header'
 import { ReviewWizardFooter } from './wizard/review-wizard-footer'
@@ -47,6 +49,8 @@ import { ReviewStep3A } from './wizard/steps/review-step-3a'
 import { ReviewStep3B } from './wizard/steps/review-step-3b'
 import { ReviewStep3C } from './wizard/steps/review-step-3c'
 import { ReviewStepRca } from './wizard/steps/review-step-rca'
+import { ReviewStep4 } from './wizard/steps/review-step-4'
+import { KepalaFormSelect } from '@/features/risiko/shared/header/kepala-form-select'
 
 interface ReviewRisikoWizardProps {
   submissionId: string
@@ -64,6 +68,7 @@ export function ReviewRisikoWizard({
   onSuccess,
 }: ReviewRisikoWizardProps) {
   const queryClient = useQueryClient()
+  const { hasPermission, hasRole } = usePermissions()
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
   // Rejection Dialog state
@@ -79,81 +84,27 @@ export function ReviewRisikoWizard({
   const [resubmitNotes, setResubmitNotes] = useState('')
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
 
-  // 1. Fetch submission detail with items & history
-  const { data: submission, isLoading: isLoadingSubmission } = useQuery({
+  const { data: submission, isLoading: isLoadingSubmission, isError: submissionError, refetch: refetchSubmission } = useQuery({
     queryKey: ['pengawasan', 'review-detail', submissionId],
-    queryFn: () => pengajuanRisikoService.getSubmissionDetail(submissionId),
+    queryFn: () => pengajuanRisikoService.startReview(submissionId),
     staleTime: 5_000,
+    retry: false,
   })
+
+  const reviewSteps = RISIKO_WIZARD_STEPS
+  const hasForm4Item = Boolean(submission?.items?.some((item) => item.form_code.toLowerCase() === '4'))
 
   const effectiveOpdId = submission?.opd_id || opdId
   const effectivePeriodeId = submission?.periode_penilaian_id || periodeId
 
-  // 2. Fetch Form 2B detail
-  const { data: konteks2BData, isLoading: isLoading2B } = useQuery({
-    queryKey: ['risiko-2b-detail', effectiveOpdId, effectivePeriodeId],
-    queryFn: () =>
-      risikoService.getCurrentKonteksWithMeta({
-        opd_id: effectiveOpdId,
-        periode_penilaian_id: effectivePeriodeId,
-      }),
-    enabled: Boolean(effectiveOpdId),
-  })
-
-  // 3. Fetch Form 2C detail
-  const { data: konteks2CData, isLoading: isLoading2C } = useQuery({
-    queryKey: ['risiko-2c-detail', effectiveOpdId, effectivePeriodeId],
-    queryFn: () =>
-      risikoService.getCurrentKonteksOperasional({
-        opd_id: effectiveOpdId,
-        periode_penilaian_id: effectivePeriodeId,
-      }),
-    enabled: Boolean(effectiveOpdId),
-  })
-
-  // 4. Fetch Form 3A detail
-  const { data: identifikasi3AData, isLoading: isLoading3A } = useQuery({
-    queryKey: ['risiko-3a-review-detail', effectiveOpdId, effectivePeriodeId],
-    queryFn: () =>
-      risikoService.getCurrentIdentifikasiPemda({
-        opd_id: effectiveOpdId,
-        periode_penilaian_id: effectivePeriodeId,
-      }),
-    enabled: Boolean(effectiveOpdId),
-  })
-
-  // 4b. Fetch Form 3B detail
-  const { data: identifikasi3BData, isLoading: isLoading3B } = useQuery({
-    queryKey: ['risiko-3b-review-detail', effectiveOpdId, effectivePeriodeId],
-    queryFn: () =>
-      risikoService.getCurrentIdentifikasiOpd({
-        opd_id: effectiveOpdId,
-        periode_penilaian_id: effectivePeriodeId,
-      }),
-    enabled: Boolean(effectiveOpdId),
-  })
-
-  // 4c. Fetch Form 3C detail
-  const { data: identifikasi3CData, isLoading: isLoading3C } = useQuery({
-    queryKey: ['risiko-3c-review-detail', effectiveOpdId, effectivePeriodeId],
-    queryFn: () =>
-      risikoService.getCurrentIdentifikasiOperasional({
-        opd_id: effectiveOpdId,
-        periode_penilaian_id: effectivePeriodeId,
-      }),
-    enabled: Boolean(effectiveOpdId),
-  })
-
-  // 5. Fetch Form RCA detail
-  const { data: rcaListData = [], isLoading: isLoadingRca } = useQuery({
-    queryKey: ['risiko-rca-review-detail', effectiveOpdId, effectivePeriodeId],
-    queryFn: () =>
-      risikoService.getRcaList({
-        opd_id: effectiveOpdId,
-        periode_penilaian_id: effectivePeriodeId,
-      }),
-    enabled: Boolean(effectiveOpdId),
-  })
+  const activeStepId = reviewSteps[currentStepIndex]?.id
+  const {
+    form4, form4Page, isLoading4, error4, refetch4,
+    setPages, setSearches, rcaSource, setRcaSource, rcaStatus, setRcaStatus, searchFor,
+    konteks2BData, isLoading2B, error2B, refetch2B, konteks2CData, isLoading2C, error2C, refetch2C,
+    identifikasi3AData, isLoading3A, error3A, refetch3A, identifikasi3BData, isLoading3B, error3B, refetch3B,
+    identifikasi3CData, isLoading3C, error3C, refetch3C, rcaPage, isLoadingRca, errorRca, refetchRca,
+  } = useReviewFormData(submissionId, effectiveOpdId, effectivePeriodeId, activeStepId, Boolean(submission))
 
   const authUser = useAuthStore((state) => state.auth.user)
   const isSuperadmin =
@@ -178,13 +129,14 @@ export function ReviewRisikoWizard({
   const [isKepalaApproveOpen, setIsKepalaApproveOpen] = useState(false)
   const [isKepalaRejectOpen, setIsKepalaRejectOpen] = useState(false)
   const [kepalaRejectNotes, setKepalaRejectNotes] = useState('')
+  const [kepalaRejectForm, setKepalaRejectForm] = useState('')
   const [isKepalaDelegateOpen, setIsKepalaDelegateOpen] = useState(false)
   const [kepalaDelegateNotes, setKepalaDelegateNotes] = useState('')
 
   // Kepala OPD Review Mutation
   const reviewKepalaMutation = useMutation({
-    mutationFn: ({ status, catatan }: { status: 'approved' | 'rejected'; catatan?: string }) =>
-      pengajuanRisikoService.reviewByKepalaOpd(submissionId, { status, catatan }),
+    mutationFn: ({ status, catatan, form_code }: { status: 'approved' | 'rejected'; catatan?: string; form_code?: string }) =>
+      pengajuanRisikoService.reviewByKepalaOpd(submissionId, { status, catatan, form_code }),
     onSuccess: (res, vars) => {
       toast.success(
         res.message ||
@@ -195,6 +147,7 @@ export function ReviewRisikoWizard({
       setIsKepalaApproveOpen(false)
       setIsKepalaRejectOpen(false)
       setKepalaRejectNotes('')
+      setKepalaRejectForm('')
       queryClient.invalidateQueries({
         queryKey: ['pengawasan', 'review-detail', submissionId],
       })
@@ -324,7 +277,7 @@ export function ReviewRisikoWizard({
     },
   })
 
-  const currentStep = RISIKO_WIZARD_STEPS[currentStepIndex] || RISIKO_WIZARD_STEPS[0]
+  const currentStep = reviewSteps[currentStepIndex] || reviewSteps[0]
   const currentItem = submission?.items?.find(
     (i) => i.form_code.toLowerCase() === currentStep.id.toLowerCase()
   )
@@ -371,6 +324,7 @@ export function ReviewRisikoWizard({
     )
 
     if (!item) {
+      if (stepConfig.id === '4') return { status: 'draft' }
       if (
         submission?.status &&
         submission.status !== 'draft' &&
@@ -384,15 +338,16 @@ export function ReviewRisikoWizard({
     return { status: item.status, item }
   }
 
-  const totalSteps = RISIKO_WIZARD_STEPS.length
-  const approvedCount = RISIKO_WIZARD_STEPS.filter(
+  const totalSteps = reviewSteps.length
+  const requiredSteps = reviewSteps.filter((step) => step.id !== '4' || hasForm4Item)
+  const approvedCount = requiredSteps.filter(
     (s) => getItemStatusForStep(s).status === 'approved'
   ).length
-  const rejectedCount = RISIKO_WIZARD_STEPS.filter(
+  const rejectedCount = requiredSteps.filter(
     (s) => getItemStatusForStep(s).status === 'rejected'
   ).length
-  const pendingCount = totalSteps - approvedCount - rejectedCount
-  const progressPercentage = Math.round((approvedCount / totalSteps) * 100)
+  const pendingCount = requiredSteps.length - approvedCount - rejectedCount
+  const progressPercentage = Math.round((approvedCount / requiredSteps.length) * 100)
 
   const konteks2B = konteks2BData?.data
   const konteks2C = konteks2CData
@@ -408,12 +363,29 @@ export function ReviewRisikoWizard({
     )
   }
 
+  if (submissionError || !submission || !effectiveOpdId || !effectivePeriodeId) {
+    return <div className='space-y-3 rounded-lg border border-destructive/40 p-4 text-sm' role='alert'><p>Data pengajuan, OPD, atau periode tidak dapat dimuat. Periksa akses dan coba lagi.</p><Button variant='outline' onClick={() => void refetchSubmission()}>Coba lagi</Button></div>
+  }
+
+  const stepErrors = {
+    '2b': { error: error2B, retry: refetch2B },
+    '2c': { error: error2C, retry: refetch2C },
+    '3a': { error: error3A, retry: refetch3A },
+    '3b': { error: error3B || error3A, retry: () => Promise.all([refetch3B(), refetch3A()]) },
+    '3c': { error: error3C || error3A, retry: () => Promise.all([refetch3C(), refetch3A()]) },
+    rca: { error: errorRca, retry: refetchRca },
+    '4': { error: error4, retry: refetch4 },
+  }
+  const currentDataError = stepErrors[currentStep.id]
+  const currentPage = currentStep.id === '3a' ? identifikasi3AData?.meta : currentStep.id === '3b' ? identifikasi3BData?.meta : currentStep.id === '3c' ? identifikasi3CData?.meta : currentStep.id === 'rca' ? rcaPage?.meta : currentStep.id === '4' ? form4Page?.meta : null
+
   const isRevisionByPengawas = submission?.status === 'revision_by_pengawas'
 
   return (
     <div className='flex flex-1 flex-col gap-4 pb-16'>
       {/* 1. COMPACT STICKY HEADER & STEPPER TRACK */}
       <ReviewWizardHeader
+        steps={reviewSteps}
         submission={submission}
         currentStepIndex={currentStepIndex}
         totalSteps={totalSteps}
@@ -469,7 +441,7 @@ export function ReviewRisikoWizard({
                   size='sm'
                   variant='destructive'
                   className='text-xs h-8 gap-1.5 font-medium'
-                  onClick={() => setIsKepalaRejectOpen(true)}
+                  onClick={() => { setKepalaRejectForm(currentItem && currentItem.status !== 'approved' ? currentStep.id : ''); setIsKepalaRejectOpen(true) }}
                 >
                   <XCircle className='h-3.5 w-3.5' />
                   <span>Kembalikan ke Operator (Revisi)</span>
@@ -552,6 +524,8 @@ export function ReviewRisikoWizard({
         <div className='rounded-xl border bg-card shadow-xs overflow-hidden'>
           {/* Step Header with Decision Bar */}
           <ReviewWizardStepHeader
+            informationOnly={currentStep.id === '4' && !hasForm4Item}
+            canDecide={currentStep.id !== '4' || (isPengawasTier ? (hasRole('Superadmin') || hasRole('Admin Office') || (hasRole('Inspektorat') && hasPermission('review_risiko.review_pengawas'))) : submission.current_tier === 'auditor' && hasPermission('review_risiko.approve'))}
             stepNumber={currentStep.stepNumber}
             totalSteps={totalSteps}
             stepCode={currentStep.code}
@@ -560,7 +534,7 @@ export function ReviewRisikoWizard({
             isApproved={isCurrentApproved}
             isRejected={isCurrentRejected}
             isDraftSubmission={isDraftSubmission}
-            isPendingMutation={reviewMutation.isPending}
+            isPendingMutation={reviewMutation.isPending || currentDataError.error || isLoading2B || isLoading2C || isLoading3A || isLoading3B || isLoading3C || isLoadingRca || isLoading4}
             isPengawasTier={isPengawasTier}
             isKepalaTier={isKepalaTier}
             currentItem={currentItem}
@@ -570,30 +544,54 @@ export function ReviewRisikoWizard({
 
         {/* Step Data Content Area */}
         <div className='p-3.5 sm:p-4'>
-          {currentStep.id === '2b' && (
+          {['3a', '3b', '3c', 'rca', '4'].includes(currentStep.id) && !currentDataError.error && (
+            <div className='mb-4'><Input aria-label='Cari kode atau pernyataan risiko' placeholder='Cari kode atau pernyataan risiko' value={searchFor(currentStep.id)} onChange={(event) => { const code = currentStep.id; setSearches((prev) => ({ ...prev, [code]: event.target.value })); setPages((prev) => ({ ...prev, [code]: 1 })) }} /></div>
+          )}
+          {currentStep.id === 'rca' && <div className='mb-4 flex flex-wrap gap-2'>
+            <select aria-label='Filter asal risiko' className='h-9 rounded-md border bg-background px-2 text-sm' value={rcaSource} onChange={(event) => { setRcaSource(event.target.value); setPages((prev) => ({ ...prev, rca: 1 })) }}>
+              <option value=''>Semua form</option><option value='3a'>Form 3A</option><option value='3b'>Form 3B</option><option value='3c'>Form 3C</option>
+            </select>
+            <select aria-label='Filter status analisis' className='h-9 rounded-md border bg-background px-2 text-sm' value={rcaStatus} onChange={(event) => { setRcaStatus(event.target.value); setPages((prev) => ({ ...prev, rca: 1 })) }}>
+              <option value=''>Semua status</option><option value='complete'>Lengkap</option><option value='incomplete'>Belum lengkap</option>
+            </select>
+          </div>}
+          {currentDataError.error && <div role='alert' className='space-y-2 rounded-lg border border-destructive/40 p-4 text-sm'><p>Data form gagal dimuat. Periksa koneksi atau hak akses, lalu coba lagi.</p><Button variant='outline' size='sm' onClick={() => void currentDataError.retry()}>Coba lagi</Button></div>}
+          {!currentDataError.error && currentStep.id === '2b' && (
             <ReviewStep2B konteks2B={konteks2B} isLoading={isLoading2B} />
           )}
 
-          {currentStep.id === '2c' && (
+          {!currentDataError.error && currentStep.id === '2c' && (
             <ReviewStep2C konteks2C={konteks2C} isLoading={isLoading2C} />
           )}
 
-          {currentStep.id === '3a' && (
+          {!currentDataError.error && currentStep.id === '3a' && (
             <ReviewStep3A dokumen3A={identifikasi3AData?.data} isLoading={isLoading3A} />
           )}
 
-          {currentStep.id === '3b' && (
-            <ReviewStep3B dokumen3B={identifikasi3BData?.data} isLoading={isLoading3B} />
+          {!currentDataError.error && currentStep.id === '3b' && (
+            <ReviewStep3B dokumen3B={identifikasi3BData?.data} urusan={identifikasi3AData?.data?.urusan_pemerintahan} isLoading={isLoading3B || isLoading3A} />
           )}
 
-          {currentStep.id === '3c' && (
-            <ReviewStep3C dokumen3C={identifikasi3CData?.data} isLoading={isLoading3C} />
+          {!currentDataError.error && currentStep.id === '3c' && (
+            <ReviewStep3C dokumen3C={identifikasi3CData?.data} urusan={identifikasi3AData?.data?.urusan_pemerintahan} isLoading={isLoading3C || isLoading3A} />
           )}
 
-          {currentStep.id === 'rca' && (
-            <ReviewStepRca rcaList={rcaListData} isLoading={isLoadingRca} />
+          {!currentDataError.error && currentStep.id === '4' && <ReviewStep4 items={form4} isLoading={isLoading4} />}
+
+          {!currentDataError.error && currentStep.id === 'rca' && (
+            <ReviewStepRca rcaList={rcaPage?.data || []} isLoading={isLoadingRca} />
           )}
         </div>
+
+        {currentPage && !currentDataError.error && (
+          <div className='flex flex-wrap items-center justify-between gap-2 px-4 pb-4 text-xs'>
+            <span>{currentPage.total} data · Halaman {currentPage.current_page} dari {currentPage.last_page}</span>
+            <div className='flex gap-2'>
+              <Button variant='outline' size='sm' disabled={currentPage.current_page <= 1} onClick={() => setPages((prev) => ({ ...prev, [currentStep.id]: currentPage.current_page - 1 }))}>Sebelumnya</Button>
+              <Button variant='outline' size='sm' disabled={currentPage.current_page >= currentPage.last_page} onClick={() => setPages((prev) => ({ ...prev, [currentStep.id]: currentPage.current_page + 1 }))}>Berikutnya</Button>
+            </div>
+          </div>
+        )}
 
         {/* Stepper Footer Navigation */}
         <ReviewWizardFooter
@@ -809,6 +807,7 @@ export function ReviewRisikoWizard({
           </DialogHeader>
 
           <div className='space-y-2 py-2'>
+            <KepalaFormSelect items={submission.items || []} value={kepalaRejectForm} onValueChange={setKepalaRejectForm} />
             <Label htmlFor='kepala-reject-notes' className='text-xs font-semibold'>
               Catatan Arahan Revisi Pimpinan <span className='text-destructive'>*</span>
             </Label>
@@ -840,11 +839,12 @@ export function ReviewRisikoWizard({
               variant='destructive'
               size='sm'
               className='text-xs h-8 gap-1.5'
-              disabled={reviewKepalaMutation.isPending || kepalaRejectNotes.trim().length < 5}
+              disabled={reviewKepalaMutation.isPending || !kepalaRejectForm || kepalaRejectNotes.trim().length < 5}
               onClick={() =>
                 reviewKepalaMutation.mutate({
                   status: 'rejected',
                   catatan: kepalaRejectNotes.trim(),
+                  form_code: kepalaRejectForm,
                 })
               }
             >

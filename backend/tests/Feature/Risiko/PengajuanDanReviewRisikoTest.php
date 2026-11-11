@@ -12,6 +12,7 @@ use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\AnalisisRisiko;
 use App\Models\Risiko\IdentifikasiRisikoOpd;
 use App\Models\Risiko\IdentifikasiRisikoOpdItem;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
@@ -26,6 +27,7 @@ use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -193,7 +195,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
     /**
      * Helper to complete Form 3A and RCA for the OPD.
      */
-    protected function completeForm3AAndRca(): IdentifikasiRisikoPemda
+    protected function completeForm3AAndRca(bool $includeForm4 = true): IdentifikasiRisikoPemda
     {
         $urusan = MasterUrusanPemerintahan::firstOrCreate(
             ['kode' => '01'],
@@ -298,6 +300,14 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'kegiatan_pengendalian' => 'Pengadaan coolbox terstandar WHO',
         ]);
 
+        if ($includeForm4) {
+            $analysis = ['kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'inheren_kemungkinan' => 3,
+                'kriteria_dampak' => 'Penurunan reputasi', 'inheren_dampak' => 4, 'pengendalian_ada' => false,
+                'residual_kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'residual_kriteria_dampak' => 'Penurunan kinerja', 'residual_kemungkinan' => 2, 'residual_dampak' => 3];
+            AnalisisRisiko::create(array_merge($analysis, ['risiko_opd_item_id' => $item3b->id]));
+            AnalisisRisiko::create(array_merge($analysis, ['risiko_operasional_item_id' => $item3c->id]));
+        }
+
         return $dokumen;
     }
 
@@ -312,6 +322,216 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'periode_penilaian_id' => $this->activePeriode->id,
             'is_active' => true,
         ]);
+    }
+
+    public function test_assigned_auditor_can_read_all_review_form_endpoints(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $this->completeForm3AAndRca();
+        Sanctum::actingAs($this->auditorUser);
+        $params = http_build_query(['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id]);
+        foreach (['konteks-strategis/current', 'konteks-operasional/current', 'identifikasi-pemda/current', 'identifikasi-opd/current', 'identifikasi-operasional/current'] as $path) {
+            $response = $this->getJson("/api/risiko/{$path}?{$params}");
+            $response->assertOk()->assertJsonPath('data.opd_id', $this->opd->id);
+        }
+        $this->getJson("/api/risiko/rca?{$params}")->assertOk()->assertJsonCount(3, 'data');
+    }
+
+    public function test_unassigned_auditor_cannot_read_review_form_data(): void
+    {
+        $this->assignAuditorToOpd();
+        Sanctum::actingAs($this->otherAuditorUser);
+        $params = http_build_query(['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id]);
+        foreach (['konteks-strategis/current', 'konteks-operasional/current', 'identifikasi-pemda/current', 'identifikasi-opd/current', 'identifikasi-operasional/current', 'rca'] as $path) {
+            $this->getJson("/api/risiko/{$path}?{$params}")->assertForbidden();
+        }
+    }
+
+    public function test_review_detail_get_does_not_start_review(): void
+    {
+        $this->assignAuditorToOpd();
+        $submission = PengajuanPenilaianRisiko::create([
+            'opd_id' => $this->opd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'auditor_id' => $this->auditorUser->id,
+            'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
+        ]);
+        Sanctum::actingAs($this->auditorUser);
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}")->assertOk();
+        $this->assertEquals(PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR, $submission->fresh()->status);
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/start")->assertOk();
+        $this->assertEquals(PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, $submission->fresh()->status);
+    }
+
+    public function test_review_form_endpoint_uses_submission_scope_and_checks_assignment(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $this->completeForm3AAndRca();
+        $submission = PengajuanPenilaianRisiko::create([
+            'opd_id' => $this->opd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'auditor_id' => $this->auditorUser->id,
+            'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
+        ]);
+        Sanctum::actingAs($this->auditorUser);
+        foreach (['2b', '2c', '3a', '3b', '3c'] as $form) {
+            $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/{$form}")
+                ->assertOk()->assertJsonPath('data.opd_id', $this->opd->id);
+        }
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/rca")->assertOk()->assertJsonCount(3, 'data');
+        $page1 = $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/rca?per_page=1&page=1")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 3)->assertJsonPath('meta.last_page', 3);
+        $page2 = $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/rca?per_page=1&page=2")->assertOk()->assertJsonCount(1, 'data');
+        $this->assertNotEquals($page1->json('data.0.id'), $page2->json('data.0.id'));
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/3b?search=tidakmungkinada")->assertOk()->assertJsonCount(0, 'data.items')->assertJsonPath('meta.total', 0);
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/rca?source=3c&status=complete")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.source_type', '3c');
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/rca?status=incomplete")->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/3a?per_page=101")->assertUnprocessable();
+        Sanctum::actingAs($this->otherAuditorUser);
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/3a")->assertForbidden();
+    }
+
+    public function test_review_limits_large_risk_list_in_database(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $doc = $this->completeForm3AAndRca();
+        for ($i = 2; $i <= 101; $i++) {
+            IdentifikasiRisikoPemdaItem::create([
+                'identifikasi_risiko_pemda_id' => $doc->id,
+                'kategori_risiko' => 'Risiko Strategis', 'nomor_urut' => $i,
+                'pernyataan_risiko' => "Risiko uji {$i}", 'kode_risiko' => "RSP.TEST.{$i}",
+                'pemilik_risiko' => 'Kepala Daerah', 'sifat_risiko' => 'C', 'urutan' => $i,
+            ]);
+        }
+        $submission = PengajuanPenilaianRisiko::create([
+            'opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id,
+            'auditor_id' => $this->auditorUser->id, 'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
+        ]);
+        Sanctum::actingAs($this->auditorUser);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/3a?page=2")
+            ->assertOk()->assertJsonCount(20, 'data.items')->assertJsonPath('meta.total', 101)->assertJsonPath('meta.last_page', 6);
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+        $this->assertLessThan(40, $queries);
+    }
+
+    public function test_form4_analysis_uses_matrix_and_is_scoped_to_opd(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $this->completeForm3AAndRca();
+        Sanctum::actingAs($this->opdUser);
+        $opdItem = IdentifikasiRisikoOpdItem::firstOrFail();
+        $operasionalItem = IdentifikasiRisikoOpdOperasionalItem::firstOrFail();
+        $payload = [
+            'kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)',
+            'inheren_kemungkinan' => 3, 'kriteria_dampak' => 'Penurunan reputasi', 'inheren_dampak' => 4,
+            'pengendalian_ada' => false, 'residual_kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'residual_kriteria_dampak' => 'Penurunan kinerja', 'residual_kemungkinan' => 2, 'residual_dampak' => 3,
+        ];
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$opdItem->id}", $payload)->assertOk();
+        $this->putJson("/api/risiko/analisis-risiko/3c/{$operasionalItem->id}", array_merge($payload, ['residual_kemungkinan' => 1, 'residual_dampak' => 1]))->assertOk();
+        $params = http_build_query(['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id]);
+        $response = $this->getJson("/api/risiko/analisis-risiko?{$params}")->assertOk()->assertJsonCount(2, 'data');
+        $response->assertJsonPath('data.0.skala_inheren', 19)->assertJsonPath('data.0.skala_residual', 12)->assertJsonPath('data.0.evaluasi', 'Perlu Perlakuan Risiko')->assertJsonPath('data.0.peringkat', 1);
+        $response->assertJsonPath('data.0.analysis.kriteria_dampak', 'Penurunan reputasi')->assertJsonPath('data.0.analysis.residual_kriteria_dampak', 'Penurunan kinerja');
+        $response->assertJsonPath('data.1.skala_residual', 1)->assertJsonPath('data.1.evaluasi', 'Menerima Risiko')->assertJsonPath('data.1.peringkat', 1);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&per_page=1&page=2")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $operasionalItem->id)->assertJsonPath('meta.total', 2)->assertJsonPath('meta.last_page', 2);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&source=3c")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $operasionalItem->id)->assertJsonPath('meta.overall_total', 2);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&search=tidak-ditemukan")->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('meta.total', 0);
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$opdItem->id}", array_merge($payload, ['inheren_kemungkinan' => 6]))->assertUnprocessable();
+        $other = User::factory()->create(['opd_id' => Opd::create(['nama' => 'OPD lain', 'kode' => 'LAIN', 'kategori' => 'Dinas', 'is_active' => true])->id]);
+        $other->assignRole('OPD');
+        Sanctum::actingAs($other);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}")->assertForbidden();
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$opdItem->id}", $payload)->assertForbidden();
+    }
+
+    public function test_form4_ranking_uses_full_group_before_filtering_and_pagination(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $this->completeForm3AAndRca();
+        $first = IdentifikasiRisikoOpdItem::firstOrFail();
+        foreach ([2, 3, 4] as $number) {
+            $item = $first->replicate();
+            $item->kode_risiko = 'TEST-'.$number;
+            $item->nomor_urut = $number;
+            $item->urutan = $number;
+            $item->save();
+            $analysis = AnalisisRisiko::where('risiko_opd_item_id', $first->id)->firstOrFail()->replicate();
+            $analysis->risiko_opd_item_id = $item->id;
+            $analysis->residual_kemungkinan = $number === 4 ? 1 : 3;
+            $analysis->residual_dampak = $number === 4 ? 1 : 4;
+            $analysis->save();
+        }
+        Sanctum::actingAs($this->opdUser);
+        $params = http_build_query(['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id, 'source' => '3b', 'per_page' => 1]);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&page=1")->assertOk()->assertJsonPath('data.0.peringkat', 3);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&page=2")->assertOk()->assertJsonPath('data.0.peringkat', 1);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&search=TEST-3")->assertOk()->assertJsonPath('data.0.peringkat', 1)->assertJsonPath('meta.total', 1);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}&search=TEST-4")->assertOk()->assertJsonPath('data.0.peringkat', 4);
+    }
+
+    public function test_form4_residual_criteria_migration_preserves_existing_analysis(): void
+    {
+        $this->completeForm3AAndRca();
+        $migration = require database_path('migrations/2026_11_11_140000_add_residual_criteria_to_analisis_risikos.php');
+        $migration->down();
+        $migration->up();
+        $analysis = AnalisisRisiko::firstOrFail();
+        $this->assertSame($analysis->kriteria_kemungkinan, $analysis->residual_kriteria_kemungkinan);
+        $this->assertSame($analysis->kriteria_dampak, $analysis->residual_kriteria_dampak);
+    }
+
+    public function test_form4_draft_is_not_complete_and_reviewer_sees_analysis(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $this->completeForm3AAndRca(false);
+        $item = IdentifikasiRisikoOpdItem::firstOrFail();
+        Sanctum::actingAs($this->opdUser);
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$item->id}", ['inheren_kemungkinan' => 3])->assertOk();
+        $params = http_build_query(['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id]);
+        $this->getJson("/api/risiko/analisis-risiko?{$params}")->assertOk()->assertJsonPath('data.0.complete', false)->assertJsonPath('data.0.evaluasi', null);
+        $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->firstOrFail();
+        Sanctum::actingAs($this->auditorUser);
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/4")->assertOk()->assertJsonCount(2, 'data')->assertJsonPath('data.0.analysis.inheren_kemungkinan', 3)->assertJsonPath('data.0.complete', false);
+        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/4?per_page=1&page=2")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 2)->assertJsonPath('meta.current_page', 2);
+    }
+
+    public function test_form4_requires_rca_and_gates_new_submission(): void
+    {
+        $this->assignAuditorToOpd();
+        $this->completeForm2B();
+        $this->completeForm2C();
+        $this->completeForm3AAndRca(false);
+        $item3b = IdentifikasiRisikoOpdItem::firstOrFail();
+        $item3c = IdentifikasiRisikoOpdOperasionalItem::firstOrFail();
+        Sanctum::actingAs($this->opdUser);
+        $request = ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id];
+        $this->postJson('/api/risiko/pengajuan/submit', $request)->assertUnprocessable();
+        $payload = ['kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'inheren_kemungkinan' => 3,
+            'kriteria_dampak' => 'Penurunan reputasi', 'inheren_dampak' => 4, 'pengendalian_ada' => false,
+            'residual_kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'residual_kriteria_dampak' => 'Penurunan kinerja', 'residual_kemungkinan' => 2, 'residual_dampak' => 3];
+        $rca = RootCauseAnalysis::where('identifikasi_risiko_opd_item_id', $item3b->id)->firstOrFail();
+        $rca->update(['jenis_penyebab' => null]);
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertUnprocessable()->assertJsonValidationErrors('rca');
+        $rca->update(['jenis_penyebab' => 'Man']);
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertOk();
+        $this->putJson("/api/risiko/analisis-risiko/3c/{$item3c->id}", $payload)->assertOk();
+        $this->postJson('/api/risiko/pengajuan/submit', $request)->assertOk();
+        $this->assertDatabaseHas('pengajuan_penilaian_risiko_items', ['form_code' => '4', 'status' => 'submitted']);
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertForbidden();
     }
 
     public function test_opd_without_auditor_cannot_store_form_2b(): void
@@ -595,6 +815,11 @@ class PengajuanDanReviewRisikoTest extends TestCase
 
         // Auditor approves Form RCA -> forward to Pengawas
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '4',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
             'form_code' => 'rca',
             'status' => 'approved',
         ])->assertStatus(200);
@@ -628,6 +853,11 @@ class PengajuanDanReviewRisikoTest extends TestCase
 
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
             'form_code' => '3c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '4',
             'status' => 'approved',
         ])->assertStatus(200);
 
@@ -772,8 +1002,8 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $resApproved->assertStatus(200);
         $this->assertCount(0, $resApproved->json('data'));
 
-        // 3. Auditor opens submission (triggers transition to in_review_auditor)
-        $this->getJson("/api/pengawasan/review-risiko/{$submission->id}")->assertStatus(200);
+        // 3. Auditor starts review
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/start")->assertStatus(200);
         $submission->refresh();
         $this->assertEquals(PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, $submission->status);
 

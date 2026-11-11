@@ -13,6 +13,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
+import { KepalaFormSelect } from './kepala-form-select'
 
 export interface SubmissionDialogsProps {
   isSubmitOpen: boolean
@@ -23,6 +24,8 @@ export interface SubmissionDialogsProps {
   setKepalaAction: (action: 'approved' | 'rejected') => void
   kepalaNotes: string
   setKepalaNotes: (notes: string) => void
+  kepalaFormCode: string
+  setKepalaFormCode: (code: string) => void
   isKepalaDelegateOpen: boolean
   setIsKepalaDelegateOpen: (open: boolean) => void
   delegateNotes: string
@@ -42,6 +45,8 @@ export function SubmissionDialogs({
   setKepalaAction,
   kepalaNotes,
   setKepalaNotes,
+  kepalaFormCode,
+  setKepalaFormCode,
   isKepalaDelegateOpen,
   setIsKepalaDelegateOpen,
   delegateNotes,
@@ -112,6 +117,7 @@ export function SubmissionDialogs({
               </div>
             </div>
 
+            {kepalaAction === 'rejected' && <KepalaFormSelect items={readiness?.submission.items || []} value={kepalaFormCode} onValueChange={setKepalaFormCode} />}
             <div className='space-y-1.5'>
               <Label className='text-xs font-semibold'>
                 Catatan Kepala OPD {kepalaAction === 'rejected' && <span className='text-destructive'>* (Wajib diisi min. 5 karakter)</span>}:
@@ -145,7 +151,7 @@ export function SubmissionDialogs({
               size='sm'
               disabled={
                 reviewKepalaMutation.isPending ||
-                (kepalaAction === 'rejected' && kepalaNotes.trim().length < 5)
+                (kepalaAction === 'rejected' && (!kepalaFormCode || kepalaNotes.trim().length < 5))
               }
               onClick={() => reviewKepalaMutation.mutate()}
               className={cn(

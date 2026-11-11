@@ -53,6 +53,7 @@ import { Route as AuthenticatedRisikoKonteksOperasionalIndexRouteImport } from '
 import { Route as AuthenticatedRisikoIdentifikasiPemdaIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-pemda/index'
 import { Route as AuthenticatedRisikoIdentifikasiOperasionalIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-operasional/index'
 import { Route as AuthenticatedRisikoIdentifikasiOpdIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-opd/index'
+import { Route as AuthenticatedRisikoAnalisisRisikoIndexRouteImport } from './routes/_authenticated/risiko/analisis-risiko/index'
 import { Route as AuthenticatedPerencanaanTujuanIndexRouteImport } from './routes/_authenticated/perencanaan/tujuan/index'
 import { Route as AuthenticatedPerencanaanSasaranIndexRouteImport } from './routes/_authenticated/perencanaan/sasaran/index'
 import { Route as AuthenticatedPerencanaanPeriodeIndexRouteImport } from './routes/_authenticated/perencanaan/periode/index'
@@ -297,6 +298,12 @@ const AuthenticatedRisikoIdentifikasiOpdIndexRoute =
     path: '/risiko/identifikasi-opd/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRisikoAnalisisRisikoIndexRoute =
+  AuthenticatedRisikoAnalisisRisikoIndexRouteImport.update({
+    id: '/risiko/analisis-risiko/',
+    path: '/risiko/analisis-risiko/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerencanaanTujuanIndexRoute =
   AuthenticatedPerencanaanTujuanIndexRouteImport.update({
     id: '/perencanaan/tujuan/',
@@ -382,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
   '/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/risiko/analisis-risiko/': typeof AuthenticatedRisikoAnalisisRisikoIndexRoute
   '/risiko/identifikasi-opd/': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   '/risiko/identifikasi-operasional/': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   '/risiko/identifikasi-pemda/': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
@@ -431,6 +439,7 @@ export interface FileRoutesByTo {
   '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/perencanaan/sasaran': typeof AuthenticatedPerencanaanSasaranIndexRoute
   '/perencanaan/tujuan': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/risiko/analisis-risiko': typeof AuthenticatedRisikoAnalisisRisikoIndexRoute
   '/risiko/identifikasi-opd': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   '/risiko/identifikasi-operasional': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   '/risiko/identifikasi-pemda': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
@@ -485,6 +494,7 @@ export interface FileRoutesById {
   '/_authenticated/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/_authenticated/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
   '/_authenticated/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/_authenticated/risiko/analisis-risiko/': typeof AuthenticatedRisikoAnalisisRisikoIndexRoute
   '/_authenticated/risiko/identifikasi-opd/': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   '/_authenticated/risiko/identifikasi-operasional/': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   '/_authenticated/risiko/identifikasi-pemda/': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
@@ -537,6 +547,7 @@ export interface FileRouteTypes {
     | '/perencanaan/periode/'
     | '/perencanaan/sasaran/'
     | '/perencanaan/tujuan/'
+    | '/risiko/analisis-risiko/'
     | '/risiko/identifikasi-opd/'
     | '/risiko/identifikasi-operasional/'
     | '/risiko/identifikasi-pemda/'
@@ -586,6 +597,7 @@ export interface FileRouteTypes {
     | '/perencanaan/periode'
     | '/perencanaan/sasaran'
     | '/perencanaan/tujuan'
+    | '/risiko/analisis-risiko'
     | '/risiko/identifikasi-opd'
     | '/risiko/identifikasi-operasional'
     | '/risiko/identifikasi-pemda'
@@ -639,6 +651,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perencanaan/periode/'
     | '/_authenticated/perencanaan/sasaran/'
     | '/_authenticated/perencanaan/tujuan/'
+    | '/_authenticated/risiko/analisis-risiko/'
     | '/_authenticated/risiko/identifikasi-opd/'
     | '/_authenticated/risiko/identifikasi-operasional/'
     | '/_authenticated/risiko/identifikasi-pemda/'
@@ -975,6 +988,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRisikoIdentifikasiOpdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/risiko/analisis-risiko/': {
+      id: '/_authenticated/risiko/analisis-risiko/'
+      path: '/risiko/analisis-risiko'
+      fullPath: '/risiko/analisis-risiko/'
+      preLoaderRoute: typeof AuthenticatedRisikoAnalisisRisikoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perencanaan/tujuan/': {
       id: '/_authenticated/perencanaan/tujuan/'
       path: '/perencanaan/tujuan'
@@ -1068,6 +1088,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerencanaanPeriodeIndexRoute: typeof AuthenticatedPerencanaanPeriodeIndexRoute
   AuthenticatedPerencanaanSasaranIndexRoute: typeof AuthenticatedPerencanaanSasaranIndexRoute
   AuthenticatedPerencanaanTujuanIndexRoute: typeof AuthenticatedPerencanaanTujuanIndexRoute
+  AuthenticatedRisikoAnalisisRisikoIndexRoute: typeof AuthenticatedRisikoAnalisisRisikoIndexRoute
   AuthenticatedRisikoIdentifikasiOpdIndexRoute: typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   AuthenticatedRisikoIdentifikasiOperasionalIndexRoute: typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   AuthenticatedRisikoIdentifikasiPemdaIndexRoute: typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
@@ -1106,6 +1127,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedPerencanaanSasaranIndexRoute,
   AuthenticatedPerencanaanTujuanIndexRoute:
     AuthenticatedPerencanaanTujuanIndexRoute,
+  AuthenticatedRisikoAnalisisRisikoIndexRoute:
+    AuthenticatedRisikoAnalisisRisikoIndexRoute,
   AuthenticatedRisikoIdentifikasiOpdIndexRoute:
     AuthenticatedRisikoIdentifikasiOpdIndexRoute,
   AuthenticatedRisikoIdentifikasiOperasionalIndexRoute:

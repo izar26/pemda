@@ -28,9 +28,10 @@ interface RcaDialogProps {
   onOpenChange: (open: boolean) => void
   rca: RootCauseAnalysis | null
   onSuccess: () => void
+  canEdit: boolean
 }
 
-export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps) {
+export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [why1, setWhy1] = useState('')
@@ -38,7 +39,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
   const [why3, setWhy3] = useState('')
   const [why4, setWhy4] = useState('')
   const [why5, setWhy5] = useState('')
-  const [jenisPenyebab, setJenisPenyebab] = useState<JenisPenyebabRca>('Method')
+  const [jenisPenyebab, setJenisPenyebab] = useState<JenisPenyebabRca | ''>('')
   const [kegiatanPengendalian, setKegiatanPengendalian] = useState('')
 
   useEffect(() => {
@@ -48,10 +49,10 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
       setWhy3(rca.why_3 || '')
       setWhy4(rca.why_4 || '')
       setWhy5(rca.why_5 || '')
-      setJenisPenyebab(rca.jenis_penyebab || 'Method')
+      setJenisPenyebab(rca.jenis_penyebab || (canEdit ? 'Method' : ''))
       setKegiatanPengendalian(rca.kegiatan_pengendalian || '')
     }
-  }, [rca, open])
+  }, [rca, open, canEdit])
 
   // Real-time calculation of Root Cause (Deepest non-empty Why) matching Excel formula
   const computedAkarPenyebab = (() => {
@@ -65,7 +66,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!rca) return
+    if (!rca || !canEdit || !jenisPenyebab) return
 
     if (!why1.trim()) {
       toast.warning('Why 1 (Penyebab Langsung) wajib diisi.')
@@ -109,7 +110,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
         <form onSubmit={handleSubmit} className='space-y-4'>
           <DialogHeader>
             <DialogTitle className='text-sm sm:text-base font-bold flex items-center gap-2'>
@@ -117,10 +118,12 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
               Analisis Akar Masalah (5-Whys RCA)
             </DialogTitle>
             <DialogDescription className='text-xs'>
-              Bedah penyebab bertingkat hingga menemukan akar masalah utama. Akar penyebab akan otomatis mengisi kolom Sebab di Form {rca?.source_type === '3c' ? '3C' : rca?.source_type === '3b' ? '3B' : '3A'}.
+              Mulai dari penyebab langsung, lalu tanyakan mengapa penyebab itu terjadi. Jawaban terakhir yang terisi menjadi akar penyebab untuk Form {rca?.source_type === '3c' ? '3C' : rca?.source_type === '3b' ? '3B' : '3A'}.
             </DialogDescription>
           </DialogHeader>
 
+          {!canEdit && <p className='rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground'>Analisis ini hanya dapat dilihat.</p>}
+          <fieldset disabled={!canEdit} className='min-w-0 space-y-4'>
           {/* Risk Target Banner */}
           <div className='p-3 rounded-lg border bg-muted/40 space-y-1 text-xs'>
             <div className='flex items-center gap-2 flex-wrap'>
@@ -163,7 +166,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                 <span className='w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono text-[10px] font-bold'>
                   1
                 </span>
-                Why 1 (Penyebab Langsung Terjadinya Risiko) <span className='text-destructive'>*</span>
+                Mengapa 1: Apa penyebab langsung risiko ini? <span className='text-destructive'>*</span>
               </Label>
               <Textarea
                 id='why-1'
@@ -181,7 +184,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                 <span className='w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono text-[10px] font-bold'>
                   2
                 </span>
-                Why 2 (Alasan Terjadinya Why 1)
+                Mengapa 2: Mengapa penyebab pertama terjadi? (opsional)
               </Label>
               <Textarea
                 id='why-2'
@@ -199,7 +202,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                 <span className='w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono text-[10px] font-bold'>
                   3
                 </span>
-                Why 3 (Alasan Terjadinya Why 2)
+                Mengapa 3: Mengapa penyebab kedua terjadi? (opsional)
               </Label>
               <Textarea
                 id='why-3'
@@ -217,7 +220,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                 <span className='w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono text-[10px] font-bold'>
                   4
                 </span>
-                Why 4 (Alasan Terjadinya Why 3 - Opsional)
+                Mengapa 4: Mengapa penyebab ketiga terjadi? (opsional)
               </Label>
               <Textarea
                 id='why-4'
@@ -235,7 +238,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                 <span className='w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono text-[10px] font-bold'>
                   5
                 </span>
-                Why 5 (Alasan Terjadinya Why 4 - Opsional)
+                Mengapa 5: Mengapa penyebab keempat terjadi? (opsional)
               </Label>
               <Textarea
                 id='why-5'
@@ -251,12 +254,12 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
             <div className='p-3 rounded-lg border bg-emerald-500/10 border-emerald-500/30 space-y-1'>
               <div className='flex items-center justify-between'>
                 <span className='text-[11px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1'>
-                  <CheckCircle2 className='h-3.5 w-3.5' /> Akar Penyebab Terdeteksi (Otomatis):
+                  <CheckCircle2 className='h-3.5 w-3.5' /> Akar penyebab sementara
                 </span>
-                <span className='text-[10px] text-muted-foreground'>Rumus Excel Kolom H</span>
+
               </div>
               <p className='font-semibold text-foreground text-xs'>
-                {computedAkarPenyebab || <em className='text-muted-foreground'>Isi minimal Why 1 di atas</em>}
+                {computedAkarPenyebab || <em className='text-muted-foreground'>Isi penyebab langsung untuk melihat akar penyebab.</em>}
               </p>
             </div>
 
@@ -282,7 +285,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                   </SelectContent>
                 </Select>
                 <p className='text-[10px] text-muted-foreground'>
-                  Akan otomatis mengisi Kolom J (Sumber Risiko) pada Form 3A.
+                  Akan mengisi sumber risiko pada form asal.
                 </p>
               </div>
 
@@ -302,6 +305,8 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
             </div>
           </div>
 
+          </fieldset>
+
           <DialogFooter className='gap-2 sm:gap-0 pt-2'>
             <Button
               type='button'
@@ -310,12 +315,12 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
               onClick={() => onOpenChange(false)}
               className='text-xs'
             >
-              Batal
+              {canEdit ? 'Batal' : 'Tutup'}
             </Button>
-            <Button
+            {canEdit && <Button
               type='submit'
               size='sm'
-              disabled={isSubmitting || !why1.trim()}
+              disabled={isSubmitting || !why1.trim() || !jenisPenyebab}
               className='text-xs gap-1.5 font-semibold'
             >
               {isSubmitting ? (
@@ -324,7 +329,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess }: RcaDialogProps
                 <Save className='h-3.5 w-3.5' />
               )}
               Simpan Analisis RCA
-            </Button>
+            </Button>}
           </DialogFooter>
         </form>
       </DialogContent>

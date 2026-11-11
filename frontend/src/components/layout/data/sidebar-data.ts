@@ -150,6 +150,12 @@ export const sidebarData: SidebarData = {
           icon: GitFork,
           requiredPermission: 'rca.view',
         },
+        {
+          title: 'Analisis Risiko (4)',
+          url: '/risiko/analisis-risiko',
+          icon: ClipboardCheck,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
       ],
     },
     {

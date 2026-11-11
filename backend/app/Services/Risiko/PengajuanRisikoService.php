@@ -69,9 +69,10 @@ class PengajuanRisikoService
         string $submissionId,
         string $status,
         ?string $catatan,
-        User $kepalaOpdUser
+        User $kepalaOpdUser,
+        ?string $formCode = null
     ): PengajuanPenilaianRisiko {
-        return $this->workflowService->reviewByKepalaOpd($submissionId, $status, $catatan, $kepalaOpdUser);
+        return $this->workflowService->reviewByKepalaOpd($submissionId, $status, $catatan, $kepalaOpdUser, $formCode);
     }
 
     /**
@@ -159,9 +160,9 @@ class PengajuanRisikoService
     /**
      * Get review detail of an OPD submission.
      */
-    public function getSubmissionDetail(string $submissionId, User $user): PengajuanPenilaianRisiko
+    public function getSubmissionDetail(string $submissionId, User $user, bool $startReview = false): PengajuanPenilaianRisiko
     {
-        return $this->queryService->getSubmissionDetail($submissionId, $user);
+        return $this->queryService->getSubmissionDetail($submissionId, $user, $startReview);
     }
 
     /**

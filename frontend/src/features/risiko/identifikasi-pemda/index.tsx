@@ -84,7 +84,7 @@ export function IdentifikasiPemdaPage() {
         <ProfileDropdown />
       </Header>
 
-      <Main className='py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto'>
+      <Main className='py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0'>
         {/* WIZARD HEADER & TIMELINE STEPPER */}
         <RisikoWizardHeader
           pageTitle='Identifikasi Risiko Strategis Pemerintah Daerah'
@@ -116,7 +116,7 @@ export function IdentifikasiPemdaPage() {
 
         {/* MAIN FORM CONTENT */}
         {!isLoading && (
-          <div className='space-y-4 sm:space-y-5'>
+          <div className='min-w-0 space-y-4 sm:space-y-5'>
             {/* 1. IDENTITY CARD */}
             <IdentifikasiPemdaIdentityCard
               dokumen={dokumen3A}
@@ -151,7 +151,7 @@ export function IdentifikasiPemdaPage() {
                   Pilih Urusan Pemerintahan Terlebih Dahulu
                 </h4>
                 <p className='text-xs text-muted-foreground max-w-md mx-auto'>
-                  Silakan tentukan Urusan Pemerintahan dari dropdown master data di atas, lalu klik <strong>Simpan</strong> untuk mulai menambahkan butir-butir risiko strategis Pemda.
+                  Silakan tentukan Urusan Pemerintahan dari dropdown master data di atas untuk mulai menambahkan butir-butir risiko strategis Pemda.
                 </p>
               </div>
             )}

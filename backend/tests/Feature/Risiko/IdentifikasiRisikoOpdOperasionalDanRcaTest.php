@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Risiko;
 
+use App\Models\Master\MasterPemilikRisiko;
 use App\Models\Master\MasterSumberData;
 use App\Models\Master\MasterUrusanPemerintahan;
 use App\Models\Opd;
@@ -11,6 +12,7 @@ use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
+use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksOperasionalIndikator;
 use App\Models\Risiko\KonteksOperasionalItem;
@@ -93,6 +95,8 @@ class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
             'urutan' => 1,
         ]);
 
+        MasterPemilikRisiko::create(['nama' => 'Sekretaris', 'is_active' => true, 'urutan' => 1]);
+
         // Form 2C Konteks Operasional setup
         $this->konteks2c = KonteksOperasional::create([
             'opd_id' => $this->opd->id,
@@ -149,6 +153,7 @@ class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
                 'meta' => [
                     'form_2c_exists',
                     'sub_kegiatans_from_2c',
+                    'pemilik_risiko_options',
                     'probis_options',
                     'urusan_pemerintahans',
                     'kategori_options',
@@ -163,6 +168,12 @@ class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
     public function test_can_save_header_form_3c(): void
     {
         Sanctum::actingAs($this->opdUser);
+
+        IdentifikasiRisikoPemda::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
 
         $payload = [
             'opd_id' => $this->opd->id,
@@ -227,6 +238,64 @@ class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
             'source_type' => '3c',
             'identifikasi_risiko_opd_operasional_item_id' => $res->json('data.id'),
         ]);
+    }
+
+    public function test_3c_rejects_manual_sub_kegiatan_invalid_owner_and_unrelated_sub_kegiatan(): void
+    {
+        Sanctum::actingAs($this->opdUser);
+        $dokumen = IdentifikasiRisikoOpdOperasional::create([
+            'opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
+        $url = "/api/risiko/identifikasi-operasional/{$dokumen->id}/items";
+        $payload = [
+            'operasional_sub_kegiatan_id' => $this->subKegiatan->id,
+            'probis' => 'Pelaksanaan', 'kategori_risiko' => 'Risiko Operasional',
+            'pernyataan_risiko' => 'Kegiatan terlambat dilaksanakan',
+            'pemilik_risiko' => 'Sekretaris', 'sifat_risiko' => 'C',
+        ];
+        $this->postJson($url, array_merge($payload, ['sub_kegiatan_kustom' => 'Manual']))->assertUnprocessable()->assertJsonValidationErrors('sub_kegiatan_kustom');
+        $this->postJson($url, array_merge($payload, ['pemilik_risiko' => 'Tidak terdaftar']))->assertUnprocessable()->assertJsonValidationErrors('pemilik_risiko');
+        $this->postJson($url, array_merge($payload, ['operasional_sub_kegiatan_id' => $this->subKegiatan->parent_id]))->assertUnprocessable()->assertJsonValidationErrors('operasional_sub_kegiatan_id');
+        $otherOpd = Opd::create(['nama' => 'OPD lain', 'kode' => 'LAIN', 'kategori' => 'Dinas', 'is_active' => true]);
+        $otherKonteks = KonteksOperasional::create(['opd_id' => $otherOpd->id, 'periode_penilaian_id' => $this->activePeriode->id]);
+        $otherSub = KonteksOperasionalItem::create(['konteks_operasional_id' => $otherKonteks->id, 'jenis' => 'sub_kegiatan', 'kode' => 'X', 'nama' => 'Sub lain']);
+        $this->postJson($url, array_merge($payload, ['operasional_sub_kegiatan_id' => $otherSub->id]))->assertUnprocessable()->assertJsonValidationErrors('operasional_sub_kegiatan_id');
+    }
+
+    public function test_3c_legacy_item_can_be_updated_with_master_references(): void
+    {
+        Sanctum::actingAs($this->opdUser);
+        $dokumen = IdentifikasiRisikoOpdOperasional::create([
+            'opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
+        $item = IdentifikasiRisikoOpdOperasionalItem::create([
+            'identifikasi_risiko_opd_operasional_id' => $dokumen->id,
+            'sub_kegiatan_kustom' => 'Sub lama', 'indikator_keluaran_kustom' => 'Indikator lama',
+            'kategori_risiko' => 'Risiko Operasional', 'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Risiko lama', 'kode_risiko' => 'ROO.26.PUTR.RO.001',
+            'pemilik_risiko' => 'Lama', 'sifat_risiko' => 'C',
+        ]);
+        $this->putJson("/api/risiko/identifikasi-operasional/{$dokumen->id}/items/{$item->id}", [
+            'operasional_sub_kegiatan_id' => $this->subKegiatan->id,
+            'kategori_risiko' => 'Risiko Operasional', 'pernyataan_risiko' => 'Risiko diperbarui',
+            'pemilik_risiko' => 'Sekretaris', 'sifat_risiko' => 'UC',
+        ])->assertOk();
+        $this->assertDatabaseHas('identifikasi_risiko_opd_operasional_items', [
+            'id' => $item->id, 'operasional_sub_kegiatan_id' => $this->subKegiatan->id,
+            'sub_kegiatan_kustom' => null, 'indikator_keluaran_kustom' => null,
+        ]);
+    }
+
+    public function test_3c_item_requires_permission(): void
+    {
+        $dokumen = IdentifikasiRisikoOpdOperasional::create([
+            'opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id,
+            'master_urusan_pemerintahan_id' => $this->urusan->id,
+        ]);
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson("/api/risiko/identifikasi-operasional/{$dokumen->id}/items", [])->assertForbidden();
     }
 
     public function test_rca_update_syncs_root_cause_for_3c_items(): void

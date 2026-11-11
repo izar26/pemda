@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Risiko;
 
 use App\Models\Perencanaan\PeriodePenilaian;
+use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\RootCauseAnalysis;
@@ -89,6 +91,16 @@ class IdentifikasiRisikoPemdaService
             ]);
 
             $isNew = ! $dokumen->exists;
+
+            foreach (['3b' => IdentifikasiRisikoOpd::class, '3c' => IdentifikasiRisikoOpdOperasional::class] as $form => $model) {
+                $related = $model::where('opd_id', $opdId)->where('periode_penilaian_id', $periodeId)->first();
+                if ($related && $related->master_urusan_pemerintahan_id !== $data['master_urusan_pemerintahan_id']) {
+                    $this->readinessService->assertOpdCanEdit($opdId, $periodeId, $user, $form);
+                    $related->master_urusan_pemerintahan_id = $data['master_urusan_pemerintahan_id'];
+                    $related->updated_by = $user?->id;
+                    $related->save();
+                }
+            }
 
             $dokumen->master_urusan_pemerintahan_id = $data['master_urusan_pemerintahan_id'];
             $dokumen->nama_pemda = $data['nama_pemda'] ?? $dokumen->nama_pemda ?? 'Pemerintah Kabupaten Cianjur';

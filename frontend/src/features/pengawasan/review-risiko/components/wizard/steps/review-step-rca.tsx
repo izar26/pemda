@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { Loader2, BrainCircuit } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { RcaDialog } from '@/features/risiko/rca/components/rca-dialog'
 import { Badge } from '@/components/ui/badge'
 import type { RootCauseAnalysis } from '@/types/risiko'
 
@@ -8,6 +11,7 @@ interface ReviewStepRcaProps {
 }
 
 export function ReviewStepRca({ rcaList = [], isLoading }: ReviewStepRcaProps) {
+  const [selectedRca, setSelectedRca] = useState<RootCauseAnalysis | null>(null)
   if (isLoading) {
     return (
       <div className='flex items-center justify-center p-12 text-xs text-muted-foreground gap-2'>
@@ -32,22 +36,25 @@ export function ReviewStepRca({ rcaList = [], isLoading }: ReviewStepRcaProps) {
             <thead className='bg-muted/50 border-b text-muted-foreground font-semibold'>
               <tr>
                 <th className='p-2.5 text-center w-12'>No</th>
-                <th className='p-2.5 text-start min-w-[200px]'>Pernyataan Risiko (Form 3A)</th>
+                <th className='p-2.5 text-start min-w-[200px]'>Pernyataan Risiko & Asal Form</th>
                 <th className='p-2.5 text-start min-w-[130px]'>Why 1</th>
                 <th className='p-2.5 text-start min-w-[130px]'>Why 2</th>
                 <th className='p-2.5 text-start min-w-[130px]'>Why 3</th>
+                <th className='p-2.5 text-start min-w-[130px]'>Why 4</th>
+                <th className='p-2.5 text-start min-w-[130px]'>Why 5</th>
                 <th className='p-2.5 text-start min-w-[170px] bg-emerald-500/5 dark:bg-emerald-500/10 border-x border-emerald-500/20'>
                   Akar Penyebab Teridentifikasi
                 </th>
                 <th className='p-2.5 text-center min-w-[80px]'>Sumber</th>
                 <th className='p-2.5 text-start min-w-[180px]'>Rencana Pengendalian</th>
                 <th className='p-2.5 text-center w-20'>Status</th>
+                <th className='p-2.5 text-center w-20'>Detail</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-border/60'>
               {rcaList.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className='p-8 text-center text-muted-foreground'>
+                  <td colSpan={12} className='p-8 text-center text-muted-foreground'>
                     Tidak ada data analisis RCA pada pengajuan ini.
                   </td>
                 </tr>
@@ -61,6 +68,7 @@ export function ReviewStepRca({ rcaList = [], isLoading }: ReviewStepRcaProps) {
                         {rca.item?.nomor_urut || idx + 1}
                       </td>
                       <td className='p-2.5 space-y-1 align-top'>
+                        <Badge variant='outline' className='mr-1 text-[9px]'>Form {(rca.source_type || (rca.identifikasi_risiko_opd_operasional_item_id ? '3c' : rca.identifikasi_risiko_opd_item_id ? '3b' : '3a')).toUpperCase()}</Badge>
                         <Badge className='font-mono text-[9px] bg-amber-400 text-slate-900 font-bold'>
                           {rca.item?.kode_risiko}
                         </Badge>
@@ -77,6 +85,8 @@ export function ReviewStepRca({ rcaList = [], isLoading }: ReviewStepRcaProps) {
                       <td className='p-2.5 align-top text-muted-foreground leading-snug'>
                         {rca.why_3 || '-'}
                       </td>
+                      <td className='p-2.5 align-top'>{rca.why_4 || '-'}</td>
+                      <td className='p-2.5 align-top'>{rca.why_5 || '-'}</td>
                       <td className='p-2.5 align-top bg-emerald-500/5 dark:bg-emerald-500/10 border-x border-emerald-500/20'>
                         <span className='font-bold text-foreground block leading-snug'>
                           {rca.akar_penyebab || '-'}
@@ -105,6 +115,7 @@ export function ReviewStepRca({ rcaList = [], isLoading }: ReviewStepRcaProps) {
                           {isComplete ? 'Lengkap' : 'Belum Lengkap'}
                         </Badge>
                       </td>
+                      <td className='p-2.5 align-top'><Button size='sm' variant='outline' onClick={() => setSelectedRca(rca)}>Lihat</Button></td>
                     </tr>
                   )
                 })
@@ -113,6 +124,7 @@ export function ReviewStepRca({ rcaList = [], isLoading }: ReviewStepRcaProps) {
           </table>
         </div>
       </div>
+      <RcaDialog open={Boolean(selectedRca)} onOpenChange={(open) => { if (!open) setSelectedRca(null) }} rca={selectedRca} canEdit={false} onSuccess={() => {}} />
     </div>
   )
 }

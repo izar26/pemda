@@ -43,6 +43,10 @@ class IdentifikasiRisikoOpdController extends Controller
             $targetOpdId = $user->opd_id;
         }
 
+        if ($user->isScopedAuditor() && ! empty($targetOpdId) && ! $user->canReadOpdData((string) $targetOpdId)) {
+            abort(403, 'Anda tidak ditugaskan sebagai auditor pada perangkat daerah ini.');
+        }
+
         if (empty($targetOpdId)) {
             return response()->json([
                 'data' => null,
@@ -67,7 +71,7 @@ class IdentifikasiRisikoOpdController extends Controller
                     'id' => $s->id,
                     'kode_sasaran' => $s->kode_sasaran,
                     'sasaran' => $s->sasaran,
-                    'indikators' => $s->indikators->map(fn ($ind) => [
+                    'indikators' => $s->indikators->whereIn('id', $konteks2b->indikators->pluck('id'))->values()->map(fn ($ind) => [
                         'id' => $ind->id,
                         'kode_indikator' => $ind->kode_indikator,
                         'indikator' => $ind->indikator,
@@ -88,6 +92,7 @@ class IdentifikasiRisikoOpdController extends Controller
                 'tujuan_strategis' => $konteks2b?->tujuan?->tujuan,
                 'sasarans_from_2b' => $form2bSasarans,
                 'urusan_pemerintahans' => $urusanList,
+                'pemilik_risiko_options' => $this->service->pemilikRisikoOptions(),
                 'kategori_options' => array_keys(IdentifikasiRisikoOpdService::KATEGORI_KODE_MAP),
             ],
         ]);

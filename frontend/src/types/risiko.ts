@@ -189,7 +189,7 @@ export interface KonteksOperasionalFormData {
   periode_penilaian_id?: string
   opd_id: string
   sumber_data_id?: string
-  informasi_lain?: string
+  informasi_lain?: string | null
   nama_pemda?: string
   nama_kepala?: string
   nip_kepala?: string
