@@ -147,8 +147,16 @@ export interface ReadinessResponse {
   } | null
   is_2b_complete: boolean
   is_2c_complete: boolean
+  is_3a_complete?: boolean
+  is_3b_complete?: boolean
+  is_3c_complete?: boolean
+  is_rca_complete?: boolean
   is_2b_approved?: boolean
   is_2c_approved?: boolean
+  is_3a_approved?: boolean
+  is_3b_approved?: boolean
+  is_3c_approved?: boolean
+  is_rca_approved?: boolean
   form_statuses?: Record<string, ItemStatus>
   form_details?: Record<
     string,

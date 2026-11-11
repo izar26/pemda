@@ -32,11 +32,16 @@ class MasterDataSeeder extends Seeder
         $data = json_decode(File::get($jsonPath), true);
 
         // 1. Pemilik Risiko (Sheet 1)
+        MasterPemilikRisiko::updateOrCreate(
+            ['nama' => 'Kepala Daerah'],
+            ['urutan' => 1, 'is_active' => true]
+        );
+
         if (isset($data['1']['rows'])) {
             foreach ($data['1']['rows'] as $idx => $row) {
                 MasterPemilikRisiko::updateOrCreate(
                     ['nama' => trim((string) $row['PEMILIK RISIKO'])],
-                    ['urutan' => (int) ($row['NO'] ?? $idx + 1), 'is_active' => true]
+                    ['urutan' => ((int) ($row['NO'] ?? $idx + 1)) + 1, 'is_active' => true]
                 );
             }
         }

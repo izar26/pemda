@@ -3,10 +3,14 @@
 namespace App\Services\Risiko\Pengajuan;
 
 use App\Models\Pengawasan\AuditorOpdAssignment;
+use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
+use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisikoItem;
+use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 
 class PengajuanReadinessService
@@ -62,6 +66,100 @@ class PengajuanReadinessService
 
         $is2cComplete = (bool) ($operasional && $operasional->programs_count > 0);
 
+        // 5. Check Form 3A (Identifikasi Risiko Strategis Pemda)
+        $dokumen3a = IdentifikasiRisikoPemda::where('opd_id', $opdId)
+            ->where('periode_penilaian_id', $resolvedPeriodeId)
+            ->withCount('items')
+            ->first();
+
+        $is3aComplete = (bool) (
+            $dokumen3a &&
+            ! empty($dokumen3a->master_urusan_pemerintahan_id) &&
+            $dokumen3a->items_count > 0
+        );
+
+        // 6. Check Form 3B (Identifikasi Risiko Strategis OPD)
+        $dokumen3b = IdentifikasiRisikoOpd::where('opd_id', $opdId)
+            ->where('periode_penilaian_id', $resolvedPeriodeId)
+            ->withCount('items')
+            ->first();
+
+        $is3bComplete = (bool) (
+            $dokumen3b &&
+            ! empty($dokumen3b->master_urusan_pemerintahan_id) &&
+            $dokumen3b->items_count > 0
+        );
+
+        // 6b. Check Form 3C (Identifikasi Risiko Operasional OPD)
+        $dokumen3c = IdentifikasiRisikoOpdOperasional::where('opd_id', $opdId)
+            ->where('periode_penilaian_id', $resolvedPeriodeId)
+            ->withCount('items')
+            ->first();
+
+        $is3cComplete = (bool) (
+            $dokumen3c &&
+            ! empty($dokumen3c->master_urusan_pemerintahan_id) &&
+            $dokumen3c->items_count > 0
+        );
+
+        // 7. Check Form RCA (Root Cause Analysis 5-Whys for 3A, 3B, & 3C)
+        $totalRiskItemsCount = ($dokumen3a?->items_count ?? 0) + ($dokumen3b?->items_count ?? 0) + ($dokumen3c?->items_count ?? 0);
+        $isRcaComplete = false;
+        if ($totalRiskItemsCount > 0) {
+            $unresolvedRcaCount = RootCauseAnalysis::where(function ($query) use ($dokumen3a, $dokumen3b, $dokumen3c) {
+                $query->where(function ($sub) use ($dokumen3a) {
+                    if ($dokumen3a) {
+                        $sub->whereHas('itemPemda', fn ($q) => $q->where('identifikasi_risiko_pemda_id', $dokumen3a->id));
+                    } else {
+                        $sub->whereRaw('1 = 0');
+                    }
+                })->orWhere(function ($sub) use ($dokumen3b) {
+                    if ($dokumen3b) {
+                        $sub->whereHas('itemOpd', fn ($q) => $q->where('identifikasi_risiko_opd_id', $dokumen3b->id));
+                    } else {
+                        $sub->whereRaw('1 = 0');
+                    }
+                })->orWhere(function ($sub) use ($dokumen3c) {
+                    if ($dokumen3c) {
+                        $sub->whereHas('itemOperasional', fn ($q) => $q->where('identifikasi_risiko_opd_operasional_id', $dokumen3c->id));
+                    } else {
+                        $sub->whereRaw('1 = 0');
+                    }
+                });
+            })
+                ->where(function ($q) {
+                    $q->whereNull('akar_penyebab')
+                        ->orWhere('akar_penyebab', '')
+                        ->orWhereNull('jenis_penyebab')
+                        ->orWhere('jenis_penyebab', '');
+                })
+                ->count();
+
+            $totalRcaCount = RootCauseAnalysis::where(function ($query) use ($dokumen3a, $dokumen3b, $dokumen3c) {
+                $query->where(function ($sub) use ($dokumen3a) {
+                    if ($dokumen3a) {
+                        $sub->whereHas('itemPemda', fn ($q) => $q->where('identifikasi_risiko_pemda_id', $dokumen3a->id));
+                    } else {
+                        $sub->whereRaw('1 = 0');
+                    }
+                })->orWhere(function ($sub) use ($dokumen3b) {
+                    if ($dokumen3b) {
+                        $sub->whereHas('itemOpd', fn ($q) => $q->where('identifikasi_risiko_opd_id', $dokumen3b->id));
+                    } else {
+                        $sub->whereRaw('1 = 0');
+                    }
+                })->orWhere(function ($sub) use ($dokumen3c) {
+                    if ($dokumen3c) {
+                        $sub->whereHas('itemOperasional', fn ($q) => $q->where('identifikasi_risiko_opd_operasional_id', $dokumen3c->id));
+                    } else {
+                        $sub->whereRaw('1 = 0');
+                    }
+                });
+            })->count();
+
+            $isRcaComplete = $totalRcaCount === $totalRiskItemsCount && $unresolvedRcaCount === 0;
+        }
+
         // List missing forms
         $missingForms = [];
         if (! $is2bComplete) {
@@ -76,6 +174,34 @@ class PengajuanReadinessService
                 'code' => '2C',
                 'name' => 'Konteks Operasional (Form 2C)',
                 'description' => 'Pohon kinerja program/kegiatan operasional belum ditambahkan.',
+            ];
+        }
+        if (! $is3aComplete) {
+            $missingForms[] = [
+                'code' => '3A',
+                'name' => 'Identifikasi Risiko Pemda (Form 3A)',
+                'description' => 'Urusan Pemerintahan belum dipilih atau daftar risiko strategis Pemda belum ditambahkan.',
+            ];
+        }
+        if (! $is3bComplete) {
+            $missingForms[] = [
+                'code' => '3B',
+                'name' => 'Identifikasi Risiko OPD (Form 3B)',
+                'description' => 'Urusan Pemerintahan belum dipilih atau daftar risiko strategis OPD belum ditambahkan.',
+            ];
+        }
+        if (! $is3cComplete) {
+            $missingForms[] = [
+                'code' => '3C',
+                'name' => 'Identifikasi Risiko Operasional (Form 3C)',
+                'description' => 'Urusan Pemerintahan belum dipilih atau daftar risiko operasional OPD belum ditambahkan.',
+            ];
+        }
+        if (! $isRcaComplete) {
+            $missingForms[] = [
+                'code' => 'RCA',
+                'name' => 'Root Cause Analysis (Form RCA)',
+                'description' => 'Analisis 5-Whys dan jenis penyebab pada Form RCA belum dilengkapi untuk seluruh risiko (3A, 3B, & 3C).',
             ];
         }
 
@@ -103,7 +229,7 @@ class PengajuanReadinessService
             }
         }
 
-        $allFormsComplete = $is2bComplete && $is2cComplete;
+        $allFormsComplete = $is2bComplete && $is2cComplete && $is3aComplete && $is3bComplete && $is3cComplete && $isRcaComplete;
 
         // Permissions and state machine capabilities
         $currentTier = $submission->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR;
@@ -173,8 +299,16 @@ class PengajuanReadinessService
             'kepala_opd' => $kepalaOpdUser,
             'is_2b_complete' => $is2bComplete,
             'is_2c_complete' => $is2cComplete,
+            'is_3a_complete' => $is3aComplete,
+            'is_3b_complete' => $is3bComplete,
+            'is_3c_complete' => $is3cComplete,
+            'is_rca_complete' => $isRcaComplete,
             'is_2b_approved' => ($formStatuses['2b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_2c_approved' => ($formStatuses['2c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_3a_approved' => ($formStatuses['3a'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_3b_approved' => ($formStatuses['3b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_3c_approved' => ($formStatuses['3c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_rca_approved' => ($formStatuses['rca'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'form_statuses' => $formStatuses,
             'form_details' => $formDetails,
             'rejection_notes' => $rejectionNotes,

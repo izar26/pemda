@@ -5,16 +5,24 @@ declare(strict_types=1);
 namespace Tests\Feature\Risiko;
 
 use App\Models\Master\MasterSumberData;
+use App\Models\Master\MasterUrusanPemerintahan;
 use App\Models\Opd;
 use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoOpdItem;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
+use App\Models\Risiko\IdentifikasiRisikoPemda;
+use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksOperasionalItem;
 use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
+use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -183,6 +191,117 @@ class PengajuanDanReviewRisikoTest extends TestCase
     }
 
     /**
+     * Helper to complete Form 3A and RCA for the OPD.
+     */
+    protected function completeForm3AAndRca(): IdentifikasiRisikoPemda
+    {
+        $urusan = MasterUrusanPemerintahan::firstOrCreate(
+            ['kode' => '01'],
+            ['nama' => 'Pendidikan', 'is_active' => true, 'urutan' => 1]
+        );
+
+        $dokumen = IdentifikasiRisikoPemda::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $urusan->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'status' => 'draft',
+        ]);
+
+        $item = IdentifikasiRisikoPemdaItem::create([
+            'identifikasi_risiko_pemda_id' => $dokumen->id,
+            'sasaran_penilaian_id' => $this->sasaran->id,
+            'indikator_penilaian_id' => $this->indikator->id,
+            'kategori_risiko' => 'Risiko Strategis',
+            'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Potensi keterlambatan target penurunan AKI',
+            'kode_risiko' => 'RSP.26.RS.001',
+            'pemilik_risiko' => 'Kepala Daerah',
+            'sifat_risiko' => 'C',
+            'uraian_dampak' => 'Target RPJMD tidak tercapai',
+            'pihak_terkena' => 'Masyarakat',
+            'urutan' => 1,
+        ]);
+
+        RootCauseAnalysis::create([
+            'source_type' => '3a',
+            'identifikasi_risiko_pemda_item_id' => $item->id,
+            'why_1' => 'Fasilitas kesehatan kurang memadai',
+            'akar_penyebab' => 'Fasilitas kesehatan kurang memadai',
+            'jenis_penyebab' => 'Material',
+            'kegiatan_pengendalian' => 'Pengadaan alkes',
+        ]);
+
+        $dokumen3b = IdentifikasiRisikoOpd::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $urusan->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'singkatan_opd' => 'DINKES',
+            'status' => 'draft',
+        ]);
+
+        $item3b = IdentifikasiRisikoOpdItem::create([
+            'identifikasi_risiko_opd_id' => $dokumen3b->id,
+            'sasaran_penilaian_id' => $this->sasaran->id,
+            'indikator_penilaian_id' => $this->indikator->id,
+            'kategori_risiko' => 'Risiko Strategis',
+            'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Potensi keterlambatan penanganan faskes OPD',
+            'kode_risiko' => 'RSO.26.DINKES.RS.001',
+            'pemilik_risiko' => 'Kepala Dinas Kesehatan',
+            'sifat_risiko' => 'C',
+            'uraian_dampak' => 'Penurunan kualitas layanan',
+            'pihak_terkena' => 'Masyarakat',
+            'urutan' => 1,
+        ]);
+
+        RootCauseAnalysis::create([
+            'source_type' => '3b',
+            'identifikasi_risiko_opd_item_id' => $item3b->id,
+            'why_1' => 'SDM faskes belum terlatih',
+            'akar_penyebab' => 'SDM faskes belum terlatih',
+            'jenis_penyebab' => 'Man',
+            'kegiatan_pengendalian' => 'Pelatihan nakes',
+        ]);
+
+        $dokumen3c = IdentifikasiRisikoOpdOperasional::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $urusan->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'singkatan_opd' => 'DINKES',
+            'status' => 'draft',
+        ]);
+
+        $item3c = IdentifikasiRisikoOpdOperasionalItem::create([
+            'identifikasi_risiko_opd_operasional_id' => $dokumen3c->id,
+            'sub_kegiatan_kustom' => 'Pengadaan Vaksin dan Alkes',
+            'probis' => 'Pelaksanaan',
+            'kategori_risiko' => 'Risiko Operasional',
+            'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Kerusakan rantai dingin vaksin saat distribusi',
+            'kode_risiko' => 'ROO.26.DINKES.RO.001',
+            'pemilik_risiko' => 'Sekretaris',
+            'sifat_risiko' => 'C',
+            'uraian_dampak' => 'Vaksin rusak dan tidak dapat digunakan',
+            'pihak_terkena' => 'Masyarakat penerima vaksin',
+            'urutan' => 1,
+        ]);
+
+        RootCauseAnalysis::create([
+            'source_type' => '3c',
+            'identifikasi_risiko_opd_operasional_item_id' => $item3c->id,
+            'why_1' => 'Coolbox penyimpanan tidak sesuai standar',
+            'akar_penyebab' => 'Coolbox penyimpanan tidak sesuai standar',
+            'jenis_penyebab' => 'Material',
+            'kegiatan_pengendalian' => 'Pengadaan coolbox terstandar WHO',
+        ]);
+
+        return $dokumen;
+    }
+
+    /**
      * Helper to assign auditor to OPD.
      */
     protected function assignAuditorToOpd(): AuditorOpdAssignment
@@ -250,6 +369,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
 
@@ -273,6 +393,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         // Submit to lock it
         Sanctum::actingAs($this->opdUser);
@@ -300,6 +421,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd(); // Assigned to auditorUser, NOT otherAuditorUser
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
         $this->postJson('/api/risiko/pengajuan/submit', [
@@ -324,6 +446,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
         $this->postJson('/api/risiko/pengajuan/submit', [
@@ -349,6 +472,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
         $this->postJson('/api/risiko/pengajuan/submit', [
@@ -418,6 +542,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
         $this->postJson('/api/risiko/pengajuan/submit', [
@@ -441,12 +566,36 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
+        // Auditor approves Form 2C
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '2c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        // Auditor approves Form 3A
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3a',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        // Auditor approves Form 3B
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3b',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        // Auditor approves Form 3C
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
         $submission->refresh();
         $this->assertEquals(PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, $submission->status);
 
-        // Auditor approves Form 2C -> forward to Pengawas
+        // Auditor approves Form RCA -> forward to Pengawas
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
-            'form_code' => '2c',
+            'form_code' => 'rca',
             'status' => 'approved',
         ])->assertStatus(200);
 
@@ -454,7 +603,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assertEquals(PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS, $submission->status);
         $this->assertEquals(PengajuanPenilaianRisiko::TIER_PENGAWAS, $submission->current_tier);
 
-        // Pengawas reviews and approves Form 2B & 2C
+        // Pengawas reviews and approves all forms
         Sanctum::actingAs($this->pengawasUser);
 
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
@@ -464,6 +613,26 @@ class PengajuanDanReviewRisikoTest extends TestCase
 
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
             'form_code' => '2c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '3a',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '3b',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '3c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => 'rca',
             'status' => 'approved',
         ])->assertStatus(200);
 
@@ -480,6 +649,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         // OPD only checks readiness, creating draft submission but has NOT submitted
         Sanctum::actingAs($this->opdUser);
@@ -503,6 +673,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $operasional = $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
         $this->postJson('/api/risiko/pengajuan/submit', [
@@ -568,6 +739,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $this->assignAuditorToOpd();
         $this->completeForm2B();
         $this->completeForm2C();
+        $this->completeForm3AAndRca();
 
         Sanctum::actingAs($this->opdUser);
         $this->postJson('/api/risiko/pengajuan/submit', [

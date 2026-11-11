@@ -8,6 +8,16 @@ import type {
   KonteksOperasionalItem,
   KonteksOperasionalItemFormData,
   KonteksOperasionalItemNode,
+  IdentifikasiRisikoPemda,
+  IdentifikasiRisikoPemdaItem,
+  IdentifikasiRisikoPemdaMeta,
+  IdentifikasiRisikoOpd,
+  IdentifikasiRisikoOpdItem,
+  IdentifikasiRisikoOpdMeta,
+  IdentifikasiRisikoOpdOperasional,
+  IdentifikasiRisikoOpdOperasionalItem,
+  IdentifikasiRisikoOpdOperasionalMeta,
+  RootCauseAnalysis,
 } from '@/types/risiko'
 
 export const risikoService = {
@@ -248,5 +258,361 @@ export const risikoService = {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
+  },
+
+  /**
+   * Get current Form 3A for active period including Form 2B reference metadata.
+   */
+  async getCurrentIdentifikasiPemda(params: { opd_id?: string; periode_penilaian_id?: string } = {}) {
+    const response = await apiClient.get<{
+      data: IdentifikasiRisikoPemda | null
+      meta: IdentifikasiRisikoPemdaMeta
+    }>('/risiko/identifikasi-pemda/current', { params })
+    return response.data
+  },
+
+  /**
+   * Save or update Form 3A header (Urusan Pemerintahan).
+   */
+  async saveIdentifikasiPemdaHeader(data: {
+    opd_id: string
+    periode_penilaian_id?: string
+    master_urusan_pemerintahan_id: string
+    nama_pemda?: string
+  }) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoPemda
+    }>('/risiko/identifikasi-pemda/header', data)
+    return response.data
+  },
+
+  /**
+   * Add a new risk item to Form 3A.
+   */
+  async storeIdentifikasiPemdaItem(
+    dokumenId: string,
+    data: {
+      sasaran_penilaian_id?: string | null
+      sasaran_kustom?: string | null
+      indikator_penilaian_id?: string | null
+      indikator_kustom?: string | null
+      kategori_risiko: string
+      pernyataan_risiko: string
+      pemilik_risiko?: string
+      sifat_risiko: 'C' | 'UC'
+      uraian_dampak?: string | null
+      pihak_terkena?: string | null
+    }
+  ) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoPemdaItem
+    }>(`/risiko/identifikasi-pemda/${dokumenId}/items`, data)
+    return response.data
+  },
+
+  /**
+   * Update an existing risk item in Form 3A.
+   */
+  async updateIdentifikasiPemdaItem(
+    dokumenId: string,
+    itemId: string,
+    data: {
+      sasaran_penilaian_id?: string | null
+      sasaran_kustom?: string | null
+      indikator_penilaian_id?: string | null
+      indikator_kustom?: string | null
+      kategori_risiko?: string
+      pernyataan_risiko?: string
+      pemilik_risiko?: string
+      sifat_risiko?: 'C' | 'UC'
+      uraian_dampak?: string | null
+      pihak_terkena?: string | null
+    }
+  ) {
+    const response = await apiClient.put<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoPemdaItem
+    }>(`/risiko/identifikasi-pemda/${dokumenId}/items/${itemId}`, data)
+    return response.data
+  },
+
+  /**
+   * Delete a risk item in Form 3A.
+   */
+  async deleteIdentifikasiPemdaItem(dokumenId: string, itemId: string) {
+    const response = await apiClient.delete<{
+      status: string
+      message: string
+    }>(`/risiko/identifikasi-pemda/${dokumenId}/items/${itemId}`)
+    return response.data
+  },
+
+  /**
+   * Reorder risk items in Form 3A.
+   */
+  async reorderIdentifikasiPemdaItems(dokumenId: string, itemIds: string[]) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+    }>(`/risiko/identifikasi-pemda/${dokumenId}/items/reorder`, { item_ids: itemIds })
+    return response.data
+  },
+
+  /**
+   * Get current Form 3B document for an OPD in the active evaluation period.
+   */
+  async getCurrentIdentifikasiOpd(params: { opd_id?: string; periode_penilaian_id?: string } = {}) {
+    const response = await apiClient.get<{
+      data: IdentifikasiRisikoOpd | null
+      meta: IdentifikasiRisikoOpdMeta
+    }>('/risiko/identifikasi-opd/current', { params })
+    return response.data
+  },
+
+  /**
+   * Save or update Form 3B header (Urusan Pemerintahan, Singkatan OPD).
+   */
+  async saveIdentifikasiOpdHeader(data: {
+    opd_id: string
+    periode_penilaian_id?: string
+    master_urusan_pemerintahan_id: string
+    nama_pemda?: string
+    singkatan_opd?: string
+    nama_kepala_opd?: string
+  }) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoOpd
+    }>('/risiko/identifikasi-opd/header', data)
+    return response.data
+  },
+
+  /**
+   * Add a new risk item to Form 3B.
+   */
+  async storeIdentifikasiOpdItem(
+    dokumenId: string,
+    data: {
+      sasaran_penilaian_id?: string | null
+      sasaran_kustom?: string | null
+      indikator_penilaian_id?: string | null
+      indikator_kustom?: string | null
+      kategori_risiko: string
+      pernyataan_risiko: string
+      pemilik_risiko?: string
+      sifat_risiko: 'C' | 'UC'
+      uraian_dampak?: string | null
+      pihak_terkena?: string | null
+    }
+  ) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoOpdItem
+    }>(`/risiko/identifikasi-opd/${dokumenId}/items`, data)
+    return response.data
+  },
+
+  /**
+   * Update an existing risk item in Form 3B.
+   */
+  async updateIdentifikasiOpdItem(
+    dokumenId: string,
+    itemId: string,
+    data: {
+      sasaran_penilaian_id?: string | null
+      sasaran_kustom?: string | null
+      indikator_penilaian_id?: string | null
+      indikator_kustom?: string | null
+      kategori_risiko?: string
+      pernyataan_risiko?: string
+      pemilik_risiko?: string
+      sifat_risiko?: 'C' | 'UC'
+      uraian_dampak?: string | null
+      pihak_terkena?: string | null
+    }
+  ) {
+    const response = await apiClient.put<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoOpdItem
+    }>(`/risiko/identifikasi-opd/${dokumenId}/items/${itemId}`, data)
+    return response.data
+  },
+
+  /**
+   * Delete a risk item in Form 3B.
+   */
+  async deleteIdentifikasiOpdItem(dokumenId: string, itemId: string) {
+    const response = await apiClient.delete<{
+      status: string
+      message: string
+    }>(`/risiko/identifikasi-opd/${dokumenId}/items/${itemId}`)
+    return response.data
+  },
+
+  /**
+   * Reorder risk items in Form 3B.
+   */
+  async reorderIdentifikasiOpdItems(dokumenId: string, itemIds: string[]) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+    }>(`/risiko/identifikasi-opd/${dokumenId}/items/reorder`, { item_ids: itemIds })
+    return response.data
+  },
+
+  /**
+   * Get current Form 3C document (Identifikasi Risiko Operasional OPD) for an OPD.
+   */
+  async getCurrentIdentifikasiOperasional(params: { opd_id?: string; periode_penilaian_id?: string } = {}) {
+    const response = await apiClient.get<{
+      data: IdentifikasiRisikoOpdOperasional | null
+      meta: IdentifikasiRisikoOpdOperasionalMeta
+    }>('/risiko/identifikasi-operasional/current', { params })
+    return response.data
+  },
+
+  /**
+   * Save or update Form 3C header (Urusan Pemerintahan, Singkatan OPD).
+   */
+  async saveIdentifikasiOperasionalHeader(data: {
+    opd_id: string
+    periode_penilaian_id?: string
+    master_urusan_pemerintahan_id: string
+    nama_pemda?: string
+    singkatan_opd?: string
+    nama_kepala_opd?: string
+  }) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoOpdOperasional
+    }>('/risiko/identifikasi-operasional/header', data)
+    return response.data
+  },
+
+  /**
+   * Add a new risk item to Form 3C.
+   */
+  async storeIdentifikasiOperasionalItem(
+    dokumenId: string,
+    data: {
+      operasional_sub_kegiatan_id?: string | null
+      sub_kegiatan_kustom?: string | null
+      indikator_keluaran_kustom?: string | null
+      probis: string
+      kategori_risiko: string
+      pernyataan_risiko: string
+      pemilik_risiko?: string
+      sifat_risiko: 'C' | 'UC'
+      uraian_dampak?: string | null
+      pihak_terkena?: string | null
+    }
+  ) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoOpdOperasionalItem
+    }>(`/risiko/identifikasi-operasional/${dokumenId}/items`, data)
+    return response.data
+  },
+
+  /**
+   * Update an existing risk item in Form 3C.
+   */
+  async updateIdentifikasiOperasionalItem(
+    dokumenId: string,
+    itemId: string,
+    data: {
+      operasional_sub_kegiatan_id?: string | null
+      sub_kegiatan_kustom?: string | null
+      indikator_keluaran_kustom?: string | null
+      probis?: string
+      kategori_risiko?: string
+      pernyataan_risiko?: string
+      pemilik_risiko?: string
+      sifat_risiko?: 'C' | 'UC'
+      uraian_dampak?: string | null
+      pihak_terkena?: string | null
+    }
+  ) {
+    const response = await apiClient.put<{
+      status: string
+      message: string
+      data: IdentifikasiRisikoOpdOperasionalItem
+    }>(`/risiko/identifikasi-operasional/${dokumenId}/items/${itemId}`, data)
+    return response.data
+  },
+
+  /**
+   * Delete a risk item in Form 3C.
+   */
+  async deleteIdentifikasiOperasionalItem(dokumenId: string, itemId: string) {
+    const response = await apiClient.delete<{
+      status: string
+      message: string
+    }>(`/risiko/identifikasi-operasional/${dokumenId}/items/${itemId}`)
+    return response.data
+  },
+
+  /**
+   * Reorder risk items in Form 3C.
+   */
+  async reorderIdentifikasiOperasionalItems(dokumenId: string, itemIds: string[]) {
+    const response = await apiClient.post<{
+      status: string
+      message: string
+    }>(`/risiko/identifikasi-operasional/${dokumenId}/items/reorder`, { item_ids: itemIds })
+    return response.data
+  },
+
+  /**
+   * Get all RCA records for an OPD in the active evaluation period.
+   */
+  async getRcaList(params: { opd_id?: string; periode_penilaian_id?: string; source_type?: '3a' | '3b' | '3c' } = {}) {
+    const response = await apiClient.get<{
+      data: RootCauseAnalysis[]
+    }>('/risiko/rca', { params })
+    return response.data.data
+  },
+
+  /**
+   * Get RCA record for a specific risk item.
+   */
+  async getRcaByItem(itemId: string) {
+    const response = await apiClient.get<{
+      data: RootCauseAnalysis
+    }>(`/risiko/rca/item/${itemId}`)
+    return response.data.data
+  },
+
+  /**
+   * Update 5-Whys analysis and mitigation in Form RCA.
+   */
+  async updateRca(
+    rcaId: string,
+    data: {
+      why_1?: string | null
+      why_2?: string | null
+      why_3?: string | null
+      why_4?: string | null
+      why_5?: string | null
+      jenis_penyebab?: string | null
+      kegiatan_pengendalian?: string | null
+    }
+  ) {
+    const response = await apiClient.put<{
+      status: string
+      message: string
+      data: RootCauseAnalysis
+    }>(`/risiko/rca/${rcaId}`, data)
+    return response.data
   },
 }

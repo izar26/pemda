@@ -46,9 +46,13 @@ import { Route as ClerkauthSignInRouteImport } from './routes/clerk/(auth)/sign-
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AuthenticatedRisikoRcaIndexRouteImport } from './routes/_authenticated/risiko/rca/index'
 import { Route as AuthenticatedRisikoLaporanIndexRouteImport } from './routes/_authenticated/risiko/laporan/index'
 import { Route as AuthenticatedRisikoKonteksStrategisIndexRouteImport } from './routes/_authenticated/risiko/konteks-strategis/index'
 import { Route as AuthenticatedRisikoKonteksOperasionalIndexRouteImport } from './routes/_authenticated/risiko/konteks-operasional/index'
+import { Route as AuthenticatedRisikoIdentifikasiPemdaIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-pemda/index'
+import { Route as AuthenticatedRisikoIdentifikasiOperasionalIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-operasional/index'
+import { Route as AuthenticatedRisikoIdentifikasiOpdIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-opd/index'
 import { Route as AuthenticatedPerencanaanTujuanIndexRouteImport } from './routes/_authenticated/perencanaan/tujuan/index'
 import { Route as AuthenticatedPerencanaanSasaranIndexRouteImport } from './routes/_authenticated/perencanaan/sasaran/index'
 import { Route as AuthenticatedPerencanaanPeriodeIndexRouteImport } from './routes/_authenticated/perencanaan/periode/index'
@@ -251,6 +255,12 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRisikoRcaIndexRoute =
+  AuthenticatedRisikoRcaIndexRouteImport.update({
+    id: '/risiko/rca/',
+    path: '/risiko/rca/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRisikoLaporanIndexRoute =
   AuthenticatedRisikoLaporanIndexRouteImport.update({
     id: '/risiko/laporan/',
@@ -267,6 +277,24 @@ const AuthenticatedRisikoKonteksOperasionalIndexRoute =
   AuthenticatedRisikoKonteksOperasionalIndexRouteImport.update({
     id: '/risiko/konteks-operasional/',
     path: '/risiko/konteks-operasional/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRisikoIdentifikasiPemdaIndexRoute =
+  AuthenticatedRisikoIdentifikasiPemdaIndexRouteImport.update({
+    id: '/risiko/identifikasi-pemda/',
+    path: '/risiko/identifikasi-pemda/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRisikoIdentifikasiOperasionalIndexRoute =
+  AuthenticatedRisikoIdentifikasiOperasionalIndexRouteImport.update({
+    id: '/risiko/identifikasi-operasional/',
+    path: '/risiko/identifikasi-operasional/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRisikoIdentifikasiOpdIndexRoute =
+  AuthenticatedRisikoIdentifikasiOpdIndexRouteImport.update({
+    id: '/risiko/identifikasi-opd/',
+    path: '/risiko/identifikasi-opd/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPerencanaanTujuanIndexRoute =
@@ -354,9 +382,13 @@ export interface FileRoutesByFullPath {
   '/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
   '/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/risiko/identifikasi-opd/': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
+  '/risiko/identifikasi-operasional/': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
+  '/risiko/identifikasi-pemda/': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
   '/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/risiko/rca/': typeof AuthenticatedRisikoRcaIndexRoute
 }
 export interface FileRoutesByTo {
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -399,9 +431,13 @@ export interface FileRoutesByTo {
   '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/perencanaan/sasaran': typeof AuthenticatedPerencanaanSasaranIndexRoute
   '/perencanaan/tujuan': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/risiko/identifikasi-opd': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
+  '/risiko/identifikasi-operasional': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
+  '/risiko/identifikasi-pemda': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
   '/risiko/konteks-operasional': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/risiko/laporan': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/risiko/rca': typeof AuthenticatedRisikoRcaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -449,9 +485,13 @@ export interface FileRoutesById {
   '/_authenticated/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
   '/_authenticated/perencanaan/sasaran/': typeof AuthenticatedPerencanaanSasaranIndexRoute
   '/_authenticated/perencanaan/tujuan/': typeof AuthenticatedPerencanaanTujuanIndexRoute
+  '/_authenticated/risiko/identifikasi-opd/': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
+  '/_authenticated/risiko/identifikasi-operasional/': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
+  '/_authenticated/risiko/identifikasi-pemda/': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
   '/_authenticated/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/_authenticated/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/_authenticated/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/_authenticated/risiko/rca/': typeof AuthenticatedRisikoRcaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -497,9 +537,13 @@ export interface FileRouteTypes {
     | '/perencanaan/periode/'
     | '/perencanaan/sasaran/'
     | '/perencanaan/tujuan/'
+    | '/risiko/identifikasi-opd/'
+    | '/risiko/identifikasi-operasional/'
+    | '/risiko/identifikasi-pemda/'
     | '/risiko/konteks-operasional/'
     | '/risiko/konteks-strategis/'
     | '/risiko/laporan/'
+    | '/risiko/rca/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/clerk'
@@ -542,9 +586,13 @@ export interface FileRouteTypes {
     | '/perencanaan/periode'
     | '/perencanaan/sasaran'
     | '/perencanaan/tujuan'
+    | '/risiko/identifikasi-opd'
+    | '/risiko/identifikasi-operasional'
+    | '/risiko/identifikasi-pemda'
     | '/risiko/konteks-operasional'
     | '/risiko/konteks-strategis'
     | '/risiko/laporan'
+    | '/risiko/rca'
   id:
     | '__root__'
     | '/_authenticated'
@@ -591,9 +639,13 @@ export interface FileRouteTypes {
     | '/_authenticated/perencanaan/periode/'
     | '/_authenticated/perencanaan/sasaran/'
     | '/_authenticated/perencanaan/tujuan/'
+    | '/_authenticated/risiko/identifikasi-opd/'
+    | '/_authenticated/risiko/identifikasi-operasional/'
+    | '/_authenticated/risiko/identifikasi-pemda/'
     | '/_authenticated/risiko/konteks-operasional/'
     | '/_authenticated/risiko/konteks-strategis/'
     | '/_authenticated/risiko/laporan/'
+    | '/_authenticated/risiko/rca/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -874,6 +926,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/risiko/rca/': {
+      id: '/_authenticated/risiko/rca/'
+      path: '/risiko/rca'
+      fullPath: '/risiko/rca/'
+      preLoaderRoute: typeof AuthenticatedRisikoRcaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/risiko/laporan/': {
       id: '/_authenticated/risiko/laporan/'
       path: '/risiko/laporan'
@@ -893,6 +952,27 @@ declare module '@tanstack/react-router' {
       path: '/risiko/konteks-operasional'
       fullPath: '/risiko/konteks-operasional/'
       preLoaderRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risiko/identifikasi-pemda/': {
+      id: '/_authenticated/risiko/identifikasi-pemda/'
+      path: '/risiko/identifikasi-pemda'
+      fullPath: '/risiko/identifikasi-pemda/'
+      preLoaderRoute: typeof AuthenticatedRisikoIdentifikasiPemdaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risiko/identifikasi-operasional/': {
+      id: '/_authenticated/risiko/identifikasi-operasional/'
+      path: '/risiko/identifikasi-operasional'
+      fullPath: '/risiko/identifikasi-operasional/'
+      preLoaderRoute: typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risiko/identifikasi-opd/': {
+      id: '/_authenticated/risiko/identifikasi-opd/'
+      path: '/risiko/identifikasi-opd'
+      fullPath: '/risiko/identifikasi-opd/'
+      preLoaderRoute: typeof AuthenticatedRisikoIdentifikasiOpdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/perencanaan/tujuan/': {
@@ -988,9 +1068,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerencanaanPeriodeIndexRoute: typeof AuthenticatedPerencanaanPeriodeIndexRoute
   AuthenticatedPerencanaanSasaranIndexRoute: typeof AuthenticatedPerencanaanSasaranIndexRoute
   AuthenticatedPerencanaanTujuanIndexRoute: typeof AuthenticatedPerencanaanTujuanIndexRoute
+  AuthenticatedRisikoIdentifikasiOpdIndexRoute: typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
+  AuthenticatedRisikoIdentifikasiOperasionalIndexRoute: typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
+  AuthenticatedRisikoIdentifikasiPemdaIndexRoute: typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
   AuthenticatedRisikoKonteksOperasionalIndexRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   AuthenticatedRisikoKonteksStrategisIndexRoute: typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   AuthenticatedRisikoLaporanIndexRoute: typeof AuthenticatedRisikoLaporanIndexRoute
+  AuthenticatedRisikoRcaIndexRoute: typeof AuthenticatedRisikoRcaIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1022,11 +1106,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedPerencanaanSasaranIndexRoute,
   AuthenticatedPerencanaanTujuanIndexRoute:
     AuthenticatedPerencanaanTujuanIndexRoute,
+  AuthenticatedRisikoIdentifikasiOpdIndexRoute:
+    AuthenticatedRisikoIdentifikasiOpdIndexRoute,
+  AuthenticatedRisikoIdentifikasiOperasionalIndexRoute:
+    AuthenticatedRisikoIdentifikasiOperasionalIndexRoute,
+  AuthenticatedRisikoIdentifikasiPemdaIndexRoute:
+    AuthenticatedRisikoIdentifikasiPemdaIndexRoute,
   AuthenticatedRisikoKonteksOperasionalIndexRoute:
     AuthenticatedRisikoKonteksOperasionalIndexRoute,
   AuthenticatedRisikoKonteksStrategisIndexRoute:
     AuthenticatedRisikoKonteksStrategisIndexRoute,
   AuthenticatedRisikoLaporanIndexRoute: AuthenticatedRisikoLaporanIndexRoute,
+  AuthenticatedRisikoRcaIndexRoute: AuthenticatedRisikoRcaIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

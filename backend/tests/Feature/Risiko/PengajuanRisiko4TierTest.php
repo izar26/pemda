@@ -5,16 +5,24 @@ declare(strict_types=1);
 namespace Tests\Feature\Risiko;
 
 use App\Models\Master\MasterSumberData;
+use App\Models\Master\MasterUrusanPemerintahan;
 use App\Models\Opd;
 use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoOpdItem;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
+use App\Models\Risiko\IdentifikasiRisikoPemda;
+use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksOperasionalItem;
 use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
+use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -182,6 +190,112 @@ class PengajuanRisiko4TierTest extends TestCase
             'kode' => '1.01',
             'nama' => 'Program Pengelolaan Pendidikan',
             'urutan' => 1,
+        ]);
+
+        // Complete 3A & RCA
+        $urusan = MasterUrusanPemerintahan::firstOrCreate(
+            ['kode' => '01'],
+            ['nama' => 'Pendidikan', 'is_active' => true, 'urutan' => 1]
+        );
+
+        $dokumen3a = IdentifikasiRisikoPemda::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $urusan->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'status' => 'draft',
+        ]);
+
+        $item3a = IdentifikasiRisikoPemdaItem::create([
+            'identifikasi_risiko_pemda_id' => $dokumen3a->id,
+            'sasaran_penilaian_id' => $this->sasaran->id,
+            'indikator_penilaian_id' => $this->indikator->id,
+            'kategori_risiko' => 'Risiko Strategis',
+            'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Risiko Capaian SPM',
+            'kode_risiko' => 'RSP.26.RS.001',
+            'pemilik_risiko' => 'Kepala Daerah',
+            'sifat_risiko' => 'C',
+            'uraian_dampak' => 'Capaian SPM rendah',
+            'pihak_terkena' => 'Masyarakat',
+            'urutan' => 1,
+        ]);
+
+        RootCauseAnalysis::create([
+            'source_type' => '3a',
+            'identifikasi_risiko_pemda_item_id' => $item3a->id,
+            'why_1' => 'Fasilitas belum memadai',
+            'akar_penyebab' => 'Fasilitas belum memadai',
+            'jenis_penyebab' => 'Material',
+            'kegiatan_pengendalian' => 'Pengadaan sarpras',
+        ]);
+
+        // Complete 3B & RCA
+        $dokumen3b = IdentifikasiRisikoOpd::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $urusan->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'singkatan_opd' => 'DISDIK',
+            'status' => 'draft',
+        ]);
+
+        $item3b = IdentifikasiRisikoOpdItem::create([
+            'identifikasi_risiko_opd_id' => $dokumen3b->id,
+            'sasaran_penilaian_id' => $this->sasaran->id,
+            'indikator_penilaian_id' => $this->indikator->id,
+            'kategori_risiko' => 'Risiko Strategis',
+            'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Risiko Capaian Kinerja Sekolah',
+            'kode_risiko' => 'RSO.26.DISDIK.RS.001',
+            'pemilik_risiko' => 'Kepala Dinas Pendidikan',
+            'sifat_risiko' => 'C',
+            'uraian_dampak' => 'Standar pendidikan rendah',
+            'pihak_terkena' => 'Masyarakat',
+            'urutan' => 1,
+        ]);
+
+        RootCauseAnalysis::create([
+            'source_type' => '3b',
+            'identifikasi_risiko_opd_item_id' => $item3b->id,
+            'why_1' => 'Kurang guru bersertifikat',
+            'akar_penyebab' => 'Kurang guru bersertifikat',
+            'jenis_penyebab' => 'Man',
+            'kegiatan_pengendalian' => 'Program sertifikasi guru',
+        ]);
+
+        // Complete 3C & RCA
+        $dokumen3c = IdentifikasiRisikoOpdOperasional::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'master_urusan_pemerintahan_id' => $urusan->id,
+            'nama_pemda' => 'Pemerintah Kabupaten Cianjur',
+            'singkatan_opd' => 'DISDIK',
+            'status' => 'draft',
+        ]);
+
+        $item3c = IdentifikasiRisikoOpdOperasionalItem::create([
+            'identifikasi_risiko_opd_operasional_id' => $dokumen3c->id,
+            'sub_kegiatan_kustom' => 'Pengadaan Buku Pelajaran',
+            'probis' => 'Pelaksanaan',
+            'kategori_risiko' => 'Risiko Operasional',
+            'nomor_urut' => 1,
+            'pernyataan_risiko' => 'Keterlambatan distribusi buku',
+            'kode_risiko' => 'ROO.26.DISDIK.RO.001',
+            'pemilik_risiko' => 'Sekretaris',
+            'sifat_risiko' => 'C',
+            'uraian_dampak' => 'KBM terganggu',
+            'pihak_terkena' => 'Siswa',
+            'urutan' => 1,
+        ]);
+
+        RootCauseAnalysis::create([
+            'source_type' => '3c',
+            'identifikasi_risiko_opd_operasional_item_id' => $item3c->id,
+            'why_1' => 'Kendala logistik',
+            'akar_penyebab' => 'Kendala logistik',
+            'jenis_penyebab' => 'Eksternal',
+            'kegiatan_pengendalian' => 'Mitra ekspedisi alternatif',
         ]);
     }
 
@@ -373,7 +487,7 @@ class PengajuanRisiko4TierTest extends TestCase
         $submission->refresh();
         $this->assertEquals(PengajuanPenilaianRisiko::TIER_AUDITOR, $submission->current_tier);
 
-        // Tier 3: Auditor reviews and approves both 2B and 2C
+        // Tier 3: Auditor reviews and approves both 2B, 2C, 3A, and RCA
         Sanctum::actingAs($this->auditorUser);
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
             'form_code' => '2b',
@@ -385,12 +499,32 @@ class PengajuanRisiko4TierTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3a',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3b',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => 'rca',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
         $submission->refresh();
         $this->assertEquals(PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS, $submission->status);
         $this->assertEquals(PengajuanPenilaianRisiko::TIER_PENGAWAS, $submission->current_tier);
         $this->assertNotNull($submission->auditor_reviewed_at);
 
-        // Tier 4: Pengawas reviews and approves both 2B and 2C
+        // Tier 4: Pengawas reviews and approves all forms
         Sanctum::actingAs($this->pengawasUser);
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
             'form_code' => '2b',
@@ -399,6 +533,26 @@ class PengajuanRisiko4TierTest extends TestCase
 
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
             'form_code' => '2c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '3a',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '3b',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => '3c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", [
+            'form_code' => 'rca',
             'status' => 'approved',
         ])->assertStatus(200);
 
@@ -433,6 +587,22 @@ class PengajuanRisiko4TierTest extends TestCase
         ])->assertStatus(200);
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
             'form_code' => '2c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3a',
+            'status' => 'approved',
+        ])->assertStatus(200);
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3b',
+            'status' => 'approved',
+        ])->assertStatus(200);
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => '3c',
+            'status' => 'approved',
+        ])->assertStatus(200);
+        $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", [
+            'form_code' => 'rca',
             'status' => 'approved',
         ])->assertStatus(200);
 

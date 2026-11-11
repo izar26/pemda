@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class PengajuanWorkflowService
 {
-    public const REQUIRED_FORM_CODES = ['2b', '2c'];
+    public const REQUIRED_FORM_CODES = ['2b', '2c', '3a', '3b', '3c', 'rca'];
 
     public function __construct(
         protected PengajuanQueryService $queryService,

@@ -16,9 +16,13 @@ use App\Http\Controllers\Api\Perencanaan\PeriodePenilaianController;
 use App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController;
 use App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController;
 use App\Http\Controllers\Api\PublicAppConfigController;
+use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoOpdController;
+use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoOpdOperasionalController;
+use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoPemdaController;
 use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
 use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
 use App\Http\Controllers\Api\Risiko\PengajuanRisikoController;
+use App\Http\Controllers\Api\Risiko\RootCauseAnalysisController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
 use App\Http\Controllers\Api\UserAccountController;
@@ -196,6 +200,35 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::put('/konteks-operasional/{konteks}/items/{item}', [KonteksOperasionalController::class, 'updateItem']);
         Route::delete('/konteks-operasional/{konteks}/items/{item}', [KonteksOperasionalController::class, 'destroyItem']);
         Route::apiResource('/konteks-operasional', KonteksOperasionalController::class)->parameters(['konteks-operasional' => 'konteks']);
+
+        // Form 3A: Identifikasi Risiko Strategis Pemda
+        Route::get('/identifikasi-pemda/current', [IdentifikasiRisikoPemdaController::class, 'current']);
+        Route::post('/identifikasi-pemda/header', [IdentifikasiRisikoPemdaController::class, 'saveHeader']);
+        Route::post('/identifikasi-pemda/{dokumen}/items/reorder', [IdentifikasiRisikoPemdaController::class, 'reorderItems']);
+        Route::post('/identifikasi-pemda/{dokumen}/items', [IdentifikasiRisikoPemdaController::class, 'storeItem']);
+        Route::put('/identifikasi-pemda/{dokumen}/items/{item}', [IdentifikasiRisikoPemdaController::class, 'updateItem']);
+        Route::delete('/identifikasi-pemda/{dokumen}/items/{item}', [IdentifikasiRisikoPemdaController::class, 'destroyItem']);
+
+        // Form 3B: Identifikasi Risiko Strategis OPD
+        Route::get('/identifikasi-opd/current', [IdentifikasiRisikoOpdController::class, 'current']);
+        Route::post('/identifikasi-opd/header', [IdentifikasiRisikoOpdController::class, 'saveHeader']);
+        Route::post('/identifikasi-opd/{dokumen}/items/reorder', [IdentifikasiRisikoOpdController::class, 'reorderItems']);
+        Route::post('/identifikasi-opd/{dokumen}/items', [IdentifikasiRisikoOpdController::class, 'storeItem']);
+        Route::put('/identifikasi-opd/{dokumen}/items/{item}', [IdentifikasiRisikoOpdController::class, 'updateItem']);
+        Route::delete('/identifikasi-opd/{dokumen}/items/{item}', [IdentifikasiRisikoOpdController::class, 'destroyItem']);
+
+        // Form 3C: Identifikasi Risiko Operasional OPD
+        Route::get('/identifikasi-operasional/current', [IdentifikasiRisikoOpdOperasionalController::class, 'current']);
+        Route::post('/identifikasi-operasional/header', [IdentifikasiRisikoOpdOperasionalController::class, 'saveHeader']);
+        Route::post('/identifikasi-operasional/{dokumen}/items/reorder', [IdentifikasiRisikoOpdOperasionalController::class, 'reorderItems']);
+        Route::post('/identifikasi-operasional/{dokumen}/items', [IdentifikasiRisikoOpdOperasionalController::class, 'storeItem']);
+        Route::put('/identifikasi-operasional/{dokumen}/items/{item}', [IdentifikasiRisikoOpdOperasionalController::class, 'updateItem']);
+        Route::delete('/identifikasi-operasional/{dokumen}/items/{item}', [IdentifikasiRisikoOpdOperasionalController::class, 'destroyItem']);
+
+        // Form RCA: Root Cause Analysis (5-Whys)
+        Route::get('/rca', [RootCauseAnalysisController::class, 'index']);
+        Route::get('/rca/item/{item}', [RootCauseAnalysisController::class, 'show']);
+        Route::put('/rca/{rca}', [RootCauseAnalysisController::class, 'update']);
 
         // Alur Pengajuan & Pemeriksaan Risiko (OPD & Kepala OPD)
         Route::get('/pengajuan/status', [PengajuanRisikoController::class, 'status']);

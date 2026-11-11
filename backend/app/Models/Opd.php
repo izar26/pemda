@@ -9,6 +9,8 @@ use App\Models\Pengawasan\AuditorOpdAssignment;
 use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
@@ -86,6 +88,81 @@ class Opd extends Model
     public function konteksOperasionals(): HasMany
     {
         return $this->hasMany(KonteksOperasional::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<IdentifikasiRisikoPemda, $this>
+     */
+    public function identifikasiRisikoPemdas(): HasMany
+    {
+        return $this->hasMany(IdentifikasiRisikoPemda::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<IdentifikasiRisikoOpd, $this>
+     */
+    public function identifikasiRisikoOpds(): HasMany
+    {
+        return $this->hasMany(IdentifikasiRisikoOpd::class, 'opd_id');
+    }
+
+    /**
+     * @return HasMany<IdentifikasiRisikoOpdOperasional, $this>
+     */
+    public function identifikasiRisikoOperasionals(): HasMany
+    {
+        return $this->hasMany(Risiko\IdentifikasiRisikoOpdOperasional::class, 'opd_id');
+    }
+
+    /**
+     * Get short code / abbreviation for OPD code generation (e.g. PUTR, DINKES, DISDIK).
+     */
+    public function getSingkatanAttribute(): string
+    {
+        $map = [
+            'Dinas Pekerjaan Umum dan Penataan Ruang' => 'PUTR',
+            'Dinas Pekerjaan Umum dan Tata Ruang' => 'PUTR',
+            'Dinas Pendidikan, Pemuda dan Olahraga' => 'DISDIK',
+            'Dinas Pendidikan' => 'DISDIK',
+            'Dinas Kesehatan' => 'DINKES',
+            'Inspektorat Daerah' => 'ITDA',
+            'Inspektorat' => 'ITDA',
+            'Sekretariat Daerah' => 'SETDA',
+            'Sekretariat DPRD' => 'SETWAN',
+            'Satuan Polisi Pamong Praja dan Pemadam Kebakaran' => 'SATPOL',
+            'Badan Perencanaan Pembangunan Daerah' => 'BAPPEDA',
+            'Badan Pendapatan Daerah' => 'BAPENDA',
+            'Badan Pengelolaan Keuangan dan Aset Daerah' => 'BPKAD',
+            'Badan Kepegawaian dan Pengembangan Sumber Daya Manusia' => 'BKPSDM',
+            'Dinas Sosial' => 'DINSOS',
+            'Dinas Perhubungan' => 'DISHUB',
+            'Dinas Kependudukan dan Pencatatan Sipil' => 'DISDUKCAPIL',
+            'Dinas Komunikasi, Informatika dan Persandian' => 'DISKOMINFO',
+            'Dinas Lingkungan Hidup' => 'DLH',
+        ];
+
+        if (isset($map[$this->nama])) {
+            return $map[$this->nama];
+        }
+
+        foreach ($map as $key => $val) {
+            if (stripos($this->nama, $key) !== false || stripos($key, $this->nama) !== false) {
+                return $val;
+            }
+        }
+
+        // Fallback: Acronym of significant words
+        $words = preg_split('/\s+/', $this->nama) ?: [];
+        $acronym = '';
+        $stopWords = ['dan', 'yang', 'untuk', 'pada', 'di', 'ke', 'dari'];
+        foreach ($words as $word) {
+            $lower = strtolower($word);
+            if (! in_array($lower, $stopWords, true) && strlen($word) > 0) {
+                $acronym .= strtoupper($word[0]);
+            }
+        }
+
+        return ! empty($acronym) ? substr($acronym, 0, 6) : 'OPD';
     }
 
     /**

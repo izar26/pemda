@@ -43,7 +43,10 @@ import { ReviewWizardFooter } from './wizard/review-wizard-footer'
 import { ReviewRejectionDialog } from './wizard/review-rejection-dialog'
 import { ReviewStep2B } from './wizard/steps/review-step-2b'
 import { ReviewStep2C } from './wizard/steps/review-step-2c'
-import { ReviewStepPlaceholder } from './wizard/steps/review-step-placeholder'
+import { ReviewStep3A } from './wizard/steps/review-step-3a'
+import { ReviewStep3B } from './wizard/steps/review-step-3b'
+import { ReviewStep3C } from './wizard/steps/review-step-3c'
+import { ReviewStepRca } from './wizard/steps/review-step-rca'
 
 interface ReviewRisikoWizardProps {
   submissionId: string
@@ -102,6 +105,50 @@ export function ReviewRisikoWizard({
     queryKey: ['risiko-2c-detail', effectiveOpdId, effectivePeriodeId],
     queryFn: () =>
       risikoService.getCurrentKonteksOperasional({
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: effectivePeriodeId,
+      }),
+    enabled: Boolean(effectiveOpdId),
+  })
+
+  // 4. Fetch Form 3A detail
+  const { data: identifikasi3AData, isLoading: isLoading3A } = useQuery({
+    queryKey: ['risiko-3a-review-detail', effectiveOpdId, effectivePeriodeId],
+    queryFn: () =>
+      risikoService.getCurrentIdentifikasiPemda({
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: effectivePeriodeId,
+      }),
+    enabled: Boolean(effectiveOpdId),
+  })
+
+  // 4b. Fetch Form 3B detail
+  const { data: identifikasi3BData, isLoading: isLoading3B } = useQuery({
+    queryKey: ['risiko-3b-review-detail', effectiveOpdId, effectivePeriodeId],
+    queryFn: () =>
+      risikoService.getCurrentIdentifikasiOpd({
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: effectivePeriodeId,
+      }),
+    enabled: Boolean(effectiveOpdId),
+  })
+
+  // 4c. Fetch Form 3C detail
+  const { data: identifikasi3CData, isLoading: isLoading3C } = useQuery({
+    queryKey: ['risiko-3c-review-detail', effectiveOpdId, effectivePeriodeId],
+    queryFn: () =>
+      risikoService.getCurrentIdentifikasiOperasional({
+        opd_id: effectiveOpdId,
+        periode_penilaian_id: effectivePeriodeId,
+      }),
+    enabled: Boolean(effectiveOpdId),
+  })
+
+  // 5. Fetch Form RCA detail
+  const { data: rcaListData = [], isLoading: isLoadingRca } = useQuery({
+    queryKey: ['risiko-rca-review-detail', effectiveOpdId, effectivePeriodeId],
+    queryFn: () =>
+      risikoService.getRcaList({
         opd_id: effectiveOpdId,
         periode_penilaian_id: effectivePeriodeId,
       }),
@@ -531,8 +578,20 @@ export function ReviewRisikoWizard({
             <ReviewStep2C konteks2C={konteks2C} isLoading={isLoading2C} />
           )}
 
-          {currentStep.id !== '2b' && currentStep.id !== '2c' && (
-            <ReviewStepPlaceholder stepId={currentStep.id} />
+          {currentStep.id === '3a' && (
+            <ReviewStep3A dokumen3A={identifikasi3AData?.data} isLoading={isLoading3A} />
+          )}
+
+          {currentStep.id === '3b' && (
+            <ReviewStep3B dokumen3B={identifikasi3BData?.data} isLoading={isLoading3B} />
+          )}
+
+          {currentStep.id === '3c' && (
+            <ReviewStep3C dokumen3C={identifikasi3CData?.data} isLoading={isLoading3C} />
+          )}
+
+          {currentStep.id === 'rca' && (
+            <ReviewStepRca rcaList={rcaListData} isLoading={isLoadingRca} />
           )}
         </div>
 

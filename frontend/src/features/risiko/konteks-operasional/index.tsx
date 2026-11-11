@@ -239,16 +239,10 @@ export function KonteksOperasionalPage() {
       await refetchWizardProgress()
 
       if (intent === 'save_and_next') {
-        if (freshReadiness?.is_ready_to_submit) {
-          toast.success(
-            'Langkah 2 (Form 2C) berhasil disimpan! Seluruh lembar kerja telah lengkap.'
-          )
-          setIsSubmitDialogOpen(true)
-        } else {
-          toast.success(
-            'Langkah 2 (Form 2C) berhasil disimpan! Progres Penetapan Konteks Risiko (2B & 2C) telah mencapai 100%.'
-          )
-        }
+        toast.success(
+          'Langkah 2 (Form 2C) berhasil disimpan! Melanjutkan ke Form 3A (Identifikasi Risiko Pemda)...'
+        )
+        navigate({ to: '/risiko/identifikasi-pemda' })
       } else {
         toast.success(
           'Penetapan Konteks Risiko Operasional OPD (Form 2C) berhasil disimpan.'
@@ -614,7 +608,7 @@ export function KonteksOperasionalPage() {
                           ) : (
                             <>
                               <CheckCircle2 className='h-4 w-4' />
-                              <span>Simpan dan Lanjutkan</span>
+                              <span>Simpan & Lanjut ke Form 3A</span>
                               <ArrowRight className='h-4 w-4' />
                             </>
                           )}
