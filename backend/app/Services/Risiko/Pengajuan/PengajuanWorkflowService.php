@@ -235,10 +235,11 @@ class PengajuanWorkflowService
                 ]);
 
                 foreach ($lockedSubmission->items as $item) {
+                    $isAlreadyAuditorApproved = $item->status_auditor === PengajuanPenilaianRisikoItem::STATUS_APPROVED;
                     $item->update([
                         'status_kepala_opd' => PengajuanPenilaianRisikoItem::STATUS_APPROVED,
-                        'status_auditor' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
-                        'status' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
+                        'status_auditor' => $isAlreadyAuditorApproved ? PengajuanPenilaianRisikoItem::STATUS_APPROVED : PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
+                        'status' => $isAlreadyAuditorApproved ? PengajuanPenilaianRisikoItem::STATUS_APPROVED : PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
                     ]);
                 }
 

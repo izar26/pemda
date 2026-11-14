@@ -8,6 +8,7 @@ use App\Models\Perencanaan\IndikatorPenilaian;
 use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Perencanaan\SasaranPenilaian;
 use App\Models\Perencanaan\TujuanPenilaian;
+use App\Models\Risiko\KonteksPenilaian;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -20,9 +21,26 @@ class SaveKonteksPenilaianRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('konteks_risiko.create')
-            || $this->user()?->can('konteks_risiko.edit')
-            || false;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        $canEdit = $user->can('konteks_risiko.create') || $user->can('konteks_risiko.edit');
+        if (! $canEdit && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            return false;
+        }
+
+        // Cross-tenant protection: OPD user cannot modify another OPD's context
+        $konteksId = $this->route('konteks');
+        if ($konteksId && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            $konteks = is_string($konteksId) ? KonteksPenilaian::find($konteksId) : $konteksId;
+            if ($konteks && (string) $konteks->opd_id !== (string) $user->opd_id) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

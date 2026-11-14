@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Risiko;
 
 use App\Models\Perencanaan\PeriodePenilaian;
+use App\Models\Risiko\KonteksOperasional;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,9 +17,26 @@ class SaveKonteksOperasionalRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('konteks_operasional.create')
-            || $this->user()?->can('konteks_operasional.edit')
-            || false;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        $canEdit = $user->can('konteks_operasional.create') || $user->can('konteks_operasional.edit');
+        if (! $canEdit && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            return false;
+        }
+
+        // Cross-tenant protection: OPD user cannot modify another OPD's context
+        $konteksId = $this->route('konteks');
+        if ($konteksId && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            $konteks = is_string($konteksId) ? KonteksOperasional::find($konteksId) : $konteksId;
+            if ($konteks && (string) $konteks->opd_id !== (string) $user->opd_id) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
