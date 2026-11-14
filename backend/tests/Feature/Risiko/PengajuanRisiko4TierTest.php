@@ -26,6 +26,8 @@ use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PemantauanPengendalianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\RootCauseAnalysis;
+use App\Models\Risiko\StatusFraudRiskAssessmentOpd;
+use App\Models\Risiko\StatusKejadianRisikoOpd;
 use App\Models\Risiko\TindakPengendalianRisiko;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
@@ -311,6 +313,21 @@ class PengajuanRisiko4TierTest extends TestCase
             KomunikasiPengendalianRisiko::create(['analisis_risiko_id' => $record->id, 'media_komunikasi' => 'Rapat koordinasi', 'penyedia_informasi' => 'PPTK', 'penerima_informasi' => 'Kepala Dinas', 'rencana_waktu' => 'Akhir tahun']);
             PemantauanPengendalianRisiko::create(['analisis_risiko_id' => $record->id, 'bentuk_pemantauan' => 'Reviu Dokumen', 'penanggung_jawab_pemantauan' => 'Irban Khusus', 'rencana_waktu_pemantauan' => 'Triwulan IV']);
         }
+
+        StatusKejadianRisikoOpd::create([
+            'opd_id' => $this->opd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'is_nihil' => true,
+            'confirmed_by' => $this->operatorUser->id,
+            'confirmed_at' => now(),
+        ]);
+        StatusFraudRiskAssessmentOpd::create([
+            'opd_id' => $this->opd->id,
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'is_nihil' => true,
+            'confirmed_by' => $this->operatorUser->id,
+            'confirmed_at' => now(),
+        ]);
     }
 
     public function test_form6_validation_access_shared_plan_and_priority_transitions(): void
@@ -361,7 +378,7 @@ class PengajuanRisiko4TierTest extends TestCase
         Sanctum::actingAs($this->kepalaOpdUser);
         $this->postJson("/api/risiko/pengajuan/{$submission->id}/review-kepala", ['status' => 'approved'])->assertOk();
         Sanctum::actingAs($this->auditorUser);
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => '4', 'status' => 'rejected', 'catatan_revisi' => 'Perbaiki nilai residual'])->assertOk();
@@ -561,13 +578,13 @@ class PengajuanRisiko4TierTest extends TestCase
         Sanctum::actingAs($this->operatorUser);
         $this->postJson('/api/risiko/pengajuan/submit', ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id])->assertOk();
         $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->firstOrFail();
-        $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9'])->delete();
+        $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9', '10', 'fra'])->delete();
         Sanctum::actingAs($this->kepalaOpdUser);
         $this->postJson("/api/risiko/pengajuan/{$submission->id}/review-kepala", ['status' => 'approved'])->assertOk();
         Sanctum::actingAs($this->auditorUser);
         $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/4")->assertOk()->assertJsonCount(2, 'data');
         $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => '4', 'status' => 'approved'])->assertUnprocessable();
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->getJson("/api/pengawasan/review-risiko/{$submission->id}/forms/{$code}")->assertNotFound();
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertUnprocessable();
         }
@@ -584,13 +601,13 @@ class PengajuanRisiko4TierTest extends TestCase
         Sanctum::actingAs($this->operatorUser);
         $this->postJson('/api/risiko/pengajuan/submit', ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id])->assertOk();
         $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->firstOrFail();
-        $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9'])->delete();
+        $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9', '10', 'fra'])->delete();
         AnalisisRisiko::query()->delete();
         Sanctum::actingAs($this->kepalaOpdUser);
         $this->postJson("/api/risiko/pengajuan/{$submission->id}/review-kepala", ['status' => 'rejected', 'form_code' => '2b', 'catatan' => 'Perbaiki konteks strategis'])->assertOk();
         Sanctum::actingAs($this->operatorUser);
         $this->postJson('/api/risiko/pengajuan/submit', ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id])->assertOk();
-        $this->assertSame(0, $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9'])->count());
+        $this->assertSame(0, $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9', '10', 'fra'])->count());
     }
 
     public function test_complete_4_tier_happy_path_to_final_approval(): void
@@ -604,7 +621,7 @@ class PengajuanRisiko4TierTest extends TestCase
 
         $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->first();
         $this->assertEquals(PengajuanPenilaianRisiko::TIER_KEPALA_OPD, $submission->current_tier);
-        $this->assertSame(5, $submission->items()->whereIn('form_code', ['5', '6', '7', '8', '9'])->count());
+        $this->assertSame(7, $submission->items()->whereIn('form_code', ['5', '6', '7', '8', '9', '10', 'fra'])->count());
 
         // Tier 2: Kepala OPD reviews and approves (forward to Auditor)
         Sanctum::actingAs($this->kepalaOpdUser);
@@ -655,7 +672,7 @@ class PengajuanRisiko4TierTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 
@@ -701,7 +718,7 @@ class PengajuanRisiko4TierTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 
@@ -760,7 +777,7 @@ class PengajuanRisiko4TierTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 

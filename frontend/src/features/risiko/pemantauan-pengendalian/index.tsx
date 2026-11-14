@@ -240,6 +240,12 @@ export function PemantauanPengendalianPage() {
           >
             Kembali ke Form 8 (Komunikasi)
           </Button>
+          <Button
+            disabled={!wizard.readiness?.is_9_complete}
+            onClick={() => navigate({ to: '/risiko/kejadian-risiko' })}
+          >
+            Lanjut ke Form 10 (Kejadian Risiko)
+          </Button>
         </div>
       </Main>
 

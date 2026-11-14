@@ -26,6 +26,8 @@ use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PemantauanPengendalianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\RootCauseAnalysis;
+use App\Models\Risiko\StatusFraudRiskAssessmentOpd;
+use App\Models\Risiko\StatusKejadianRisikoOpd;
 use App\Models\Risiko\TindakPengendalianRisiko;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
@@ -313,6 +315,20 @@ class PengajuanDanReviewRisikoTest extends TestCase
                 KomunikasiPengendalianRisiko::create(['analisis_risiko_id' => $record->id, 'media_komunikasi' => 'Rapat koordinasi', 'penyedia_informasi' => 'PPTK', 'penerima_informasi' => 'Kepala Dinas', 'rencana_waktu' => 'Akhir tahun']);
                 PemantauanPengendalianRisiko::create(['analisis_risiko_id' => $record->id, 'bentuk_pemantauan' => 'Reviu Dokumen', 'penanggung_jawab_pemantauan' => 'Irban Khusus', 'rencana_waktu_pemantauan' => 'Triwulan IV']);
             }
+            StatusKejadianRisikoOpd::create([
+                'opd_id' => $this->opd->id,
+                'periode_penilaian_id' => $this->activePeriode->id,
+                'is_nihil' => true,
+                'confirmed_by' => $this->opdUser->id,
+                'confirmed_at' => now(),
+            ]);
+            StatusFraudRiskAssessmentOpd::create([
+                'opd_id' => $this->opd->id,
+                'periode_penilaian_id' => $this->activePeriode->id,
+                'is_nihil' => true,
+                'confirmed_by' => $this->opdUser->id,
+                'confirmed_at' => now(),
+            ]);
         }
 
         return $dokumen;
@@ -545,6 +561,8 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $pemantauan = ['bentuk_pemantauan' => 'Reviu Dokumen', 'penanggung_jawab_pemantauan' => 'Irban Khusus', 'rencana_waktu_pemantauan' => 'Triwulan IV'];
         $this->putJson("/api/risiko/pemantauan-pengendalian/3b/{$item3b->id}", $pemantauan)->assertOk();
         $this->putJson("/api/risiko/pemantauan-pengendalian/3c/{$item3c->id}", $pemantauan)->assertOk();
+        $this->postJson('/api/risiko/kejadian-risiko/confirm-nihil', array_merge($request, ['is_nihil' => true]))->assertOk();
+        $this->postJson('/api/risiko/fra/confirm-nihil', array_merge($request, ['is_nihil' => true]))->assertOk();
         $this->postJson('/api/risiko/pengajuan/submit', $request)->assertOk();
         $this->assertDatabaseHas('pengajuan_penilaian_risiko_items', ['form_code' => '4', 'status' => 'submitted']);
         $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertForbidden();
@@ -840,7 +858,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 
@@ -886,7 +904,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6', '7', '8', '9'] as $code) {
+        foreach (['5', '6', '7', '8', '9', '10', 'fra'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 

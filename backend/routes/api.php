@@ -17,9 +17,11 @@ use App\Http\Controllers\Api\Perencanaan\SasaranPenilaianController;
 use App\Http\Controllers\Api\Perencanaan\TujuanPenilaianController;
 use App\Http\Controllers\Api\PublicAppConfigController;
 use App\Http\Controllers\Api\Risiko\AnalisisRisikoController;
+use App\Http\Controllers\Api\Risiko\FraudRiskAssessmentController;
 use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoOpdController;
 use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoOpdOperasionalController;
 use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoPemdaController;
+use App\Http\Controllers\Api\Risiko\KejadianRisikoController;
 use App\Http\Controllers\Api\Risiko\KomunikasiPengendalianController;
 use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
 use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
@@ -239,6 +241,20 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::put('/komunikasi-pengendalian/{source}/{item}', [KomunikasiPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
         Route::get('/pemantauan-pengendalian', [PemantauanPengendalianController::class, 'index']);
         Route::put('/pemantauan-pengendalian/{source}/{item}', [PemantauanPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
+        Route::get('/kejadian-risiko', [KejadianRisikoController::class, 'index']);
+        Route::get('/kejadian-risiko/risk-options', [KejadianRisikoController::class, 'riskOptions']);
+        Route::post('/kejadian-risiko', [KejadianRisikoController::class, 'store']);
+        Route::put('/kejadian-risiko/{id}', [KejadianRisikoController::class, 'update'])->whereUuid('id');
+        Route::delete('/kejadian-risiko/{id}', [KejadianRisikoController::class, 'destroy'])->whereUuid('id');
+        Route::post('/kejadian-risiko/confirm-nihil', [KejadianRisikoController::class, 'confirmNihil']);
+
+        // Form FRA: Fraud Risk Assessment (Penilaian Risiko Kecurangan)
+        Route::get('/fra', [FraudRiskAssessmentController::class, 'index']);
+        Route::get('/fra/reference-options', [FraudRiskAssessmentController::class, 'referenceOptions']);
+        Route::post('/fra', [FraudRiskAssessmentController::class, 'store']);
+        Route::put('/fra/{id}', [FraudRiskAssessmentController::class, 'update'])->whereUuid('id');
+        Route::delete('/fra/{id}', [FraudRiskAssessmentController::class, 'destroy'])->whereUuid('id');
+        Route::post('/fra/confirm-nihil', [FraudRiskAssessmentController::class, 'confirmNihil']);
 
         // Form RCA: Root Cause Analysis (5-Whys)
         Route::get('/rca', [RootCauseAnalysisController::class, 'index']);

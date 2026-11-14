@@ -12,6 +12,8 @@ import type { TindakRow } from '@/features/risiko/tindak-pengendalian/api'
 import type { PetaRisikoData } from '@/features/risiko/peta-risiko/types'
 import type { KomunikasiRow } from '@/features/risiko/komunikasi-pengendalian/api'
 import type { PemantauanRow } from '@/features/risiko/pemantauan-pengendalian/api'
+import type { KejadianRisikoRow } from '@/features/risiko/kejadian-risiko/types'
+import type { FraudRiskAssessmentRow } from '@/features/risiko/fra/types'
 import { ReviewStep2B } from './steps/review-step-2b'
 import { ReviewStep2C } from './steps/review-step-2c'
 import { ReviewStep3A } from './steps/review-step-3a'
@@ -23,6 +25,8 @@ import { ReviewStep6 } from './steps/review-step-6'
 import { ReviewStep7 } from './steps/review-step-7'
 import { ReviewStep8 } from './steps/review-step-8'
 import { ReviewStep9 } from './steps/review-step-9'
+import { ReviewStep10 } from './steps/review-step-10'
+import { ReviewStepFra } from './steps/review-step-fra'
 import { ReviewStepRca } from './steps/review-step-rca'
 
 export interface StepFilterConfig {
@@ -182,6 +186,71 @@ export const REVIEW_STEP_REGISTRY: Record<string, StepRegistryEntry> = {
         isLoading={isLoading}
       />
     ),
+  },
+  '10': {
+    isPaginated: true,
+    filters: {
+      hasSearch: true,
+      searchPlaceholder: 'Cari kode, sebab, atau dampak risiko',
+    },
+    render: ({ data, isLoading }) => {
+      const isArray = Array.isArray(data)
+      const items = isArray
+        ? (data as KejadianRisikoRow[])
+        : ((data as { data?: KejadianRisikoRow[] })?.data || [])
+      const isNihil =
+        !isArray && Boolean((data as { is_nihil?: boolean })?.is_nihil)
+      const nihilInfo = !isArray
+        ? (data as {
+            nihil_info?: {
+              confirmed_by: string | null
+              confirmed_at: string | null
+            }
+          })?.nihil_info
+        : null
+
+      return (
+        <ReviewStep10
+          items={items}
+          isLoading={isLoading}
+          isNihil={isNihil}
+          nihilInfo={nihilInfo}
+        />
+      )
+    },
+  },
+  fra: {
+    isPaginated: true,
+    filters: {
+      hasSearch: true,
+      searchPlaceholder: 'Cari proses bisnis, skenario, mitigasi...',
+    },
+    render: ({ data, isLoading }) => {
+      const isArray = Array.isArray(data)
+      const items = isArray
+        ? (data as FraudRiskAssessmentRow[])
+        : ((data as { data?: FraudRiskAssessmentRow[] })?.data || [])
+      const isNihil =
+        !isArray && Boolean((data as { is_nihil?: boolean })?.is_nihil)
+      const nihilInfo = !isArray
+        ? (data as {
+            nihil_info?: {
+              confirmed_by: string | null
+              confirmed_at: string | null
+              catatan?: string | null
+            }
+          })?.nihil_info
+        : null
+
+      return (
+        <ReviewStepFra
+          items={items}
+          isLoading={isLoading}
+          isNihil={isNihil}
+          nihilInfo={nihilInfo}
+        />
+      )
+    },
   },
 }
 

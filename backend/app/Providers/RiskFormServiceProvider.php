@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Services\Risiko\Handlers\AnalisisRisiko4Handler;
+use App\Services\Risiko\Handlers\FraudRiskAssessmentHandler;
 use App\Services\Risiko\Handlers\IdentifikasiOpd3BHandler;
 use App\Services\Risiko\Handlers\IdentifikasiOperasional3CHandler;
 use App\Services\Risiko\Handlers\IdentifikasiPemda3AHandler;
+use App\Services\Risiko\Handlers\KejadianRisiko10Handler;
 use App\Services\Risiko\Handlers\KomunikasiPengendalian8Handler;
 use App\Services\Risiko\Handlers\KonteksOperasional2CHandler;
 use App\Services\Risiko\Handlers\KonteksPenilaian2BHandler;
@@ -38,6 +40,8 @@ class RiskFormServiceProvider extends ServiceProvider
             $registry->register('7', PetaRisiko7Handler::class);
             $registry->register('8', KomunikasiPengendalian8Handler::class);
             $registry->register('9', PemantauanPengendalian9Handler::class);
+            $registry->register('10', KejadianRisiko10Handler::class);
+            $registry->register('fra', FraudRiskAssessmentHandler::class);
 
             return $registry;
         });

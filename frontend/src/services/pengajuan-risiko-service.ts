@@ -157,11 +157,15 @@ export interface ReadinessResponse {
   is_7_complete?: boolean
   is_8_complete?: boolean
   is_9_complete?: boolean
+  is_10_complete?: boolean
+  is_fra_complete?: boolean
   is_5_approved?: boolean
   is_6_approved?: boolean
   is_7_approved?: boolean
   is_8_approved?: boolean
   is_9_approved?: boolean
+  is_10_approved?: boolean
+  is_fra_approved?: boolean
   is_rca_complete?: boolean
   form_completeness?: Record<
     string,

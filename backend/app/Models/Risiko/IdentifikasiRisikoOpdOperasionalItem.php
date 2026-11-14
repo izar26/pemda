@@ -60,6 +60,11 @@ class IdentifikasiRisikoOpdOperasionalItem extends Model
         return $this->hasOne(RootCauseAnalysis::class, 'identifikasi_risiko_opd_operasional_item_id');
     }
 
+    public function analisis(): HasOne
+    {
+        return $this->hasOne(AnalisisRisiko::class, 'risiko_operasional_item_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

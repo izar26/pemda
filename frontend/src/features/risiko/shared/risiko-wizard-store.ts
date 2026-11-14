@@ -19,6 +19,8 @@ export type RisikoWizardStepId =
   | '7'
   | '8'
   | '9'
+  | '10'
+  | 'fra'
 
 export interface RisikoWizardStepConfig {
   stepNumber: number
@@ -164,6 +166,27 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     shortTitle: 'Pemantauan',
     subtitle: 'Rancangan Metode & Jadwal Pemantauan Pengendalian Intern',
     url: '/risiko/pemantauan-pengendalian',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 13,
+    id: '10',
+    code: '10',
+    title: 'Pencatatan Kejadian Risiko (10)',
+    shortTitle: 'Kejadian Risiko',
+    subtitle: 'Pencatatan Kejadian Nyata Risiko Tahun Berjalan & Realisasi RTP',
+    url: '/risiko/kejadian-risiko',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 14,
+    id: 'fra',
+    code: 'FRA',
+    title: 'Penilaian Risiko Kecurangan (FRA)',
+    shortTitle: 'Risiko FRA',
+    subtitle: 'Identifikasi, Skenario, Analisis & Mitigasi Risiko Kecurangan',
+    url: '/risiko/fra',
+    requiredPermission: 'identifikasi_risiko_opd.view',
     isImplemented: true,
   },
 ]

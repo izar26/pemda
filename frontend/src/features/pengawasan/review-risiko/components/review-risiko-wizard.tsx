@@ -636,7 +636,11 @@ export function ReviewRisikoWizard({
           {/* Step Data Content Area via Registry */}
           <ReviewStepContent
             formCode={currentStep.id}
-            data={activeFormResponse?.data}
+            data={
+              currentStep.id === '10' || currentStep.id === 'fra'
+                ? activeFormResponse
+                : activeFormResponse?.data
+            }
             isLoading={isActiveFormLoading}
             isError={isActiveFormError}
             onRetry={() => void refetchActiveForm()}
