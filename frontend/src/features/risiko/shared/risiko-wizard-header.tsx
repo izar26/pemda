@@ -1,3 +1,4 @@
+import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
 import {
   AlertCircle,
   ArrowRightCircle,
@@ -7,20 +8,19 @@ import {
   Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type {
-  ResolvedWizardStep,
-  RisikoWizardStepId,
-} from './risiko-wizard-store'
-import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
+import { PageHeader } from '@/components/layout/page-header'
 import {
   WizardStepper,
   SubmissionDialogs,
   useRisikoSubmission,
   getCleanStepTitle,
 } from './header'
+import type {
+  ResolvedWizardStep,
+  RisikoWizardStepId,
+} from './risiko-wizard-store'
 
 export * from './header'
 
@@ -95,37 +95,38 @@ export function RisikoWizardHeader({
 
   return (
     <>
-      <PageHeader className='space-y-2 pb-2.5 pt-3'>
+      <PageHeader className='space-y-2 pt-3 pb-2.5'>
         {/* Top summary row: Main page title, step badge, status pill, progress indicator & Actions */}
-        <div className='flex items-center justify-between gap-2.5 pb-2 border-b border-border/60 flex-wrap sm:flex-nowrap'>
+        <div className='flex flex-wrap items-center justify-between gap-2.5 border-b border-border/60 pb-2 sm:flex-nowrap'>
           <div className='flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5'>
-            <h2 className='text-base sm:text-lg font-bold tracking-tight text-foreground break-words'>
+            <h2 className='text-base font-bold tracking-tight break-words text-foreground sm:text-lg'>
               {pageTitle || cleanActiveTitle}
             </h2>
             <Badge
               variant='outline'
-              className='font-mono text-xs border-primary/30 text-primary bg-primary/5 shrink-0'
+              className='shrink-0 border-primary/30 bg-primary/5 font-mono text-xs text-primary'
             >
-              Form {formCode || activeStep?.code} • Langkah {stepNumber || activeStep?.stepNumber}
+              Form {formCode || activeStep?.code} • Langkah{' '}
+              {stepNumber || activeStep?.stepNumber}
             </Badge>
           </div>
 
-          <div className='flex items-center gap-2 sm:gap-2.5 ml-auto min-w-0 flex-wrap sm:flex-nowrap'>
+          <div className='ml-auto flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-2.5'>
             {/* Status Pills */}
             {readiness?.status === 'approved' && (
-              <Badge className='text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 py-0.5 px-2 gap-1 font-semibold'>
+              <Badge className='gap-1 border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400'>
                 <CheckCircle2 className='h-3 w-3 text-emerald-600' />
                 Disahkan Final
               </Badge>
             )}
             {readiness?.status === 'submitted_to_kepala_opd' && (
-              <Badge className='text-[10px] bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 py-0.5 px-2 gap-1 font-semibold'>
-                <Clock className='h-3 w-3 text-sky-600 animate-pulse' />
+              <Badge className='gap-1 border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:text-sky-400'>
+                <Clock className='h-3 w-3 animate-pulse text-sky-600' />
                 Review Kepala OPD
               </Badge>
             )}
             {readiness?.status === 'revision_by_kepala_opd' && (
-              <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
+              <Badge className='gap-1 border border-destructive/30 bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive'>
                 <AlertCircle className='h-3 w-3 text-destructive' />
                 Revisi Kepala OPD
               </Badge>
@@ -134,46 +135,46 @@ export function RisikoWizardHeader({
               readiness?.status === 'in_review_auditor' ||
               readiness?.status === 'submitted' ||
               readiness?.status === 'in_review') && (
-              <Badge className='text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 py-0.5 px-2 gap-1 font-semibold'>
-                <Clock className='h-3 w-3 text-amber-600 animate-pulse' />
+              <Badge className='gap-1 border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400'>
+                <Clock className='h-3 w-3 animate-pulse text-amber-600' />
                 Review Auditor
               </Badge>
             )}
             {readiness?.status === 'revision_by_auditor' && (
-              <Badge className='text-[10px] bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 py-0.5 px-2 gap-1 font-semibold'>
+              <Badge className='gap-1 border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300'>
                 <AlertCircle className='h-3 w-3 text-amber-600' />
                 Revisi dari Auditor
               </Badge>
             )}
             {readiness?.status === 'revision_to_operator' && (
-              <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
+              <Badge className='gap-1 border border-destructive/30 bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive'>
                 <AlertCircle className='h-3 w-3 text-destructive' />
                 Revisi Operator
               </Badge>
             )}
             {(readiness?.status === 'submitted_to_pengawas' ||
               readiness?.status === 'in_review_pengawas') && (
-              <Badge className='text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 py-0.5 px-2 gap-1 font-semibold'>
-                <Clock className='h-3 w-3 text-purple-600 animate-pulse' />
+              <Badge className='gap-1 border border-purple-500/30 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:text-purple-400'>
+                <Clock className='h-3 w-3 animate-pulse text-purple-600' />
                 Pengesahan Pengawas
               </Badge>
             )}
             {readiness?.status === 'revision_by_pengawas' && (
-              <Badge className='text-[10px] bg-destructive/15 text-destructive border border-destructive/30 py-0.5 px-2 gap-1 font-semibold'>
+              <Badge className='gap-1 border border-destructive/30 bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive'>
                 <AlertCircle className='h-3 w-3 text-destructive' />
                 Revisi Pengawas
               </Badge>
             )}
 
             {/* Micro Progress Bar & Percentage */}
-            <div className='flex items-center gap-2 text-xs pl-1.5 border-l border-border/60'>
-              <span className='text-xs font-medium text-muted-foreground hidden lg:inline'>
+            <div className='flex items-center gap-2 border-l border-border/60 pl-1.5 text-xs'>
+              <span className='hidden text-xs font-medium text-muted-foreground lg:inline'>
                 Progres ({completedCount}/{totalSteps}):
               </span>
-              <div className='w-16 sm:w-20 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border border-border/60'>
+              <div className='h-1.5 w-16 overflow-hidden rounded-full border border-border/60 bg-slate-200 sm:w-20 dark:bg-slate-700'>
                 <div
                   className={cn(
-                    'h-full transition-all duration-500 rounded-full',
+                    'h-full rounded-full transition-all duration-500',
                     progressPercentage === 100 ? 'bg-emerald-500' : 'bg-primary'
                   )}
                   style={{ width: `${Math.max(progressPercentage, 5)}%` }}
@@ -196,7 +197,7 @@ export function RisikoWizardHeader({
               <Button
                 type='button'
                 size='sm'
-                className='h-7.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs font-semibold'
+                className='h-7.5 gap-1.5 bg-emerald-600 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700'
                 onClick={() => setSubmitOpen(true)}
               >
                 <Send className='h-3 w-3' />
@@ -209,7 +210,7 @@ export function RisikoWizardHeader({
               <Button
                 type='button'
                 size='sm'
-                className='h-7.5 text-xs bg-sky-600 hover:bg-sky-700 text-white gap-1.5 shadow-xs font-semibold'
+                className='h-7.5 gap-1.5 bg-sky-600 text-xs font-semibold text-white shadow-xs hover:bg-sky-700'
                 onClick={() => setIsKepalaReviewOpen(true)}
               >
                 <ClipboardCheck className='h-3.5 w-3.5' />
@@ -222,7 +223,7 @@ export function RisikoWizardHeader({
               <Button
                 type='button'
                 size='sm'
-                className='h-7.5 text-xs bg-amber-600 hover:bg-amber-700 text-white gap-1.5 shadow-xs font-semibold'
+                className='h-7.5 gap-1.5 bg-amber-600 text-xs font-semibold text-white shadow-xs hover:bg-amber-700'
                 onClick={() => setIsKepalaDelegateOpen(true)}
               >
                 <ArrowRightCircle className='h-3.5 w-3.5' />

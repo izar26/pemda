@@ -1,4 +1,7 @@
 import { useMemo } from 'react'
+import { format, parseISO } from 'date-fns'
+import { type ReadinessResponse } from '@/services/pengajuan-risiko-service'
+import { id as idLocale } from 'date-fns/locale'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -8,9 +11,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { type ReadinessResponse } from '@/services/pengajuan-risiko-service'
-import { format, parseISO } from 'date-fns'
-import { id as idLocale } from 'date-fns/locale'
 
 interface ApprovalTierStepperProps {
   readiness?: ReadinessResponse
@@ -164,7 +164,8 @@ export function ApprovalTierStepper({
         state: opState,
         dateText: formatDate(submission?.submitted_at),
         statusLabel: opStatus,
-        description: 'Penyusunan lembar kerja identifikasi dan analisis risiko oleh operator perangkat daerah.',
+        description:
+          'Penyusunan lembar kerja identifikasi dan analisis risiko oleh operator perangkat daerah.',
       },
       {
         id: 2,
@@ -172,9 +173,13 @@ export function ApprovalTierStepper({
         roleTitle: 'Kepala OPD',
         actorName: readiness?.kepala_opd?.name || 'Pimpinan OPD',
         state: kepState,
-        dateText: formatDate(submission?.kepala_opd_approved_at || submission?.approved_by_kepala_opd_at),
+        dateText: formatDate(
+          submission?.kepala_opd_approved_at ||
+            submission?.approved_by_kepala_opd_at
+        ),
         statusLabel: kepStatus,
-        description: 'Tinjauan strategis dan persetujuan internal oleh Kepala Perangkat Daerah.',
+        description:
+          'Tinjauan strategis dan persetujuan internal oleh Kepala Perangkat Daerah.',
       },
       {
         id: 3,
@@ -182,9 +187,12 @@ export function ApprovalTierStepper({
         roleTitle: 'Auditor Pengawas',
         actorName: readiness?.assigned_auditor?.name || 'Inspektorat (Auditor)',
         state: audState,
-        dateText: formatDate(submission?.auditor_reviewed_at || submission?.approved_by_auditor_at),
+        dateText: formatDate(
+          submission?.auditor_reviewed_at || submission?.approved_by_auditor_at
+        ),
         statusLabel: audStatus,
-        description: 'Pemeriksaan kesesuaian metodologi, kepatuhan kriteria, dan validasi data oleh Auditor APIP.',
+        description:
+          'Pemeriksaan kesesuaian metodologi, kepatuhan kriteria, dan validasi data oleh Auditor APIP.',
       },
       {
         id: 4,
@@ -192,9 +200,13 @@ export function ApprovalTierStepper({
         roleTitle: 'Pengawas APIP',
         actorName: 'Inspektur / Pengawas',
         state: pengState,
-        dateText: formatDate(submission?.pengawas_approved_at || submission?.approved_by_pengawas_at),
+        dateText: formatDate(
+          submission?.pengawas_approved_at ||
+            submission?.approved_by_pengawas_at
+        ),
         statusLabel: pengStatus,
-        description: 'Pengesahan berjenjang tingkat inspektorat daerah sebelum berkas ditetapkan sah.',
+        description:
+          'Pengesahan berjenjang tingkat inspektorat daerah sebelum berkas ditetapkan sah.',
       },
       {
         id: 5,
@@ -204,7 +216,8 @@ export function ApprovalTierStepper({
         state: finState,
         dateText: formatDate(submission?.approved_at),
         statusLabel: finStatus,
-        description: 'Dokumen Manajemen Risiko resmi disahkan dan menjadi pedoman tindak lanjut instansi.',
+        description:
+          'Dokumen Manajemen Risiko resmi disahkan dan menjadi pedoman tindak lanjut instansi.',
       },
     ]
   }, [status, tier, submission, readiness])
@@ -220,7 +233,8 @@ export function ApprovalTierStepper({
           line: 'bg-emerald-500',
           text: 'text-foreground font-semibold',
           sub: 'text-emerald-600 dark:text-emerald-400 font-medium',
-          badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+          badge:
+            'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
         }
       case 'active':
         return {
@@ -257,26 +271,30 @@ export function ApprovalTierStepper({
     <TooltipProvider delayDuration={200}>
       <div
         className={cn(
-          'w-full rounded-xl border border-border/80 bg-card/60 p-3 sm:p-4 shadow-2xs backdrop-blur-xs',
+          'w-full rounded-xl border border-border/80 bg-card/60 p-3 shadow-2xs backdrop-blur-xs sm:p-4',
           className
         )}
       >
-        <div className='flex items-center justify-between mb-3 px-1'>
+        <div className='mb-3 flex items-center justify-between px-1'>
           <div className='flex items-center gap-2'>
             <span className='text-xs font-bold tracking-tight text-foreground uppercase'>
               Alur Verifikasi 4-Tier Berjenjang
             </span>
             <span className='text-[11px] text-muted-foreground'>
-              (Operator &rarr; Kepala OPD &rarr; Auditor &rarr; Pengawas &rarr; Disahkan)
+              (Operator &rarr; Kepala OPD &rarr; Auditor &rarr; Pengawas &rarr;
+              Disahkan)
             </span>
           </div>
-          <Badge variant='outline' className='text-[10px] font-mono px-2 py-0.5'>
+          <Badge
+            variant='outline'
+            className='px-2 py-0.5 font-mono text-[10px]'
+          >
             Status: {status}
           </Badge>
         </div>
 
         {/* Stepper Grid / Flex */}
-        <div className='grid grid-cols-1 sm:grid-cols-5 gap-3 sm:gap-2 relative'>
+        <div className='relative grid grid-cols-1 gap-3 sm:grid-cols-5 sm:gap-2'>
           {nodes.map((node, index) => {
             const isLast = index === nodes.length - 1
             const styles = getNodeStyles(node.state)
@@ -284,12 +302,12 @@ export function ApprovalTierStepper({
             return (
               <Tooltip key={node.id}>
                 <TooltipTrigger asChild>
-                  <div className='relative flex flex-row sm:flex-col items-center sm:items-center text-left sm:text-center group cursor-default p-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer'>
+                  <div className='group relative flex cursor-default cursor-pointer flex-row items-center rounded-lg p-2 text-left transition-colors hover:bg-accent/50 sm:flex-col sm:items-center sm:text-center'>
                     {/* Connecting line for desktop */}
                     {!isLast && (
                       <div
                         className={cn(
-                          'hidden sm:block absolute top-[22px] left-[50%] right-[-50%] h-[2px] z-0 transition-colors',
+                          'absolute top-[22px] right-[-50%] left-[50%] z-0 hidden h-[2px] transition-colors sm:block',
                           styles.line
                         )}
                       />
@@ -298,7 +316,7 @@ export function ApprovalTierStepper({
                     {/* Step Icon / Circle */}
                     <div
                       className={cn(
-                        'relative z-10 flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all',
+                        'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all sm:h-9 sm:w-9',
                         styles.circle
                       )}
                     >
@@ -312,19 +330,21 @@ export function ApprovalTierStepper({
                     </div>
 
                     {/* Node Details */}
-                    <div className='ml-3 sm:ml-0 sm:mt-2 min-w-0 flex-1 space-y-0.5'>
-                      <div className='flex items-center sm:justify-center gap-1.5'>
-                        <span className={cn('text-xs line-clamp-1', styles.text)}>
+                    <div className='ml-3 min-w-0 flex-1 space-y-0.5 sm:mt-2 sm:ml-0'>
+                      <div className='flex items-center gap-1.5 sm:justify-center'>
+                        <span
+                          className={cn('line-clamp-1 text-xs', styles.text)}
+                        >
                           {node.roleTitle}
                         </span>
                       </div>
-                      <p className='text-[11px] text-muted-foreground truncate max-w-[150px] sm:mx-auto'>
+                      <p className='max-w-[150px] truncate text-[11px] text-muted-foreground sm:mx-auto'>
                         {node.actorName}
                       </p>
                       <Badge
                         variant='outline'
                         className={cn(
-                          'text-[10px] font-medium px-1.5 py-0 leading-none h-4.5',
+                          'h-4.5 px-1.5 py-0 text-[10px] leading-none font-medium',
                           styles.badge
                         )}
                       >
@@ -338,30 +358,40 @@ export function ApprovalTierStepper({
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side='bottom' className='max-w-xs text-xs p-3 space-y-2'>
+                <TooltipContent
+                  side='bottom'
+                  className='max-w-xs space-y-2 p-3 text-xs'
+                >
                   <div className='flex items-center justify-between gap-2 border-b border-border/60 pb-1.5'>
-                    <span className='font-bold text-foreground text-xs'>
+                    <span className='text-xs font-bold text-foreground'>
                       {node.tierName}: {node.roleTitle}
                     </span>
                     <Badge
                       variant='outline'
-                      className={cn('text-[10px] font-medium px-1.5 py-0 leading-tight', styles.badge)}
+                      className={cn(
+                        'px-1.5 py-0 text-[10px] leading-tight font-medium',
+                        styles.badge
+                      )}
                     >
                       {node.statusLabel}
                     </Badge>
                   </div>
-                  <p className='text-muted-foreground leading-relaxed text-[11px]'>
+                  <p className='text-[11px] leading-relaxed text-muted-foreground'>
                     {node.description}
                   </p>
-                  <div className='pt-1.5 border-t border-border/60 text-[11px] space-y-1'>
+                  <div className='space-y-1 border-t border-border/60 pt-1.5 text-[11px]'>
                     <div className='flex items-center justify-between text-muted-foreground'>
                       <span>Penanggung Jawab:</span>
-                      <span className='font-semibold text-foreground'>{node.actorName}</span>
+                      <span className='font-semibold text-foreground'>
+                        {node.actorName}
+                      </span>
                     </div>
                     {node.dateText && (
                       <div className='flex items-center justify-between text-muted-foreground'>
                         <span>Waktu Tindakan:</span>
-                        <span className='font-mono text-foreground'>{node.dateText}</span>
+                        <span className='font-mono text-foreground'>
+                          {node.dateText}
+                        </span>
                       </div>
                     )}
                   </div>

@@ -1,7 +1,7 @@
+import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
 import { Clock, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
 import { ApprovalTierStepper } from '../approval-tier-stepper'
 
 export interface RisikoWorkflowBannersProps {
@@ -120,7 +120,8 @@ export function RisikoWorkflowBanners({
           kondisi:
             'Pengawas APIP meminta klarifikasi teknis kepada Auditor Pengawas sebelum pengesahan final diterbitkan.',
           tindakan:
-            readiness.can_forward_revision_auditor || readiness.can_review_auditor
+            readiness.can_forward_revision_auditor ||
+            readiness.can_review_auditor
               ? 'Auditor Pengawas dapat meninjau catatan pengawas, meneruskan perbaikan ke OPD, atau mengajukan kembali ke Pengawas.'
               : 'Berkas sedang dalam penanganan klarifikasi teknis antara Pengawas dan Auditor.',
           langkahBerikutnya:
@@ -157,16 +158,19 @@ export function RisikoWorkflowBanners({
     ) || []
 
   return (
-    <div className='space-y-3 mb-3'>
+    <div className='mb-3 space-y-3'>
       {hasAuditorWarning && (
-        <div className='flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-start'>
-          <ShieldAlert className='h-4.5 w-4.5 shrink-0 mt-0.5' />
+        <div className='flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-start text-destructive'>
+          <ShieldAlert className='mt-0.5 h-4.5 w-4.5 shrink-0' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
               Belum Ada Auditor Pengawas yang Ditugaskan
             </p>
-            <p className='text-muted-foreground leading-relaxed'>
-              Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang ditetapkan oleh Inspektorat. Pengisian lembar kerja berstatus <strong>read-only</strong> hingga Inspektorat menetapkan penugasan auditor binaan.
+            <p className='leading-relaxed text-muted-foreground'>
+              Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang
+              ditetapkan oleh Inspektorat. Pengisian lembar kerja berstatus{' '}
+              <strong>read-only</strong> hingga Inspektorat menetapkan penugasan
+              auditor binaan.
             </p>
           </div>
         </div>
@@ -177,16 +181,16 @@ export function RisikoWorkflowBanners({
       {guidance && (
         <div
           className={cn(
-            'rounded-xl border p-3.5 sm:p-4 text-xs transition-colors shadow-2xs',
+            'rounded-xl border p-3.5 text-xs shadow-2xs transition-colors sm:p-4',
             guidance.borderCls
           )}
         >
-          <div className='flex items-center justify-between gap-2 pb-2.5 border-b border-border/50'>
+          <div className='flex items-center justify-between gap-2 border-b border-border/50 pb-2.5'>
             <div className='flex items-center gap-2'>
               <guidance.headerIcon
                 className={cn('h-4 w-4 shrink-0', guidance.headerIconCls)}
               />
-              <span className='font-bold text-foreground text-xs sm:text-sm'>
+              <span className='text-xs font-bold text-foreground sm:text-sm'>
                 {guidance.title}
               </span>
             </div>
@@ -195,8 +199,8 @@ export function RisikoWorkflowBanners({
             </Badge>
           </div>
 
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 text-[11px] leading-relaxed'>
-            <div className='space-y-1 p-2 rounded-lg bg-background/60 border border-border/40'>
+          <div className='grid grid-cols-1 gap-3 pt-3 text-[11px] leading-relaxed md:grid-cols-3'>
+            <div className='space-y-1 rounded-lg border border-border/40 bg-background/60 p-2'>
               <div className='flex items-center gap-1.5 font-bold text-foreground'>
                 <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary'>
                   1
@@ -206,7 +210,7 @@ export function RisikoWorkflowBanners({
               <p className='text-muted-foreground'>{guidance.kondisi}</p>
             </div>
 
-            <div className='space-y-1 p-2 rounded-lg bg-background/60 border border-border/40'>
+            <div className='space-y-1 rounded-lg border border-border/40 bg-background/60 p-2'>
               <div className='flex items-center gap-1.5 font-bold text-foreground'>
                 <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary'>
                   2
@@ -216,24 +220,26 @@ export function RisikoWorkflowBanners({
               <p className='text-muted-foreground'>{guidance.tindakan}</p>
             </div>
 
-            <div className='space-y-1 p-2 rounded-lg bg-background/60 border border-border/40'>
+            <div className='space-y-1 rounded-lg border border-border/40 bg-background/60 p-2'>
               <div className='flex items-center gap-1.5 font-bold text-foreground'>
                 <span className='flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] text-primary'>
                   3
                 </span>
                 <span>Langkah Selanjutnya</span>
               </div>
-              <p className='text-muted-foreground'>{guidance.langkahBerikutnya}</p>
+              <p className='text-muted-foreground'>
+                {guidance.langkahBerikutnya}
+              </p>
             </div>
           </div>
 
           {rejectedItems.length > 0 && (
-            <div className='mt-3 pt-2.5 border-t border-border/50 space-y-2'>
-              <span className='font-bold text-destructive text-[11px] uppercase tracking-wide flex items-center gap-1.5'>
+            <div className='mt-3 space-y-2 border-t border-border/50 pt-2.5'>
+              <span className='flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-destructive uppercase'>
                 <AlertCircle className='h-3.5 w-3.5' />
                 Rincian Catatan Perbaikan Formulir:
               </span>
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+              <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
                 {rejectedItems.map((item) => {
                   const note =
                     item.catatan_kepala_opd ||
@@ -244,9 +250,9 @@ export function RisikoWorkflowBanners({
                   return (
                     <div
                       key={item.id}
-                      className='p-2 rounded-md bg-destructive/10 border border-destructive/20 text-[11px] text-foreground space-y-0.5'
+                      className='space-y-0.5 rounded-md border border-destructive/20 bg-destructive/10 p-2 text-[11px] text-foreground'
                     >
-                      <span className='font-bold uppercase text-destructive mr-1.5'>
+                      <span className='mr-1.5 font-bold text-destructive uppercase'>
                         Form {item.form_code}:
                       </span>
                       <span className='text-muted-foreground'>{note}</span>

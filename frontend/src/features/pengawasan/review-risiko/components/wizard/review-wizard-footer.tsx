@@ -19,14 +19,14 @@ export function ReviewWizardFooter({
   onNext,
 }: ReviewWizardFooterProps) {
   return (
-    <div className='p-3 sm:p-3.5 border-t bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5'>
+    <div className='flex flex-col justify-between gap-2.5 border-t bg-muted/20 p-3 sm:flex-row sm:items-center sm:p-3.5'>
       <Button
         type='button'
         variant='outline'
         size='sm'
         disabled={currentStepIndex === 0}
         onClick={onPrev}
-        className='h-8 text-xs gap-1.5 font-medium'
+        className='h-8 gap-1.5 text-xs font-medium'
       >
         <ChevronLeft className='h-4 w-4' />
         <span>Langkah Sebelumnya</span>
@@ -36,7 +36,7 @@ export function ReviewWizardFooter({
         <span>
           Langkah {currentStepIndex + 1} dari {totalSteps}:
         </span>
-        <strong className='text-foreground font-semibold'>
+        <strong className='font-semibold text-foreground'>
           {currentStepCode} ({currentStepTitle})
         </strong>
       </div>
@@ -47,7 +47,7 @@ export function ReviewWizardFooter({
         size='sm'
         disabled={currentStepIndex === totalSteps - 1}
         onClick={onNext}
-        className='h-8 text-xs gap-1.5 font-medium'
+        className='h-8 gap-1.5 text-xs font-medium'
       >
         <span>Langkah Selanjutnya</span>
         <ChevronRight className='h-4 w-4' />

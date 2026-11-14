@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import type { AxiosError } from 'axios'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import {
   pengajuanRisikoService,
   type ReadinessResponse,
 } from '@/services/pengajuan-risiko-service'
+import { toast } from 'sonner'
 
 interface UseRisikoSubmissionProps {
   readiness?: ReadinessResponse
@@ -25,11 +25,14 @@ export function useRisikoSubmission({
   controlledSetIsSubmitDialogOpen,
 }: UseRisikoSubmissionProps) {
   const queryClient = useQueryClient()
-  const [internalSubmitDialogOpen, setInternalSubmitDialogOpen] = useState(false)
+  const [internalSubmitDialogOpen, setInternalSubmitDialogOpen] =
+    useState(false)
 
   // Dialog states for Kepala OPD
   const [isKepalaReviewOpen, setIsKepalaReviewOpen] = useState(false)
-  const [kepalaAction, setKepalaAction] = useState<'approved' | 'rejected'>('approved')
+  const [kepalaAction, setKepalaAction] = useState<'approved' | 'rejected'>(
+    'approved'
+  )
   const [kepalaNotes, setKepalaNotes] = useState('')
   const [kepalaFormCode, setKepalaFormCode] = useState('')
 
@@ -68,7 +71,10 @@ export function useRisikoSubmission({
       )
     },
     onSuccess: async (res) => {
-      toast.success(res.message || 'Lembar kerja risiko berhasil diajukan kepada Kepala OPD.')
+      toast.success(
+        res.message ||
+          'Lembar kerja risiko berhasil diajukan kepada Kepala OPD.'
+      )
       setSubmitOpen(false)
 
       try {
@@ -85,15 +91,23 @@ export function useRisikoSubmission({
       }
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['risiko-pengajuan-readiness'],
+        }),
         queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
         queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
-        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['risiko-operasional-current'],
+        }),
       ])
       onSubmissionSuccess?.()
     },
-    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
-      queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] })
+    onError: (
+      err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>
+    ) => {
+      queryClient.invalidateQueries({
+        queryKey: ['risiko-pengajuan-readiness'],
+      })
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.forms?.[0] ||
@@ -118,14 +132,20 @@ export function useRisikoSubmission({
       setKepalaFormCode('')
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['risiko-pengajuan-readiness'],
+        }),
         queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
         queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
-        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['risiko-operasional-current'],
+        }),
       ])
       onSubmissionSuccess?.()
     },
-    onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
+    onError: (
+      err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>
+    ) => {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.catatan?.[0] ||
@@ -141,28 +161,37 @@ export function useRisikoSubmission({
         catatan: delegateNotes.trim() || undefined,
       }),
     onSuccess: async (res) => {
-      toast.success(res.message || 'Instruksi revisi berhasil didelegasikan kepada Operator.')
+      toast.success(
+        res.message ||
+          'Instruksi revisi berhasil didelegasikan kepada Operator.'
+      )
       setIsKepalaDelegateOpen(false)
       setDelegateNotes('')
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['risiko-pengajuan-readiness'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['risiko-pengajuan-readiness'],
+        }),
         queryClient.invalidateQueries({ queryKey: ['pengawasan'] }),
         queryClient.invalidateQueries({ queryKey: ['risiko-konteks-current'] }),
-        queryClient.invalidateQueries({ queryKey: ['risiko-operasional-current'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['risiko-operasional-current'],
+        }),
       ])
       onSubmissionSuccess?.()
     },
     onError: (err: AxiosError<{ message?: string }>) => {
-      const msg = err.response?.data?.message || 'Gagal mendelegasikan revisi ke Operator.'
+      const msg =
+        err.response?.data?.message ||
+        'Gagal mendelegasikan revisi ke Operator.'
       toast.error(msg)
     },
   })
 
   const showOperatorSubmitButton = Boolean(
     readiness?.can_submit_to_kepala &&
-      !readiness?.is_locked_for_operator &&
-      !submitToKepalaMutation.isPending
+    !readiness?.is_locked_for_operator &&
+    !submitToKepalaMutation.isPending
   )
 
   const showKepalaReviewButton = Boolean(

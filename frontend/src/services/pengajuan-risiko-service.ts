@@ -157,6 +157,13 @@ export interface ReadinessResponse {
   is_5_approved?: boolean
   is_6_approved?: boolean
   is_rca_complete?: boolean
+  form_completeness?: Record<
+    string,
+    {
+      is_complete: boolean
+      [key: string]: unknown
+    }
+  >
   is_2b_approved?: boolean
   is_2c_approved?: boolean
   is_3a_approved?: boolean
@@ -354,20 +361,91 @@ export const pengajuanRisikoService = {
   },
 
   /**
-   * Get detail of an OPD risk submission.
+   * Universal method to get review data for any form.
    */
-  async getReviewPage<T>(submissionId: string, form: '3a' | '3b' | '3c' | 'rca' | '4' | '5' | '6', page: number, search: string, source = '', status = ''): Promise<{ data: T; meta: { current_page: number; last_page: number; per_page: number; total: number } | null }> {
-    const response = await apiClient.get<{ data: T; meta: { current_page: number; last_page: number; per_page: number; total: number } | null }>(`/pengawasan/review-risiko/${submissionId}/forms/${form}`, { params: { page, per_page: 20, search: search || undefined, source: source || undefined, status: status || undefined } })
+  async getReviewFormData<T = unknown>(
+    submissionId: string,
+    form: string,
+    params?: {
+      page?: number
+      per_page?: number
+      search?: string
+      source?: string
+      status?: string
+    }
+  ): Promise<{
+    data: T
+    meta?: {
+      current_page: number
+      last_page: number
+      per_page: number
+      total: number
+    } | null
+  }> {
+    const response = await apiClient.get<{
+      data: T
+      meta?: {
+        current_page: number
+        last_page: number
+        per_page: number
+        total: number
+      } | null
+    }>(`/pengawasan/review-risiko/${submissionId}/forms/${form}`, {
+      params: { ...params, per_page: params?.per_page || 20 },
+    })
     return response.data
   },
 
-  async getReviewForm<T>(submissionId: string, form: '2b' | '2c' | '3a' | '3b' | '3c' | 'rca' | '4'): Promise<T> {
-    const response = await apiClient.get<{ data: T }>(`/pengawasan/review-risiko/${submissionId}/forms/${form}`)
+  /**
+   * Get detail of an OPD risk submission.
+   */
+  async getReviewPage<T>(
+    submissionId: string,
+    form: string,
+    page: number,
+    search: string,
+    source = '',
+    status = ''
+  ): Promise<{
+    data: T
+    meta: {
+      current_page: number
+      last_page: number
+      per_page: number
+      total: number
+    } | null
+  }> {
+    const response = await apiClient.get<{
+      data: T
+      meta: {
+        current_page: number
+        last_page: number
+        per_page: number
+        total: number
+      } | null
+    }>(`/pengawasan/review-risiko/${submissionId}/forms/${form}`, {
+      params: {
+        page,
+        per_page: 20,
+        search: search || undefined,
+        source: source || undefined,
+        status: status || undefined,
+      },
+    })
+    return response.data
+  },
+
+  async getReviewForm<T>(submissionId: string, form: string): Promise<T> {
+    const response = await apiClient.get<{ data: T }>(
+      `/pengawasan/review-risiko/${submissionId}/forms/${form}`
+    )
     return response.data.data
   },
 
   async startReview(submissionId: string): Promise<PengajuanPenilaianRisiko> {
-    const response = await apiClient.post<{ data: PengajuanPenilaianRisiko }>(`/pengawasan/review-risiko/${submissionId}/start`)
+    const response = await apiClient.post<{ data: PengajuanPenilaianRisiko }>(
+      `/pengawasan/review-risiko/${submissionId}/start`
+    )
     return response.data.data
   },
 
@@ -410,7 +488,10 @@ export const pengajuanRisikoService = {
     const response = await apiClient.post<{
       message: string
       data: PengajuanPenilaianRisiko
-    }>(`/pengawasan/review-risiko/${submissionId}/forward-revision`, payload || {})
+    }>(
+      `/pengawasan/review-risiko/${submissionId}/forward-revision`,
+      payload || {}
+    )
     return response.data
   },
 
@@ -426,7 +507,10 @@ export const pengajuanRisikoService = {
     const response = await apiClient.post<{
       message: string
       data: PengajuanPenilaianRisiko
-    }>(`/pengawasan/review-risiko/${submissionId}/resubmit-pengawas`, payload || {})
+    }>(
+      `/pengawasan/review-risiko/${submissionId}/resubmit-pengawas`,
+      payload || {}
+    )
     return response.data
   },
 

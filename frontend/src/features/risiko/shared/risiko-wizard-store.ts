@@ -1,10 +1,10 @@
-import { create } from 'zustand'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '@/stores/auth-store'
 import { opdService } from '@/services/opd-service'
+import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
 import { perencanaanService } from '@/services/perencanaan-service'
 import { risikoService } from '@/services/risiko-service'
-import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
+import { create } from 'zustand'
+import { useAuthStore } from '@/stores/auth-store'
 
 export type RisikoWizardStepId =
   | '2b'
@@ -62,7 +62,8 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     code: '3A',
     title: 'Identifikasi Risiko Pemda (3A)',
     shortTitle: 'Identifikasi Pemda',
-    subtitle: 'Identifikasi Pernyataan Risiko Strategis Pemda Berdasarkan Urusan',
+    subtitle:
+      'Identifikasi Pernyataan Risiko Strategis Pemda Berdasarkan Urusan',
     url: '/risiko/identifikasi-pemda',
     requiredPermission: 'identifikasi_risiko_pemda.view',
     isImplemented: true,
@@ -95,7 +96,8 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     code: 'RCA',
     title: 'Root Cause Analysis (RCA)',
     shortTitle: 'Analisis RCA',
-    subtitle: 'Analisis Mendalam Akar Masalah (5-Whys) untuk Risiko 3A, 3B & 3C',
+    subtitle:
+      'Analisis Mendalam Akar Masalah (5-Whys) untuk Risiko 3A, 3B & 3C',
     url: '/risiko/rca',
     requiredPermission: 'rca.view',
     isImplemented: true,
@@ -167,13 +169,15 @@ export function useRisikoWizardProgress(enabled = true) {
 
   const isOpdRole = Boolean(
     userRoles.includes('OPD') &&
-      !userRoles.includes('Superadmin') &&
-      !userRoles.includes('Admin Office')
+    !userRoles.includes('Superadmin') &&
+    !userRoles.includes('Admin Office')
   )
 
   const isScopedAuditor = Boolean(
     userRoles.includes('Auditor') &&
-      !userRoles.some((r) => ['Superadmin', 'Admin Office', 'Inspektorat'].includes(r))
+    !userRoles.some((r) =>
+      ['Superadmin', 'Admin Office', 'Inspektorat'].includes(r)
+    )
   )
 
   // Fetch active evaluation period
@@ -200,11 +204,17 @@ export function useRisikoWizardProgress(enabled = true) {
 
   const defaultAdminOpdId = (() => {
     // If selectedOpdId is valid in the loaded OPD list, keep it
-    if (selectedOpdId && opds.some((o) => String(o.id) === String(selectedOpdId))) {
+    if (
+      selectedOpdId &&
+      opds.some((o) => String(o.id) === String(selectedOpdId))
+    ) {
       return selectedOpdId
     }
     // If the user has an assigned OPD that exists in the list, prefer it
-    if (user?.opd_id && opds.some((o) => String(o.id) === String(user.opd_id))) {
+    if (
+      user?.opd_id &&
+      opds.some((o) => String(o.id) === String(user.opd_id))
+    ) {
       return String(user.opd_id)
     }
     // For non-auditors, prefer prominent OPD with data (e.g. DPUTR, Dinkes, Diskominfo) before first index
@@ -234,7 +244,11 @@ export function useRisikoWizardProgress(enabled = true) {
         opd_id: effectiveOpdId,
         periode_penilaian_id: activePeriode?.id,
       }),
-    enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
+    enabled:
+      Boolean(user) &&
+      Boolean(effectiveOpdId) &&
+      Boolean(activePeriode?.id) &&
+      enabled,
   })
 
   // Fetch Form 3A (Identifikasi Risiko Pemda)
@@ -249,7 +263,11 @@ export function useRisikoWizardProgress(enabled = true) {
         opd_id: effectiveOpdId,
         periode_penilaian_id: activePeriode?.id,
       }),
-    enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
+    enabled:
+      Boolean(user) &&
+      Boolean(effectiveOpdId) &&
+      Boolean(activePeriode?.id) &&
+      enabled,
   })
 
   // Fetch Form 3B (Identifikasi Risiko Strategis OPD)
@@ -264,7 +282,11 @@ export function useRisikoWizardProgress(enabled = true) {
         opd_id: effectiveOpdId,
         periode_penilaian_id: activePeriode?.id,
       }),
-    enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
+    enabled:
+      Boolean(user) &&
+      Boolean(effectiveOpdId) &&
+      Boolean(activePeriode?.id) &&
+      enabled,
   })
 
   // Fetch Form 3C (Identifikasi Risiko Operasional OPD)
@@ -279,7 +301,11 @@ export function useRisikoWizardProgress(enabled = true) {
         opd_id: effectiveOpdId,
         periode_penilaian_id: activePeriode?.id,
       }),
-    enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
+    enabled:
+      Boolean(user) &&
+      Boolean(effectiveOpdId) &&
+      Boolean(activePeriode?.id) &&
+      enabled,
   })
 
   // Fetch submission & auditor readiness
@@ -294,7 +320,11 @@ export function useRisikoWizardProgress(enabled = true) {
         opd_id: effectiveOpdId,
         periode_penilaian_id: activePeriode?.id,
       }),
-    enabled: Boolean(user) && Boolean(effectiveOpdId) && Boolean(activePeriode?.id) && enabled,
+    enabled:
+      Boolean(user) &&
+      Boolean(effectiveOpdId) &&
+      Boolean(activePeriode?.id) &&
+      enabled,
     staleTime: 0,
   })
 
@@ -308,51 +338,56 @@ export function useRisikoWizardProgress(enabled = true) {
   const meta3C = identifikasi3CResponse?.meta ?? null
 
   const isStep2BCompleted = Boolean(
-    konteks2B &&
+    readiness?.form_completeness?.['2b']?.is_complete ??
+    readiness?.is_2b_complete ??
+    (konteks2B &&
       konteks2B.sumber_data_id &&
       konteks2B.tujuan_penilaian_id &&
       (konteks2B.sasarans?.length || 0) > 0 &&
-      (konteks2B.indikators?.length || 0) > 0
+      (konteks2B.indikators?.length || 0) > 0)
   )
 
   const isStep2CCompleted = Boolean(
-    isStep2BCompleted && (opdMeta?.operasional_summary?.programs_count || 0) > 0
+    readiness?.form_completeness?.['2c']?.is_complete ??
+    readiness?.is_2c_complete ??
+    (isStep2BCompleted &&
+      (opdMeta?.operasional_summary?.programs_count || 0) > 0)
   )
 
   const isStep3ACompleted = Boolean(
+    readiness?.form_completeness?.['3a']?.is_complete ??
     readiness?.is_3a_complete ??
-      (isStep2CCompleted &&
-        dokumen3A &&
-        dokumen3A.master_urusan_pemerintahan_id &&
-        (dokumen3A.items?.length || 0) > 0)
+    (isStep2CCompleted &&
+      dokumen3A &&
+      dokumen3A.master_urusan_pemerintahan_id &&
+      (dokumen3A.items?.length || 0) > 0)
   )
 
   const isStep3BCompleted = Boolean(
+    readiness?.form_completeness?.['3b']?.is_complete ??
     readiness?.is_3b_complete ??
-      (isStep3ACompleted &&
-        dokumen3B &&
-        (dokumen3B.items?.length || 0) > 0)
+    (isStep3ACompleted && dokumen3B && (dokumen3B.items?.length || 0) > 0)
   )
 
   const isStep3CCompleted = Boolean(
+    readiness?.form_completeness?.['3c']?.is_complete ??
     readiness?.is_3c_complete ??
-      (isStep3BCompleted &&
-        dokumen3C &&
-        (dokumen3C.items?.length || 0) > 0)
+    (isStep3BCompleted && dokumen3C && (dokumen3C.items?.length || 0) > 0)
   )
 
   const isStepRCACompleted = Boolean(
+    readiness?.form_completeness?.['rca']?.is_complete ??
     readiness?.is_rca_complete ??
-      (isStep3CCompleted &&
-        dokumen3A?.items &&
-        dokumen3A.items.length > 0 &&
-        dokumen3A.items.every((it) => it.has_rca) &&
-        dokumen3B?.items &&
-        dokumen3B.items.length > 0 &&
-        dokumen3B.items.every((it) => it.has_rca) &&
-        dokumen3C?.items &&
-        dokumen3C.items.length > 0 &&
-        dokumen3C.items.every((it) => it.has_rca))
+    (isStep3CCompleted &&
+      dokumen3A?.items &&
+      dokumen3A.items.length > 0 &&
+      dokumen3A.items.every((it) => it.has_rca) &&
+      dokumen3B?.items &&
+      dokumen3B.items.length > 0 &&
+      dokumen3B.items.every((it) => it.has_rca) &&
+      dokumen3C?.items &&
+      dokumen3C.items.length > 0 &&
+      dokumen3C.items.every((it) => it.has_rca))
   )
 
   const steps: ResolvedWizardStep[] = RISIKO_WIZARD_STEPS.map((step) => {
@@ -361,7 +396,11 @@ export function useRisikoWizardProgress(enabled = true) {
         ...step,
         isCompleted: isStep2BCompleted,
         isUnlocked: Boolean(activePeriode),
-        status: isStep2BCompleted ? 'completed' : activePeriode ? 'available' : 'locked',
+        status: isStep2BCompleted
+          ? 'completed'
+          : activePeriode
+            ? 'available'
+            : 'locked',
       }
     }
 
@@ -371,7 +410,11 @@ export function useRisikoWizardProgress(enabled = true) {
         ...step,
         isCompleted: isStep2CCompleted,
         isUnlocked,
-        status: !isUnlocked ? 'locked' : isStep2CCompleted ? 'completed' : 'available',
+        status: !isUnlocked
+          ? 'locked'
+          : isStep2CCompleted
+            ? 'completed'
+            : 'available',
       }
     }
 
@@ -381,7 +424,11 @@ export function useRisikoWizardProgress(enabled = true) {
         ...step,
         isCompleted: isStep3ACompleted,
         isUnlocked,
-        status: !isUnlocked ? 'locked' : isStep3ACompleted ? 'completed' : 'available',
+        status: !isUnlocked
+          ? 'locked'
+          : isStep3ACompleted
+            ? 'completed'
+            : 'available',
       }
     }
 
@@ -391,7 +438,11 @@ export function useRisikoWizardProgress(enabled = true) {
         ...step,
         isCompleted: isStep3BCompleted,
         isUnlocked,
-        status: !isUnlocked ? 'locked' : isStep3BCompleted ? 'completed' : 'available',
+        status: !isUnlocked
+          ? 'locked'
+          : isStep3BCompleted
+            ? 'completed'
+            : 'available',
       }
     }
 
@@ -401,7 +452,11 @@ export function useRisikoWizardProgress(enabled = true) {
         ...step,
         isCompleted: isStep3CCompleted,
         isUnlocked,
-        status: !isUnlocked ? 'locked' : isStep3CCompleted ? 'completed' : 'available',
+        status: !isUnlocked
+          ? 'locked'
+          : isStep3CCompleted
+            ? 'completed'
+            : 'available',
       }
     }
 
@@ -411,27 +466,67 @@ export function useRisikoWizardProgress(enabled = true) {
         ...step,
         isCompleted: isStepRCACompleted,
         isUnlocked,
-        status: !isUnlocked ? 'locked' : isStepRCACompleted ? 'completed' : 'available',
+        status: !isUnlocked
+          ? 'locked'
+          : isStepRCACompleted
+            ? 'completed'
+            : 'available',
       }
     }
 
     if (step.id === '4') {
       const isUnlocked = Boolean(activePeriode) && isStepRCACompleted
-      const isCompleted = Boolean(readiness?.is_4_complete)
-      return { ...step, isCompleted, isUnlocked, status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available' }
+      const isCompleted = Boolean(
+        readiness?.form_completeness?.['4']?.is_complete ??
+        readiness?.is_4_complete
+      )
+      return {
+        ...step,
+        isCompleted,
+        isUnlocked,
+        status: !isUnlocked
+          ? 'locked'
+          : isCompleted
+            ? 'completed'
+            : 'available',
+      }
     }
 
     if (step.id === '5' || step.id === '6') {
       const isUnlocked = Boolean(activePeriode && readiness?.is_4_complete)
-      const isCompleted = Boolean(step.id === '5' ? readiness?.is_5_complete : readiness?.is_6_complete)
-      return { ...step, isCompleted, isUnlocked, status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available' }
+      const isCompleted = Boolean(
+        step.id === '5'
+          ? (readiness?.form_completeness?.['5']?.is_complete ??
+              readiness?.is_5_complete)
+          : (readiness?.form_completeness?.['6']?.is_complete ??
+              readiness?.is_6_complete)
+      )
+      return {
+        ...step,
+        isCompleted,
+        isUnlocked,
+        status: !isUnlocked
+          ? 'locked'
+          : isCompleted
+            ? 'completed'
+            : 'available',
+      }
     }
+
+    const formCode = step.id.toLowerCase()
+    const isCompleted = Boolean(
+      readiness?.form_completeness?.[formCode]?.is_complete ??
+      (readiness as Record<string, unknown> | undefined)?.[
+        `is_${formCode}_complete`
+      ]
+    )
+    const isUnlocked = Boolean(activePeriode && readiness?.is_6_complete)
 
     return {
       ...step,
-      isCompleted: false,
-      isUnlocked: false,
-      status: 'locked' as WizardStepStatus,
+      isCompleted,
+      isUnlocked,
+      status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available',
     }
   })
 

@@ -1,7 +1,12 @@
-import { AlertCircle, ArrowRightCircle, CheckCircle2, UserCheck } from 'lucide-react'
+import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
+import {
+  AlertCircle,
+  ArrowRightCircle,
+  CheckCircle2,
+  UserCheck,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -10,9 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
+import { Textarea } from '@/components/ui/textarea'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { KepalaFormSelect } from './kepala-form-select'
 
 export interface SubmissionDialogsProps {
@@ -65,8 +70,10 @@ export function SubmissionDialogs({
         title='Ajukan Lembar Kerja Risiko ke Kepala OPD?'
         desc={
           <span>
-            Seluruh data lembar kerja pengelolaan risiko (Form 2B dan Form 2C) akan diajukan kepada Kepala OPD (
-            <strong>{readiness?.kepala_opd?.name || 'Pimpinan OPD'}</strong>) untuk diverifikasi secara internal.
+            Seluruh data lembar kerja pengelolaan risiko (Form 2B dan Form 2C)
+            akan diajukan kepada Kepala OPD (
+            <strong>{readiness?.kepala_opd?.name || 'Pimpinan OPD'}</strong>)
+            untuk diverifikasi secara internal.
           </span>
         }
         confirmText='Ya, Ajukan ke Kepala OPD'
@@ -83,13 +90,17 @@ export function SubmissionDialogs({
               Persetujuan Internal Kepala OPD
             </DialogTitle>
             <DialogDescription className='text-xs'>
-              Sebagai Kepala OPD, Anda dapat menyetujui draf internal untuk diteruskan kepada Auditor Pengawas atau meminta revisi kepada Operator.
+              Sebagai Kepala OPD, Anda dapat menyetujui draf internal untuk
+              diteruskan kepada Auditor Pengawas atau meminta revisi kepada
+              Operator.
             </DialogDescription>
           </DialogHeader>
 
           <div className='space-y-4 py-2 text-xs'>
             <div className='space-y-1.5'>
-              <Label className='text-xs font-semibold'>Keputusan Persetujuan:</Label>
+              <Label className='text-xs font-semibold'>
+                Keputusan Persetujuan:
+              </Label>
               <div className='grid grid-cols-2 gap-2'>
                 <Button
                   type='button'
@@ -97,8 +108,9 @@ export function SubmissionDialogs({
                   size='sm'
                   onClick={() => setKepalaAction('approved')}
                   className={cn(
-                    'text-xs h-9 justify-center gap-1.5 font-bold',
-                    kepalaAction === 'approved' && 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    'h-9 justify-center gap-1.5 text-xs font-bold',
+                    kepalaAction === 'approved' &&
+                      'bg-emerald-600 text-white hover:bg-emerald-700'
                   )}
                 >
                   <CheckCircle2 className='h-4 w-4' />
@@ -106,10 +118,12 @@ export function SubmissionDialogs({
                 </Button>
                 <Button
                   type='button'
-                  variant={kepalaAction === 'rejected' ? 'destructive' : 'outline'}
+                  variant={
+                    kepalaAction === 'rejected' ? 'destructive' : 'outline'
+                  }
                   size='sm'
                   onClick={() => setKepalaAction('rejected')}
-                  className='text-xs h-9 justify-center gap-1.5 font-bold'
+                  className='h-9 justify-center gap-1.5 text-xs font-bold'
                 >
                   <AlertCircle className='h-4 w-4' />
                   Minta Revisi ke Operator
@@ -117,10 +131,22 @@ export function SubmissionDialogs({
               </div>
             </div>
 
-            {kepalaAction === 'rejected' && <KepalaFormSelect items={readiness?.submission.items || []} value={kepalaFormCode} onValueChange={setKepalaFormCode} />}
+            {kepalaAction === 'rejected' && (
+              <KepalaFormSelect
+                items={readiness?.submission.items || []}
+                value={kepalaFormCode}
+                onValueChange={setKepalaFormCode}
+              />
+            )}
             <div className='space-y-1.5'>
               <Label className='text-xs font-semibold'>
-                Catatan Kepala OPD {kepalaAction === 'rejected' && <span className='text-destructive'>* (Wajib diisi min. 5 karakter)</span>}:
+                Catatan Kepala OPD{' '}
+                {kepalaAction === 'rejected' && (
+                  <span className='text-destructive'>
+                    * (Wajib diisi min. 5 karakter)
+                  </span>
+                )}
+                :
               </Label>
               <Textarea
                 rows={3}
@@ -151,23 +177,29 @@ export function SubmissionDialogs({
               size='sm'
               disabled={
                 reviewKepalaMutation.isPending ||
-                (kepalaAction === 'rejected' && (!kepalaFormCode || kepalaNotes.trim().length < 5))
+                (kepalaAction === 'rejected' &&
+                  (!kepalaFormCode || kepalaNotes.trim().length < 5))
               }
               onClick={() => reviewKepalaMutation.mutate()}
               className={cn(
                 kepalaAction === 'approved'
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-destructive hover:bg-destructive/90 text-white'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-destructive text-white hover:bg-destructive/90'
               )}
             >
-              {reviewKepalaMutation.isPending ? 'Menyimpan...' : 'Simpan Keputusan'}
+              {reviewKepalaMutation.isPending
+                ? 'Menyimpan...'
+                : 'Simpan Keputusan'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* 3. KEPALA OPD DELEGATE AUDITOR REVISION MODAL */}
-      <Dialog open={isKepalaDelegateOpen} onOpenChange={setIsKepalaDelegateOpen}>
+      <Dialog
+        open={isKepalaDelegateOpen}
+        onOpenChange={setIsKepalaDelegateOpen}
+      >
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2 text-base font-bold'>
@@ -175,27 +207,45 @@ export function SubmissionDialogs({
               Delegasikan Revisi ke Operator OPD
             </DialogTitle>
             <DialogDescription className='text-xs'>
-              Auditor Pengawas telah mengembalikan lembar kerja dengan catatan perbaikan. Klik delegasikan untuk membuka akses edit bagi Operator.
+              Auditor Pengawas telah mengembalikan lembar kerja dengan catatan
+              perbaikan. Klik delegasikan untuk membuka akses edit bagi
+              Operator.
             </DialogDescription>
           </DialogHeader>
 
           <div className='space-y-3 py-2 text-xs'>
-            <div className='rounded-lg border bg-muted/40 p-3 space-y-2'>
-              <p className='font-semibold text-foreground text-xs'>Catatan dari Auditor Pengawas:</p>
+            <div className='space-y-2 rounded-lg border bg-muted/40 p-3'>
+              <p className='text-xs font-semibold text-foreground'>
+                Catatan dari Auditor Pengawas:
+              </p>
               <div className='space-y-1.5'>
                 {readiness?.submission?.items
-                  ?.filter((i) => i.status_auditor === 'rejected' || i.status === 'rejected')
+                  ?.filter(
+                    (i) =>
+                      i.status_auditor === 'rejected' || i.status === 'rejected'
+                  )
                   .map((item) => (
-                    <div key={item.id} className='text-xs bg-background/80 p-2 rounded border'>
-                      <span className='font-bold uppercase text-destructive mr-1'>Form {item.form_code}:</span>
-                      <span className='text-muted-foreground'>{item.catatan_auditor || item.catatan_revisi || 'Perlu perbaikan.'}</span>
+                    <div
+                      key={item.id}
+                      className='rounded border bg-background/80 p-2 text-xs'
+                    >
+                      <span className='mr-1 font-bold text-destructive uppercase'>
+                        Form {item.form_code}:
+                      </span>
+                      <span className='text-muted-foreground'>
+                        {item.catatan_auditor ||
+                          item.catatan_revisi ||
+                          'Perlu perbaikan.'}
+                      </span>
                     </div>
                   ))}
               </div>
             </div>
 
             <div className='space-y-1.5'>
-              <Label className='text-xs font-semibold'>Tambahan Instruksi Kepala OPD (Opsional):</Label>
+              <Label className='text-xs font-semibold'>
+                Tambahan Instruksi Kepala OPD (Opsional):
+              </Label>
               <Textarea
                 rows={2}
                 value={delegateNotes}
@@ -221,9 +271,11 @@ export function SubmissionDialogs({
               size='sm'
               disabled={delegateMutation.isPending}
               onClick={() => delegateMutation.mutate()}
-              className='bg-amber-600 hover:bg-amber-700 text-white font-semibold'
+              className='bg-amber-600 font-semibold text-white hover:bg-amber-700'
             >
-              {delegateMutation.isPending ? 'Mendelegasikan...' : 'Kirim Catatan & Buka Akses Edit Operator'}
+              {delegateMutation.isPending
+                ? 'Mendelegasikan...'
+                : 'Kirim Catatan & Buka Akses Edit Operator'}
             </Button>
           </DialogFooter>
         </DialogContent>

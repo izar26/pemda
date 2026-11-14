@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  pengajuanRisikoService,
+  type OpdReviewListItem,
+  type PengajuanPenilaianRisiko,
+} from '@/services/pengajuan-risiko-service'
+import { perencanaanService } from '@/services/perencanaan-service'
+import {
   AlertCircle,
   Building2,
   CheckCircle2,
@@ -15,17 +21,9 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { Header } from '@/components/layout/header'
-import { NavbarStatus } from '@/components/layout/navbar-status'
-import { Main } from '@/components/layout/main'
-import { PageHeader } from '@/components/layout/page-header'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
-import { ConfigDrawer } from '@/components/config-drawer'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -33,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import {
   Table,
   TableBody,
@@ -48,15 +45,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import {
-  pengajuanRisikoService,
-  type OpdReviewListItem,
-  type PengajuanPenilaianRisiko,
-} from '@/services/pengajuan-risiko-service'
-import { perencanaanService } from '@/services/perencanaan-service'
+import { ConfigDrawer } from '@/components/config-drawer'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { NavbarStatus } from '@/components/layout/navbar-status'
+import { PageHeader } from '@/components/layout/page-header'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
 import { ReviewRisikoWizard } from './components/review-risiko-wizard'
 
-type StatusFilter = 'semua' | 'submitted' | 'revision_requested' | 'approved' | 'belum_mengirim'
+type StatusFilter =
+  | 'semua'
+  | 'submitted'
+  | 'revision_requested'
+  | 'approved'
+  | 'belum_mengirim'
 type TierFilter = 'all' | 'kepala' | 'auditor' | 'pengawas' | 'approved' | 'opd'
 
 export function ReviewRisikoManagement() {
@@ -94,11 +99,7 @@ export function ReviewRisikoManagement() {
     isRefetching,
     refetch,
   } = useQuery({
-    queryKey: [
-      'pengawasan',
-      'review-list',
-      activePeriode?.id,
-    ],
+    queryKey: ['pengawasan', 'review-list', activePeriode?.id],
     queryFn: () =>
       pengajuanRisikoService.getAuditorReviewList({
         periode_penilaian_id: activePeriode?.id,
@@ -108,7 +109,10 @@ export function ReviewRisikoManagement() {
     staleTime: 30_000,
   })
 
-  const rawOpdList = useMemo(() => reviewResponse?.data || [], [reviewResponse?.data])
+  const rawOpdList = useMemo(
+    () => reviewResponse?.data || [],
+    [reviewResponse?.data]
+  )
 
   // Calculate accurate summary metrics
   const metrics = useMemo(() => {
@@ -202,7 +206,8 @@ export function ReviewRisikoManagement() {
         valueColor: 'text-amber-600 dark:text-amber-400',
         onClick: () => setStatusFilter('submitted'),
         isActive: statusFilter === 'submitted',
-        activeClassName: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5',
+        activeClassName:
+          'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5',
       },
       {
         title: 'Perlu Revisi',
@@ -213,7 +218,8 @@ export function ReviewRisikoManagement() {
         valueColor: 'text-destructive',
         onClick: () => setStatusFilter('revision_requested'),
         isActive: statusFilter === 'revision_requested',
-        activeClassName: 'border-destructive ring-2 ring-destructive/20 bg-destructive/5',
+        activeClassName:
+          'border-destructive ring-2 ring-destructive/20 bg-destructive/5',
       },
       {
         title: 'Telah Disetujui',
@@ -224,7 +230,8 @@ export function ReviewRisikoManagement() {
         valueColor: 'text-emerald-600 dark:text-emerald-400',
         onClick: () => setStatusFilter('approved'),
         isActive: statusFilter === 'approved',
-        activeClassName: 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5',
+        activeClassName:
+          'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5',
       },
       {
         title: 'Belum Mengirim',
@@ -235,7 +242,8 @@ export function ReviewRisikoManagement() {
         valueColor: 'text-muted-foreground',
         onClick: () => setStatusFilter('belum_mengirim'),
         isActive: statusFilter === 'belum_mengirim',
-        activeClassName: 'border-muted-foreground/60 ring-2 ring-muted/40 bg-muted/20',
+        activeClassName:
+          'border-muted-foreground/60 ring-2 ring-muted/40 bg-muted/20',
       },
     ],
     [metrics, statusFilter]
@@ -333,12 +341,14 @@ export function ReviewRisikoManagement() {
     refetch()
   }
 
-  const getStatusBadge = (submission?: Partial<PengajuanPenilaianRisiko> | null) => {
+  const getStatusBadge = (
+    submission?: Partial<PengajuanPenilaianRisiko> | null
+  ) => {
     if (!submission || submission.status === 'draft') {
       return (
         <Badge
           variant='outline'
-          className='text-xs py-0.5 px-2 bg-muted/40 text-muted-foreground gap-1.5 border-dashed font-normal'
+          className='gap-1.5 border-dashed bg-muted/40 px-2 py-0.5 text-xs font-normal text-muted-foreground'
         >
           <Clock className='h-3 w-3 text-muted-foreground' />
           Belum Mengirim
@@ -349,14 +359,14 @@ export function ReviewRisikoManagement() {
     switch (submission.status) {
       case 'submitted_to_kepala_opd':
         return (
-          <Badge className='text-xs bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
-            <Clock className='h-3 w-3 text-sky-600 animate-pulse' />
+          <Badge className='gap-1.5 border border-sky-500/30 bg-sky-500/15 px-2.5 py-0.5 text-xs font-medium text-sky-700 shadow-2xs dark:text-sky-400'>
+            <Clock className='h-3 w-3 animate-pulse text-sky-600' />
             Review Kepala OPD
           </Badge>
         )
       case 'revision_by_kepala_opd':
         return (
-          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+          <Badge className='gap-1.5 border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive shadow-2xs'>
             <XCircle className='h-3 w-3 text-destructive' />
             Revisi Kepala OPD
           </Badge>
@@ -366,21 +376,21 @@ export function ReviewRisikoManagement() {
       case 'submitted':
       case 'in_review':
         return (
-          <Badge className='text-xs bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
-            <Clock className='h-3 w-3 text-amber-600 dark:text-amber-400 animate-pulse' />
+          <Badge className='gap-1.5 border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-700 shadow-2xs dark:text-amber-400'>
+            <Clock className='h-3 w-3 animate-pulse text-amber-600 dark:text-amber-400' />
             Pemeriksaan Auditor
           </Badge>
         )
       case 'revision_by_auditor':
         return (
-          <Badge className='text-xs bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+          <Badge className='gap-1.5 border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-800 shadow-2xs dark:text-amber-300'>
             <AlertCircle className='h-3 w-3 text-amber-600' />
             Revisi dari Auditor
           </Badge>
         )
       case 'revision_to_operator':
         return (
-          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+          <Badge className='gap-1.5 border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive shadow-2xs'>
             <XCircle className='h-3 w-3 text-destructive' />
             Revisi Operator
           </Badge>
@@ -388,35 +398,35 @@ export function ReviewRisikoManagement() {
       case 'submitted_to_pengawas':
       case 'in_review_pengawas':
         return (
-          <Badge className='text-xs bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
-            <Clock className='h-3 w-3 text-purple-600 animate-pulse' />
+          <Badge className='gap-1.5 border border-purple-500/30 bg-purple-500/15 px-2.5 py-0.5 text-xs font-medium text-purple-700 shadow-2xs dark:text-purple-400'>
+            <Clock className='h-3 w-3 animate-pulse text-purple-600' />
             Pengesahan Pengawas
           </Badge>
         )
       case 'revision_by_pengawas':
         return (
-          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+          <Badge className='gap-1.5 border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive shadow-2xs'>
             <XCircle className='h-3 w-3 text-destructive' />
             Revisi Pengawas
           </Badge>
         )
       case 'revision_requested':
         return (
-          <Badge className='text-xs bg-destructive/15 text-destructive border border-destructive/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+          <Badge className='gap-1.5 border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive shadow-2xs'>
             <XCircle className='h-3 w-3 text-destructive' />
             Perlu Revisi
           </Badge>
         )
       case 'approved':
         return (
-          <Badge className='text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 gap-1.5 py-0.5 px-2.5 shadow-2xs font-medium'>
+          <Badge className='gap-1.5 border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700 shadow-2xs dark:text-emerald-400'>
             <CheckCircle2 className='h-3 w-3 text-emerald-600 dark:text-emerald-400' />
             Disahkan Final
           </Badge>
         )
       default:
         return (
-          <Badge variant='outline' className='text-xs font-mono'>
+          <Badge variant='outline' className='font-mono text-xs'>
             {submission.status}
           </Badge>
         )
@@ -447,20 +457,21 @@ export function ReviewRisikoManagement() {
         ) : (
           <>
             {/* 1. Page Header */}
-            <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-              <div className='space-y-1 min-w-0 flex-1'>
-                <div className='flex items-center gap-2.5 flex-wrap'>
-                  <h2 className='text-2xl font-bold tracking-tight text-foreground flex items-center gap-2'>
+            <PageHeader className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='min-w-0 flex-1 space-y-1'>
+                <div className='flex flex-wrap items-center gap-2.5'>
+                  <h2 className='flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground'>
                     <ClipboardCheck className='h-6 w-6 text-primary' />
                     Review & Persetujuan Risiko Perangkat Daerah
                   </h2>
                 </div>
                 <p className='text-xs text-muted-foreground'>
-                  Telaah berjenjang internal pimpinan OPD, pemeriksaan kepatuhan auditor APIP, dan pengesahan final Pengawas Inspektorat.
+                  Telaah berjenjang internal pimpinan OPD, pemeriksaan kepatuhan
+                  auditor APIP, dan pengesahan final Pengawas Inspektorat.
                 </p>
               </div>
 
-              <div className='flex items-center gap-2 shrink-0'>
+              <div className='flex shrink-0 items-center gap-2'>
                 <Button
                   variant='outline'
                   size='sm'
@@ -469,7 +480,7 @@ export function ReviewRisikoManagement() {
                   disabled={isLoading || isRefetching}
                 >
                   <RefreshCw
-                    className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? 'animate-spin' : ''}`}
+                    className={`mr-1.5 h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`}
                   />
                   Segarkan
                 </Button>
@@ -485,14 +496,14 @@ export function ReviewRisikoManagement() {
             />
 
             {/* 3. Standard Filter Toolbar (Search + 2 Dropdown Filters) */}
-            <div className='flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3'>
+            <div className='flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center'>
               {/* Left: Search input with clear button */}
-              <div className='relative flex-1 max-w-sm'>
-                <SearchIcon className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
+              <div className='relative max-w-sm flex-1'>
+                <SearchIcon className='absolute top-2.5 left-3 h-4 w-4 text-muted-foreground' />
                 <Input
                   type='text'
                   placeholder='Cari nama dinas atau kode OPD...'
-                  className='pl-9 pr-8 h-9 text-xs'
+                  className='h-9 pr-8 pl-9 text-xs'
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -500,7 +511,7 @@ export function ReviewRisikoManagement() {
                   <button
                     type='button'
                     onClick={() => setSearchTerm('')}
-                    className='absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground'
+                    className='absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground'
                   >
                     <X className='h-4 w-4' />
                   </button>
@@ -508,13 +519,13 @@ export function ReviewRisikoManagement() {
               </div>
 
               {/* Right: Dropdown 1 (Tahap Approval) + Dropdown 2 (Status Review) + Reset */}
-              <div className='flex items-center gap-2 flex-wrap sm:flex-nowrap'>
+              <div className='flex flex-wrap items-center gap-2 sm:flex-nowrap'>
                 {/* Dropdown 1: Tahap Approval */}
                 <Select
                   value={tierFilter}
                   onValueChange={(val) => setTierFilter(val as TierFilter)}
                 >
-                  <SelectTrigger className='w-full sm:w-[220px] h-9 text-xs'>
+                  <SelectTrigger className='h-9 w-full text-xs sm:w-[220px]'>
                     <SelectValue placeholder='Tahap Approval' />
                   </SelectTrigger>
                   <SelectContent>
@@ -544,7 +555,7 @@ export function ReviewRisikoManagement() {
                   value={statusFilter}
                   onValueChange={(val) => setStatusFilter(val as StatusFilter)}
                 >
-                  <SelectTrigger className='w-full sm:w-[190px] h-9 text-xs'>
+                  <SelectTrigger className='h-9 w-full text-xs sm:w-[190px]'>
                     <SelectValue placeholder='Status Review' />
                   </SelectTrigger>
                   <SelectContent>
@@ -567,11 +578,13 @@ export function ReviewRisikoManagement() {
                 </Select>
 
                 {/* Reset Filter Button */}
-                {(searchTerm || statusFilter !== 'semua' || tierFilter !== 'all') && (
+                {(searchTerm ||
+                  statusFilter !== 'semua' ||
+                  tierFilter !== 'all') && (
                   <Button
                     variant='ghost'
                     size='sm'
-                    className='h-9 text-xs text-muted-foreground hover:text-foreground gap-1.5 shrink-0 px-2.5'
+                    className='h-9 shrink-0 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground'
                     onClick={() => {
                       setSearchTerm('')
                       setStatusFilter('semua')
@@ -586,22 +599,37 @@ export function ReviewRisikoManagement() {
             </div>
 
             {/* 4. OPD Submissions Data Table */}
-            <div className='rounded-xl border bg-card overflow-hidden shadow-2xs'>
+            <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
               <Table>
                 <TableHeader className='bg-muted/40'>
                   <TableRow>
-                    <TableHead className='w-[48px] text-center text-xs font-semibold'>No</TableHead>
-                    <TableHead className='text-xs font-semibold'>Perangkat Daerah (OPD)</TableHead>
-                    <TableHead className='text-xs font-semibold'>Auditor Pengawas</TableHead>
-                    <TableHead className='text-xs font-semibold'>Status Pengajuan</TableHead>
-                    <TableHead className='text-xs font-semibold'>Status Lembar Kerja</TableHead>
-                    <TableHead className='text-xs font-semibold text-right pr-6'>Aksi</TableHead>
+                    <TableHead className='w-[48px] text-center text-xs font-semibold'>
+                      No
+                    </TableHead>
+                    <TableHead className='text-xs font-semibold'>
+                      Perangkat Daerah (OPD)
+                    </TableHead>
+                    <TableHead className='text-xs font-semibold'>
+                      Auditor Pengawas
+                    </TableHead>
+                    <TableHead className='text-xs font-semibold'>
+                      Status Pengajuan
+                    </TableHead>
+                    <TableHead className='text-xs font-semibold'>
+                      Status Lembar Kerja
+                    </TableHead>
+                    <TableHead className='pr-6 text-right text-xs font-semibold'>
+                      Aksi
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className='h-48 text-center text-xs text-muted-foreground'>
+                      <TableCell
+                        colSpan={6}
+                        className='h-48 text-center text-xs text-muted-foreground'
+                      >
                         <div className='flex flex-col items-center justify-center gap-2'>
                           <Loader2 className='h-6 w-6 animate-spin text-primary' />
                           Memuat daftar pengajuan risiko OPD...
@@ -610,10 +638,13 @@ export function ReviewRisikoManagement() {
                     </TableRow>
                   ) : filteredOpdList.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className='h-48 text-center text-xs text-muted-foreground'>
-                        <div className='flex flex-col items-center justify-center gap-2 max-w-sm mx-auto p-4'>
+                      <TableCell
+                        colSpan={6}
+                        className='h-48 text-center text-xs text-muted-foreground'
+                      >
+                        <div className='mx-auto flex max-w-sm flex-col items-center justify-center gap-2 p-4'>
                           <ClipboardCheck className='h-8 w-8 text-muted-foreground/60' />
-                          <p className='font-semibold text-foreground text-sm'>
+                          <p className='text-sm font-semibold text-foreground'>
                             Tidak ada data yang sesuai filter
                           </p>
                           <p className='text-xs text-muted-foreground'>
@@ -625,7 +656,7 @@ export function ReviewRisikoManagement() {
                             <Button
                               variant='outline'
                               size='sm'
-                              className='h-8 text-xs mt-2'
+                              className='mt-2 h-8 text-xs'
                               onClick={() => {
                                 setSearchTerm('')
                                 setStatusFilter('semua')
@@ -638,188 +669,223 @@ export function ReviewRisikoManagement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredOpdList.map((opd: OpdReviewListItem, index: number) => {
-                      const submission = opd.pengajuan_risiko?.[0]
-                      const auditorInfo = opd.auditor_assignments?.[0]?.auditor
-                      const item2b = submission?.items?.find((i) => i.form_code === '2b')
-                      const item2c = submission?.items?.find((i) => i.form_code === '2c')
+                    filteredOpdList.map(
+                      (opd: OpdReviewListItem, index: number) => {
+                        const submission = opd.pengajuan_risiko?.[0]
+                        const auditorInfo =
+                          opd.auditor_assignments?.[0]?.auditor
+                        const item2b = submission?.items?.find(
+                          (i) => i.form_code === '2b'
+                        )
+                        const item2c = submission?.items?.find(
+                          (i) => i.form_code === '2c'
+                        )
 
-                      const hasSubmitted =
-                        Boolean(submission?.status && submission.status !== 'draft')
+                        const hasSubmitted = Boolean(
+                          submission?.status && submission.status !== 'draft'
+                        )
 
-                      const isPendingReview =
-                        submission?.status === 'submitted_to_kepala_opd' ||
-                        submission?.status === 'submitted_to_auditor' ||
-                        submission?.status === 'in_review_auditor' ||
-                        submission?.status === 'submitted_to_pengawas' ||
-                        submission?.status === 'in_review_pengawas' ||
-                        submission?.status === 'submitted' ||
-                        submission?.status === 'in_review'
+                        const isPendingReview =
+                          submission?.status === 'submitted_to_kepala_opd' ||
+                          submission?.status === 'submitted_to_auditor' ||
+                          submission?.status === 'in_review_auditor' ||
+                          submission?.status === 'submitted_to_pengawas' ||
+                          submission?.status === 'in_review_pengawas' ||
+                          submission?.status === 'submitted' ||
+                          submission?.status === 'in_review'
 
-                      const isRevisionState =
-                        submission?.status === 'revision_requested' ||
-                        submission?.status === 'revision_by_kepala_opd' ||
-                        submission?.status === 'revision_by_auditor' ||
-                        submission?.status === 'revision_to_operator' ||
-                        submission?.status === 'revision_by_pengawas'
+                        const isRevisionState =
+                          submission?.status === 'revision_requested' ||
+                          submission?.status === 'revision_by_kepala_opd' ||
+                          submission?.status === 'revision_by_auditor' ||
+                          submission?.status === 'revision_to_operator' ||
+                          submission?.status === 'revision_by_pengawas'
 
-                      return (
-                        <TableRow key={opd.id} className='hover:bg-muted/30 transition-colors'>
-                          <TableCell className='text-center text-xs text-muted-foreground font-mono'>
-                            {index + 1}
-                          </TableCell>
-                          <TableCell>
-                            <div className='space-y-1'>
-                              <div className='font-semibold text-xs text-foreground'>
-                                {opd.nama}
-                              </div>
-                              <div className='flex items-center gap-1.5 text-[11px] text-muted-foreground'>
-                                <Badge variant='outline' className='font-mono text-[10px] py-0 px-1.5 bg-muted/40'>
-                                  {opd.kode || '-'}
-                                </Badge>
-                                <span>•</span>
-                                <span>{opd.kategori || 'Dinas'}</span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {auditorInfo ? (
-                              <div className='space-y-0.5'>
-                                <div className='text-xs font-medium text-foreground flex items-center gap-1.5'>
-                                  <User className='h-3 w-3 text-primary shrink-0' />
-                                  <span>{auditorInfo.name}</span>
+                        return (
+                          <TableRow
+                            key={opd.id}
+                            className='transition-colors hover:bg-muted/30'
+                          >
+                            <TableCell className='text-center font-mono text-xs text-muted-foreground'>
+                              {index + 1}
+                            </TableCell>
+                            <TableCell>
+                              <div className='space-y-1'>
+                                <div className='text-xs font-semibold text-foreground'>
+                                  {opd.nama}
                                 </div>
-                                <div className='text-[10px] text-muted-foreground font-mono pl-4.5'>
-                                  {auditorInfo.nip ? `NIP. ${auditorInfo.nip}` : auditorInfo.email}
-                                </div>
-                              </div>
-                            ) : (
-                              <Badge variant='outline' className='text-[10px] text-destructive border-destructive/30 bg-destructive/5 font-normal'>
-                                Belum Ada Auditor
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className='flex flex-col items-start gap-1'>
-                              {getStatusBadge(submission)}
-                              {/* Post-Revision Change Detection Highlight */}
-                              {submission?.histories?.some(
-                                (h) =>
-                                  h.action.includes('reject') ||
-                                  h.action.includes('revision')
-                              ) &&
-                                (submission.status === 'submitted_to_auditor' ||
-                                  submission.status === 'submitted_to_pengawas') && (
+                                <div className='flex items-center gap-1.5 text-[11px] text-muted-foreground'>
                                   <Badge
                                     variant='outline'
-                                    className='bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30 text-[10px] gap-1 py-0 px-1.5 font-medium'
+                                    className='bg-muted/40 px-1.5 py-0 font-mono text-[10px]'
                                   >
-                                    <RefreshCw className='h-2.5 w-2.5' />
-                                    Revisi Selesai Diperbaiki
+                                    {opd.kode || '-'}
                                   </Badge>
-                                )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className='flex items-center gap-1.5'>
-                              <Badge
-                                variant='outline'
-                                className={`text-[10px] py-0 px-1.5 font-mono ${
-                                  item2b?.status === 'approved'
-                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                    : item2b?.status === 'rejected'
-                                    ? 'bg-destructive/10 text-destructive border-destructive/30'
-                                    : item2b?.status === 'submitted'
-                                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                2B: {item2b?.status || 'draft'}
-                              </Badge>
-                              <Badge
-                                variant='outline'
-                                className={`text-[10px] py-0 px-1.5 font-mono ${
-                                  item2c?.status === 'approved'
-                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                    : item2c?.status === 'rejected'
-                                    ? 'bg-destructive/10 text-destructive border-destructive/30'
-                                    : item2c?.status === 'submitted'
-                                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                2C: {item2c?.status || 'draft'}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell className='text-right pr-6'>
-                            <TooltipProvider delayDuration={150}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <Button
-                                      size='sm'
-                                      disabled={!hasSubmitted}
-                                      variant={isPendingReview ? 'default' : 'outline'}
-                                      className={`h-8 text-xs gap-1.5 ${
-                                        isPendingReview
-                                          ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs font-semibold'
-                                          : ''
-                                      }`}
-                                      onClick={() => {
-                                        if (submission?.id) {
-                                          setActiveReview({
-                                            submissionId: submission.id,
-                                            opdId: submission.opd_id || opd.id,
-                                            periodeId: submission.periode_penilaian_id || activePeriode?.id || '',
-                                          })
-                                        }
-                                      }}
+                                  <span>•</span>
+                                  <span>{opd.kategori || 'Dinas'}</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {auditorInfo ? (
+                                <div className='space-y-0.5'>
+                                  <div className='flex items-center gap-1.5 text-xs font-medium text-foreground'>
+                                    <User className='h-3 w-3 shrink-0 text-primary' />
+                                    <span>{auditorInfo.name}</span>
+                                  </div>
+                                  <div className='pl-4.5 font-mono text-[10px] text-muted-foreground'>
+                                    {auditorInfo.nip
+                                      ? `NIP. ${auditorInfo.nip}`
+                                      : auditorInfo.email}
+                                  </div>
+                                </div>
+                              ) : (
+                                <Badge
+                                  variant='outline'
+                                  className='border-destructive/30 bg-destructive/5 text-[10px] font-normal text-destructive'
+                                >
+                                  Belum Ada Auditor
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className='flex flex-col items-start gap-1'>
+                                {getStatusBadge(submission)}
+                                {/* Post-Revision Change Detection Highlight */}
+                                {submission?.histories?.some(
+                                  (h) =>
+                                    h.action.includes('reject') ||
+                                    h.action.includes('revision')
+                                ) &&
+                                  (submission.status ===
+                                    'submitted_to_auditor' ||
+                                    submission.status ===
+                                      'submitted_to_pengawas') && (
+                                    <Badge
+                                      variant='outline'
+                                      className='gap-1 border-blue-500/30 bg-blue-500/10 px-1.5 py-0 text-[10px] font-medium text-blue-700 dark:text-blue-400'
                                     >
-                                      {isPendingReview ? (
-                                        <>
-                                          <ClipboardCheck className='h-3.5 w-3.5' />
-                                          Periksa Pengajuan
-                                        </>
-                                      ) : isRevisionState ? (
-                                        <>
-                                          <Eye className='h-3.5 w-3.5' />
-                                          Pantau Revisi
-                                        </>
-                                      ) : submission?.status === 'approved' ? (
-                                        <>
-                                          <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600' />
-                                          Lihat Berkas Final
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Eye className='h-3.5 w-3.5' />
-                                          Pratinjau Draf
-                                        </>
-                                      )}
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                {!hasSubmitted && (
-                                  <TooltipContent side='left' className='text-xs'>
-                                    OPD ini belum mengajukan formulir risiko kepada auditor.
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
+                                      <RefreshCw className='h-2.5 w-2.5' />
+                                      Revisi Selesai Diperbaiki
+                                    </Badge>
+                                  )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className='flex items-center gap-1.5'>
+                                <Badge
+                                  variant='outline'
+                                  className={`px-1.5 py-0 font-mono text-[10px] ${
+                                    item2b?.status === 'approved'
+                                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                      : item2b?.status === 'rejected'
+                                        ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                                        : item2b?.status === 'submitted'
+                                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                          : 'text-muted-foreground'
+                                  }`}
+                                >
+                                  2B: {item2b?.status || 'draft'}
+                                </Badge>
+                                <Badge
+                                  variant='outline'
+                                  className={`px-1.5 py-0 font-mono text-[10px] ${
+                                    item2c?.status === 'approved'
+                                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                      : item2c?.status === 'rejected'
+                                        ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                                        : item2c?.status === 'submitted'
+                                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                          : 'text-muted-foreground'
+                                  }`}
+                                >
+                                  2C: {item2c?.status || 'draft'}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className='pr-6 text-right'>
+                              <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button
+                                        size='sm'
+                                        disabled={!hasSubmitted}
+                                        variant={
+                                          isPendingReview
+                                            ? 'default'
+                                            : 'outline'
+                                        }
+                                        className={`h-8 gap-1.5 text-xs ${
+                                          isPendingReview
+                                            ? 'bg-primary font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90'
+                                            : ''
+                                        }`}
+                                        onClick={() => {
+                                          if (submission?.id) {
+                                            setActiveReview({
+                                              submissionId: submission.id,
+                                              opdId:
+                                                submission.opd_id || opd.id,
+                                              periodeId:
+                                                submission.periode_penilaian_id ||
+                                                activePeriode?.id ||
+                                                '',
+                                            })
+                                          }
+                                        }}
+                                      >
+                                        {isPendingReview ? (
+                                          <>
+                                            <ClipboardCheck className='h-3.5 w-3.5' />
+                                            Periksa Pengajuan
+                                          </>
+                                        ) : isRevisionState ? (
+                                          <>
+                                            <Eye className='h-3.5 w-3.5' />
+                                            Pantau Revisi
+                                          </>
+                                        ) : submission?.status ===
+                                          'approved' ? (
+                                          <>
+                                            <CheckCircle2 className='h-3.5 w-3.5 text-emerald-600' />
+                                            Lihat Berkas Final
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Eye className='h-3.5 w-3.5' />
+                                            Pratinjau Draf
+                                          </>
+                                        )}
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {!hasSubmitted && (
+                                    <TooltipContent
+                                      side='left'
+                                      className='text-xs'
+                                    >
+                                      OPD ini belum mengajukan formulir risiko
+                                      kepada auditor.
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      }
+                    )
                   )}
                 </TableBody>
               </Table>
             </div>
 
             {/* Footer Summary */}
-            <div className='flex items-center justify-between text-xs text-muted-foreground px-1'>
+            <div className='flex items-center justify-between px-1 text-xs text-muted-foreground'>
               <span>
-                Menampilkan <strong>{filteredOpdList.length}</strong> dari <strong>{metrics.total}</strong> perangkat daerah
+                Menampilkan <strong>{filteredOpdList.length}</strong> dari{' '}
+                <strong>{metrics.total}</strong> perangkat daerah
               </span>
               <span>
                 Status: <strong>{statusFilter.toUpperCase()}</strong>

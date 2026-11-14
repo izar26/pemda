@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ReviewRejectionDialogProps {
   open: boolean
@@ -37,21 +37,22 @@ export function ReviewRejectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <div className='flex items-center gap-2 mb-1'>
+          <div className='mb-1 flex items-center gap-2'>
             <Badge
               variant='outline'
-              className='font-mono text-xs border-destructive/40 text-destructive bg-destructive/10'
+              className='border-destructive/40 bg-destructive/10 font-mono text-xs text-destructive'
             >
               FORM {targetFormCode.toUpperCase()}
             </Badge>
-            <DialogTitle className='flex items-center gap-2 text-destructive text-base'>
+            <DialogTitle className='flex items-center gap-2 text-base text-destructive'>
               <AlertCircle className='h-5 w-5' />
               Tolak & Minta Perbaikan Formulir
             </DialogTitle>
           </div>
           <DialogDescription className='text-xs'>
-            Tuliskan instruksi catatan perbaikan secara spesifik agar perangkat daerah (OPD) dapat
-            memperbaiki formulir ini. Catatan akan tampil langsung di lembar kerja OPD.
+            Tuliskan instruksi catatan perbaikan secara spesifik agar perangkat
+            daerah (OPD) dapat memperbaiki formulir ini. Catatan akan tampil
+            langsung di lembar kerja OPD.
           </DialogDescription>
         </DialogHeader>
 
@@ -59,9 +60,10 @@ export function ReviewRejectionDialog({
           <div className='space-y-1.5'>
             <div className='flex items-center justify-between'>
               <Label htmlFor='catatan-revisi' className='text-xs font-semibold'>
-                Catatan Revisi Auditor <span className='text-destructive'>*</span>
+                Catatan Revisi Auditor{' '}
+                <span className='text-destructive'>*</span>
               </Label>
-              <span className='text-[10px] font-mono text-muted-foreground'>
+              <span className='font-mono text-[10px] text-muted-foreground'>
                 {note.length} karakter (min. 5)
               </span>
             </div>
@@ -69,7 +71,7 @@ export function ReviewRejectionDialog({
               id='catatan-revisi'
               placeholder='Tuliskan instruksi perbaikan yang spesifik di sini...'
               rows={4}
-              className='text-xs leading-relaxed resize-none'
+              className='resize-none text-xs leading-relaxed'
               value={note}
               onChange={(e) => onNoteChange(e.target.value)}
             />
@@ -90,7 +92,7 @@ export function ReviewRejectionDialog({
             type='button'
             variant='destructive'
             size='sm'
-            className='text-xs gap-1.5 font-semibold'
+            className='gap-1.5 text-xs font-semibold'
             disabled={isPending || !isValid}
             onClick={onConfirm}
           >
