@@ -6,10 +6,11 @@ import {
 } from './review-step-registry'
 import { ReviewStep5 } from './steps/review-step-5'
 import { ReviewStep6 } from './steps/review-step-6'
+import { ReviewStep7 } from './steps/review-step-7'
 
 describe('ReviewStepRegistry & Isolated Step Viewers', () => {
-  it('has registered entries for all standard risk forms 2b through 6', () => {
-    const expectedCodes = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6']
+  it('has registered entries for all standard risk forms 2b through 7', () => {
+    const expectedCodes = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7']
     expectedCodes.forEach((code) => {
       const config = getReviewStepConfig(code)
       expect(config).toBeDefined()
@@ -20,6 +21,7 @@ describe('ReviewStepRegistry & Isolated Step Viewers', () => {
   it('resolves case-insensitively', () => {
     expect(getReviewStepConfig('2B')).toBe(REVIEW_STEP_REGISTRY['2b'])
     expect(getReviewStepConfig('RCA')).toBe(REVIEW_STEP_REGISTRY['rca'])
+    expect(getReviewStepConfig('7')).toBe(REVIEW_STEP_REGISTRY['7'])
     expect(getReviewStepConfig('nonexistent')).toBeUndefined()
   })
 
@@ -47,6 +49,22 @@ describe('ReviewStepRegistry & Isolated Step Viewers', () => {
     const screen = await render(<ReviewStep6 items={[]} isLoading={true} />)
     await expect
       .element(screen.getByText('Memuat rencana tindak pengendalian...'))
+      .toBeInTheDocument()
+  })
+
+  it('renders ReviewStep7 in loading state and empty state correctly', async () => {
+    const loadingScreen = await render(
+      <ReviewStep7 data={null} isLoading={true} />
+    )
+    await expect
+      .element(loadingScreen.getByText('Memuat visualisasi Peta Risiko...'))
+      .toBeInTheDocument()
+
+    const emptyScreen = await render(
+      <ReviewStep7 data={null} isLoading={false} />
+    )
+    await expect
+      .element(emptyScreen.getByText('Data Peta Risiko Belum Tersedia'))
       .toBeInTheDocument()
   })
 })

@@ -830,7 +830,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6'] as $code) {
+        foreach (['5', '6', '7'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 
@@ -876,7 +876,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
-        foreach (['5', '6'] as $code) {
+        foreach (['5', '6', '7'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", ['form_code' => $code, 'status' => 'approved'])->assertOk();
         }
 

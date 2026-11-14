@@ -469,14 +469,14 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
         $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/start")->assertOk();
 
         // Verifikasi semua form dapat diambil via Registry Handler API
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6'] as $code) {
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'] as $code) {
             $this->getJson("/api/pengawasan/review-risiko/{$submissionId}/forms/{$code}")
                 ->assertOk()
                 ->assertJsonStructure(['data']);
         }
 
-        // Auditor menyetujui form 2B, 2C, 3A, 3B, 3C, 5, 6
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '5', '6'] as $code) {
+        // Auditor menyetujui form 2B, 2C, 3A, 3B, 3C, 5, 6, 7
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '5', '6', '7'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/item", [
                 'form_code' => $code,
                 'status' => 'approved',
@@ -548,7 +548,7 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
         Sanctum::actingAs($this->auditorUser);
 
         // Auditor menyetujui seluruh form pada pengajuan ulang
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6'] as $code) {
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/item", [
                 'form_code' => $code,
                 'status' => 'approved',
@@ -564,7 +564,7 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
 
         // Pengawas Dalnis menyetujui seluruh form (Tier 4 Final Approval)
         Sanctum::actingAs($this->pengawasUser);
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6'] as $code) {
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/review-pengawas", [
                 'form_code' => $code,
                 'status' => 'approved',

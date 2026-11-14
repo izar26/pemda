@@ -9,6 +9,7 @@ import type {
 } from '@/types/risiko'
 import type { AnalisisRow } from '@/features/risiko/analisis-risiko/api'
 import type { TindakRow } from '@/features/risiko/tindak-pengendalian/api'
+import type { PetaRisikoData } from '@/features/risiko/peta-risiko/types'
 import { ReviewStep2B } from './steps/review-step-2b'
 import { ReviewStep2C } from './steps/review-step-2c'
 import { ReviewStep3A } from './steps/review-step-3a'
@@ -17,6 +18,7 @@ import { ReviewStep3C } from './steps/review-step-3c'
 import { ReviewStep4 } from './steps/review-step-4'
 import { ReviewStep5 } from './steps/review-step-5'
 import { ReviewStep6 } from './steps/review-step-6'
+import { ReviewStep7 } from './steps/review-step-7'
 import { ReviewStepRca } from './steps/review-step-rca'
 
 export interface StepFilterConfig {
@@ -140,6 +142,15 @@ export const REVIEW_STEP_REGISTRY: Record<string, StepRegistryEntry> = {
     },
     render: ({ data, isLoading }) => (
       <ReviewStep6 items={(data as TindakRow[]) || []} isLoading={isLoading} />
+    ),
+  },
+  '7': {
+    isPaginated: false,
+    render: ({ data, isLoading }) => (
+      <ReviewStep7
+        data={data as PetaRisikoData | null}
+        isLoading={isLoading}
+      />
     ),
   },
 }

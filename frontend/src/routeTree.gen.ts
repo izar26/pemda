@@ -49,6 +49,7 @@ import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenti
 import { Route as AuthenticatedRisikoTindakPengendalianIndexRouteImport } from './routes/_authenticated/risiko/tindak-pengendalian/index'
 import { Route as AuthenticatedRisikoRisikoPrioritasIndexRouteImport } from './routes/_authenticated/risiko/risiko-prioritas/index'
 import { Route as AuthenticatedRisikoRcaIndexRouteImport } from './routes/_authenticated/risiko/rca/index'
+import { Route as AuthenticatedRisikoPetaRisikoIndexRouteImport } from './routes/_authenticated/risiko/peta-risiko/index'
 import { Route as AuthenticatedRisikoLaporanIndexRouteImport } from './routes/_authenticated/risiko/laporan/index'
 import { Route as AuthenticatedRisikoKonteksStrategisIndexRouteImport } from './routes/_authenticated/risiko/konteks-strategis/index'
 import { Route as AuthenticatedRisikoKonteksOperasionalIndexRouteImport } from './routes/_authenticated/risiko/konteks-operasional/index'
@@ -276,6 +277,12 @@ const AuthenticatedRisikoRcaIndexRoute =
     path: '/risiko/rca/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRisikoPetaRisikoIndexRoute =
+  AuthenticatedRisikoPetaRisikoIndexRouteImport.update({
+    id: '/risiko/peta-risiko/',
+    path: '/risiko/peta-risiko/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRisikoLaporanIndexRoute =
   AuthenticatedRisikoLaporanIndexRouteImport.update({
     id: '/risiko/laporan/',
@@ -410,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/risiko/peta-risiko/': typeof AuthenticatedRisikoPetaRisikoIndexRoute
   '/risiko/rca/': typeof AuthenticatedRisikoRcaIndexRoute
   '/risiko/risiko-prioritas/': typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
   '/risiko/tindak-pengendalian/': typeof AuthenticatedRisikoTindakPengendalianIndexRoute
@@ -462,6 +470,7 @@ export interface FileRoutesByTo {
   '/risiko/konteks-operasional': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/risiko/laporan': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/risiko/peta-risiko': typeof AuthenticatedRisikoPetaRisikoIndexRoute
   '/risiko/rca': typeof AuthenticatedRisikoRcaIndexRoute
   '/risiko/risiko-prioritas': typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
   '/risiko/tindak-pengendalian': typeof AuthenticatedRisikoTindakPengendalianIndexRoute
@@ -519,6 +528,7 @@ export interface FileRoutesById {
   '/_authenticated/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/_authenticated/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/_authenticated/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/_authenticated/risiko/peta-risiko/': typeof AuthenticatedRisikoPetaRisikoIndexRoute
   '/_authenticated/risiko/rca/': typeof AuthenticatedRisikoRcaIndexRoute
   '/_authenticated/risiko/risiko-prioritas/': typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
   '/_authenticated/risiko/tindak-pengendalian/': typeof AuthenticatedRisikoTindakPengendalianIndexRoute
@@ -574,6 +584,7 @@ export interface FileRouteTypes {
     | '/risiko/konteks-operasional/'
     | '/risiko/konteks-strategis/'
     | '/risiko/laporan/'
+    | '/risiko/peta-risiko/'
     | '/risiko/rca/'
     | '/risiko/risiko-prioritas/'
     | '/risiko/tindak-pengendalian/'
@@ -626,6 +637,7 @@ export interface FileRouteTypes {
     | '/risiko/konteks-operasional'
     | '/risiko/konteks-strategis'
     | '/risiko/laporan'
+    | '/risiko/peta-risiko'
     | '/risiko/rca'
     | '/risiko/risiko-prioritas'
     | '/risiko/tindak-pengendalian'
@@ -682,6 +694,7 @@ export interface FileRouteTypes {
     | '/_authenticated/risiko/konteks-operasional/'
     | '/_authenticated/risiko/konteks-strategis/'
     | '/_authenticated/risiko/laporan/'
+    | '/_authenticated/risiko/peta-risiko/'
     | '/_authenticated/risiko/rca/'
     | '/_authenticated/risiko/risiko-prioritas/'
     | '/_authenticated/risiko/tindak-pengendalian/'
@@ -986,6 +999,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRisikoRcaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/risiko/peta-risiko/': {
+      id: '/_authenticated/risiko/peta-risiko/'
+      path: '/risiko/peta-risiko'
+      fullPath: '/risiko/peta-risiko/'
+      preLoaderRoute: typeof AuthenticatedRisikoPetaRisikoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/risiko/laporan/': {
       id: '/_authenticated/risiko/laporan/'
       path: '/risiko/laporan'
@@ -1135,6 +1155,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRisikoKonteksOperasionalIndexRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   AuthenticatedRisikoKonteksStrategisIndexRoute: typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   AuthenticatedRisikoLaporanIndexRoute: typeof AuthenticatedRisikoLaporanIndexRoute
+  AuthenticatedRisikoPetaRisikoIndexRoute: typeof AuthenticatedRisikoPetaRisikoIndexRoute
   AuthenticatedRisikoRcaIndexRoute: typeof AuthenticatedRisikoRcaIndexRoute
   AuthenticatedRisikoRisikoPrioritasIndexRoute: typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
   AuthenticatedRisikoTindakPengendalianIndexRoute: typeof AuthenticatedRisikoTindakPengendalianIndexRoute
@@ -1182,6 +1203,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRisikoKonteksStrategisIndexRoute:
     AuthenticatedRisikoKonteksStrategisIndexRoute,
   AuthenticatedRisikoLaporanIndexRoute: AuthenticatedRisikoLaporanIndexRoute,
+  AuthenticatedRisikoPetaRisikoIndexRoute:
+    AuthenticatedRisikoPetaRisikoIndexRoute,
   AuthenticatedRisikoRcaIndexRoute: AuthenticatedRisikoRcaIndexRoute,
   AuthenticatedRisikoRisikoPrioritasIndexRoute:
     AuthenticatedRisikoRisikoPrioritasIndexRoute,

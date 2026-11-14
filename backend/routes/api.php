@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoPemdaController;
 use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
 use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
 use App\Http\Controllers\Api\Risiko\PengajuanRisikoController;
+use App\Http\Controllers\Api\Risiko\PetaRisikoController;
 use App\Http\Controllers\Api\Risiko\RootCauseAnalysisController;
 use App\Http\Controllers\Api\Risiko\TindakPengendalianController;
 use App\Http\Controllers\Api\RoleController;
@@ -231,6 +232,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::put('/analisis-risiko/{source}/{item}', [AnalisisRisikoController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
         Route::get('/tindak-pengendalian', [TindakPengendalianController::class, 'index']);
         Route::put('/tindak-pengendalian/{source}/{item}', [TindakPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
+        Route::get('/peta-risiko', [PetaRisikoController::class, 'index']);
 
         // Form RCA: Root Cause Analysis (5-Whys)
         Route::get('/rca', [RootCauseAnalysisController::class, 'index']);
