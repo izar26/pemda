@@ -26,9 +26,10 @@ import {
   RisikoWorkflowBanners,
 } from '../shared/risiko-wizard-header'
 import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
+import { RisikoNihilStatusCard } from '../shared/risiko-nihil-status-card'
+import { WizardFooterNav } from '../shared/wizard-footer-nav'
 import { fraApi } from './api'
 import { FraDialog } from './fra-dialog'
-import { FraNihilCard } from './fra-nihil-card'
 import { FraTable } from './fra-table'
 import type { FraudRiskAssessmentInput, FraudRiskAssessmentRow } from './types'
 
@@ -40,6 +41,7 @@ export function FraudRiskAssessmentPage() {
 
   const [selectedItem, setSelectedItem] = useState<FraudRiskAssessmentRow | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
   const [prosesBisnisFilter, setProsesBisnisFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [pageState, setPageState] = useState({ context: '', page: 1 })
@@ -237,6 +239,8 @@ export function FraudRiskAssessmentPage() {
           effectiveOpdId={opdId}
           activePeriodeId={periodeId}
           onSubmissionSuccess={wizard.refetchWizardProgress}
+          isSubmitDialogOpen={isSubmitDialogOpen}
+          setIsSubmitDialogOpen={setIsSubmitDialogOpen}
         />
 
         <RisikoWorkflowBanners readiness={wizard.readiness} />
@@ -249,12 +253,17 @@ export function FraudRiskAssessmentPage() {
         )}
 
         {/* 1. Nihil Confirmation Card */}
-        <FraNihilCard
+        <RisikoNihilStatusCard
+          title='Pernyataan Status Penilaian Risiko Kecurangan (FRA)'
           isNihil={isNihil}
           nihilInfo={data?.nihil_info}
           hasItems={hasItems}
           canEdit={canEdit}
           isLoading={nihilMutation.isPending}
+          confirmedMessage='Perangkat Daerah telah mengonfirmasi bahwa berdasarkan penilaian awal tidak ditemukan risiko kecurangan yang signifikan pada tahun berjalan.'
+          unconfirmedEmptyMessage='Jika seluruh proses bisnis perangkat daerah telah diuji dan tidak ditemukan risiko kecurangan, Anda dapat mengonfirmasi Status Nihil untuk memenuhi kelayakan pengajuan.'
+          unconfirmedHasItemsMessage='Terdapat catatan risiko kecurangan terdaftar pada tabel di bawah.'
+          badgeConfirmedText='Status Nihil Risiko Kecurangan Dikonfirmasi'
           onToggleNihil={(nextNihil) => nihilMutation.mutate(nextNihil)}
         />
 
@@ -349,14 +358,18 @@ export function FraudRiskAssessmentPage() {
         )}
 
         {/* 4. Bottom Navigation */}
-        <div className='flex justify-between gap-2 pt-2'>
-          <Button
-            variant='outline'
-            onClick={() => navigate({ to: '/risiko/kejadian-risiko' })}
-          >
-            Kembali ke Form 10 (Kejadian Risiko)
-          </Button>
-        </div>
+        <WizardFooterNav
+          currentStepId='fra'
+          allComplete={Boolean(wizard.readiness?.all_forms_complete)}
+          isLocked={wizard.isLocked}
+          lockMessage={
+            wizard.isLocked
+              ? 'Formulir sedang dalam pemeriksaan dan hanya dapat dilihat.'
+              : null
+          }
+          canSubmit={Boolean(wizard.readiness?.all_forms_complete) && !wizard.isLocked}
+          onSubmitClick={() => setIsSubmitDialogOpen(true)}
+        />
 
         {/* 5. Add / Edit Dialog */}
         <FraDialog

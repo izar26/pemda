@@ -16,6 +16,7 @@ import {
   RisikoWorkflowBanners,
 } from '../shared/risiko-wizard-header'
 import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
+import { WizardFooterNav } from '../shared/wizard-footer-nav'
 import { petaRisikoApi } from './api'
 import { PetaRisikoView } from './components/peta-risiko-view'
 
@@ -116,21 +117,10 @@ export function PetaRisikoPage() {
           />
         )}
 
-        <div className='flex justify-between items-center gap-2 pt-4 border-t'>
-          <Button
-            variant='outline'
-            onClick={() => navigate({ to: '/risiko/tindak-pengendalian' })}
-          >
-            Kembali ke Form 6
-          </Button>
-
-          <Button
-            disabled={!wizard.readiness?.is_7_complete}
-            onClick={() => navigate({ to: '/risiko/komunikasi-pengendalian' })}
-          >
-            Lanjut ke Form 8 (Komunikasi)
-          </Button>
-        </div>
+        <WizardFooterNav
+          currentStepId='7'
+          isNextDisabled={!wizard.readiness?.is_7_complete}
+        />
       </Main>
     </>
   )

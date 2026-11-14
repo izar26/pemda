@@ -12,12 +12,20 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { usePermissions } from '@/hooks/use-permissions'
 import {
   RisikoWizardHeader,
   RisikoWorkflowBanners,
 } from '../shared/risiko-wizard-header'
 import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
+import { WizardFooterNav } from '../shared/wizard-footer-nav'
 import { pemantauanApi, type PemantauanInput, type PemantauanRow } from './api'
 import { PemantauanCards } from './pemantauan-cards'
 import { PemantauanDialog } from './pemantauan-dialog'
@@ -158,32 +166,39 @@ export function PemantauanPengendalianPage() {
                   setPage(1)
                 }}
               />
-              <select
-                aria-label='Sumber risiko'
-                className='h-9 rounded-md border bg-background px-2 text-sm'
-                value={source}
-                onChange={(e) => {
-                  setSource(e.target.value)
+              <Select
+                value={source || 'all'}
+                onValueChange={(val) => {
+                  setSource(val === 'all' ? '' : val)
                   setPage(1)
                 }}
               >
-                <option value=''>Semua sumber</option>
-                <option value='3b'>Strategis OPD</option>
-                <option value='3c'>Operasional OPD</option>
-              </select>
-              <select
-                aria-label='Status kelengkapan'
-                className='h-9 rounded-md border bg-background px-2 text-sm'
-                value={status}
-                onChange={(e) => {
-                  setStatus(e.target.value)
+                <SelectTrigger className='w-full sm:w-[180px]'>
+                  <SelectValue placeholder='Semua sumber' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>Semua sumber</SelectItem>
+                  <SelectItem value='3b'>Strategis OPD</SelectItem>
+                  <SelectItem value='3c'>Operasional OPD</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={status || 'all'}
+                onValueChange={(val) => {
+                  setStatus(val === 'all' ? '' : val)
                   setPage(1)
                 }}
               >
-                <option value=''>Semua status</option>
-                <option value='complete'>Lengkap</option>
-                <option value='incomplete'>Belum lengkap</option>
-              </select>
+                <SelectTrigger className='w-full sm:w-[180px]'>
+                  <SelectValue placeholder='Semua status' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>Semua status</SelectItem>
+                  <SelectItem value='complete'>Lengkap</SelectItem>
+                  <SelectItem value='incomplete'>Belum lengkap</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {result.isLoading ? (
@@ -233,20 +248,10 @@ export function PemantauanPengendalianPage() {
           </>
         )}
 
-        <div className='flex justify-between gap-2'>
-          <Button
-            variant='outline'
-            onClick={() => navigate({ to: '/risiko/komunikasi-pengendalian' })}
-          >
-            Kembali ke Form 8 (Komunikasi)
-          </Button>
-          <Button
-            disabled={!wizard.readiness?.is_9_complete}
-            onClick={() => navigate({ to: '/risiko/kejadian-risiko' })}
-          >
-            Lanjut ke Form 10 (Kejadian Risiko)
-          </Button>
-        </div>
+        <WizardFooterNav
+          currentStepId='9'
+          isNextDisabled={!wizard.readiness?.is_9_complete}
+        />
       </Main>
 
       {selected && (

@@ -58,7 +58,7 @@ export function WizardStepper({
 
   return (
     <>
-      {/* DESKTOP & TABLET: COMPACT 13-STEP TIMELINE TRACK */}
+      {/* DESKTOP & TABLET: COMPACT 14-STEP TIMELINE TRACK */}
       <TooltipProvider delayDuration={150}>
         <nav
           aria-label='Progress Pengisian Risiko'

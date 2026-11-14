@@ -20,6 +20,13 @@ import {
   FolderKanban,
   UserCheck,
   ClipboardCheck,
+  ListOrdered,
+  ShieldEllipsis,
+  Activity,
+  Radio,
+  Eye,
+  AlertOctagon,
+  FileSearch,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -154,6 +161,48 @@ export const sidebarData: SidebarData = {
           title: 'Analisis Risiko (4)',
           url: '/risiko/analisis-risiko',
           icon: ClipboardCheck,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Risiko Prioritas (5)',
+          url: '/risiko/risiko-prioritas',
+          icon: ListOrdered,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Tindak Pengendalian (6)',
+          url: '/risiko/tindak-pengendalian',
+          icon: ShieldEllipsis,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Peta Risiko (7)',
+          url: '/risiko/peta-risiko',
+          icon: Activity,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Komunikasi Pengendalian (8)',
+          url: '/risiko/komunikasi-pengendalian',
+          icon: Radio,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Pemantauan Pengendalian (9)',
+          url: '/risiko/pemantauan-pengendalian',
+          icon: Eye,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Kejadian Risiko (10)',
+          url: '/risiko/kejadian-risiko',
+          icon: AlertOctagon,
+          requiredPermission: 'identifikasi_risiko_opd.view',
+        },
+        {
+          title: 'Risiko Kecurangan (FRA)',
+          url: '/risiko/fra',
+          icon: FileSearch,
           requiredPermission: 'identifikasi_risiko_opd.view',
         },
       ],

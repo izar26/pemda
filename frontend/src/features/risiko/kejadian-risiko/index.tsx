@@ -13,16 +13,24 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { usePermissions } from '@/hooks/use-permissions'
 import {
   RisikoWizardHeader,
   RisikoWorkflowBanners,
 } from '../shared/risiko-wizard-header'
 import { useRisikoWizardProgress } from '../shared/risiko-wizard-store'
+import { RisikoNihilStatusCard } from '../shared/risiko-nihil-status-card'
+import { WizardFooterNav } from '../shared/wizard-footer-nav'
 import { kejadianRisikoApi } from './api'
 import { KejadianDialog } from './kejadian-dialog'
 import { KejadianTable } from './kejadian-table'
-import { NihilConfirmationCard } from './nihil-confirmation-card'
 import type { KejadianRisikoInput, KejadianRisikoRow } from './types'
 
 export function KejadianRisikoPage() {
@@ -271,12 +279,16 @@ export function KejadianRisikoPage() {
         </p>
 
         {/* 1. Status Nihil Confirmation Card */}
-        <NihilConfirmationCard
+        <RisikoNihilStatusCard
+          title='Pernyataan Status Kejadian Risiko Tahun Berjalan'
           isNihil={isNihil}
           nihilInfo={nihilInfo}
-          hasIncidents={items.length > 0}
+          hasItems={items.length > 0}
           canEdit={canEdit}
           isLoading={confirmNihilMutation.isPending}
+          confirmedMessage='Perangkat Daerah telah mengonfirmasi bahwa tidak ada kejadian risiko nyata yang terjadi sepanjang tahun berjalan.'
+          unconfirmedEmptyMessage='Jika selama tahun berjalan tidak terdapat insiden risiko yang terjadi, OPD dapat mengonfirmasi status nihil untuk melengkapi Form 10.'
+          unconfirmedHasItemsMessage='Perangkat Daerah telah mencatat kejadian risiko nyata pada tabel di bawah.'
           onToggleNihil={(nextNihil) => confirmNihilMutation.mutate(nextNihil)}
         />
 
@@ -293,20 +305,23 @@ export function KejadianRisikoPage() {
                 setPage(1)
               }}
             />
-            <select
-              aria-label='Filter sumber risiko'
-              className='h-9 rounded-md border border-input bg-background px-3 text-sm'
-              value={sourceFilter}
-              onChange={(e) => {
-                setSourceFilter(e.target.value)
+            <Select
+              value={sourceFilter || 'all'}
+              onValueChange={(val) => {
+                setSourceFilter(val === 'all' ? '' : val)
                 setPage(1)
               }}
             >
-              <option value=''>Semua Sumber Risiko</option>
-              <option value='3a'>3A - Strategis Pemda</option>
-              <option value='3b'>3B - Strategis OPD</option>
-              <option value='3c'>3C - Operasional OPD</option>
-            </select>
+              <SelectTrigger className='w-full sm:w-[220px]'>
+                <SelectValue placeholder='Semua Sumber Risiko' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Sumber Risiko</SelectItem>
+                <SelectItem value='3a'>3A - Strategis Pemda</SelectItem>
+                <SelectItem value='3b'>3B - Strategis OPD</SelectItem>
+                <SelectItem value='3c'>3C - Operasional OPD</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {canEdit && (
@@ -385,20 +400,10 @@ export function KejadianRisikoPage() {
         )}
 
         {/* 4. Bottom Navigation */}
-        <div className='flex justify-between gap-2 pt-2'>
-          <Button
-            variant='outline'
-            onClick={() => navigate({ to: '/risiko/pemantauan-pengendalian' })}
-          >
-            Kembali ke Form 9 (Pemantauan)
-          </Button>
-          <Button
-            onClick={() => navigate({ to: '/risiko/fra' })}
-            disabled={!listQuery.data?.is_complete}
-          >
-            Lanjut ke Form FRA (Risiko Kecurangan)
-          </Button>
-        </div>
+        <WizardFooterNav
+          currentStepId='10'
+          isNextDisabled={!listQuery.data?.is_complete}
+        />
 
         {/* 5. Add / Edit Dialog */}
         <KejadianDialog

@@ -35,8 +35,9 @@ export interface RisikoWizardStepConfig {
 }
 
 /**
- * 6 Active Wizard Step Definitions (SPIP / BPKP Pemda):
- * Form 2B -> Form 2C -> Form 3A -> Form 3B -> Form 3C -> Form RCA.
+ * 14 Active Wizard Step Definitions (SPIP / BPKP Pemda):
+ * Form 2B -> Form 2C -> Form 3A -> Form 3B -> Form 3C -> Form RCA ->
+ * Form 4 -> Form 5 -> Form 6 -> Form 7 -> Form 8 -> Form 9 -> Form 10 -> Form FRA.
  */
 export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
   {
