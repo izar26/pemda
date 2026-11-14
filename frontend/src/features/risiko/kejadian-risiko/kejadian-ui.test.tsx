@@ -123,10 +123,13 @@ describe('Form 10: Pencatatan Kejadian Risiko (Risk Event Log) UI', () => {
       />
     )
 
-    const select = screen.getByLabelText(
-      'Risiko yang Teridentifikasi (3A / 3B / 3C) *'
+    const select = screen.getByRole('combobox', {
+      name: 'Risiko yang Teridentifikasi (3A / 3B / 3C) *',
+    })
+    await userEvent.click(select)
+    await userEvent.click(
+      screen.getByRole('option', { name: /Tanah longsor tebing jalan/ })
     )
-    await userEvent.selectOptions(select, '3b:item-3b-1')
 
     const dateInput = screen.getByLabelText('Tanggal Terjadi *')
     await userEvent.fill(dateInput, '2026-05-15')

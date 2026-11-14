@@ -22,8 +22,9 @@ describe('Form 5 dan 6', () => {
     const save = vi.fn()
     const screen = await render(<TindakDialog row={row} canEdit saving={false} onClose={vi.fn()} onSave={save} />)
     await userEvent.fill(screen.getByRole('textbox', { name: 'Rencana tindak pengendalian' }), 'Perbaiki prosedur')
-    await userEvent.selectOptions(screen.getByLabelText('Kemungkinan treated risk'), '3')
-    await userEvent.click(screen.getByRole('button', { name: 'Simpan' }))
+    await userEvent.click(screen.getByRole('combobox', { name: 'Kemungkinan treated risk' }))
+    await userEvent.click(screen.getByRole('option', { name: '3' }))
+    await userEvent.click(screen.getByRole('button', { name: /Simpan/ }))
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ rencana_tindak: 'Perbaiki prosedur', treated_kemungkinan: 3, treated_dampak: null }))
   })
 

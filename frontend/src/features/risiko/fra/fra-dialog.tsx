@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { FileSearch, Loader2, Save } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -162,10 +163,15 @@ export function FraDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className='max-h-[90vh] max-w-3xl overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Ubah Penilaian Risiko Kecurangan' : 'Tambah Penilaian Risiko Kecurangan (FRA)'}
+          <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
+            <FileSearch className='h-4 w-4 text-primary' />
+            <span>
+              {isEditing
+                ? 'Ubah Penilaian Risiko Kecurangan'
+                : 'Tambah Penilaian Risiko Kecurangan (FRA)'}
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className='text-xs'>
             Isi rincian proses bisnis, skenario kecurangan, analisis matriks kemungkinan & dampak, serta rencana mitigasi fraud.
           </DialogDescription>
         </DialogHeader>
@@ -398,12 +404,34 @@ export function FraDialog({
             />
           </div>
 
-          <DialogFooter className='pt-2'>
-            <Button type='button' variant='outline' onClick={onClose} disabled={isLoading}>
+          <DialogFooter className='border-t pt-3'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={onClose}
+              disabled={isLoading}
+            >
               Batal
             </Button>
-            <Button type='submit' disabled={!isFormValid || isLoading}>
-              {isLoading ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Tambahkan Catatan FRA'}
+            <Button
+              type='submit'
+              size='sm'
+              disabled={!isFormValid || isLoading}
+              className='gap-1.5'
+            >
+              {isLoading ? (
+                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+              ) : (
+                <Save className='h-3.5 w-3.5' />
+              )}
+              <span>
+                {isLoading
+                  ? 'Menyimpan...'
+                  : isEditing
+                    ? 'Simpan Perubahan'
+                    : 'Tambahkan Catatan FRA'}
+              </span>
             </Button>
           </DialogFooter>
         </form>
