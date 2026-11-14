@@ -8,8 +8,10 @@ use App\Services\Risiko\Handlers\AnalisisRisiko4Handler;
 use App\Services\Risiko\Handlers\IdentifikasiOpd3BHandler;
 use App\Services\Risiko\Handlers\IdentifikasiOperasional3CHandler;
 use App\Services\Risiko\Handlers\IdentifikasiPemda3AHandler;
+use App\Services\Risiko\Handlers\KomunikasiPengendalian8Handler;
 use App\Services\Risiko\Handlers\KonteksOperasional2CHandler;
 use App\Services\Risiko\Handlers\KonteksPenilaian2BHandler;
+use App\Services\Risiko\Handlers\PemantauanPengendalian9Handler;
 use App\Services\Risiko\Handlers\PetaRisiko7Handler;
 use App\Services\Risiko\Handlers\RisikoPrioritas5Handler;
 use App\Services\Risiko\Handlers\RootCauseAnalysisHandler;
@@ -34,6 +36,8 @@ class RiskFormServiceProvider extends ServiceProvider
             $registry->register('5', RisikoPrioritas5Handler::class);
             $registry->register('6', TindakPengendalian6Handler::class);
             $registry->register('7', PetaRisiko7Handler::class);
+            $registry->register('8', KomunikasiPengendalian8Handler::class);
+            $registry->register('9', PemantauanPengendalian9Handler::class);
 
             return $registry;
         });

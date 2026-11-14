@@ -50,9 +50,11 @@ import { Route as AuthenticatedRisikoTindakPengendalianIndexRouteImport } from '
 import { Route as AuthenticatedRisikoRisikoPrioritasIndexRouteImport } from './routes/_authenticated/risiko/risiko-prioritas/index'
 import { Route as AuthenticatedRisikoRcaIndexRouteImport } from './routes/_authenticated/risiko/rca/index'
 import { Route as AuthenticatedRisikoPetaRisikoIndexRouteImport } from './routes/_authenticated/risiko/peta-risiko/index'
+import { Route as AuthenticatedRisikoPemantauanPengendalianIndexRouteImport } from './routes/_authenticated/risiko/pemantauan-pengendalian/index'
 import { Route as AuthenticatedRisikoLaporanIndexRouteImport } from './routes/_authenticated/risiko/laporan/index'
 import { Route as AuthenticatedRisikoKonteksStrategisIndexRouteImport } from './routes/_authenticated/risiko/konteks-strategis/index'
 import { Route as AuthenticatedRisikoKonteksOperasionalIndexRouteImport } from './routes/_authenticated/risiko/konteks-operasional/index'
+import { Route as AuthenticatedRisikoKomunikasiPengendalianIndexRouteImport } from './routes/_authenticated/risiko/komunikasi-pengendalian/index'
 import { Route as AuthenticatedRisikoIdentifikasiPemdaIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-pemda/index'
 import { Route as AuthenticatedRisikoIdentifikasiOperasionalIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-operasional/index'
 import { Route as AuthenticatedRisikoIdentifikasiOpdIndexRouteImport } from './routes/_authenticated/risiko/identifikasi-opd/index'
@@ -283,6 +285,12 @@ const AuthenticatedRisikoPetaRisikoIndexRoute =
     path: '/risiko/peta-risiko/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRisikoPemantauanPengendalianIndexRoute =
+  AuthenticatedRisikoPemantauanPengendalianIndexRouteImport.update({
+    id: '/risiko/pemantauan-pengendalian/',
+    path: '/risiko/pemantauan-pengendalian/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRisikoLaporanIndexRoute =
   AuthenticatedRisikoLaporanIndexRouteImport.update({
     id: '/risiko/laporan/',
@@ -299,6 +307,12 @@ const AuthenticatedRisikoKonteksOperasionalIndexRoute =
   AuthenticatedRisikoKonteksOperasionalIndexRouteImport.update({
     id: '/risiko/konteks-operasional/',
     path: '/risiko/konteks-operasional/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRisikoKomunikasiPengendalianIndexRoute =
+  AuthenticatedRisikoKomunikasiPengendalianIndexRouteImport.update({
+    id: '/risiko/komunikasi-pengendalian/',
+    path: '/risiko/komunikasi-pengendalian/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRisikoIdentifikasiPemdaIndexRoute =
@@ -414,9 +428,11 @@ export interface FileRoutesByFullPath {
   '/risiko/identifikasi-opd/': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   '/risiko/identifikasi-operasional/': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   '/risiko/identifikasi-pemda/': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
+  '/risiko/komunikasi-pengendalian/': typeof AuthenticatedRisikoKomunikasiPengendalianIndexRoute
   '/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/risiko/pemantauan-pengendalian/': typeof AuthenticatedRisikoPemantauanPengendalianIndexRoute
   '/risiko/peta-risiko/': typeof AuthenticatedRisikoPetaRisikoIndexRoute
   '/risiko/rca/': typeof AuthenticatedRisikoRcaIndexRoute
   '/risiko/risiko-prioritas/': typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
@@ -467,9 +483,11 @@ export interface FileRoutesByTo {
   '/risiko/identifikasi-opd': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   '/risiko/identifikasi-operasional': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   '/risiko/identifikasi-pemda': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
+  '/risiko/komunikasi-pengendalian': typeof AuthenticatedRisikoKomunikasiPengendalianIndexRoute
   '/risiko/konteks-operasional': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/risiko/konteks-strategis': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/risiko/laporan': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/risiko/pemantauan-pengendalian': typeof AuthenticatedRisikoPemantauanPengendalianIndexRoute
   '/risiko/peta-risiko': typeof AuthenticatedRisikoPetaRisikoIndexRoute
   '/risiko/rca': typeof AuthenticatedRisikoRcaIndexRoute
   '/risiko/risiko-prioritas': typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
@@ -525,9 +543,11 @@ export interface FileRoutesById {
   '/_authenticated/risiko/identifikasi-opd/': typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   '/_authenticated/risiko/identifikasi-operasional/': typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   '/_authenticated/risiko/identifikasi-pemda/': typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
+  '/_authenticated/risiko/komunikasi-pengendalian/': typeof AuthenticatedRisikoKomunikasiPengendalianIndexRoute
   '/_authenticated/risiko/konteks-operasional/': typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   '/_authenticated/risiko/konteks-strategis/': typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   '/_authenticated/risiko/laporan/': typeof AuthenticatedRisikoLaporanIndexRoute
+  '/_authenticated/risiko/pemantauan-pengendalian/': typeof AuthenticatedRisikoPemantauanPengendalianIndexRoute
   '/_authenticated/risiko/peta-risiko/': typeof AuthenticatedRisikoPetaRisikoIndexRoute
   '/_authenticated/risiko/rca/': typeof AuthenticatedRisikoRcaIndexRoute
   '/_authenticated/risiko/risiko-prioritas/': typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
@@ -581,9 +601,11 @@ export interface FileRouteTypes {
     | '/risiko/identifikasi-opd/'
     | '/risiko/identifikasi-operasional/'
     | '/risiko/identifikasi-pemda/'
+    | '/risiko/komunikasi-pengendalian/'
     | '/risiko/konteks-operasional/'
     | '/risiko/konteks-strategis/'
     | '/risiko/laporan/'
+    | '/risiko/pemantauan-pengendalian/'
     | '/risiko/peta-risiko/'
     | '/risiko/rca/'
     | '/risiko/risiko-prioritas/'
@@ -634,9 +656,11 @@ export interface FileRouteTypes {
     | '/risiko/identifikasi-opd'
     | '/risiko/identifikasi-operasional'
     | '/risiko/identifikasi-pemda'
+    | '/risiko/komunikasi-pengendalian'
     | '/risiko/konteks-operasional'
     | '/risiko/konteks-strategis'
     | '/risiko/laporan'
+    | '/risiko/pemantauan-pengendalian'
     | '/risiko/peta-risiko'
     | '/risiko/rca'
     | '/risiko/risiko-prioritas'
@@ -691,9 +715,11 @@ export interface FileRouteTypes {
     | '/_authenticated/risiko/identifikasi-opd/'
     | '/_authenticated/risiko/identifikasi-operasional/'
     | '/_authenticated/risiko/identifikasi-pemda/'
+    | '/_authenticated/risiko/komunikasi-pengendalian/'
     | '/_authenticated/risiko/konteks-operasional/'
     | '/_authenticated/risiko/konteks-strategis/'
     | '/_authenticated/risiko/laporan/'
+    | '/_authenticated/risiko/pemantauan-pengendalian/'
     | '/_authenticated/risiko/peta-risiko/'
     | '/_authenticated/risiko/rca/'
     | '/_authenticated/risiko/risiko-prioritas/'
@@ -1006,6 +1032,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRisikoPetaRisikoIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/risiko/pemantauan-pengendalian/': {
+      id: '/_authenticated/risiko/pemantauan-pengendalian/'
+      path: '/risiko/pemantauan-pengendalian'
+      fullPath: '/risiko/pemantauan-pengendalian/'
+      preLoaderRoute: typeof AuthenticatedRisikoPemantauanPengendalianIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/risiko/laporan/': {
       id: '/_authenticated/risiko/laporan/'
       path: '/risiko/laporan'
@@ -1025,6 +1058,13 @@ declare module '@tanstack/react-router' {
       path: '/risiko/konteks-operasional'
       fullPath: '/risiko/konteks-operasional/'
       preLoaderRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risiko/komunikasi-pengendalian/': {
+      id: '/_authenticated/risiko/komunikasi-pengendalian/'
+      path: '/risiko/komunikasi-pengendalian'
+      fullPath: '/risiko/komunikasi-pengendalian/'
+      preLoaderRoute: typeof AuthenticatedRisikoKomunikasiPengendalianIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/risiko/identifikasi-pemda/': {
@@ -1152,9 +1192,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRisikoIdentifikasiOpdIndexRoute: typeof AuthenticatedRisikoIdentifikasiOpdIndexRoute
   AuthenticatedRisikoIdentifikasiOperasionalIndexRoute: typeof AuthenticatedRisikoIdentifikasiOperasionalIndexRoute
   AuthenticatedRisikoIdentifikasiPemdaIndexRoute: typeof AuthenticatedRisikoIdentifikasiPemdaIndexRoute
+  AuthenticatedRisikoKomunikasiPengendalianIndexRoute: typeof AuthenticatedRisikoKomunikasiPengendalianIndexRoute
   AuthenticatedRisikoKonteksOperasionalIndexRoute: typeof AuthenticatedRisikoKonteksOperasionalIndexRoute
   AuthenticatedRisikoKonteksStrategisIndexRoute: typeof AuthenticatedRisikoKonteksStrategisIndexRoute
   AuthenticatedRisikoLaporanIndexRoute: typeof AuthenticatedRisikoLaporanIndexRoute
+  AuthenticatedRisikoPemantauanPengendalianIndexRoute: typeof AuthenticatedRisikoPemantauanPengendalianIndexRoute
   AuthenticatedRisikoPetaRisikoIndexRoute: typeof AuthenticatedRisikoPetaRisikoIndexRoute
   AuthenticatedRisikoRcaIndexRoute: typeof AuthenticatedRisikoRcaIndexRoute
   AuthenticatedRisikoRisikoPrioritasIndexRoute: typeof AuthenticatedRisikoRisikoPrioritasIndexRoute
@@ -1198,11 +1240,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRisikoIdentifikasiOperasionalIndexRoute,
   AuthenticatedRisikoIdentifikasiPemdaIndexRoute:
     AuthenticatedRisikoIdentifikasiPemdaIndexRoute,
+  AuthenticatedRisikoKomunikasiPengendalianIndexRoute:
+    AuthenticatedRisikoKomunikasiPengendalianIndexRoute,
   AuthenticatedRisikoKonteksOperasionalIndexRoute:
     AuthenticatedRisikoKonteksOperasionalIndexRoute,
   AuthenticatedRisikoKonteksStrategisIndexRoute:
     AuthenticatedRisikoKonteksStrategisIndexRoute,
   AuthenticatedRisikoLaporanIndexRoute: AuthenticatedRisikoLaporanIndexRoute,
+  AuthenticatedRisikoPemantauanPengendalianIndexRoute:
+    AuthenticatedRisikoPemantauanPengendalianIndexRoute,
   AuthenticatedRisikoPetaRisikoIndexRoute:
     AuthenticatedRisikoPetaRisikoIndexRoute,
   AuthenticatedRisikoRcaIndexRoute: AuthenticatedRisikoRcaIndexRoute,

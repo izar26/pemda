@@ -17,6 +17,8 @@ export type RisikoWizardStepId =
   | '5'
   | '6'
   | '7'
+  | '8'
+  | '9'
 
 export interface RisikoWizardStepConfig {
   stepNumber: number
@@ -142,6 +144,26 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     shortTitle: 'Peta Risiko',
     subtitle: 'Visualisasi Matriks 5x5 Inherent, Residual & Treated Risk',
     url: '/risiko/peta-risiko',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 11,
+    id: '8',
+    code: '8',
+    title: 'Pengkomunikasian Pengendalian (8)',
+    shortTitle: 'Komunikasi',
+    subtitle: 'Sarana, Media & Jadwal Komunikasi Pengendalian yang Dibangun',
+    url: '/risiko/komunikasi-pengendalian',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 12,
+    id: '9',
+    code: '9',
+    title: 'Pemantauan Pengendalian (9)',
+    shortTitle: 'Pemantauan',
+    subtitle: 'Rancangan Metode & Jadwal Pemantauan Pengendalian Intern',
+    url: '/risiko/pemantauan-pengendalian',
     isImplemented: true,
   },
 ]

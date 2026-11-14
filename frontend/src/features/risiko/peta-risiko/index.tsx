@@ -124,11 +124,12 @@ export function PetaRisikoPage() {
             Kembali ke Form 6
           </Button>
 
-          {wizard.canSubmit && (
-            <p className='text-xs text-muted-foreground'>
-              Seluruh lembar kerja telah siap. Anda dapat mengajukan berkas melalui tombol di header wizard.
-            </p>
-          )}
+          <Button
+            disabled={!wizard.readiness?.is_7_complete}
+            onClick={() => navigate({ to: '/risiko/komunikasi-pengendalian' })}
+          >
+            Lanjut ke Form 8 (Komunikasi)
+          </Button>
         </div>
       </Main>
     </>

@@ -91,6 +91,6 @@ class AnalisisRisiko4Handler implements RiskFormHandlerInterface
 
     public function getDownstreamFormCodes(): array
     {
-        return ['5', '6'];
+        return ['5', '6', '7', '8', '9'];
     }
 }

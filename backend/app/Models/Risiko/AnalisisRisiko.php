@@ -40,4 +40,14 @@ class AnalisisRisiko extends Model
     {
         return $this->hasOne(TindakPengendalianRisiko::class, 'analisis_risiko_id');
     }
+
+    public function komunikasi(): HasOne
+    {
+        return $this->hasOne(KomunikasiPengendalianRisiko::class, 'analisis_risiko_id');
+    }
+
+    public function pemantauan(): HasOne
+    {
+        return $this->hasOne(PemantauanPengendalianRisiko::class, 'analisis_risiko_id');
+    }
 }

@@ -10,6 +10,8 @@ import type {
 import type { AnalisisRow } from '@/features/risiko/analisis-risiko/api'
 import type { TindakRow } from '@/features/risiko/tindak-pengendalian/api'
 import type { PetaRisikoData } from '@/features/risiko/peta-risiko/types'
+import type { KomunikasiRow } from '@/features/risiko/komunikasi-pengendalian/api'
+import type { PemantauanRow } from '@/features/risiko/pemantauan-pengendalian/api'
 import { ReviewStep2B } from './steps/review-step-2b'
 import { ReviewStep2C } from './steps/review-step-2c'
 import { ReviewStep3A } from './steps/review-step-3a'
@@ -19,6 +21,8 @@ import { ReviewStep4 } from './steps/review-step-4'
 import { ReviewStep5 } from './steps/review-step-5'
 import { ReviewStep6 } from './steps/review-step-6'
 import { ReviewStep7 } from './steps/review-step-7'
+import { ReviewStep8 } from './steps/review-step-8'
+import { ReviewStep9 } from './steps/review-step-9'
 import { ReviewStepRca } from './steps/review-step-rca'
 
 export interface StepFilterConfig {
@@ -149,6 +153,32 @@ export const REVIEW_STEP_REGISTRY: Record<string, StepRegistryEntry> = {
     render: ({ data, isLoading }) => (
       <ReviewStep7
         data={data as PetaRisikoData | null}
+        isLoading={isLoading}
+      />
+    ),
+  },
+  '8': {
+    isPaginated: true,
+    filters: {
+      hasSearch: true,
+      searchPlaceholder: 'Cari kode atau pernyataan risiko',
+    },
+    render: ({ data, isLoading }) => (
+      <ReviewStep8
+        items={(data as KomunikasiRow[]) || []}
+        isLoading={isLoading}
+      />
+    ),
+  },
+  '9': {
+    isPaginated: true,
+    filters: {
+      hasSearch: true,
+      searchPlaceholder: 'Cari kode atau pernyataan risiko',
+    },
+    render: ({ data, isLoading }) => (
+      <ReviewStep9
+        items={(data as PemantauanRow[]) || []}
         isLoading={isLoading}
       />
     ),

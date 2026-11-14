@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -26,10 +25,6 @@ import {
 } from '@/components/ui/table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  ExternalLink,
   Layers,
   ShieldAlert,
   Sparkles,
@@ -37,7 +32,6 @@ import {
 import type {
   PetaRisikoCell,
   PetaRisikoData,
-  PetaRisikoItem,
   PetaRisikoMatrix,
 } from '../types'
 
@@ -116,7 +110,7 @@ export function PetaRisikoView({
 
   const renderSingleMatrix = (
     matrix: PetaRisikoMatrix,
-    modeKey: 'inherent' | 'residual' | 'treated',
+    _modeKey: 'inherent' | 'residual' | 'treated',
     title: string,
     subtitle: string,
     isCompact = false
@@ -390,7 +384,6 @@ export function PetaRisikoView({
               </TableHeader>
               <TableBody>
                 {rekapitulasi.map((row, idx) => {
-                  const badgeClass = ZONE_BADGE_CLASSES[row.zona] || 'bg-muted'
                   const delta = row.inherent_count - row.residual_count
 
                   return (

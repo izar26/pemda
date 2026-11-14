@@ -20,8 +20,10 @@ use App\Http\Controllers\Api\Risiko\AnalisisRisikoController;
 use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoOpdController;
 use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoOpdOperasionalController;
 use App\Http\Controllers\Api\Risiko\IdentifikasiRisikoPemdaController;
+use App\Http\Controllers\Api\Risiko\KomunikasiPengendalianController;
 use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
 use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
+use App\Http\Controllers\Api\Risiko\PemantauanPengendalianController;
 use App\Http\Controllers\Api\Risiko\PengajuanRisikoController;
 use App\Http\Controllers\Api\Risiko\PetaRisikoController;
 use App\Http\Controllers\Api\Risiko\RootCauseAnalysisController;
@@ -233,6 +235,10 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::get('/tindak-pengendalian', [TindakPengendalianController::class, 'index']);
         Route::put('/tindak-pengendalian/{source}/{item}', [TindakPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
         Route::get('/peta-risiko', [PetaRisikoController::class, 'index']);
+        Route::get('/komunikasi-pengendalian', [KomunikasiPengendalianController::class, 'index']);
+        Route::put('/komunikasi-pengendalian/{source}/{item}', [KomunikasiPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
+        Route::get('/pemantauan-pengendalian', [PemantauanPengendalianController::class, 'index']);
+        Route::put('/pemantauan-pengendalian/{source}/{item}', [PemantauanPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
 
         // Form RCA: Root Cause Analysis (5-Whys)
         Route::get('/rca', [RootCauseAnalysisController::class, 'index']);

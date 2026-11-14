@@ -407,6 +407,34 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
         ]);
         $analisis3c->update(['rencana_tindak' => 'Revisi klausul kontrak penalti vendor logistik']);
 
+        // Form 8: Pengkomunikasian Pengendalian yang Dibangun (3B & 3C)
+        $this->putJson("/api/risiko/komunikasi-pengendalian/3b/{$item3b->id}", [
+            'media_komunikasi' => 'Rapat Koordinasi Sarpras',
+            'penyedia_informasi' => 'Bidang Sarpras Disdik',
+            'penerima_informasi' => 'Kepala Dinas & Tim Teknis',
+            'rencana_waktu' => 'Triwulan II 2026',
+        ])->assertOk();
+
+        $this->putJson("/api/risiko/komunikasi-pengendalian/3c/{$item3c->id}", [
+            'media_komunikasi' => 'Rapat Koordinasi Pengadaan',
+            'penyedia_informasi' => 'PPK Pengadaan Buku',
+            'penerima_informasi' => 'Kepala Dinas & Tim Teknis',
+            'rencana_waktu' => 'Triwulan I 2026',
+        ])->assertOk();
+
+        // Form 9: Rancangan Pemantauan Pengendalian Intern (3B & 3C)
+        $this->putJson("/api/risiko/pemantauan-pengendalian/3b/{$item3b->id}", [
+            'bentuk_pemantauan' => 'Observasi Fisik Sekolah',
+            'penanggung_jawab_pemantauan' => 'Irban Wilayah I',
+            'rencana_waktu_pemantauan' => 'Triwulan II 2026',
+        ])->assertOk();
+
+        $this->putJson("/api/risiko/pemantauan-pengendalian/3c/{$item3c->id}", [
+            'bentuk_pemantauan' => 'Reviu Dokumen Kontrak & Berita Acara',
+            'penanggung_jawab_pemantauan' => 'Irban Khusus',
+            'rencana_waktu_pemantauan' => 'Triwulan I 2026',
+        ])->assertOk();
+
         // Verifikasi Status Kesiapan API
         $statusRes = $this->getJson("/api/risiko/pengajuan/status?opd_id={$this->opd->id}&periode_penilaian_id={$this->activePeriode->id}");
         $statusRes->assertOk();
@@ -469,14 +497,14 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
         $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/start")->assertOk();
 
         // Verifikasi semua form dapat diambil via Registry Handler API
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'] as $code) {
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7', '8', '9'] as $code) {
             $this->getJson("/api/pengawasan/review-risiko/{$submissionId}/forms/{$code}")
                 ->assertOk()
                 ->assertJsonStructure(['data']);
         }
 
-        // Auditor menyetujui form 2B, 2C, 3A, 3B, 3C, 5, 6, 7
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '5', '6', '7'] as $code) {
+        // Auditor menyetujui form 2B, 2C, 3A, 3B, 3C, 5, 6, 7, 8, 9
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '5', '6', '7', '8', '9'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/item", [
                 'form_code' => $code,
                 'status' => 'approved',
@@ -548,7 +576,7 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
         Sanctum::actingAs($this->auditorUser);
 
         // Auditor menyetujui seluruh form pada pengajuan ulang
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'] as $code) {
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7', '8', '9'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/item", [
                 'form_code' => $code,
                 'status' => 'approved',
@@ -564,7 +592,7 @@ class RisikoComprehensiveApiScenarioTest extends TestCase
 
         // Pengawas Dalnis menyetujui seluruh form (Tier 4 Final Approval)
         Sanctum::actingAs($this->pengawasUser);
-        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'] as $code) {
+        foreach (['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7', '8', '9'] as $code) {
             $this->postJson("/api/pengawasan/review-risiko/{$submissionId}/review-pengawas", [
                 'form_code' => $code,
                 'status' => 'approved',

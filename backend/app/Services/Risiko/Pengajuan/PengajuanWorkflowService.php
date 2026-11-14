@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class PengajuanWorkflowService
 {
-    public const REQUIRED_FORM_CODES = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7'];
+    public const REQUIRED_FORM_CODES = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7', '8', '9'];
 
     public function __construct(
         protected PengajuanQueryService $queryService,
@@ -395,14 +395,14 @@ class PengajuanWorkflowService
             ]);
         }
 
-        if (in_array($cleanFormCode, ['4', '5', '6', '7'], true) && ($submission->current_tier !== PengajuanPenilaianRisiko::TIER_AUDITOR || ! in_array($submission->status, [PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR, PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, PengajuanPenilaianRisiko::STATUS_SUBMITTED, PengajuanPenilaianRisiko::STATUS_IN_REVIEW], true))) {
+        if (in_array($cleanFormCode, ['4', '5', '6', '7', '8', '9'], true) && ($submission->current_tier !== PengajuanPenilaianRisiko::TIER_AUDITOR || ! in_array($submission->status, [PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR, PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, PengajuanPenilaianRisiko::STATUS_SUBMITTED, PengajuanPenilaianRisiko::STATUS_IN_REVIEW], true))) {
             throw ValidationException::withMessages(['submission' => ['Formulir tidak berada pada tahap pemeriksaan auditor.']]);
         }
 
         return DB::transaction(function () use ($submission, $cleanFormCode, $status, $catatanRevisi, $auditorUser) {
             $lockedSubmission = PengajuanPenilaianRisiko::lockForUpdate()->find($submission->id);
 
-            if (in_array($cleanFormCode, ['4', '5', '6', '7'], true) && ! $lockedSubmission->items()->where('form_code', $cleanFormCode)->exists()) {
+            if (in_array($cleanFormCode, ['4', '5', '6', '7', '8', '9'], true) && ! $lockedSubmission->items()->where('form_code', $cleanFormCode)->exists()) {
                 throw ValidationException::withMessages(['form_code' => ['Formulir tidak tersedia untuk pengajuan ini.']]);
             }
 
@@ -740,7 +740,7 @@ class PengajuanWorkflowService
         return DB::transaction(function () use ($submission, $cleanFormCode, $status, $catatanRevisi, $pengawasUser) {
             $lockedSubmission = PengajuanPenilaianRisiko::lockForUpdate()->find($submission->id);
 
-            if (in_array($cleanFormCode, ['4', '5', '6', '7'], true) && ! $lockedSubmission->items()->where('form_code', $cleanFormCode)->exists()) {
+            if (in_array($cleanFormCode, ['4', '5', '6', '7', '8', '9'], true) && ! $lockedSubmission->items()->where('form_code', $cleanFormCode)->exists()) {
                 throw ValidationException::withMessages(['form_code' => ['Formulir tidak tersedia untuk pengajuan ini.']]);
             }
 

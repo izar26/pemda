@@ -84,6 +84,6 @@ class TindakPengendalian6Handler implements RiskFormHandlerInterface
 
     public function getDownstreamFormCodes(): array
     {
-        return [];
+        return ['7', '8', '9'];
     }
 }
