@@ -45,9 +45,7 @@ class RisikoPrioritas5Handler implements RiskFormHandlerInterface
 
     public function isRequired(PengajuanPenilaianRisiko $submission): bool
     {
-        $hasBeenSubmitted = $submission->submitted_at !== null || $submission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
-
-        return ! $hasBeenSubmitted || $submission->items->contains('form_code', '5');
+        return true;
     }
 
     public function getReviewData(PengajuanPenilaianRisiko $submission, array $params, User $user): array

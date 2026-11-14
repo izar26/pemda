@@ -47,16 +47,6 @@ class PetaRisiko7Handler implements RiskFormHandlerInterface
 
     public function isRequired(PengajuanPenilaianRisiko $submission): bool
     {
-        $hasBeenSubmitted = $submission->submitted_at !== null || $submission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
-
-        if ($hasBeenSubmitted && ! $submission->items->contains('form_code', '7')) {
-            return false;
-        }
-
-        if (! $this->analisisHandler->isRequired($submission) || ! $this->tindakHandler->isRequired($submission)) {
-            return false;
-        }
-
         return true;
     }
 

@@ -78,7 +78,7 @@ export function RcaPage() {
     await Promise.all([refetchWizardProgress(), refetchRca()])
   }
 
-  const allComplete = Boolean(readiness?.all_forms_complete)
+  const allComplete = Boolean(readiness?.all_forms_complete && completedCount === totalSteps)
 
   return (
     <>

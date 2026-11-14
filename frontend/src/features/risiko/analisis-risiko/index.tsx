@@ -56,7 +56,7 @@ export function AnalisisRisikoPage() {
       <RisikoWizardHeader pageTitle='Analisis dan Evaluasi Risiko' formCode='4' stepNumber={7} currentStepId='4' steps={wizard.steps} completedCount={wizard.completedCount} totalSteps={wizard.totalSteps} progressPercentage={wizard.progressPercentage} readiness={wizard.readiness} effectiveOpdId={wizard.effectiveOpdId} activePeriodeId={wizard.activePeriode?.id} onSubmissionSuccess={wizard.refetchWizardProgress} isSubmitDialogOpen={submitOpen} setIsSubmitDialogOpen={setSubmitOpen} />
       <RisikoWorkflowBanners readiness={wizard.readiness} />
       <AnalisisList data={result.data} isLoading={result.isLoading || wizard.isLoading} isError={result.isError} source={source} search={search} status={status} onSource={(value) => { setSource(value); setPage(1) }} onSearch={(value) => { setSearch(value); setPage(1) }} onStatus={(value) => { setStatus(value); setPage(1) }} onPage={setPage} onRetry={() => void result.refetch()} canEdit={canEdit} onOpen={setRow} />
-      {!wizard.isLoading && <AnalisisFooterNav allComplete={Boolean(wizard.readiness?.all_forms_complete)} isLocked={wizard.isLocked} lockMessage={lockMessage} form4Complete={Boolean(wizard.readiness?.is_4_complete)} />}
+      {!wizard.isLoading && <AnalisisFooterNav allComplete={Boolean(wizard.readiness?.all_forms_complete && wizard.completedCount === wizard.totalSteps)} isLocked={wizard.isLocked} lockMessage={lockMessage} form4Complete={Boolean(wizard.readiness?.is_4_complete)} />}
     </Main>
     {row && <AnalisisDialog row={row} canEdit={canEdit(row)} isSaving={save.isPending} subUnsur={result.data?.meta.sub_unsur_spip || []} onClose={() => setRow(null)} onSave={(selected, data) => save.mutate({ selected, data })} />}
   </>

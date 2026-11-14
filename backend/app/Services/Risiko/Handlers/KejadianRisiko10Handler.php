@@ -45,12 +45,6 @@ class KejadianRisiko10Handler implements RiskFormHandlerInterface
 
     public function isRequired(PengajuanPenilaianRisiko $submission): bool
     {
-        $hasBeenSubmitted = $submission->submitted_at !== null || $submission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
-
-        if ($hasBeenSubmitted && ! $submission->items->contains('form_code', '10')) {
-            return false;
-        }
-
         return true;
     }
 

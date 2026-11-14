@@ -41,7 +41,7 @@ export function RcaFooterNav({
         {allComplete && !isLocked && (
           <div className='flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold py-1 px-3 rounded-md bg-emerald-500/10 border border-emerald-500/20'>
             <CheckCircle2 className='h-4 w-4' />
-            <span>Seluruh lembar kerja termasuk Form 4 telah lengkap & siap diajukan.</span>
+            <span>Seluruh lembar kerja (14/14) telah lengkap & siap diajukan.</span>
           </div>
         )}
 

@@ -51,13 +51,7 @@ class PemantauanPengendalian9Handler implements RiskFormHandlerInterface
 
     public function isRequired(PengajuanPenilaianRisiko $submission): bool
     {
-        $hasBeenSubmitted = $submission->submitted_at !== null || $submission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
-
-        if ($hasBeenSubmitted && ! $submission->items->contains('form_code', '9')) {
-            return false;
-        }
-
-        return $this->tindakHandler->isRequired($submission);
+        return true;
     }
 
     public function getReviewData(PengajuanPenilaianRisiko $submission, array $params, User $user): array

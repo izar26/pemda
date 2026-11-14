@@ -61,10 +61,7 @@ class PengajuanWorkflowService
                 ]);
             }
 
-            $previouslySubmitted = $lockedSubmission->submitted_at !== null || $lockedSubmission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
-            $existingCodes = $lockedSubmission->items()->pluck('form_code')->all();
-            $registeredCodes = $this->registry->getCodes();
-            $codes = $previouslySubmitted ? array_values(array_intersect($registeredCodes, $existingCodes)) : $registeredCodes;
+            $codes = $this->registry->getCodes();
             $lockedSubmission->update([
                 'auditor_id' => $readiness['assigned_auditor']?->id ?? $lockedSubmission->auditor_id,
                 'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA,

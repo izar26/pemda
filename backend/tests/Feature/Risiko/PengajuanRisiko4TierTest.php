@@ -596,7 +596,7 @@ class PengajuanRisiko4TierTest extends TestCase
         $this->assertFalse($submission->items()->where('form_code', '4')->exists());
     }
 
-    public function test_legacy_revision_can_be_resubmitted_without_new_forms_or_form4(): void
+    public function test_legacy_revision_cannot_be_resubmitted_when_forms_are_incomplete(): void
     {
         Sanctum::actingAs($this->operatorUser);
         $this->postJson('/api/risiko/pengajuan/submit', ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id])->assertOk();
@@ -606,8 +606,10 @@ class PengajuanRisiko4TierTest extends TestCase
         Sanctum::actingAs($this->kepalaOpdUser);
         $this->postJson("/api/risiko/pengajuan/{$submission->id}/review-kepala", ['status' => 'rejected', 'form_code' => '2b', 'catatan' => 'Perbaiki konteks strategis'])->assertOk();
         Sanctum::actingAs($this->operatorUser);
-        $this->postJson('/api/risiko/pengajuan/submit', ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id])->assertOk();
-        $this->assertSame(0, $submission->items()->whereIn('form_code', ['4', '5', '6', '7', '8', '9', '10', 'fra'])->count());
+        // All forms must be complete (14/14: 100%) before resubmitting; missing forms 4-9, 10, FRA must be rejected with 422
+        $this->postJson('/api/risiko/pengajuan/submit', ['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['forms']);
     }
 
     public function test_complete_4_tier_happy_path_to_final_approval(): void

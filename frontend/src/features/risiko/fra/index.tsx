@@ -360,14 +360,14 @@ export function FraudRiskAssessmentPage() {
         {/* 4. Bottom Navigation */}
         <WizardFooterNav
           currentStepId='fra'
-          allComplete={Boolean(wizard.readiness?.all_forms_complete)}
+          allComplete={Boolean(wizard.readiness?.all_forms_complete && wizard.completedCount === wizard.totalSteps)}
           isLocked={wizard.isLocked}
           lockMessage={
             wizard.isLocked
               ? 'Formulir sedang dalam pemeriksaan dan hanya dapat dilihat.'
               : null
           }
-          canSubmit={Boolean(wizard.readiness?.all_forms_complete) && !wizard.isLocked}
+          canSubmit={Boolean(wizard.readiness?.all_forms_complete && wizard.completedCount === wizard.totalSteps) && !wizard.isLocked}
           onSubmitClick={() => setIsSubmitDialogOpen(true)}
         />
 

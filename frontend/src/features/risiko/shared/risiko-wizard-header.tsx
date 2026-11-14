@@ -192,8 +192,8 @@ export function RisikoWizardHeader({
               </span>
             </div>
 
-            {/* 1. Operator: Submit to Kepala OPD Button */}
-            {showOperatorSubmitButton && (
+            {/* 1. Operator: Submit to Kepala OPD Button (Strictly requires 14/14 complete) */}
+            {showOperatorSubmitButton && completedCount === totalSteps && (
               <Button
                 type='button'
                 size='sm'

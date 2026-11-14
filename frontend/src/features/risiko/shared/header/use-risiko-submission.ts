@@ -190,6 +190,7 @@ export function useRisikoSubmission({
 
   const showOperatorSubmitButton = Boolean(
     readiness?.can_submit_to_kepala &&
+    readiness?.all_forms_complete &&
     !readiness?.is_locked_for_operator &&
     !submitToKepalaMutation.isPending
   )
