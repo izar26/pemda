@@ -28,7 +28,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { DataTableFacetedFilter } from '@/components/data-table'
 import { Input } from '@/components/ui/input'
 import { Cross2Icon } from '@radix-ui/react-icons'
-import type { RiskLevel } from './data/permission-metadata'
+import { getModuleSortOrder, type RiskLevel } from './data/permission-metadata'
 
 const riskOptions = [
   { label: 'Aman (Lihat)', value: 'low' },
@@ -81,10 +81,12 @@ function RolesContent() {
   }, [roles])
 
   const moduleFilterOptions = useMemo(() => {
-    return Object.keys(groupedPermissions).map((groupName) => ({
-      label: groupName,
-      value: groupName,
-    }))
+    return Object.keys(groupedPermissions)
+      .sort((a, b) => getModuleSortOrder(a) - getModuleSortOrder(b))
+      .map((groupName) => ({
+        label: groupName,
+        value: groupName,
+      }))
   }, [groupedPermissions])
 
   function handleSuccess() {

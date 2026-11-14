@@ -16,6 +16,20 @@ class Permission extends SpatiePermission
         'name',
         'guard_name',
         'group',
+        'category',
+        'sort_order',
         'description',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'sort_order' => 'integer',
+        ];
+    }
 }

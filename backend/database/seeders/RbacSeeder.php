@@ -20,134 +20,245 @@ class RbacSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Define Master Permissions strictly per active menu in application (100% clean)
-        // Group name matches the navigation menu structure
-        $permissionGroups = [
-            'Perangkat Daerah (OPD)' => [
-                ['name' => 'opd.view', 'description' => 'Melihat direktori instansi perangkat daerah (Fitur 11)'],
-                ['name' => 'opd.create', 'description' => 'Menambahkan data instansi perangkat daerah baru (Fitur 11)'],
-                ['name' => 'opd.edit', 'description' => 'Mengubah data perangkat daerah dan kepala dinas (Fitur 11)'],
-                ['name' => 'opd.delete', 'description' => 'Menghapus data instansi perangkat daerah (Fitur 11)'],
+        // 1. Define Master Permissions strictly aligned with Sidebar Navigation hierarchy (100% clean)
+        $moduleDefinitions = [
+            // Kategori: Menu Utama
+            [
+                'group' => 'Perangkat Daerah',
+                'category' => 'Menu Utama',
+                'sort_order' => 1,
+                'permissions' => [
+                    ['name' => 'opd.view', 'description' => 'Melihat direktori instansi perangkat daerah (Fitur 11)'],
+                    ['name' => 'opd.create', 'description' => 'Menambahkan data instansi perangkat daerah baru (Fitur 11)'],
+                    ['name' => 'opd.edit', 'description' => 'Mengubah data perangkat daerah dan kepala dinas (Fitur 11)'],
+                    ['name' => 'opd.delete', 'description' => 'Menghapus data instansi perangkat daerah (Fitur 11)'],
+                ],
             ],
-            'Manajemen Pegawai' => [
-                ['name' => 'pegawai.view', 'description' => 'Melihat direktori dan biodata kepegawaian ASN per OPD (Fitur 12)'],
-                ['name' => 'pegawai.create', 'description' => 'Menambahkan data pegawai baru ke instansi OPD (Fitur 12)'],
-                ['name' => 'pegawai.edit', 'description' => 'Mengubah biodata, mutasi OPD, dan jabatan Kepala OPD / Pegawai (Fitur 12)'],
-                ['name' => 'pegawai.delete', 'description' => 'Menghapus data pegawai dari sistem (Fitur 12)'],
+            [
+                'group' => 'Manajemen Pegawai',
+                'category' => 'Menu Utama',
+                'sort_order' => 2,
+                'permissions' => [
+                    ['name' => 'pegawai.view', 'description' => 'Melihat direktori dan biodata kepegawaian ASN per OPD (Fitur 12)'],
+                    ['name' => 'pegawai.create', 'description' => 'Menambahkan data pegawai baru ke instansi OPD (Fitur 12)'],
+                    ['name' => 'pegawai.edit', 'description' => 'Mengubah biodata, mutasi OPD, dan jabatan Kepala OPD / Pegawai (Fitur 12)'],
+                    ['name' => 'pegawai.delete', 'description' => 'Menghapus data pegawai dari sistem (Fitur 12)'],
+                ],
             ],
-            'Data Master' => [
-                ['name' => 'master.view', 'description' => 'Melihat referensi data master dan parameter sistem (Fitur 10)'],
-                ['name' => 'master.create', 'description' => 'Menambahkan entri referensi data master baru (Fitur 10)'],
-                ['name' => 'master.edit', 'description' => 'Mengubah entri referensi data master (Fitur 10)'],
-                ['name' => 'master.delete', 'description' => 'Menghapus entri referensi data master (Fitur 10)'],
+            [
+                'group' => 'Manajemen Hak Akses',
+                'category' => 'Menu Utama',
+                'sort_order' => 3,
+                'permissions' => [
+                    ['name' => 'roles.view', 'description' => 'Melihat daftar peran dan matriks hak akses (Fitur 8)'],
+                    ['name' => 'roles.create', 'description' => 'Membuat peran (role) baru (Fitur 8)'],
+                    ['name' => 'roles.edit', 'description' => 'Mengubah konfigurasi matriks hak akses pada peran (Fitur 8)'],
+                    ['name' => 'roles.delete', 'description' => 'Menghapus peran kustom (Fitur 8)'],
+                ],
             ],
-            'Peran & Izin' => [
-                ['name' => 'roles.view', 'description' => 'Melihat daftar peran dan matriks hak akses (Fitur 8)'],
-                ['name' => 'roles.create', 'description' => 'Membuat peran (role) baru (Fitur 8)'],
-                ['name' => 'roles.edit', 'description' => 'Mengubah konfigurasi matriks hak akses pada peran (Fitur 8)'],
-                ['name' => 'roles.delete', 'description' => 'Menghapus peran kustom (Fitur 8)'],
+            [
+                'group' => 'Manajemen Users',
+                'category' => 'Menu Utama',
+                'sort_order' => 4,
+                'permissions' => [
+                    ['name' => 'users.view', 'description' => 'Melihat daftar akun pengguna (users) dan status keamanan 2FA (Fitur 9)'],
+                    ['name' => 'users.create', 'description' => 'Memberikan akun login dan menetapkan peran (role) kepada pegawai (Fitur 9)'],
+                    ['name' => 'users.edit', 'description' => 'Mengubah peran (role), kata sandi, dan status aktif/nonaktif akun (Fitur 9)'],
+                    ['name' => 'users.delete', 'description' => 'Mencabut akun login pengguna dari sistem (Fitur 9)'],
+                    ['name' => 'users.reset_2fa', 'description' => 'Mereset Google Authenticator (2FA) akun pengguna (Fitur Khusus)'],
+                ],
             ],
-            'Manajemen Users' => [
-                ['name' => 'users.view', 'description' => 'Melihat daftar akun pengguna (users) dan status keamanan 2FA (Fitur 9)'],
-                ['name' => 'users.create', 'description' => 'Memberikan akun login dan menetapkan peran (role) kepada pegawai (Fitur 9)'],
-                ['name' => 'users.edit', 'description' => 'Mengubah peran (role), kata sandi, dan status aktif/nonaktif akun (Fitur 9)'],
-                ['name' => 'users.delete', 'description' => 'Mencabut akun login pengguna dari sistem (Fitur 9)'],
-                ['name' => 'users.reset_2fa', 'description' => 'Mereset Google Authenticator (2FA) akun pengguna (Fitur Khusus)'],
+
+            // Kategori: Perencanaan Kinerja
+            [
+                'group' => 'Data Master',
+                'category' => 'Perencanaan Kinerja',
+                'sort_order' => 5,
+                'permissions' => [
+                    ['name' => 'master.view', 'description' => 'Melihat referensi data master dan parameter sistem (Fitur 10)'],
+                    ['name' => 'master.create', 'description' => 'Menambahkan entri referensi data master baru (Fitur 10)'],
+                    ['name' => 'master.edit', 'description' => 'Mengubah entri referensi data master (Fitur 10)'],
+                    ['name' => 'master.delete', 'description' => 'Menghapus entri referensi data master (Fitur 10)'],
+                ],
             ],
-            'Periode Penilaian' => [
-                ['name' => 'periode.view', 'description' => 'Melihat daftar siklus periode penilaian RPJMD (Fitur 13)'],
-                ['name' => 'periode.create', 'description' => 'Menambahkan siklus periode penilaian RPJMD baru (Fitur 13)'],
-                ['name' => 'periode.edit', 'description' => 'Mengubah periode penilaian dan mengganti tahun aktif (Fitur 13)'],
-                ['name' => 'periode.delete', 'description' => 'Menghapus periode penilaian yang belum memiliki relasi data (Fitur 13)'],
+            [
+                'group' => 'Periode Penilaian',
+                'category' => 'Perencanaan Kinerja',
+                'sort_order' => 6,
+                'permissions' => [
+                    ['name' => 'periode.view', 'description' => 'Melihat daftar siklus periode penilaian RPJMD (Fitur 13)'],
+                    ['name' => 'periode.create', 'description' => 'Menambahkan siklus periode penilaian RPJMD baru (Fitur 13)'],
+                    ['name' => 'periode.edit', 'description' => 'Mengubah periode penilaian dan mengganti tahun aktif (Fitur 13)'],
+                    ['name' => 'periode.delete', 'description' => 'Menghapus periode penilaian yang belum memiliki relasi data (Fitur 13)'],
+                ],
             ],
-            'Tujuan, Sasaran & Indikator' => [
-                ['name' => 'tujuan.view', 'description' => 'Melihat pohon kinerja Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)'],
-                ['name' => 'tujuan.create', 'description' => 'Menambahkan Tujuan, Sasaran & Indikator Renstra OPD baru (Fitur 14-17)'],
-                ['name' => 'tujuan.edit', 'description' => 'Mengubah data serta urutan Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)'],
-                ['name' => 'tujuan.delete', 'description' => 'Menghapus data Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)'],
-                ['name' => 'tujuan.copy', 'description' => 'Menyalin Tujuan, Sasaran & Indikator dari periode penilaian sebelumnya (Fitur Khusus)'],
+            [
+                'group' => 'Tujuan, Sasaran & Indikator',
+                'category' => 'Perencanaan Kinerja',
+                'sort_order' => 7,
+                'permissions' => [
+                    ['name' => 'tujuan.view', 'description' => 'Melihat pohon kinerja Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)'],
+                    ['name' => 'tujuan.create', 'description' => 'Menambahkan Tujuan, Sasaran & Indikator Renstra OPD baru (Fitur 14-17)'],
+                    ['name' => 'tujuan.edit', 'description' => 'Mengubah data serta urutan Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)'],
+                    ['name' => 'tujuan.delete', 'description' => 'Menghapus data Tujuan, Sasaran & Indikator Renstra OPD (Fitur 14-17)'],
+                    ['name' => 'tujuan.copy', 'description' => 'Menyalin Tujuan, Sasaran & Indikator dari periode penilaian sebelumnya (Fitur Khusus)'],
+                ],
             ],
-            'Konteks Risiko Strategis' => [
-                ['name' => 'konteks_risiko.view', 'description' => 'Melihat penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
-                ['name' => 'konteks_risiko.create', 'description' => 'Menetapkan konteks risiko strategis OPD baru (Fitur 26 - Form 2B)'],
-                ['name' => 'konteks_risiko.edit', 'description' => 'Mengubah penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
-                ['name' => 'konteks_risiko.delete', 'description' => 'Menghapus penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
-                ['name' => 'konteks_risiko.export', 'description' => 'Mengekspor atau mencetak berkas Form 2B (Fitur 26 & 31)'],
+
+            // Kategori: Pengawasan & Review
+            [
+                'group' => 'Penugasan Auditor',
+                'category' => 'Pengawasan & Review',
+                'sort_order' => 8,
+                'permissions' => [
+                    ['name' => 'penugasan_auditor.view', 'description' => 'Melihat daftar penugasan auditor pengawas ke perangkat daerah (OPD)'],
+                    ['name' => 'penugasan_auditor.create', 'description' => 'Menetapkan penugasan auditor pengawas ke satu atau beberapa OPD'],
+                    ['name' => 'penugasan_auditor.edit', 'description' => 'Mengubah penugasan dan cakupan OPD binaan auditor'],
+                    ['name' => 'penugasan_auditor.delete', 'description' => 'Mencabut penugasan auditor dari suatu OPD'],
+                ],
             ],
-            'Konteks Risiko Operasional' => [
-                ['name' => 'konteks_operasional.view', 'description' => 'Melihat penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
-                ['name' => 'konteks_operasional.create', 'description' => 'Menetapkan konteks risiko operasional OPD baru (Fitur 26 - Form 2C)'],
-                ['name' => 'konteks_operasional.edit', 'description' => 'Mengubah penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
-                ['name' => 'konteks_operasional.delete', 'description' => 'Menghapus penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
-                ['name' => 'konteks_operasional.export', 'description' => 'Mengekspor atau mencetak berkas Form 2C (Fitur 26 & 31)'],
+            [
+                'group' => 'Review Risiko',
+                'category' => 'Pengawasan & Review',
+                'sort_order' => 9,
+                'permissions' => [
+                    ['name' => 'penilaian_risiko.submit', 'description' => 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Auditor Pengawas'],
+                    ['name' => 'review_risiko.view', 'description' => 'Melihat daftar dan status pengajuan lembar kerja risiko OPD binaan'],
+                    ['name' => 'review_risiko.approve', 'description' => 'Melakukan persetujuan atau penolakan per-form risiko beserta catatan revisi'],
+                    ['name' => 'review_risiko.review_kepala', 'description' => 'Memeriksa dan menyetujui lembar kerja risiko internal OPD tingkat Kepala OPD'],
+                    ['name' => 'review_risiko.review_pengawas', 'description' => 'Memeriksa dan mengesahkan lembar kerja risiko tingkat akhir Pengawas APIP (Inspektorat)'],
+                ],
             ],
-            'Identifikasi Risiko Strategis Pemda' => [
-                ['name' => 'identifikasi_risiko_pemda.view', 'description' => 'Melihat identifikasi risiko strategis Pemda (Fitur 26 - Form 3A)'],
-                ['name' => 'identifikasi_risiko_pemda.create', 'description' => 'Menambahkan risiko strategis Pemda baru (Fitur 26 - Form 3A)'],
-                ['name' => 'identifikasi_risiko_pemda.edit', 'description' => 'Mengubah identifikasi risiko strategis Pemda (Fitur 26 - Form 3A)'],
-                ['name' => 'identifikasi_risiko_pemda.delete', 'description' => 'Menghapus risiko strategis Pemda (Fitur 26 - Form 3A)'],
-                ['name' => 'identifikasi_risiko_pemda.export', 'description' => 'Mengekspor atau mencetak berkas Form 3A (Fitur 26 & 31)'],
+
+            // Kategori: Pengelolaan Risiko
+            [
+                'group' => 'Konteks Strategis (2B)',
+                'category' => 'Pengelolaan Risiko',
+                'sort_order' => 10,
+                'permissions' => [
+                    ['name' => 'konteks_risiko.view', 'description' => 'Melihat penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
+                    ['name' => 'konteks_risiko.create', 'description' => 'Menetapkan konteks risiko strategis OPD baru (Fitur 26 - Form 2B)'],
+                    ['name' => 'konteks_risiko.edit', 'description' => 'Mengubah penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
+                    ['name' => 'konteks_risiko.delete', 'description' => 'Menghapus penetapan konteks risiko strategis OPD (Fitur 26 - Form 2B)'],
+                    ['name' => 'konteks_risiko.export', 'description' => 'Mengekspor atau mencetak berkas Form 2B (Fitur 26 & 31)'],
+                ],
             ],
-            'Identifikasi Risiko Strategis OPD' => [
-                ['name' => 'identifikasi_risiko_opd.view', 'description' => 'Melihat identifikasi risiko strategis OPD (Fitur 26 - Form 3B)'],
-                ['name' => 'identifikasi_risiko_opd.create', 'description' => 'Menambahkan risiko strategis OPD baru (Fitur 26 - Form 3B)'],
-                ['name' => 'identifikasi_risiko_opd.edit', 'description' => 'Mengubah identifikasi risiko strategis OPD (Fitur 26 - Form 3B)'],
-                ['name' => 'identifikasi_risiko_opd.delete', 'description' => 'Menghapus risiko strategis OPD (Fitur 26 - Form 3B)'],
-                ['name' => 'identifikasi_risiko_opd.export', 'description' => 'Mengekspor atau mencetak berkas Form 3B (Fitur 26 & 31)'],
+            [
+                'group' => 'Konteks Operasional (2C)',
+                'category' => 'Pengelolaan Risiko',
+                'sort_order' => 11,
+                'permissions' => [
+                    ['name' => 'konteks_operasional.view', 'description' => 'Melihat penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
+                    ['name' => 'konteks_operasional.create', 'description' => 'Menetapkan konteks risiko operasional OPD baru (Fitur 26 - Form 2C)'],
+                    ['name' => 'konteks_operasional.edit', 'description' => 'Mengubah penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
+                    ['name' => 'konteks_operasional.delete', 'description' => 'Menghapus penetapan konteks risiko operasional OPD (Fitur 26 - Form 2C)'],
+                    ['name' => 'konteks_operasional.export', 'description' => 'Mengekspor atau mencetak berkas Form 2C (Fitur 26 & 31)'],
+                ],
             ],
-            'Identifikasi Risiko Operasional OPD' => [
-                ['name' => 'identifikasi_risiko_opd_operasional.view', 'description' => 'Melihat identifikasi risiko operasional OPD (Fitur 26 - Form 3C)'],
-                ['name' => 'identifikasi_risiko_opd_operasional.create', 'description' => 'Menambahkan risiko operasional OPD baru (Fitur 26 - Form 3C)'],
-                ['name' => 'identifikasi_risiko_opd_operasional.edit', 'description' => 'Mengubah identifikasi risiko operasional OPD (Fitur 26 - Form 3C)'],
-                ['name' => 'identifikasi_risiko_opd_operasional.delete', 'description' => 'Menghapus risiko operasional OPD (Fitur 26 - Form 3C)'],
-                ['name' => 'identifikasi_risiko_opd_operasional.export', 'description' => 'Mengekspor atau mencetak berkas Form 3C (Fitur 26 & 31)'],
+            [
+                'group' => 'Identifikasi Pemda (3A)',
+                'category' => 'Pengelolaan Risiko',
+                'sort_order' => 12,
+                'permissions' => [
+                    ['name' => 'identifikasi_risiko_pemda.view', 'description' => 'Melihat identifikasi risiko strategis Pemda (Fitur 26 - Form 3A)'],
+                    ['name' => 'identifikasi_risiko_pemda.create', 'description' => 'Menambahkan risiko strategis Pemda baru (Fitur 26 - Form 3A)'],
+                    ['name' => 'identifikasi_risiko_pemda.edit', 'description' => 'Mengubah identifikasi risiko strategis Pemda (Fitur 26 - Form 3A)'],
+                    ['name' => 'identifikasi_risiko_pemda.delete', 'description' => 'Menghapus risiko strategis Pemda (Fitur 26 - Form 3A)'],
+                    ['name' => 'identifikasi_risiko_pemda.export', 'description' => 'Mengekspor atau mencetak berkas Form 3A (Fitur 26 & 31)'],
+                ],
             ],
-            'Root Cause Analysis' => [
-                ['name' => 'rca.view', 'description' => 'Melihat analisis akar penyebab masalah 5-Whys (Fitur 26 - Form RCA)'],
-                ['name' => 'rca.edit', 'description' => 'Mengisi dan memperbarui analisis 5-Whys dan kegiatan pengendalian (Fitur 26 - Form RCA)'],
-                ['name' => 'rca.export', 'description' => 'Mengekspor lembar kerja RCA (Fitur 26 & 31)'],
+            [
+                'group' => 'Identifikasi OPD (3B - 10 & FRA)',
+                'category' => 'Pengelolaan Risiko',
+                'sort_order' => 13,
+                'permissions' => [
+                    ['name' => 'identifikasi_risiko_opd.view', 'description' => 'Melihat identifikasi risiko strategis OPD Form 3B & rangkaian Form 4-10 serta FRA'],
+                    ['name' => 'identifikasi_risiko_opd.create', 'description' => 'Menambahkan data risiko OPD baru pada rangkaian Form 3B-10'],
+                    ['name' => 'identifikasi_risiko_opd.edit', 'description' => 'Mengubah formulir identifikasi, analisis, dan rencana tindak risiko OPD'],
+                    ['name' => 'identifikasi_risiko_opd.delete', 'description' => 'Menghapus data risiko OPD dari register risiko'],
+                    ['name' => 'identifikasi_risiko_opd.export', 'description' => 'Mengekspor atau mencetak berkas Form 3B-10 dan FRA'],
+                ],
             ],
-            'Log Audit Keamanan' => [
-                ['name' => 'audit.view', 'description' => 'Melihat riwayat aktivitas dan log audit keamanan (Fitur 5)'],
-                ['name' => 'audit.export', 'description' => 'Mengekspor berkas log aktivitas ke Excel (Fitur 5)'],
-                ['name' => 'audit.purge', 'description' => 'Membersihkan arsip log audit yang telah melampaui retensi (Fitur Khusus)'],
+            [
+                'group' => 'Identifikasi Operasional (3C)',
+                'category' => 'Pengelolaan Risiko',
+                'sort_order' => 14,
+                'permissions' => [
+                    ['name' => 'identifikasi_risiko_opd_operasional.view', 'description' => 'Melihat identifikasi risiko operasional OPD (Fitur 26 - Form 3C)'],
+                    ['name' => 'identifikasi_risiko_opd_operasional.create', 'description' => 'Menambahkan risiko operasional OPD baru (Fitur 26 - Form 3C)'],
+                    ['name' => 'identifikasi_risiko_opd_operasional.edit', 'description' => 'Mengubah identifikasi risiko operasional OPD (Fitur 26 - Form 3C)'],
+                    ['name' => 'identifikasi_risiko_opd_operasional.delete', 'description' => 'Menghapus risiko operasional OPD (Fitur 26 - Form 3C)'],
+                    ['name' => 'identifikasi_risiko_opd_operasional.export', 'description' => 'Mengekspor atau mencetak berkas Form 3C (Fitur 26 & 31)'],
+                ],
             ],
-            'Penugasan Auditor' => [
-                ['name' => 'penugasan_auditor.view', 'description' => 'Melihat daftar penugasan auditor pengawas ke perangkat daerah (OPD)'],
-                ['name' => 'penugasan_auditor.create', 'description' => 'Menetapkan penugasan auditor pengawas ke satu atau beberapa OPD'],
-                ['name' => 'penugasan_auditor.edit', 'description' => 'Mengubah penugasan dan cakupan OPD binaan auditor'],
-                ['name' => 'penugasan_auditor.delete', 'description' => 'Mencabut penugasan auditor dari suatu OPD'],
+            [
+                'group' => 'Root Cause Analysis (RCA)',
+                'category' => 'Pengelolaan Risiko',
+                'sort_order' => 15,
+                'permissions' => [
+                    ['name' => 'rca.view', 'description' => 'Melihat analisis akar penyebab masalah 5-Whys (Fitur 26 - Form RCA)'],
+                    ['name' => 'rca.edit', 'description' => 'Mengisi dan memperbarui analisis 5-Whys dan kegiatan pengendalian (Fitur 26 - Form RCA)'],
+                    ['name' => 'rca.export', 'description' => 'Mengekspor lembar kerja RCA (Fitur 26 & 31)'],
+                ],
             ],
-            'Review & Persetujuan Risiko' => [
-                ['name' => 'penilaian_risiko.submit', 'description' => 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Auditor Pengawas'],
-                ['name' => 'review_risiko.view', 'description' => 'Melihat daftar dan status pengajuan lembar kerja risiko OPD binaan'],
-                ['name' => 'review_risiko.approve', 'description' => 'Melakukan persetujuan atau penolakan per-form risiko beserta catatan revisi'],
-                ['name' => 'review_risiko.review_kepala', 'description' => 'Memeriksa dan menyetujui lembar kerja risiko internal OPD tingkat Kepala OPD'],
-                ['name' => 'review_risiko.review_pengawas', 'description' => 'Memeriksa dan mengesahkan lembar kerja risiko tingkat akhir Pengawas APIP (Inspektorat)'],
+
+            // Kategori: Pelaporan & Dokumen
+            [
+                'group' => 'Laporan Risiko OPD',
+                'category' => 'Pelaporan & Dokumen',
+                'sort_order' => 16,
+                'permissions' => [
+                    ['name' => 'laporan.view', 'description' => 'Melihat lembar dan pusat laporan risiko OPD (Fitur 26 & 31)'],
+                    ['name' => 'laporan.export', 'description' => 'Mengekspor laporan risiko ke berkas Excel (.xlsx) dan Cetak PDF (Fitur 26 & 31)'],
+                ],
             ],
-            'Banner Login & Publik' => [
-                ['name' => 'content.view', 'description' => 'Melihat daftar banner portal login dan publik (CMS)'],
-                ['name' => 'content.create', 'description' => 'Mengunggah gambar dan materi banner baru (CMS)'],
-                ['name' => 'content.edit', 'description' => 'Mengubah urutan tampilan dan status aktif banner (CMS)'],
-                ['name' => 'content.delete', 'description' => 'Menghapus materi banner dari portal (CMS)'],
+
+            // Kategori: Keamanan & Sistem
+            [
+                'group' => 'Log Audit Keamanan',
+                'category' => 'Keamanan & Sistem',
+                'sort_order' => 17,
+                'permissions' => [
+                    ['name' => 'audit.view', 'description' => 'Melihat riwayat aktivitas dan log audit keamanan (Fitur 5)'],
+                    ['name' => 'audit.export', 'description' => 'Mengekspor berkas log aktivitas ke Excel (Fitur 5)'],
+                    ['name' => 'audit.purge', 'description' => 'Membersihkan arsip log audit yang telah melampaui retensi (Fitur Khusus)'],
+                ],
             ],
-            'Pelaporan & Dokumen' => [
-                ['name' => 'laporan.view', 'description' => 'Melihat lembar dan pusat laporan risiko OPD (Fitur 26 & 31)'],
-                ['name' => 'laporan.export', 'description' => 'Mengekspor laporan risiko ke berkas Excel (.xlsx) dan Cetak PDF (Fitur 26 & 31)'],
+
+            // Kategori: Manajemen Konten
+            [
+                'group' => 'Banner Login & Publik',
+                'category' => 'Manajemen Konten',
+                'sort_order' => 18,
+                'permissions' => [
+                    ['name' => 'content.view', 'description' => 'Melihat daftar banner portal login dan publik (CMS)'],
+                    ['name' => 'content.create', 'description' => 'Mengunggah gambar dan materi banner baru (CMS)'],
+                    ['name' => 'content.edit', 'description' => 'Mengubah urutan tampilan dan status aktif banner (CMS)'],
+                    ['name' => 'content.delete', 'description' => 'Menghapus materi banner dari portal (CMS)'],
+                ],
             ],
-            'Pengaturan Sistem' => [
-                ['name' => 'settings.view', 'description' => 'Melihat konfigurasi parameter sistem dan instansi (Fitur 7)'],
-                ['name' => 'settings.edit', 'description' => 'Mengubah konfigurasi keamanan dan parameter sistem (Fitur 7)'],
+
+            // Kategori: Pengaturan
+            [
+                'group' => 'Pengaturan Sistem',
+                'category' => 'Pengaturan',
+                'sort_order' => 19,
+                'permissions' => [
+                    ['name' => 'settings.view', 'description' => 'Melihat konfigurasi parameter sistem dan instansi (Fitur 7)'],
+                    ['name' => 'settings.edit', 'description' => 'Mengubah konfigurasi keamanan dan parameter sistem (Fitur 7)'],
+                ],
             ],
         ];
 
         $allPermissions = [];
-        foreach ($permissionGroups as $group => $permissions) {
-            foreach ($permissions as $perm) {
+        foreach ($moduleDefinitions as $module) {
+            foreach ($module['permissions'] as $perm) {
                 $permission = Permission::updateOrCreate(
                     ['name' => $perm['name'], 'guard_name' => 'web'],
                     [
-                        'group' => $group,
+                        'group' => $module['group'],
+                        'category' => $module['category'],
+                        'sort_order' => $module['sort_order'],
                         'description' => $perm['description'],
                     ]
                 );

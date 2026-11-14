@@ -74,9 +74,9 @@ class RolePermissionTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'permissions' => [
-                    'Perangkat Daerah (OPD)',
+                    'Perangkat Daerah',
                     'Manajemen Pegawai',
-                    'Peran & Izin',
+                    'Manajemen Hak Akses',
                     'Log Audit Keamanan',
                     'Pengaturan Sistem',
                 ],

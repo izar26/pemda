@@ -214,7 +214,7 @@ export const sidebarData: SidebarData = {
           title: 'Laporan Risiko OPD',
           url: '/laporan',
           icon: FileSpreadsheet,
-          requiredPermission: 'konteks_risiko.view',
+          requiredPermission: 'laporan.view',
         },
       ],
     },

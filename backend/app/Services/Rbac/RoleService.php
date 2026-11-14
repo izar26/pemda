@@ -229,7 +229,9 @@ class RoleService
      */
     public function getGroupedPermissions(): array
     {
-        return Permission::all()
+        return Permission::orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get()
             ->groupBy('group')
             ->toArray();
     }

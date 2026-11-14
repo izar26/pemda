@@ -172,7 +172,10 @@ class RoleController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar hak akses.');
         }
 
-        $permissions = Permission::all()->groupBy('group');
+        $permissions = Permission::orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get()
+            ->groupBy('group');
 
         $result = [];
         foreach ($permissions as $group => $perms) {

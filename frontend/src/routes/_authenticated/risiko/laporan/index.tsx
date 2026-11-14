@@ -11,6 +11,7 @@ export const Route = createFileRoute('/_authenticated/risiko/laporan/')({
       false
     const hasAccess =
       isSuperadmin ||
+      permissions.includes('laporan.view') ||
       permissions.includes('konteks_risiko.view') ||
       permissions.includes('konteks_operasional.view') ||
       permissions.includes('tujuan.view')

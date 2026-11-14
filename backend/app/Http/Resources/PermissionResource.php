@@ -24,6 +24,8 @@ class PermissionResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'group' => $this->group,
+            'category' => $this->category,
+            'sort_order' => $this->sort_order,
             'description' => $this->description,
         ];
     }
