@@ -11,10 +11,15 @@ use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisikoHistory;
 use App\Models\Risiko\PengajuanPenilaianRisikoItem;
 use App\Models\Risiko\RootCauseAnalysis;
+use App\Services\Risiko\Registry\RiskFormRegistry;
 use Illuminate\Database\Eloquent\Model;
 
 class InvalidateDerivedFormsService
 {
+    public function __construct(
+        protected RiskFormRegistry $registry
+    ) {}
+
     public function invalidate(Model $model, bool $deleting = false): void
     {
         if ($model instanceof AnalisisRisiko) {
@@ -42,7 +47,19 @@ class InvalidateDerivedFormsService
         if (! $submission) {
             return;
         }
-        $items = $submission->items()->whereIn('form_code', ['5', '6'])->get();
+        $formCode = match (true) {
+            $model instanceof AnalisisRisiko => '4',
+            $model instanceof RootCauseAnalysis => 'rca',
+            $model instanceof IdentifikasiRisikoOpdItem => '3b',
+            $model instanceof IdentifikasiRisikoOpdOperasionalItem => '3c',
+            default => null,
+        };
+
+        $downstreamCodes = $formCode && $this->registry->has($formCode)
+            ? $this->registry->get($formCode)->getDownstreamFormCodes()
+            : ['5', '6'];
+
+        $items = $submission->items()->whereIn('form_code', $downstreamCodes)->get();
         foreach ($items as $derived) {
             if (! in_array(PengajuanPenilaianRisikoItem::STATUS_APPROVED, [$derived->status, $derived->status_kepala_opd, $derived->status_auditor, $derived->status_pengawas], true)) {
                 continue;

@@ -8,6 +8,7 @@ use App\Models\Risiko\PengajuanPenilaianRisikoHistory;
 use App\Models\Risiko\PengajuanPenilaianRisikoItem;
 use App\Models\User;
 use App\Services\Audit\AuditLogService;
+use App\Services\Risiko\Registry\RiskFormRegistry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -18,7 +19,8 @@ class PengajuanWorkflowService
     public function __construct(
         protected PengajuanQueryService $queryService,
         protected PengajuanReadinessService $readinessService,
-        protected AuditLogService $auditLogService
+        protected AuditLogService $auditLogService,
+        protected RiskFormRegistry $registry
     ) {}
 
     /**
@@ -61,7 +63,8 @@ class PengajuanWorkflowService
 
             $previouslySubmitted = $lockedSubmission->submitted_at !== null || $lockedSubmission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
             $existingCodes = $lockedSubmission->items()->pluck('form_code')->all();
-            $codes = $previouslySubmitted ? array_values(array_intersect(self::REQUIRED_FORM_CODES, $existingCodes)) : self::REQUIRED_FORM_CODES;
+            $registeredCodes = $this->registry->getCodes();
+            $codes = $previouslySubmitted ? array_values(array_intersect($registeredCodes, $existingCodes)) : $registeredCodes;
             $lockedSubmission->update([
                 'auditor_id' => $readiness['assigned_auditor']?->id ?? $lockedSubmission->auditor_id,
                 'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA,
@@ -350,7 +353,7 @@ class PengajuanWorkflowService
         User $auditorUser
     ): PengajuanPenilaianRisikoItem {
         $cleanFormCode = strtolower(trim($formCode));
-        if (! in_array($cleanFormCode, self::REQUIRED_FORM_CODES, true)) {
+        if (! $this->registry->has($cleanFormCode)) {
             throw ValidationException::withMessages([
                 'form_code' => ['Kode formulir tidak valid.'],
             ]);
@@ -453,11 +456,12 @@ class PengajuanWorkflowService
             $allItems = PengajuanPenilaianRisikoItem::where('pengajuan_id', $lockedSubmission->id)->get();
             $hasAnyRejected = $allItems->contains('status_auditor', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
 
-            $approvedCount = $allItems->whereIn('form_code', self::REQUIRED_FORM_CODES)
+            $registeredCodes = $this->registry->getCodes();
+            $approvedCount = $allItems->whereIn('form_code', $registeredCodes)
                 ->where('status_auditor', PengajuanPenilaianRisikoItem::STATUS_APPROVED)
                 ->count();
 
-            $requiredCount = $allItems->whereIn('form_code', self::REQUIRED_FORM_CODES)->count();
+            $requiredCount = $allItems->whereIn('form_code', $registeredCodes)->count();
             $allRequiredApproved = $approvedCount === $requiredCount;
 
             if ($hasAnyRejected) {
@@ -699,7 +703,7 @@ class PengajuanWorkflowService
         User $pengawasUser
     ): PengajuanPenilaianRisikoItem {
         $cleanFormCode = strtolower(trim($formCode));
-        if (! in_array($cleanFormCode, self::REQUIRED_FORM_CODES, true)) {
+        if (! $this->registry->has($cleanFormCode)) {
             throw ValidationException::withMessages([
                 'form_code' => ['Kode formulir tidak valid.'],
             ]);
@@ -790,11 +794,12 @@ class PengajuanWorkflowService
             $allItems = PengajuanPenilaianRisikoItem::where('pengajuan_id', $lockedSubmission->id)->get();
             $hasAnyRejected = $allItems->contains('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
 
-            $approvedCount = $allItems->whereIn('form_code', self::REQUIRED_FORM_CODES)
+            $registeredCodes = $this->registry->getCodes();
+            $approvedCount = $allItems->whereIn('form_code', $registeredCodes)
                 ->where('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_APPROVED)
                 ->count();
 
-            $requiredCount = $allItems->whereIn('form_code', self::REQUIRED_FORM_CODES)->count();
+            $requiredCount = $allItems->whereIn('form_code', $registeredCodes)->count();
             $allRequiredApproved = $approvedCount === $requiredCount;
 
             if ($hasAnyRejected) {

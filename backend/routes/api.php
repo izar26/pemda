@@ -258,7 +258,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         // Review & Persetujuan Lembar Kerja Risiko OPD (Auditor & Pengawas APIP)
         Route::get('/review-risiko', [PengajuanRisikoController::class, 'indexReviews']);
         Route::get('/review-risiko/{id}', [PengajuanRisikoController::class, 'showReview']);
-        Route::get('/review-risiko/{id}/forms/{form}', [PengajuanRisikoController::class, 'reviewForm'])->whereIn('form', ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6']);
+        Route::get('/review-risiko/{id}/forms/{form}', [PengajuanRisikoController::class, 'reviewForm'])->where('form', '[a-zA-Z0-9_-]+');
         Route::post('/review-risiko/{id}/start', [PengajuanRisikoController::class, 'startReview']);
         Route::post('/review-risiko/{id}/item', [PengajuanRisikoController::class, 'reviewItem']);
         Route::post('/review-risiko/{id}/forward-revision', [PengajuanRisikoController::class, 'forwardRevisionAuditor']);

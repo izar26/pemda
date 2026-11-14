@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
+use App\Services\Risiko\Registry\RiskFormRegistry;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReviewAuditorItemRequest extends FormRequest
 {
@@ -14,12 +16,12 @@ class ReviewAuditorItemRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
         return [
-            'form_code' => ['required', 'string', 'in:2b,2c,3a,3b,3c,rca,4,5,6'],
+            'form_code' => ['required', 'string', Rule::in(app(RiskFormRegistry::class)->getCodes())],
             'status' => ['required', 'string', 'in:approved,rejected'],
             'catatan_revisi' => ['nullable', 'string', 'required_if:status,rejected', 'min:5', 'max:2000'],
         ];
