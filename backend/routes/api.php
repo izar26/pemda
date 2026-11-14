@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
 use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
 use App\Http\Controllers\Api\Risiko\PengajuanRisikoController;
 use App\Http\Controllers\Api\Risiko\RootCauseAnalysisController;
+use App\Http\Controllers\Api\Risiko\TindakPengendalianController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SystemSettingController;
 use App\Http\Controllers\Api\UserAccountController;
@@ -228,6 +229,8 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
 
         Route::get('/analisis-risiko', [AnalisisRisikoController::class, 'index']);
         Route::put('/analisis-risiko/{source}/{item}', [AnalisisRisikoController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
+        Route::get('/tindak-pengendalian', [TindakPengendalianController::class, 'index']);
+        Route::put('/tindak-pengendalian/{source}/{item}', [TindakPengendalianController::class, 'save'])->whereIn('source', ['3b', '3c'])->whereUuid('item');
 
         // Form RCA: Root Cause Analysis (5-Whys)
         Route::get('/rca', [RootCauseAnalysisController::class, 'index']);
@@ -255,7 +258,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         // Review & Persetujuan Lembar Kerja Risiko OPD (Auditor & Pengawas APIP)
         Route::get('/review-risiko', [PengajuanRisikoController::class, 'indexReviews']);
         Route::get('/review-risiko/{id}', [PengajuanRisikoController::class, 'showReview']);
-        Route::get('/review-risiko/{id}/forms/{form}', [PengajuanRisikoController::class, 'reviewForm'])->whereIn('form', ['2b', '2c', '3a', '3b', '3c', 'rca', '4']);
+        Route::get('/review-risiko/{id}/forms/{form}', [PengajuanRisikoController::class, 'reviewForm'])->whereIn('form', ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6']);
         Route::post('/review-risiko/{id}/start', [PengajuanRisikoController::class, 'startReview']);
         Route::post('/review-risiko/{id}/item', [PengajuanRisikoController::class, 'reviewItem']);
         Route::post('/review-risiko/{id}/forward-revision', [PengajuanRisikoController::class, 'forwardRevisionAuditor']);

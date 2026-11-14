@@ -288,7 +288,7 @@ class IdentifikasiRisikoOpdOperasionalService
                     $item->urutan = $no;
                     $item->nomor_urut = $no;
                     $item->kode_risiko = $this->generateKodeRisiko($tahunPenilaian, $singkatanOpd, $item->kategori_risiko, $no);
-                    $item->saveQuietly();
+                    $item->save();
                 }
             }
         });

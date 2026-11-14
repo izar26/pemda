@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { KonteksPenilaianItem, KonteksOperasionalItem, IdentifikasiRisikoPemda, IdentifikasiRisikoOpd, IdentifikasiRisikoOpdOperasional, RootCauseAnalysis } from '@/types/risiko'
 import type { AnalisisRow } from '@/features/risiko/analisis-risiko/api'
+import type { TindakRow } from '@/features/risiko/tindak-pengendalian/api'
 import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
 
 export function useReviewFormData(submissionId: string, effectiveOpdId: string, effectivePeriodeId: string, activeStepId: string, enabled: boolean) {
@@ -60,8 +61,14 @@ export function useReviewFormData(submissionId: string, effectiveOpdId: string, 
     enabled: Boolean(enabled && activeStepId === '4'),
   })
 
+  const { data: tindakPage, isLoading: isLoadingTindak, isError: errorTindak, refetch: refetchTindak } = useQuery({
+    queryKey: ['risiko-tindak-review', submissionId, activeStepId, pageFor(activeStepId), searchFor(activeStepId)],
+    queryFn: () => pengajuanRisikoService.getReviewPage<TindakRow[]>(submissionId, activeStepId as '5' | '6', pageFor(activeStepId), searchFor(activeStepId)),
+    enabled: Boolean(enabled && ['5', '6'].includes(activeStepId)),
+  })
+
   return {
-    form4: form4Page?.data || [], form4Page, isLoading4, error4, refetch4,
+    form4: form4Page?.data || [], form4Page, isLoading4, error4, refetch4, tindakPage, isLoadingTindak, errorTindak, refetchTindak,
     pages, setPages, searches, setSearches, rcaSource, setRcaSource, rcaStatus, setRcaStatus, pageFor, searchFor,
     konteks2BData, isLoading2B, error2B, refetch2B, konteks2CData, isLoading2C, error2C, refetch2C,
     identifikasi3AData, isLoading3A, error3A, refetch3A, identifikasi3BData, isLoading3B, error3B, refetch3B,

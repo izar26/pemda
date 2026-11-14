@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
+use App\Models\Risiko\RootCauseAnalysis;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,8 +24,34 @@ class SaveRootCauseAnalysisRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('rca.edit')
-            || false;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        $canEdit = $user->can('rca.edit')
+            || $user->can('identifikasi_risiko_pemda.edit')
+            || $user->can('identifikasi_risiko_opd.edit')
+            || $user->can('identifikasi_risiko_opd_operasional.edit');
+
+        if (! $canEdit && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            return false;
+        }
+
+        $rca = $this->route('rca');
+        if ($rca instanceof RootCauseAnalysis && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            $item = match ($rca->source_type) {
+                '3c' => $rca->itemOperasional,
+                '3b' => $rca->itemOpd,
+                default => ($rca->itemPemda ?? $rca->item),
+            };
+            $dokumen = $item?->dokumen;
+            if ($dokumen && (string) $user->opd_id !== (string) $dokumen->opd_id) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

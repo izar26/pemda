@@ -24,6 +24,7 @@ use App\Models\Risiko\KonteksOperasionalItem;
 use App\Models\Risiko\KonteksPenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\RootCauseAnalysis;
+use App\Models\Risiko\TindakPengendalianRisiko;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -304,8 +305,10 @@ class PengajuanDanReviewRisikoTest extends TestCase
             $analysis = ['kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'inheren_kemungkinan' => 3,
                 'kriteria_dampak' => 'Penurunan reputasi', 'inheren_dampak' => 4, 'pengendalian_ada' => false,
                 'residual_kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'residual_kriteria_dampak' => 'Penurunan kinerja', 'residual_kemungkinan' => 2, 'residual_dampak' => 3];
-            AnalisisRisiko::create(array_merge($analysis, ['risiko_opd_item_id' => $item3b->id]));
-            AnalisisRisiko::create(array_merge($analysis, ['risiko_operasional_item_id' => $item3c->id]));
+            foreach ([['risiko_opd_item_id' => $item3b->id], ['risiko_operasional_item_id' => $item3c->id]] as $source) {
+                $record = AnalisisRisiko::create(array_merge($analysis, $source, ['rencana_tindak' => 'Perbaiki prosedur']));
+                TindakPengendalianRisiko::create(['analisis_risiko_id' => $record->id, 'celah_pengendalian' => 'Prosedur belum memadai', 'penanggung_jawab' => 'Kepala bidang', 'target_waktu' => 'Akhir tahun', 'treated_kemungkinan' => 1, 'treated_dampak' => 1]);
+            }
         }
 
         return $dokumen;
@@ -529,6 +532,9 @@ class PengajuanDanReviewRisikoTest extends TestCase
         $rca->update(['jenis_penyebab' => 'Man']);
         $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertOk();
         $this->putJson("/api/risiko/analisis-risiko/3c/{$item3c->id}", $payload)->assertOk();
+        $tindak = ['celah_pengendalian' => 'Prosedur belum memadai', 'rencana_tindak' => 'Perbaiki prosedur', 'penanggung_jawab' => 'Kepala bidang', 'target_waktu' => 'Akhir tahun', 'treated_kemungkinan' => 1, 'treated_dampak' => 1];
+        $this->putJson("/api/risiko/tindak-pengendalian/3b/{$item3b->id}", $tindak)->assertOk();
+        $this->putJson("/api/risiko/tindak-pengendalian/3c/{$item3c->id}", $tindak)->assertOk();
         $this->postJson('/api/risiko/pengajuan/submit', $request)->assertOk();
         $this->assertDatabaseHas('pengajuan_penilaian_risiko_items', ['form_code' => '4', 'status' => 'submitted']);
         $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertForbidden();
@@ -824,6 +830,10 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'status' => 'approved',
         ])->assertStatus(200);
 
+        foreach (['5', '6'] as $code) {
+            $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/item", ['form_code' => $code, 'status' => 'approved'])->assertOk();
+        }
+
         $submission->refresh();
         $this->assertEquals(PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS, $submission->status);
         $this->assertEquals(PengajuanPenilaianRisiko::TIER_PENGAWAS, $submission->current_tier);
@@ -865,6 +875,10 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'form_code' => 'rca',
             'status' => 'approved',
         ])->assertStatus(200);
+
+        foreach (['5', '6'] as $code) {
+            $this->postJson("/api/pengawasan/review-risiko/{$submission->id}/review-pengawas", ['form_code' => $code, 'status' => 'approved'])->assertOk();
+        }
 
         $submission->refresh();
         $this->assertEquals(PengajuanPenilaianRisiko::STATUS_APPROVED, $submission->status);

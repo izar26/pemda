@@ -15,6 +15,7 @@ use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisikoItem;
 use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
+use App\Services\Risiko\TindakPengendalianService;
 
 class PengajuanReadinessService
 {
@@ -115,7 +116,13 @@ class PengajuanReadinessService
             ->where(fn ($q) => $q->where('pengendalian_ada', false)->orWhere(fn ($q) => $q->where('pengendalian_ada', true)->whereNotNull('pengendalian_uraian')->where('pengendalian_uraian', '!=', '')->whereNotNull('sub_unsur_spip_id')->whereNotNull('pengendalian_memadai')))
             ->count();
         $is4Complete = $totalForm4 > 0 && $completeForm4 === $totalForm4;
-        $form4Required = ! $submission->isLockedForOperator() || $submission->items->contains('form_code', '4');
+        $hasBeenSubmitted = $submission->submitted_at !== null || $submission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
+        $form4Required = ! $hasBeenSubmitted || $submission->items->contains('form_code', '4');
+        $form5Required = ! $hasBeenSubmitted || $submission->items->contains('form_code', '5');
+        $form6Required = ! $hasBeenSubmitted || $submission->items->contains('form_code', '6');
+        $priorityRows = $is4Complete ? app(TindakPengendalianService::class)->query($opdId, $resolvedPeriodeId)->get() : collect();
+        $is5Complete = $is4Complete;
+        $is6Complete = $is4Complete && $priorityRows->every(fn ($row) => TindakPengendalianService::isComplete((array) $row));
 
         // 7. Check Form RCA (Root Cause Analysis 5-Whys for 3A, 3B, & 3C)
         $totalRiskItemsCount = ($dokumen3a?->items_count ?? 0) + ($dokumen3b?->items_count ?? 0) + ($dokumen3c?->items_count ?? 0);
@@ -215,6 +222,12 @@ class PengajuanReadinessService
         if ($form4Required && ! $is4Complete) {
             $missingForms[] = ['code' => '4', 'name' => 'Analisis dan Evaluasi Risiko (Form 4)', 'description' => 'Lengkapi analisis seluruh risiko 3B dan 3C.'];
         }
+        if ($form5Required && ! $is5Complete) {
+            $missingForms[] = ['code' => '5', 'name' => 'Daftar Risiko Prioritas (Form 5)', 'description' => 'Lengkapi Form 4 untuk menyusun daftar risiko prioritas.'];
+        }
+        if ($form6Required && ! $is6Complete) {
+            $missingForms[] = ['code' => '6', 'name' => 'Rencana Tindak Pengendalian (Form 6)', 'description' => 'Lengkapi rencana tindak untuk setiap risiko prioritas.'];
+        }
         if (! $isRcaComplete) {
             $missingForms[] = [
                 'code' => 'RCA',
@@ -247,7 +260,7 @@ class PengajuanReadinessService
             }
         }
 
-        $allFormsComplete = $is2bComplete && $is2cComplete && $is3aComplete && $is3bComplete && $is3cComplete && $isRcaComplete && (! $form4Required || $is4Complete);
+        $allFormsComplete = $is2bComplete && $is2cComplete && $is3aComplete && $is3bComplete && $is3cComplete && $isRcaComplete && (! $form4Required || $is4Complete) && (! $form5Required || $is5Complete) && (! $form6Required || $is6Complete);
 
         // Permissions and state machine capabilities
         $currentTier = $submission->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR;
@@ -322,12 +335,16 @@ class PengajuanReadinessService
             'is_3c_complete' => $is3cComplete,
             'is_rca_complete' => $isRcaComplete,
             'is_4_complete' => $is4Complete,
+            'is_5_complete' => $is5Complete,
+            'is_6_complete' => $is6Complete,
             'is_2b_approved' => ($formStatuses['2b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_2c_approved' => ($formStatuses['2c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_3a_approved' => ($formStatuses['3a'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_3b_approved' => ($formStatuses['3b'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_3c_approved' => ($formStatuses['3c'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_4_approved' => ($formStatuses['4'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_5_approved' => ($formStatuses['5'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
+            'is_6_approved' => ($formStatuses['6'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'is_rca_approved' => ($formStatuses['rca'] ?? null) === PengajuanPenilaianRisikoItem::STATUS_APPROVED,
             'form_statuses' => $formStatuses,
             'form_details' => $formDetails,
@@ -354,6 +371,13 @@ class PengajuanReadinessService
      */
     public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
     {
+        // 0. Tenant isolation: OPD user can never edit another OPD's data
+        if ($user && ($user->hasRole('OPD') || $user->hasRole('Executive')) && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            if (! $user->opd_id || (string) $user->opd_id !== (string) $opdId) {
+                abort(403, 'Anda tidak memiliki hak akses untuk mengelola data risiko perangkat daerah lain.');
+            }
+        }
+
         // 1. Check if OPD has an assigned auditor (Strict: No role can bypass if OPD has no auditor)
         $hasAuditor = AuditorOpdAssignment::where('opd_id', $opdId)
             ->where('is_active', true)

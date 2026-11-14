@@ -22,6 +22,7 @@ use App\Http\Resources\Risiko\RootCauseAnalysisResource;
 use App\Services\Risiko\AnalisisRisikoService;
 use App\Services\Risiko\Pengajuan\ReviewFormService;
 use App\Services\Risiko\PengajuanRisikoService;
+use App\Services\Risiko\TindakPengendalianService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -199,7 +200,7 @@ class PengajuanRisikoController extends Controller
         return response()->json(['data' => $submission]);
     }
 
-    public function reviewForm(ReviewFormRequest $request, string $id, string $form, ReviewFormService $forms, AnalisisRisikoService $analisis): JsonResponse
+    public function reviewForm(ReviewFormRequest $request, string $id, string $form, ReviewFormService $forms, AnalisisRisikoService $analisis, TindakPengendalianService $tindak): JsonResponse
     {
         $user = $request->user();
         if (! $user?->can('review_risiko.view')) {
@@ -209,6 +210,14 @@ class PengajuanRisikoController extends Controller
         $params = $request->validated();
         if ($form === '4') {
             $result = $analisis->list((string) $submission->opd_id, (string) $submission->periode_penilaian_id, $user, $params);
+
+            return response()->json(['data' => $result['items'], 'meta' => $result['pagination']]);
+        }
+        if (in_array($form, ['5', '6'], true)) {
+            if (! $submission->items->contains('form_code', $form)) {
+                abort(404);
+            }
+            $result = $tindak->list((string) $submission->opd_id, (string) $submission->periode_penilaian_id, $user, $params);
 
             return response()->json(['data' => $result['items'], 'meta' => $result['pagination']]);
         }

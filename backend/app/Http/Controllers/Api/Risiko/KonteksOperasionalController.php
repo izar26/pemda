@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Risiko;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Risiko\ReorderKonteksOperasionalItemRequest;
 use App\Http\Requests\Risiko\SaveKonteksOperasionalItemRequest;
 use App\Http\Requests\Risiko\SaveKonteksOperasionalRequest;
 use App\Http\Resources\Risiko\KonteksOperasionalItemResource;
@@ -13,7 +14,6 @@ use App\Services\Risiko\KonteksOperasionalService;
 use App\Services\Risiko\PengajuanRisikoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class KonteksOperasionalController extends Controller
@@ -212,30 +212,18 @@ class KonteksOperasionalController extends Controller
     /**
      * Reorder operational items within Form 2C and auto-recalculate sequential codes.
      */
-    public function reorderItems(Request $request, string $id): JsonResponse
+    public function reorderItems(ReorderKonteksOperasionalItemRequest $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (! $user?->can('konteks_operasional.edit')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk mengubah urutan rincian operasional Form 2C.');
-        }
-
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko operasional OPD lain.');
         }
 
         $this->pengajuanService->assertOpdCanEdit((string) $konteks->opd_id, (string) $konteks->periode_penilaian_id, $user, '2c');
 
-        $validated = $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => [
-                'required',
-                'uuid',
-                Rule::exists('konteks_operasional_items', 'id')->where('konteks_operasional_id', $konteks->id),
-            ],
-        ]);
-
-        $this->service->reorderItems($konteks, $validated['ids']);
+        $itemIds = $request->validated('item_ids') ?? $request->validated('ids');
+        $this->service->reorderItems($konteks, $itemIds);
 
         return response()->json([
             'message' => 'Urutan rincian operasional Form 2C berhasil diperbarui.',

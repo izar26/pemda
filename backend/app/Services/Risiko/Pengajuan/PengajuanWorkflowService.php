@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class PengajuanWorkflowService
 {
-    public const REQUIRED_FORM_CODES = ['2b', '2c', '3a', '3b', '3c', 'rca', '4'];
+    public const REQUIRED_FORM_CODES = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6'];
 
     public function __construct(
         protected PengajuanQueryService $queryService,
@@ -59,6 +59,9 @@ class PengajuanWorkflowService
                 ]);
             }
 
+            $previouslySubmitted = $lockedSubmission->submitted_at !== null || $lockedSubmission->status !== PengajuanPenilaianRisiko::STATUS_DRAFT;
+            $existingCodes = $lockedSubmission->items()->pluck('form_code')->all();
+            $codes = $previouslySubmitted ? array_values(array_intersect(self::REQUIRED_FORM_CODES, $existingCodes)) : self::REQUIRED_FORM_CODES;
             $lockedSubmission->update([
                 'auditor_id' => $readiness['assigned_auditor']?->id ?? $lockedSubmission->auditor_id,
                 'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA,
@@ -68,7 +71,7 @@ class PengajuanWorkflowService
             ]);
 
             // Set all draft or rejected items to submitted status
-            foreach (self::REQUIRED_FORM_CODES as $code) {
+            foreach ($codes as $code) {
                 $item = PengajuanPenilaianRisikoItem::firstOrCreate(
                     [
                         'pengajuan_id' => $lockedSubmission->id,
@@ -389,15 +392,15 @@ class PengajuanWorkflowService
             ]);
         }
 
-        if ($cleanFormCode === '4' && ($submission->current_tier !== PengajuanPenilaianRisiko::TIER_AUDITOR || ! in_array($submission->status, [PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR, PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, PengajuanPenilaianRisiko::STATUS_SUBMITTED, PengajuanPenilaianRisiko::STATUS_IN_REVIEW], true))) {
-            throw ValidationException::withMessages(['submission' => ['Form 4 tidak berada pada tahap pemeriksaan auditor.']]);
+        if (in_array($cleanFormCode, ['4', '5', '6'], true) && ($submission->current_tier !== PengajuanPenilaianRisiko::TIER_AUDITOR || ! in_array($submission->status, [PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR, PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR, PengajuanPenilaianRisiko::STATUS_SUBMITTED, PengajuanPenilaianRisiko::STATUS_IN_REVIEW], true))) {
+            throw ValidationException::withMessages(['submission' => ['Formulir tidak berada pada tahap pemeriksaan auditor.']]);
         }
 
         return DB::transaction(function () use ($submission, $cleanFormCode, $status, $catatanRevisi, $auditorUser) {
             $lockedSubmission = PengajuanPenilaianRisiko::lockForUpdate()->find($submission->id);
 
-            if ($cleanFormCode === '4' && ! $lockedSubmission->items()->where('form_code', '4')->exists()) {
-                throw ValidationException::withMessages(['form_code' => ['Form 4 hanya tersedia sebagai informasi untuk pengajuan ini.']]);
+            if (in_array($cleanFormCode, ['4', '5', '6'], true) && ! $lockedSubmission->items()->where('form_code', $cleanFormCode)->exists()) {
+                throw ValidationException::withMessages(['form_code' => ['Formulir tidak tersedia untuk pengajuan ini.']]);
             }
 
             $item = PengajuanPenilaianRisikoItem::firstOrCreate(
@@ -454,7 +457,7 @@ class PengajuanWorkflowService
                 ->where('status_auditor', PengajuanPenilaianRisikoItem::STATUS_APPROVED)
                 ->count();
 
-            $requiredCount = $allItems->contains('form_code', '4') ? count(self::REQUIRED_FORM_CODES) : count(self::REQUIRED_FORM_CODES) - 1;
+            $requiredCount = $allItems->whereIn('form_code', self::REQUIRED_FORM_CODES)->count();
             $allRequiredApproved = $approvedCount === $requiredCount;
 
             if ($hasAnyRejected) {
@@ -733,8 +736,8 @@ class PengajuanWorkflowService
         return DB::transaction(function () use ($submission, $cleanFormCode, $status, $catatanRevisi, $pengawasUser) {
             $lockedSubmission = PengajuanPenilaianRisiko::lockForUpdate()->find($submission->id);
 
-            if ($cleanFormCode === '4' && ! $lockedSubmission->items()->where('form_code', '4')->exists()) {
-                throw ValidationException::withMessages(['form_code' => ['Form 4 hanya tersedia sebagai informasi untuk pengajuan ini.']]);
+            if (in_array($cleanFormCode, ['4', '5', '6'], true) && ! $lockedSubmission->items()->where('form_code', $cleanFormCode)->exists()) {
+                throw ValidationException::withMessages(['form_code' => ['Formulir tidak tersedia untuk pengajuan ini.']]);
             }
 
             $item = PengajuanPenilaianRisikoItem::firstOrCreate(
@@ -791,7 +794,7 @@ class PengajuanWorkflowService
                 ->where('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_APPROVED)
                 ->count();
 
-            $requiredCount = $allItems->contains('form_code', '4') ? count(self::REQUIRED_FORM_CODES) : count(self::REQUIRED_FORM_CODES) - 1;
+            $requiredCount = $allItems->whereIn('form_code', self::REQUIRED_FORM_CODES)->count();
             $allRequiredApproved = $approvedCount === $requiredCount;
 
             if ($hasAnyRejected) {

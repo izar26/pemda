@@ -50,6 +50,7 @@ import { ReviewStep3B } from './wizard/steps/review-step-3b'
 import { ReviewStep3C } from './wizard/steps/review-step-3c'
 import { ReviewStepRca } from './wizard/steps/review-step-rca'
 import { ReviewStep4 } from './wizard/steps/review-step-4'
+import { RiskCards } from '@/features/risiko/tindak-pengendalian/risk-cards'
 import { KepalaFormSelect } from '@/features/risiko/shared/header/kepala-form-select'
 
 interface ReviewRisikoWizardProps {
@@ -91,7 +92,7 @@ export function ReviewRisikoWizard({
     retry: false,
   })
 
-  const reviewSteps = RISIKO_WIZARD_STEPS
+  const reviewSteps = RISIKO_WIZARD_STEPS.filter((step) => !['5', '6'].includes(step.id) || submission?.items?.some((item) => item.form_code.toLowerCase() === step.id))
   const hasForm4Item = Boolean(submission?.items?.some((item) => item.form_code.toLowerCase() === '4'))
 
   const effectiveOpdId = submission?.opd_id || opdId
@@ -99,7 +100,7 @@ export function ReviewRisikoWizard({
 
   const activeStepId = reviewSteps[currentStepIndex]?.id
   const {
-    form4, form4Page, isLoading4, error4, refetch4,
+    form4, form4Page, isLoading4, error4, refetch4, tindakPage, isLoadingTindak, errorTindak, refetchTindak,
     setPages, setSearches, rcaSource, setRcaSource, rcaStatus, setRcaStatus, searchFor,
     konteks2BData, isLoading2B, error2B, refetch2B, konteks2CData, isLoading2C, error2C, refetch2C,
     identifikasi3AData, isLoading3A, error3A, refetch3A, identifikasi3BData, isLoading3B, error3B, refetch3B,
@@ -375,9 +376,11 @@ export function ReviewRisikoWizard({
     '3c': { error: error3C || error3A, retry: () => Promise.all([refetch3C(), refetch3A()]) },
     rca: { error: errorRca, retry: refetchRca },
     '4': { error: error4, retry: refetch4 },
+    '5': { error: errorTindak, retry: refetchTindak },
+    '6': { error: errorTindak, retry: refetchTindak },
   }
   const currentDataError = stepErrors[currentStep.id]
-  const currentPage = currentStep.id === '3a' ? identifikasi3AData?.meta : currentStep.id === '3b' ? identifikasi3BData?.meta : currentStep.id === '3c' ? identifikasi3CData?.meta : currentStep.id === 'rca' ? rcaPage?.meta : currentStep.id === '4' ? form4Page?.meta : null
+  const currentPage = currentStep.id === '3a' ? identifikasi3AData?.meta : currentStep.id === '3b' ? identifikasi3BData?.meta : currentStep.id === '3c' ? identifikasi3CData?.meta : currentStep.id === 'rca' ? rcaPage?.meta : currentStep.id === '4' ? form4Page?.meta : ['5', '6'].includes(currentStep.id) ? tindakPage?.meta : null
 
   const isRevisionByPengawas = submission?.status === 'revision_by_pengawas'
 
@@ -525,7 +528,7 @@ export function ReviewRisikoWizard({
           {/* Step Header with Decision Bar */}
           <ReviewWizardStepHeader
             informationOnly={currentStep.id === '4' && !hasForm4Item}
-            canDecide={currentStep.id !== '4' || (isPengawasTier ? (hasRole('Superadmin') || hasRole('Admin Office') || (hasRole('Inspektorat') && hasPermission('review_risiko.review_pengawas'))) : submission.current_tier === 'auditor' && hasPermission('review_risiko.approve'))}
+            canDecide={!['4', '5', '6'].includes(currentStep.id) || (isPengawasTier ? (hasRole('Superadmin') || hasRole('Admin Office') || (hasRole('Inspektorat') && hasPermission('review_risiko.review_pengawas'))) : submission.current_tier === 'auditor' && hasPermission('review_risiko.approve'))}
             stepNumber={currentStep.stepNumber}
             totalSteps={totalSteps}
             stepCode={currentStep.code}
@@ -534,7 +537,7 @@ export function ReviewRisikoWizard({
             isApproved={isCurrentApproved}
             isRejected={isCurrentRejected}
             isDraftSubmission={isDraftSubmission}
-            isPendingMutation={reviewMutation.isPending || currentDataError.error || isLoading2B || isLoading2C || isLoading3A || isLoading3B || isLoading3C || isLoadingRca || isLoading4}
+            isPendingMutation={reviewMutation.isPending || currentDataError.error || isLoading2B || isLoading2C || isLoading3A || isLoading3B || isLoading3C || isLoadingRca || isLoading4 || isLoadingTindak}
             isPengawasTier={isPengawasTier}
             isKepalaTier={isKepalaTier}
             currentItem={currentItem}
@@ -544,7 +547,7 @@ export function ReviewRisikoWizard({
 
         {/* Step Data Content Area */}
         <div className='p-3.5 sm:p-4'>
-          {['3a', '3b', '3c', 'rca', '4'].includes(currentStep.id) && !currentDataError.error && (
+          {['3a', '3b', '3c', 'rca', '4', '5', '6'].includes(currentStep.id) && !currentDataError.error && (
             <div className='mb-4'><Input aria-label='Cari kode atau pernyataan risiko' placeholder='Cari kode atau pernyataan risiko' value={searchFor(currentStep.id)} onChange={(event) => { const code = currentStep.id; setSearches((prev) => ({ ...prev, [code]: event.target.value })); setPages((prev) => ({ ...prev, [code]: 1 })) }} /></div>
           )}
           {currentStep.id === 'rca' && <div className='mb-4 flex flex-wrap gap-2'>
@@ -577,6 +580,7 @@ export function ReviewRisikoWizard({
           )}
 
           {!currentDataError.error && currentStep.id === '4' && <ReviewStep4 items={form4} isLoading={isLoading4} />}
+          {!currentDataError.error && (currentStep.id === '5' || currentStep.id === '6') && (isLoadingTindak ? <p role='status'>Memuat risiko prioritas...</p> : <RiskCards items={tindakPage?.data || []} form={currentStep.id} />)}
 
           {!currentDataError.error && currentStep.id === 'rca' && (
             <ReviewStepRca rcaList={rcaPage?.data || []} isLoading={isLoadingRca} />

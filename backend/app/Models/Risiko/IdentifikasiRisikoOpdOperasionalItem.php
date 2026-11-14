@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Risiko;
 
 use App\Models\Concerns\HasUuid7;
+use App\Models\Concerns\InvalidatesDerivedRiskForms;
 use App\Models\User;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class IdentifikasiRisikoOpdOperasionalItem extends Model
 {
-    use Auditable, HasFactory, HasUuid7;
+    use Auditable, HasFactory, HasUuid7, InvalidatesDerivedRiskForms;
 
     protected $table = 'identifikasi_risiko_opd_operasional_items';
 

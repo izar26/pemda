@@ -14,6 +14,8 @@ export type RisikoWizardStepId =
   | '3c'
   | 'rca'
   | '4'
+  | '5'
+  | '6'
 
 export interface RisikoWizardStepConfig {
   stepNumber: number
@@ -107,6 +109,26 @@ export const RISIKO_WIZARD_STEPS: RisikoWizardStepConfig[] = [
     subtitle: 'Penilaian risiko inheren dan residual',
     url: '/risiko/analisis-risiko',
     requiredPermission: 'identifikasi_risiko_opd.view',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 8,
+    id: '5',
+    code: '5',
+    title: 'Daftar Risiko Prioritas (5)',
+    shortTitle: 'Risiko Prioritas',
+    subtitle: 'Risiko residual yang memerlukan perlakuan',
+    url: '/risiko/risiko-prioritas',
+    isImplemented: true,
+  },
+  {
+    stepNumber: 9,
+    id: '6',
+    code: '6',
+    title: 'Rencana Tindak Pengendalian (6)',
+    shortTitle: 'Tindak Pengendalian',
+    subtitle: 'Celah pengendalian dan rencana tindak risiko prioritas',
+    url: '/risiko/tindak-pengendalian',
     isImplemented: true,
   },
 ]
@@ -396,6 +418,12 @@ export function useRisikoWizardProgress(enabled = true) {
     if (step.id === '4') {
       const isUnlocked = Boolean(activePeriode) && isStepRCACompleted
       const isCompleted = Boolean(readiness?.is_4_complete)
+      return { ...step, isCompleted, isUnlocked, status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available' }
+    }
+
+    if (step.id === '5' || step.id === '6') {
+      const isUnlocked = Boolean(activePeriode && readiness?.is_4_complete)
+      const isCompleted = Boolean(step.id === '5' ? readiness?.is_5_complete : readiness?.is_6_complete)
       return { ...step, isCompleted, isUnlocked, status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available' }
     }
 

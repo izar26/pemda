@@ -26,7 +26,7 @@ class ReviewKepalaOpdRequest extends FormRequest
     {
         return [
             'status' => ['required', 'string', 'in:approved,rejected'],
-            'form_code' => ['nullable', 'required_if:status,rejected', 'string', 'in:2b,2c,3a,3b,3c,rca,4'],
+            'form_code' => ['nullable', 'required_if:status,rejected', 'string', 'in:2b,2c,3a,3b,3c,rca,4,5,6'],
             'catatan' => ['nullable', 'string', 'required_if:status,rejected', 'min:5', 'max:2000'],
         ];
     }

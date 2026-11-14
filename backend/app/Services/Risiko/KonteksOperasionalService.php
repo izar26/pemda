@@ -439,9 +439,12 @@ class KonteksOperasionalService
     {
         DB::transaction(function () use ($konteks, $orderedIds) {
             foreach ($orderedIds as $index => $id) {
-                KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
+                $item = KonteksOperasionalItem::where('konteks_operasional_id', $konteks->id)
                     ->where('id', $id)
-                    ->update(['urutan' => $index + 1]);
+                    ->first();
+                if ($item && (int) $item->urutan !== ($index + 1)) {
+                    $item->update(['urutan' => $index + 1]);
+                }
             }
 
             $this->recalculateTreeCodes($konteks);

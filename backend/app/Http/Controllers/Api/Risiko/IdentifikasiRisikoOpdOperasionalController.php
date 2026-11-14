@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Risiko;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Risiko\ReorderIdentifikasiRisikoOpdOperasionalItemRequest;
 use App\Http\Requests\Risiko\SaveIdentifikasiRisikoOpdOperasionalHeaderRequest;
 use App\Http\Requests\Risiko\SaveIdentifikasiRisikoOpdOperasionalItemRequest;
 use App\Http\Resources\Risiko\IdentifikasiRisikoOpdOperasionalItemResource;
@@ -13,6 +14,7 @@ use App\Models\Master\MasterUrusanPemerintahan;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
 use App\Models\Risiko\KonteksOperasional;
+use App\Policies\Risiko\IdentifikasiRisikoPolicy;
 use App\Services\Risiko\IdentifikasiRisikoOpdOperasionalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,8 @@ use Illuminate\Http\Request;
 class IdentifikasiRisikoOpdOperasionalController extends Controller
 {
     public function __construct(
-        protected IdentifikasiRisikoOpdOperasionalService $service
+        protected IdentifikasiRisikoOpdOperasionalService $service,
+        protected IdentifikasiRisikoPolicy $policy
     ) {}
 
     /**
@@ -131,7 +134,10 @@ class IdentifikasiRisikoOpdOperasionalController extends Controller
      */
     public function storeItem(SaveIdentifikasiRisikoOpdOperasionalItemRequest $request, IdentifikasiRisikoOpdOperasional $dokumen): JsonResponse
     {
-        $item = $this->service->storeItem($dokumen, $request->validated(), $request->user());
+        $user = $request->user();
+        abort_unless($this->policy->edit($user, (string) $dokumen->opd_id, '3c'), 403, 'Anda tidak memiliki hak akses untuk menambah butir risiko operasional pada perangkat daerah ini.');
+
+        $item = $this->service->storeItem($dokumen, $request->validated(), $user);
 
         return response()->json([
             'status' => 'success',
@@ -149,7 +155,10 @@ class IdentifikasiRisikoOpdOperasionalController extends Controller
             abort(404, 'Item risiko tidak ditemukan pada dokumen ini.');
         }
 
-        $updated = $this->service->updateItem($item, $request->validated(), $request->user());
+        $user = $request->user();
+        abort_unless($this->policy->edit($user, (string) $dokumen->opd_id, '3c'), 403, 'Anda tidak memiliki hak akses untuk mengubah butir risiko operasional pada perangkat daerah ini.');
+
+        $updated = $this->service->updateItem($item, $request->validated(), $user);
 
         return response()->json([
             'status' => 'success',
@@ -167,7 +176,10 @@ class IdentifikasiRisikoOpdOperasionalController extends Controller
             abort(404, 'Item risiko tidak ditemukan pada dokumen ini.');
         }
 
-        $this->service->deleteItem($item, $request->user());
+        $user = $request->user();
+        abort_unless($this->policy->delete($user, (string) $dokumen->opd_id, '3c'), 403, 'Anda tidak memiliki hak akses untuk menghapus butir risiko operasional pada perangkat daerah ini.');
+
+        $this->service->deleteItem($item, $user);
 
         return response()->json([
             'status' => 'success',
@@ -178,14 +190,12 @@ class IdentifikasiRisikoOpdOperasionalController extends Controller
     /**
      * Reorder risk items in Form 3C.
      */
-    public function reorderItems(Request $request, IdentifikasiRisikoOpdOperasional $dokumen): JsonResponse
+    public function reorderItems(ReorderIdentifikasiRisikoOpdOperasionalItemRequest $request, IdentifikasiRisikoOpdOperasional $dokumen): JsonResponse
     {
-        $request->validate([
-            'item_ids' => ['required', 'array', 'min:1'],
-            'item_ids.*' => ['uuid', 'exists:identifikasi_risiko_opd_operasional_items,id'],
-        ]);
+        $user = $request->user();
+        abort_unless($this->policy->edit($user, (string) $dokumen->opd_id, '3c'), 403, 'Anda tidak memiliki hak akses untuk mengatur ulang urutan risiko operasional pada perangkat daerah ini.');
 
-        $this->service->reorderItems($dokumen, $request->input('item_ids'), $request->user());
+        $this->service->reorderItems($dokumen, $request->validated('item_ids'), $user);
 
         return response()->json([
             'status' => 'success',

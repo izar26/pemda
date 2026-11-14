@@ -257,7 +257,7 @@ class IdentifikasiRisikoPemdaService
                     $item->urutan = $no;
                     $item->nomor_urut = $no;
                     $item->kode_risiko = $this->generateKodeRisiko($tahunPenilaian, $item->kategori_risiko, $no);
-                    $item->saveQuietly();
+                    $item->save();
                 }
             }
         });

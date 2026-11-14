@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Risiko;
 
 use App\Models\Risiko\IdentifikasiRisikoOpd;
+use App\Models\Risiko\IdentifikasiRisikoOpdItem;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\RootCauseAnalysis;
@@ -94,18 +96,71 @@ class RootCauseAnalysisService
     }
 
     /**
-     * Get or create RCA record for a specific risk item.
+     * Get or create RCA record for a specific risk item (3A, 3B, or 3C).
      */
-    public function getOrCreateRcaByItem(IdentifikasiRisikoPemdaItem $item): RootCauseAnalysis
+    public function getOrCreateRcaByItem(string $itemId, ?User $user = null): RootCauseAnalysis
     {
-        return RootCauseAnalysis::firstOrCreate(
-            ['identifikasi_risiko_pemda_item_id' => $item->id],
-            [
-                'source_type' => '3a',
-                'created_by' => auth()->id(),
-                'updated_by' => auth()->id(),
-            ]
-        )->load(['itemPemda.sasaran', 'itemPemda.indikator']);
+        // 1. Try Form 3A (Pemda)
+        $item3a = IdentifikasiRisikoPemdaItem::with('dokumen')->find($itemId);
+        if ($item3a) {
+            $dokumen = $item3a->dokumen;
+            if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $dokumen) {
+                if ((string) $user->opd_id !== (string) $dokumen->opd_id) {
+                    abort(403, 'Anda tidak memiliki hak akses untuk data RCA perangkat daerah lain.');
+                }
+            }
+
+            return RootCauseAnalysis::firstOrCreate(
+                ['identifikasi_risiko_pemda_item_id' => $item3a->id],
+                [
+                    'source_type' => '3a',
+                    'created_by' => $user?->id ?? auth()->id(),
+                    'updated_by' => $user?->id ?? auth()->id(),
+                ]
+            )->load(['itemPemda.sasaran', 'itemPemda.indikator']);
+        }
+
+        // 2. Try Form 3B (OPD Strategis)
+        $item3b = IdentifikasiRisikoOpdItem::with('dokumen')->find($itemId);
+        if ($item3b) {
+            $dokumen = $item3b->dokumen;
+            if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $dokumen) {
+                if ((string) $user->opd_id !== (string) $dokumen->opd_id) {
+                    abort(403, 'Anda tidak memiliki hak akses untuk data RCA perangkat daerah lain.');
+                }
+            }
+
+            return RootCauseAnalysis::firstOrCreate(
+                ['identifikasi_risiko_opd_item_id' => $item3b->id],
+                [
+                    'source_type' => '3b',
+                    'created_by' => $user?->id ?? auth()->id(),
+                    'updated_by' => $user?->id ?? auth()->id(),
+                ]
+            )->load(['itemOpd.sasaran', 'itemOpd.indikator']);
+        }
+
+        // 3. Try Form 3C (OPD Operasional)
+        $item3c = IdentifikasiRisikoOpdOperasionalItem::with('dokumen')->find($itemId);
+        if ($item3c) {
+            $dokumen = $item3c->dokumen;
+            if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $dokumen) {
+                if ((string) $user->opd_id !== (string) $dokumen->opd_id) {
+                    abort(403, 'Anda tidak memiliki hak akses untuk data RCA perangkat daerah lain.');
+                }
+            }
+
+            return RootCauseAnalysis::firstOrCreate(
+                ['identifikasi_risiko_opd_operasional_item_id' => $item3c->id],
+                [
+                    'source_type' => '3c',
+                    'created_by' => $user?->id ?? auth()->id(),
+                    'updated_by' => $user?->id ?? auth()->id(),
+                ]
+            )->load(['itemOperasional.subKegiatan.parent.parent', 'itemOperasional.subKegiatan.indikators']);
+        }
+
+        abort(404, 'Butir risiko tidak ditemukan.');
     }
 
     /**

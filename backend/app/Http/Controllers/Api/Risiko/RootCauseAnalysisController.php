@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Api\Risiko;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Risiko\SaveRootCauseAnalysisRequest;
 use App\Http\Resources\Risiko\RootCauseAnalysisResource;
-use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\RootCauseAnalysis;
 use App\Services\Risiko\RootCauseAnalysisService;
 use Illuminate\Http\JsonResponse;
@@ -62,11 +61,11 @@ class RootCauseAnalysisController extends Controller
     }
 
     /**
-     * Get or create RCA for a specific risk item.
+     * Get or create RCA for a specific risk item across 3A, 3B, or 3C.
      */
-    public function show(IdentifikasiRisikoPemdaItem $item): JsonResponse
+    public function show(Request $request, string $item): JsonResponse
     {
-        $rca = $this->service->getOrCreateRcaByItem($item);
+        $rca = $this->service->getOrCreateRcaByItem($item, $request->user());
 
         return response()->json([
             'data' => new RootCauseAnalysisResource($rca),

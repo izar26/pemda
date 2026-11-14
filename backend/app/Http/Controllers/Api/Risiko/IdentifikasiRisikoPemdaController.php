@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Risiko;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Risiko\ReorderIdentifikasiRisikoPemdaItemRequest;
 use App\Http\Requests\Risiko\SaveIdentifikasiRisikoPemdaHeaderRequest;
 use App\Http\Requests\Risiko\SaveIdentifikasiRisikoPemdaItemRequest;
 use App\Http\Resources\Risiko\IdentifikasiRisikoPemdaItemResource;
@@ -14,6 +15,7 @@ use App\Models\Master\MasterUrusanPemerintahan;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\IdentifikasiRisikoPemdaItem;
 use App\Models\Risiko\KonteksPenilaian;
+use App\Policies\Risiko\IdentifikasiRisikoPolicy;
 use App\Services\Risiko\IdentifikasiRisikoPemdaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +23,8 @@ use Illuminate\Http\Request;
 class IdentifikasiRisikoPemdaController extends Controller
 {
     public function __construct(
-        protected IdentifikasiRisikoPemdaService $service
+        protected IdentifikasiRisikoPemdaService $service,
+        protected IdentifikasiRisikoPolicy $policy
     ) {}
 
     /**
@@ -123,7 +126,10 @@ class IdentifikasiRisikoPemdaController extends Controller
      */
     public function storeItem(SaveIdentifikasiRisikoPemdaItemRequest $request, IdentifikasiRisikoPemda $dokumen): JsonResponse
     {
-        $item = $this->service->storeItem($dokumen, $request->validated(), $request->user());
+        $user = $request->user();
+        abort_unless($this->policy->edit($user, (string) $dokumen->opd_id, '3a'), 403, 'Anda tidak memiliki hak akses untuk menambah butir risiko pada perangkat daerah ini.');
+
+        $item = $this->service->storeItem($dokumen, $request->validated(), $user);
 
         return response()->json([
             'status' => 'success',
@@ -141,7 +147,10 @@ class IdentifikasiRisikoPemdaController extends Controller
             abort(404, 'Item risiko tidak ditemukan pada dokumen ini.');
         }
 
-        $updated = $this->service->updateItem($item, $request->validated(), $request->user());
+        $user = $request->user();
+        abort_unless($this->policy->edit($user, (string) $dokumen->opd_id, '3a'), 403, 'Anda tidak memiliki hak akses untuk mengubah butir risiko pada perangkat daerah ini.');
+
+        $updated = $this->service->updateItem($item, $request->validated(), $user);
 
         return response()->json([
             'status' => 'success',
@@ -159,7 +168,10 @@ class IdentifikasiRisikoPemdaController extends Controller
             abort(404, 'Item risiko tidak ditemukan pada dokumen ini.');
         }
 
-        $this->service->destroyItem($item, $request->user());
+        $user = $request->user();
+        abort_unless($this->policy->delete($user, (string) $dokumen->opd_id, '3a'), 403, 'Anda tidak memiliki hak akses untuk menghapus butir risiko pada perangkat daerah ini.');
+
+        $this->service->destroyItem($item, $user);
 
         return response()->json([
             'status' => 'success',
@@ -170,14 +182,12 @@ class IdentifikasiRisikoPemdaController extends Controller
     /**
      * Reorder risk items in Form 3A.
      */
-    public function reorderItems(Request $request, IdentifikasiRisikoPemda $dokumen): JsonResponse
+    public function reorderItems(ReorderIdentifikasiRisikoPemdaItemRequest $request, IdentifikasiRisikoPemda $dokumen): JsonResponse
     {
-        $request->validate([
-            'item_ids' => ['required', 'array', 'min:1'],
-            'item_ids.*' => ['uuid', 'exists:identifikasi_risiko_pemda_items,id'],
-        ]);
+        $user = $request->user();
+        abort_unless($this->policy->edit($user, (string) $dokumen->opd_id, '3a'), 403, 'Anda tidak memiliki hak akses untuk mengatur ulang urutan risiko pada perangkat daerah ini.');
 
-        $this->service->reorderItems($dokumen, $request->input('item_ids'), $request->user());
+        $this->service->reorderItems($dokumen, $request->validated('item_ids'), $user);
 
         return response()->json([
             'status' => 'success',

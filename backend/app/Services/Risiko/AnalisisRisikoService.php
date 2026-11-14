@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class AnalisisRisikoService
 {
+    public const COMPLETE_SQL = "a.kriteria_kemungkinan IS NOT NULL AND a.kriteria_kemungkinan <> '' AND a.kriteria_dampak IS NOT NULL AND a.kriteria_dampak <> '' AND a.residual_kriteria_kemungkinan IS NOT NULL AND a.residual_kriteria_kemungkinan <> '' AND a.residual_kriteria_dampak IS NOT NULL AND a.residual_kriteria_dampak <> '' AND a.inheren_kemungkinan IS NOT NULL AND a.inheren_dampak IS NOT NULL AND a.residual_kemungkinan IS NOT NULL AND a.residual_dampak IS NOT NULL AND a.pengendalian_ada IS NOT NULL AND (a.pengendalian_ada = false OR (a.pengendalian_ada = true AND a.pengendalian_uraian IS NOT NULL AND a.pengendalian_uraian <> '' AND a.sub_unsur_spip_id IS NOT NULL AND a.pengendalian_memadai IS NOT NULL))";
+
     public function __construct(
         private readonly SkalaRisikoService $skala,
         private readonly AnalisisRisikoPolicy $policy,
@@ -25,7 +27,7 @@ class AnalisisRisikoService
     public function list(string $opdId, string $periodeId, User $user, array $filters = []): array
     {
         abort_unless($this->policy->view($user, $opdId), 403);
-        $complete = "a.kriteria_kemungkinan IS NOT NULL AND a.kriteria_kemungkinan <> '' AND a.kriteria_dampak IS NOT NULL AND a.kriteria_dampak <> '' AND a.residual_kriteria_kemungkinan IS NOT NULL AND a.residual_kriteria_kemungkinan <> '' AND a.residual_kriteria_dampak IS NOT NULL AND a.residual_kriteria_dampak <> '' AND a.inheren_kemungkinan IS NOT NULL AND a.inheren_dampak IS NOT NULL AND a.residual_kemungkinan IS NOT NULL AND a.residual_dampak IS NOT NULL AND a.pengendalian_ada IS NOT NULL AND (a.pengendalian_ada = false OR (a.pengendalian_ada = true AND a.pengendalian_uraian IS NOT NULL AND a.pengendalian_uraian <> '' AND a.sub_unsur_spip_id IS NOT NULL AND a.pengendalian_memadai IS NOT NULL))";
+        $complete = self::COMPLETE_SQL;
         $sources = [
             ['3b', 'identifikasi_risiko_opd_items', 'identifikasi_risiko_opds', 'identifikasi_risiko_opd_id', 'risiko_opd_item_id'],
             ['3c', 'identifikasi_risiko_opd_operasional_items', 'identifikasi_risiko_opd_operasionals', 'identifikasi_risiko_opd_operasional_id', 'risiko_operasional_item_id'],
@@ -88,6 +90,7 @@ class AnalisisRisikoService
 
     public function save(string $source, string $itemId, array $data, User $user): AnalisisRisiko
     {
+        unset($data['rencana_tindak']);
         $model = $source === '3b' ? IdentifikasiRisikoOpdItem::class : IdentifikasiRisikoOpdOperasionalItem::class;
         $item = $model::with('dokumen')->findOrFail($itemId);
         $opdId = (string) $item->dokumen->opd_id;

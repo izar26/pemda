@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
+use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,9 +27,28 @@ class SaveIdentifikasiRisikoOpdOperasionalItemRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('identifikasi_risiko_opd_operasional.create')
-            || $this->user()?->can('identifikasi_risiko_opd_operasional.edit')
-            || false;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        $canEdit = $user->can('identifikasi_risiko_opd_operasional.create')
+            || $user->can('identifikasi_risiko_opd_operasional.edit');
+
+        if (! $canEdit && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            return false;
+        }
+
+        $dokumen = $this->route('dokumen');
+        if (is_string($dokumen)) {
+            $dokumen = IdentifikasiRisikoOpdOperasional::find($dokumen);
+        }
+
+        if ($dokumen && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+            return (string) $user->opd_id === (string) $dokumen->opd_id;
+        }
+
+        return true;
     }
 
     /**
