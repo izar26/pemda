@@ -39,26 +39,94 @@ export function AnalisisDialog({ row, canEdit, isSaving, subUnsur, onClose, onSa
   }
   function submit(event: FormEvent) { event.preventDefault(); if (row && canEdit && !isSaving) onSave(row, form) }
 
-  return <Dialog open={Boolean(row)} onOpenChange={(open) => { if (!open && !isSaving) onClose() }}>
-    <DialogContent className='max-h-[90dvh] overflow-y-auto p-4 sm:max-w-2xl sm:p-6'>
-      <DialogHeader><DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'><ClipboardList className='h-4 w-4 text-primary' /> Analisis dan Evaluasi Risiko</DialogTitle><DialogDescription className='text-xs'>Nilai risiko sebelum dan setelah pengendalian yang sudah ada.</DialogDescription></DialogHeader>
-      {row && <form onSubmit={submit} className='space-y-4'>
-        {!canEdit && <p className='rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground'>Analisis ini hanya dapat dilihat.</p>}
-        <RiskContextCard
-          source={row.source}
-          kodeRisiko={row.kode_risiko}
-          pernyataanRisiko={row.pernyataan_risiko}
-          kategoriRisiko={row.kategori_risiko}
-          pemilikRisiko={row.pemilik_risiko}
-        />
-        <fieldset disabled={disabled} className='min-w-0 space-y-4'>
-          <section className='space-y-3 rounded-lg border bg-muted/20 p-3'><div><h3 className='text-sm font-semibold'>1. Risiko inheren</h3><p className='text-xs text-muted-foreground'>Nilai risiko sebelum pengendalian.</p></div><div className='grid gap-3 sm:grid-cols-2'>{criterion('Kriteria kemungkinan inheren', 'kriteria_kemungkinan', kemungkinan)}{score('Skor kemungkinan inheren', 'inheren_kemungkinan')}{criterion('Kriteria dampak inheren', 'kriteria_dampak', dampak)}{score('Skor dampak inheren', 'inheren_dampak')}</div></section>
-          <section className='space-y-3 rounded-lg border bg-muted/20 p-3'><div><h3 className='text-sm font-semibold'>2. Pengendalian yang sudah ada</h3><p className='text-xs text-muted-foreground'>Jelaskan pengendalian yang telah diterapkan.</p></div>{boolField('Ketersediaan pengendalian', 'pengendalian_ada')}{form.pengendalian_ada && <><div className='space-y-1.5'><Label htmlFor='analisis-pengendalian' className='text-xs font-semibold'>Uraian pengendalian</Label><Textarea id='analisis-pengendalian' className='text-xs' value={form.pengendalian_uraian || ''} onChange={(event) => field('pengendalian_uraian', event.target.value || null)} /></div>{choose('Sub-unsur SPIP', form.sub_unsur_spip_id || '', subUnsur.map((item) => ({ value: item.id, label: item.nama })), (value) => field('sub_unsur_spip_id', value || null), 'Pilih sub-unsur')}{boolField('Kecukupan pengendalian', 'pengendalian_memadai')}</>}</section>
-          <section className='space-y-3 rounded-lg border bg-muted/20 p-3'><div><h3 className='text-sm font-semibold'>3. Risiko residual</h3><p className='text-xs text-muted-foreground'>Nilai kondisi risiko setelah pengendalian.</p></div><div className='grid gap-3 sm:grid-cols-2'>{criterion('Kriteria kemungkinan residual', 'residual_kriteria_kemungkinan', kemungkinan)}{score('Skor kemungkinan residual', 'residual_kemungkinan')}{criterion('Kriteria dampak residual', 'residual_kriteria_dampak', dampak)}{score('Skor dampak residual', 'residual_dampak')}</div><div className='space-y-1.5'><div className='flex items-center justify-between'><Label htmlFor='analisis-rencana' className='text-xs font-semibold'>Rencana Tindak Pengendalian (untuk yang memerlukan perlakuan risiko)</Label><span className='text-[10px] text-muted-foreground'>Tersinkronisasi dengan Form 6</span></div><Textarea id='analisis-rencana' className='text-xs min-h-[72px] resize-y' placeholder='Uraikan rencana tindak pengendalian untuk risiko yang memerlukan penanganan...' value={form.rencana_tindak || ''} onChange={(event) => field('rencana_tindak', event.target.value || null)} disabled={disabled} /></div></section>
-        </fieldset>
-        {canEdit && <p className='text-xs text-muted-foreground'>Analisis yang belum lengkap dapat disimpan sebagai draf. Skala dan evaluasi dihitung setelah penyimpanan.</p>}
-        <DialogFooter className='border-t pt-3'><Button type='button' variant='outline' size='sm' disabled={isSaving} onClick={onClose}>{canEdit ? 'Batal' : 'Tutup'}</Button>{canEdit && <Button type='submit' size='sm' disabled={isSaving} className='gap-1.5'>{isSaving ? <Loader2 className='h-4 w-4 animate-spin' /> : <Save className='h-4 w-4' />}{isSaving ? 'Menyimpan...' : 'Simpan Analisis'}</Button>}</DialogFooter>
-      </form>}
-    </DialogContent>
-  </Dialog>
+  return (
+    <Dialog open={Boolean(row)} onOpenChange={(open) => { if (!open && !isSaving) onClose() }}>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b bg-muted/10 shrink-0 text-start'>
+          <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
+            <ClipboardList className='h-4 w-4 text-primary' /> Analisis dan Evaluasi Risiko
+          </DialogTitle>
+          <DialogDescription className='text-xs'>
+            Nilai risiko sebelum dan setelah pengendalian yang sudah ada.
+          </DialogDescription>
+        </DialogHeader>
+        {row && (
+          <>
+            <form id='analisis-form' onSubmit={submit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4'>
+              {!canEdit && <p className='rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground'>Analisis ini hanya dapat dilihat.</p>}
+              <RiskContextCard
+                source={row.source}
+                kodeRisiko={row.kode_risiko}
+                pernyataanRisiko={row.pernyataan_risiko}
+                kategoriRisiko={row.kategori_risiko}
+                pemilikRisiko={row.pemilik_risiko}
+              />
+              <fieldset disabled={disabled} className='min-w-0 space-y-4'>
+                <section className='space-y-3 rounded-lg border bg-muted/20 p-3 min-w-0'>
+                  <div>
+                    <h3 className='text-sm font-semibold'>1. Risiko inheren</h3>
+                    <p className='text-xs text-muted-foreground'>Nilai risiko sebelum pengendalian.</p>
+                  </div>
+                  <div className='grid gap-3 sm:grid-cols-2 min-w-0'>
+                    {criterion('Kriteria kemungkinan inheren', 'kriteria_kemungkinan', kemungkinan)}
+                    {score('Skor kemungkinan inheren', 'inheren_kemungkinan')}
+                    {criterion('Kriteria dampak inheren', 'kriteria_dampak', dampak)}
+                    {score('Skor dampak inheren', 'inheren_dampak')}
+                  </div>
+                </section>
+                <section className='space-y-3 rounded-lg border bg-muted/20 p-3 min-w-0'>
+                  <div>
+                    <h3 className='text-sm font-semibold'>2. Pengendalian yang sudah ada</h3>
+                    <p className='text-xs text-muted-foreground'>Jelaskan pengendalian yang telah diterapkan.</p>
+                  </div>
+                  {boolField('Ketersediaan pengendalian', 'pengendalian_ada')}
+                  {form.pengendalian_ada && (
+                    <>
+                      <div className='space-y-1.5 min-w-0'>
+                        <Label htmlFor='analisis-pengendalian' className='text-xs font-semibold'>Uraian pengendalian</Label>
+                        <Textarea id='analisis-pengendalian' className='text-xs' value={form.pengendalian_uraian || ''} onChange={(event) => field('pengendalian_uraian', event.target.value || null)} />
+                      </div>
+                      {choose('Sub-unsur SPIP', form.sub_unsur_spip_id || '', subUnsur.map((item) => ({ value: item.id, label: item.nama })), (value) => field('sub_unsur_spip_id', value || null), 'Pilih sub-unsur')}
+                      {boolField('Kecukupan pengendalian', 'pengendalian_memadai')}
+                    </>
+                  )}
+                </section>
+                <section className='space-y-3 rounded-lg border bg-muted/20 p-3 min-w-0'>
+                  <div>
+                    <h3 className='text-sm font-semibold'>3. Risiko residual</h3>
+                    <p className='text-xs text-muted-foreground'>Nilai kondisi risiko setelah pengendalian.</p>
+                  </div>
+                  <div className='grid gap-3 sm:grid-cols-2 min-w-0'>
+                    {criterion('Kriteria kemungkinan residual', 'residual_kriteria_kemungkinan', kemungkinan)}
+                    {score('Skor kemungkinan residual', 'residual_kemungkinan')}
+                    {criterion('Kriteria dampak residual', 'residual_kriteria_dampak', dampak)}
+                    {score('Skor dampak residual', 'residual_dampak')}
+                  </div>
+                  <div className='space-y-1.5 min-w-0'>
+                    <div className='flex items-center justify-between'>
+                      <Label htmlFor='analisis-rencana' className='text-xs font-semibold'>Rencana Tindak Pengendalian (untuk yang memerlukan perlakuan risiko)</Label>
+                      <span className='text-[10px] text-muted-foreground'>Tersinkronisasi dengan Form 6</span>
+                    </div>
+                    <Textarea id='analisis-rencana' className='text-xs min-h-[72px] resize-y' placeholder='Uraikan rencana tindak pengendalian untuk risiko yang memerlukan penanganan...' value={form.rencana_tindak || ''} onChange={(event) => field('rencana_tindak', event.target.value || null)} disabled={disabled} />
+                  </div>
+                </section>
+              </fieldset>
+              {canEdit && <p className='text-xs text-muted-foreground'>Analisis yang belum lengkap dapat disimpan sebagai draf. Skala dan evaluasi dihitung setelah penyimpanan.</p>}
+            </form>
+            <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+              <Button type='button' variant='outline' size='sm' disabled={isSaving} onClick={onClose}>
+                {canEdit ? 'Batal' : 'Tutup'}
+              </Button>
+              {canEdit && (
+                <Button type='submit' form='analisis-form' size='sm' disabled={isSaving} className='gap-1.5'>
+                  {isSaving ? <Loader2 className='h-4 w-4 animate-spin' /> : <Save className='h-4 w-4' />}
+                  {isSaving ? 'Menyimpan...' : 'Simpan Analisis'}
+                </Button>
+              )}
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
 }

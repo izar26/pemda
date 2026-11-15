@@ -279,7 +279,7 @@ export function TwoFactorSection() {
           }
         }}
       >
-        <DialogContent className='sm:max-w-lg'>
+        <DialogContent className='sm:max-w-lg max-h-[90dvh] overflow-y-auto'>
           {setupStep === 'scan' ? (
             <>
               <DialogHeader>
@@ -465,7 +465,7 @@ export function TwoFactorSection() {
 
       {/* MODAL LIHAT KODE PEMULIHAN (Untuk user yang sudah aktif) */}
       <Dialog open={openCodes} onOpenChange={setOpenCodes}>
-        <DialogContent className='sm:max-w-md'>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2 text-base'>
               <KeyRound className='h-5 w-5 text-primary' />
@@ -550,7 +550,7 @@ export function TwoFactorSection() {
 
       {/* MODAL NONAKTIFKAN 2FA */}
       <Dialog open={openDisable} onOpenChange={setOpenDisable}>
-        <DialogContent className='sm:max-w-md'>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2 text-base text-destructive'>
               <ShieldAlert className='h-5 w-5' />

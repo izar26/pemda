@@ -115,6 +115,9 @@ class TindakPengendalianService
                 $analysis->update(['rencana_tindak' => $data['rencana_tindak']]);
             }
             unset($data['rencana_tindak']);
+            if (empty($data['penanggung_jawab']) && ! empty($risk->pemilik_risiko)) {
+                $data['penanggung_jawab'] = $risk->pemilik_risiko;
+            }
             TindakPengendalianRisiko::updateOrCreate(['analisis_risiko_id' => $analysis->id], $data);
         });
         $row = $this->query($opdId, $periodeId)->where('source', $source)->where('id', $itemId)->first();

@@ -105,8 +105,8 @@ export function AuditLogsBulkActions({
 
       {/* Confirmation Dialog for Archiving Selected IDs */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className='max-w-md'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <div className='flex items-center gap-2 text-primary'>
               <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10'>
                 <Archive className='h-5 w-5 text-primary' />
@@ -122,7 +122,7 @@ export function AuditLogsBulkActions({
             </div>
           </DialogHeader>
 
-          <div className='space-y-3 py-2 text-xs'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3 text-xs'>
             <div className='rounded-lg border bg-muted/30 p-3 space-y-1.5'>
               <div className='flex justify-between text-muted-foreground'>
                 <span>Jumlah Catatan Terpilih:</span>
@@ -144,7 +144,7 @@ export function AuditLogsBulkActions({
             </div>
           </div>
 
-          <DialogFooter className='gap-2 sm:gap-0'>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               type='button'
               variant='outline'

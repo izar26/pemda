@@ -221,21 +221,20 @@ export function IdentifikasiPemdaItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <DialogHeader>
-            <DialogTitle className='text-sm sm:text-base font-bold flex items-center gap-2'>
-              <Plus className='h-4 w-4 text-primary' />
-              {itemToEdit ? `Ubah Risiko ${itemToEdit.kode_risiko}` : 'Tambah Risiko Strategis Pemda (Form 3A)'}
-            </DialogTitle>
-            <DialogDescription className='text-xs'>
-              {itemToEdit
-                ? 'Perbarui parameter risiko strategis Pemda. Kode risiko akan disesuaikan otomatis.'
-                : 'Data sasaran dan indikator dapat diambil langsung dari Form 2B yang telah Anda tetapkan.'}
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b bg-muted/10 shrink-0 text-start'>
+          <DialogTitle className='text-sm sm:text-base font-bold flex items-center gap-2'>
+            <Plus className='h-4 w-4 text-primary' />
+            {itemToEdit ? `Ubah Risiko ${itemToEdit.kode_risiko}` : 'Tambah Risiko Strategis Pemda (Form 3A)'}
+          </DialogTitle>
+          <DialogDescription className='text-xs'>
+            {itemToEdit
+              ? 'Perbarui parameter risiko strategis Pemda. Kode risiko akan disesuaikan otomatis.'
+              : 'Data sasaran dan indikator dapat diambil langsung dari Form 2B yang telah Anda tetapkan.'}
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className='space-y-3.5 py-1 text-xs'>
+        <form id='identifikasi-pemda-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3.5 text-xs'>
             {/* 1. Sasaran Strategis */}
             <div className='space-y-1.5'>
               <div className='flex items-center justify-between'>
@@ -307,166 +306,166 @@ export function IdentifikasiPemdaItemDialog({
               )}
             </div>
 
-            {/* 3. Kategori Risiko & Pemilik */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-              <div className='space-y-1.5'>
-                <Label htmlFor='kategori-risiko' className='text-xs font-semibold'>
-                  Kategori Risiko <span className='text-destructive'>*</span>
+          {/* 3. Kategori Risiko & Pemilik */}
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0'>
+            <div className='space-y-1.5 min-w-0'>
+              <Label htmlFor='kategori-risiko' className='text-xs font-semibold'>
+                Kategori Risiko <span className='text-destructive'>*</span>
+              </Label>
+              <Select
+                value={kategoriRisiko}
+                onValueChange={(val) => setKategoriRisiko(val as KategoriRisikoPemda)}
+              >
+                <SelectTrigger id='kategori-risiko' className='text-xs'>
+                  <SelectValue placeholder='Pilih Kategori...' />
+                </SelectTrigger>
+                <SelectContent>
+                  {kategoriOptions.map((opt) => (
+                    <SelectItem key={opt} value={opt} className='text-xs'>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-1.5 min-w-0'>
+              <div className='flex items-center justify-between gap-1'>
+                <Label htmlFor='pemilik-risiko' className='text-xs font-semibold truncate'>
+                  Pemilik Risiko <span className='text-destructive'>*</span>
                 </Label>
-                <Select
-                  value={kategoriRisiko}
-                  onValueChange={(val) => setKategoriRisiko(val as KategoriRisikoPemda)}
-                >
-                  <SelectTrigger id='kategori-risiko' className='text-xs'>
-                    <SelectValue placeholder='Pilih Kategori...' />
+                {pemilikOptions.length > 0 && (
+                  <button
+                    type='button'
+                    onClick={() => setIsCustomPemilik(!isCustomPemilik)}
+                    className='text-[10px] text-primary hover:underline shrink-0'
+                  >
+                    {isCustomPemilik ? 'Pilih dari Master Data' : 'Input Manual / Kustom'}
+                  </button>
+                )}
+              </div>
+              {!isCustomPemilik && pemilikOptions.length > 0 ? (
+                <Select value={pemilikRisiko} onValueChange={setPemilikRisiko}>
+                  <SelectTrigger id='pemilik-risiko' className='text-xs h-9'>
+                    <SelectValue placeholder='Pilih Pemilik Risiko' />
                   </SelectTrigger>
                   <SelectContent>
-                    {kategoriOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt} className='text-xs'>
-                        {opt}
+                    {pemilikOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value} className='text-xs'>
+                        {opt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className='space-y-1.5'>
-                <div className='flex items-center justify-between'>
-                  <Label htmlFor='pemilik-risiko' className='text-xs font-semibold'>
-                    Pemilik Risiko <span className='text-destructive'>*</span>
-                  </Label>
-                  {pemilikOptions.length > 0 && (
-                    <button
-                      type='button'
-                      onClick={() => setIsCustomPemilik(!isCustomPemilik)}
-                      className='text-[10px] text-primary hover:underline'
-                    >
-                      {isCustomPemilik ? 'Pilih dari Master Data' : 'Input Manual / Kustom'}
-                    </button>
-                  )}
-                </div>
-                {!isCustomPemilik && pemilikOptions.length > 0 ? (
-                  <Select value={pemilikRisiko} onValueChange={setPemilikRisiko}>
-                    <SelectTrigger id='pemilik-risiko' className='text-xs h-9'>
-                      <SelectValue placeholder='Pilih Pemilik Risiko' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pemilikOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className='text-xs'>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    id='pemilik-risiko'
-                    value={pemilikRisiko}
-                    onChange={(e) => setPemilikRisiko(e.target.value)}
-                    placeholder='Kepala Daerah'
-                    className='text-xs h-9'
-                  />
-                )}
-              </div>
+              ) : (
+                <Input
+                  id='pemilik-risiko'
+                  value={pemilikRisiko}
+                  onChange={(e) => setPemilikRisiko(e.target.value)}
+                  placeholder='Kepala Daerah'
+                  className='text-xs h-9'
+                />
+              )}
             </div>
+          </div>
 
-            {/* 4. Pernyataan Risiko */}
-            <div className='space-y-1.5'>
-              <Label htmlFor='pernyataan-risiko' className='text-xs font-semibold'>
-                Uraian / Pernyataan Risiko <span className='text-destructive'>*</span>
+          {/* 4. Pernyataan Risiko */}
+          <div className='space-y-1.5 min-w-0'>
+            <Label htmlFor='pernyataan-risiko' className='text-xs font-semibold'>
+              Uraian / Pernyataan Risiko <span className='text-destructive'>*</span>
+            </Label>
+            <Textarea
+              id='pernyataan-risiko'
+              rows={3}
+              value={pernyataanRisiko}
+              onChange={(e) => setPernyataanRisiko(e.target.value)}
+              placeholder='Jelaskan peristiwa atau kejadian yang berpotensi menghambat sasaran strategis Pemda...'
+              className='text-xs resize-none'
+            />
+          </div>
+
+          {/* 5. Sifat Risiko (C / UC) */}
+          <div className='space-y-1.5 p-2.5 rounded-lg border bg-muted/20 min-w-0'>
+            <Label className='text-xs font-semibold block'>
+              Sifat Risiko (Dapat Dikendalikan / Tidak) <span className='text-destructive'>*</span>
+            </Label>
+            <RadioGroup
+              value={sifatRisiko}
+              onValueChange={(val) => setSifatRisiko(val as SifatRisiko)}
+              className='flex flex-wrap items-center gap-4 sm:gap-6 pt-1'
+            >
+              <div className='flex items-center space-x-2'>
+                <RadioGroupItem value='C' id='sifat-c' />
+                <Label htmlFor='sifat-c' className='text-xs cursor-pointer font-medium'>
+                  <span className='font-bold text-emerald-700 dark:text-emerald-400'>C</span> - Controllable (Dapat Dikendalikan)
+                </Label>
+              </div>
+              <div className='flex items-center space-x-2'>
+                <RadioGroupItem value='UC' id='sifat-uc' />
+                <Label htmlFor='sifat-uc' className='text-xs cursor-pointer font-medium'>
+                  <span className='font-bold text-amber-700 dark:text-amber-400'>UC</span> - Uncontrollable (Di Luar Kendali)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* 6. Uraian Dampak & Pihak Terkena */}
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0'>
+            <div className='space-y-1.5 min-w-0'>
+              <Label htmlFor='uraian-dampak' className='text-xs font-semibold'>
+                Uraian Dampak Risiko
               </Label>
               <Textarea
-                id='pernyataan-risiko'
-                rows={3}
-                value={pernyataanRisiko}
-                onChange={(e) => setPernyataanRisiko(e.target.value)}
-                placeholder='Jelaskan peristiwa atau kejadian yang berpotensi menghambat sasaran strategis Pemda...'
+                id='uraian-dampak'
+                rows={2}
+                value={uraianDampak}
+                onChange={(e) => setUraianDampak(e.target.value)}
+                placeholder='Jelaskan konsekuensi negatif jika risiko terjadi...'
                 className='text-xs resize-none'
               />
             </div>
 
-            {/* 5. Sifat Risiko (C / UC) */}
-            <div className='space-y-1.5 p-2.5 rounded-lg border bg-muted/20'>
-              <Label className='text-xs font-semibold block'>
-                Sifat Risiko (Dapat Dikendalikan / Tidak) <span className='text-destructive'>*</span>
+            <div className='space-y-1.5 min-w-0'>
+              <Label htmlFor='pihak-terkena' className='text-xs font-semibold'>
+                Pihak yang Terkena Dampak
               </Label>
-              <RadioGroup
-                value={sifatRisiko}
-                onValueChange={(val) => setSifatRisiko(val as SifatRisiko)}
-                className='flex items-center gap-6 pt-1'
-              >
-                <div className='flex items-center space-x-2'>
-                  <RadioGroupItem value='C' id='sifat-c' />
-                  <Label htmlFor='sifat-c' className='text-xs cursor-pointer font-medium'>
-                    <span className='font-bold text-emerald-700 dark:text-emerald-400'>C</span> - Controllable (Dapat Dikendalikan)
-                  </Label>
-                </div>
-                <div className='flex items-center space-x-2'>
-                  <RadioGroupItem value='UC' id='sifat-uc' />
-                  <Label htmlFor='sifat-uc' className='text-xs cursor-pointer font-medium'>
-                    <span className='font-bold text-amber-700 dark:text-amber-400'>UC</span> - Uncontrollable (Di Luar Kendali)
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* 6. Uraian Dampak & Pihak Terkena */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-              <div className='space-y-1.5'>
-                <Label htmlFor='uraian-dampak' className='text-xs font-semibold'>
-                  Uraian Dampak Risiko
-                </Label>
-                <Textarea
-                  id='uraian-dampak'
-                  rows={2}
-                  value={uraianDampak}
-                  onChange={(e) => setUraianDampak(e.target.value)}
-                  placeholder='Jelaskan konsekuensi negatif jika risiko terjadi...'
-                  className='text-xs resize-none'
-                />
-              </div>
-
-              <div className='space-y-1.5'>
-                <Label htmlFor='pihak-terkena' className='text-xs font-semibold'>
-                  Pihak yang Terkena Dampak
-                </Label>
-                <Textarea
-                  id='pihak-terkena'
-                  rows={2}
-                  value={pihakTerkena}
-                  onChange={(e) => setPihakTerkena(e.target.value)}
-                  placeholder='Contoh: Pemda, Dinas PUTR, Masyarakat'
-                  className='text-xs resize-none'
-                />
-              </div>
+              <Textarea
+                id='pihak-terkena'
+                rows={2}
+                value={pihakTerkena}
+                onChange={(e) => setPihakTerkena(e.target.value)}
+                placeholder='Contoh: Pemda, Dinas PUTR, Masyarakat'
+                className='text-xs resize-none'
+              />
             </div>
           </div>
-
-          <DialogFooter className='gap-2 sm:gap-0 pt-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => onOpenChange(false)}
-              className='text-xs'
-            >
-              Batal
-            </Button>
-            <Button
-              type='submit'
-              size='sm'
-              disabled={isSubmitting || !pernyataanRisiko.trim()}
-              className='text-xs gap-1.5 font-semibold'
-            >
-              {isSubmitting ? (
-                <Loader2 className='h-3 w-3 animate-spin' />
-              ) : (
-                <Save className='h-3.5 w-3.5' />
-              )}
-              {itemToEdit ? 'Simpan Perubahan' : 'Tambah Risiko'}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => onOpenChange(false)}
+            className='text-xs'
+          >
+            Batal
+          </Button>
+          <Button
+            type='submit'
+            form='identifikasi-pemda-form'
+            size='sm'
+            disabled={isSubmitting || !pernyataanRisiko.trim()}
+            className='text-xs gap-1.5 font-semibold'
+          >
+            {isSubmitting ? (
+              <Loader2 className='h-3 w-3 animate-spin' />
+            ) : (
+              <Save className='h-3.5 w-3.5' />
+            )}
+            {itemToEdit ? 'Simpan Perubahan' : 'Tambah Risiko'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

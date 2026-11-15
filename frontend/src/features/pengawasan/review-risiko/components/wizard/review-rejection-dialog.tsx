@@ -35,8 +35,8 @@ export function ReviewRejectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-lg'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
           <div className='mb-1 flex items-center gap-2'>
             <Badge
               variant='outline'
@@ -56,7 +56,7 @@ export function ReviewRejectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-3.5 py-2'>
+        <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3.5'>
           <div className='space-y-1.5'>
             <div className='flex items-center justify-between'>
               <Label htmlFor='catatan-revisi' className='text-xs font-semibold'>
@@ -78,7 +78,7 @@ export function ReviewRejectionDialog({
           </div>
         </div>
 
-        <DialogFooter className='gap-2 sm:gap-0'>
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
           <Button
             type='button'
             variant='outline'

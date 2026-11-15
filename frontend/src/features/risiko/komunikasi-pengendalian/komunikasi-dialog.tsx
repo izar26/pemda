@@ -53,8 +53,8 @@ export function KomunikasiDialog({
         if (!open && !saving) onClose()
       }}
     >
-      <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-2xl'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
           <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
             <Radio className='h-4 w-4 text-primary' />
             Pengkomunikasian Pengendalian yang Dibangun (Form 8)
@@ -65,7 +65,7 @@ export function KomunikasiDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={submit} className='space-y-4'>
+        <form id='komunikasi-dialog-form' onSubmit={submit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4'>
           {!canEdit && (
             <p className='rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground'>
               Data pengkomunikasian pengendalian ini hanya dapat dilihat.
@@ -108,7 +108,7 @@ export function KomunikasiDialog({
             </div>
 
             <div className='grid gap-3 sm:grid-cols-2'>
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='penyedia_informasi' className='text-xs font-semibold'>
                   Pihak Terkait: Penyedia Informasi
                 </Label>
@@ -127,7 +127,7 @@ export function KomunikasiDialog({
                 />
               </div>
 
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='penerima_informasi' className='text-xs font-semibold'>
                   Pihak Terkait: Penerima Informasi
                 </Label>
@@ -148,7 +148,7 @@ export function KomunikasiDialog({
             </div>
 
             <div className='grid gap-3 sm:grid-cols-2'>
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='rencana_waktu' className='text-xs font-semibold'>
                   Rencana Waktu Pengkomunikasian
                 </Label>
@@ -167,7 +167,7 @@ export function KomunikasiDialog({
                 />
               </div>
 
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='realisasi_waktu' className='text-xs font-semibold'>
                   Realisasi Waktu (Opsional)
                 </Label>
@@ -212,28 +212,35 @@ export function KomunikasiDialog({
             Data dapat disimpan sebagai draf sebelum lengkap.
           </p>
 
-          <DialogFooter className='border-t pt-3'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={onClose}
-              disabled={saving}
-            >
-              {canEdit ? 'Batal' : 'Tutup'}
-            </Button>
-            {canEdit && (
-              <Button type='submit' size='sm' disabled={saving} className='gap-1.5'>
-                {saving ? (
-                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                ) : (
-                  <Save className='h-3.5 w-3.5' />
-                )}
-                {saving ? 'Menyimpan...' : 'Simpan'}
-              </Button>
-            )}
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={onClose}
+            disabled={saving}
+          >
+            {canEdit ? 'Batal' : 'Tutup'}
+          </Button>
+          {canEdit && (
+            <Button
+              type='submit'
+              form='komunikasi-dialog-form'
+              size='sm'
+              disabled={saving}
+              className='gap-1.5'
+            >
+              {saving ? (
+                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+              ) : (
+                <Save className='h-3.5 w-3.5' />
+              )}
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

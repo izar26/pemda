@@ -72,7 +72,7 @@ export function TasksImportDialog({
         form.reset()
       }}
     >
-      <DialogContent className='gap-2 sm:max-w-sm'>
+      <DialogContent className='gap-2 sm:max-w-sm max-h-[90dvh] overflow-y-auto'>
         <DialogHeader className='text-start'>
           <DialogTitle>Import Tasks</DialogTitle>
           <DialogDescription>

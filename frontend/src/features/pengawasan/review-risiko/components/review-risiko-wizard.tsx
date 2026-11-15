@@ -694,8 +694,8 @@ export function ReviewRisikoWizard({
 
       {/* 4. MODAL FORWARD REVISION TO KEPALA OPD */}
       <Dialog open={isForwardModalOpen} onOpenChange={setIsForwardModalOpen}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold'>
               <ArrowRightCircle className='h-4 w-4 text-amber-600' />
               Teruskan Catatan Revisi ke Kepala OPD
@@ -705,7 +705,7 @@ export function ReviewRisikoWizard({
               Operator OPD terkait.
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-2 py-2 text-xs'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
             <Label className='text-xs font-semibold'>
               Catatan Pengantar Evaluator (Opsional):
             </Label>
@@ -717,7 +717,7 @@ export function ReviewRisikoWizard({
               className='text-xs'
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               variant='outline'
               size='sm'
@@ -742,8 +742,8 @@ export function ReviewRisikoWizard({
 
       {/* 5. MODAL RESUBMIT TO PENGAWAS */}
       <Dialog open={isResubmitModalOpen} onOpenChange={setIsResubmitModalOpen}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold'>
               <Send className='h-4 w-4 text-primary' />
               Kirim Klarifikasi ke Pengawas
@@ -753,7 +753,7 @@ export function ReviewRisikoWizard({
               langsung kepada Pengawas APIP.
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-2 py-2 text-xs'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
             <Label className='text-xs font-semibold'>
               Catatan Penjelasan Klarifikasi:
             </Label>
@@ -765,7 +765,7 @@ export function ReviewRisikoWizard({
               className='text-xs'
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               variant='outline'
               size='sm'
@@ -789,8 +789,8 @@ export function ReviewRisikoWizard({
 
       {/* 6. MODAL AUDIT TRAIL / RIWAYAT PERSETUJUAN */}
       <Dialog open={isHistoryModalOpen} onOpenChange={setIsHistoryModalOpen}>
-        <DialogContent className='flex max-h-[85vh] flex-col sm:max-w-lg'>
-          <DialogHeader className='border-b pb-2'>
+        <DialogContent className='sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
               <History className='h-4.5 w-4.5 text-primary' />
               <span>Jejak Audit & Riwayat Verifikasi Berjenjang</span>
@@ -801,7 +801,7 @@ export function ReviewRisikoWizard({
             </DialogDescription>
           </DialogHeader>
 
-          <div className='flex-1 space-y-3 overflow-y-auto py-3 pr-1 text-xs'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3 text-xs'>
             {submission?.histories && submission.histories.length > 0 ? (
               <div className='relative space-y-4 pl-6 before:absolute before:top-2 before:bottom-2 before:left-2 before:w-[2px] before:bg-border'>
                 {submission.histories.map((hist) => {
@@ -860,7 +860,7 @@ export function ReviewRisikoWizard({
             )}
           </div>
 
-          <DialogFooter className='border-t pt-2'>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               type='button'
               variant='outline'
@@ -898,8 +898,8 @@ export function ReviewRisikoWizard({
 
       {/* 8. MODAL KEPALA OPD: REJECTION NOTES */}
       <Dialog open={isKepalaRejectOpen} onOpenChange={setIsKepalaRejectOpen}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold text-destructive sm:text-base'>
               <XCircle className='h-4 w-4' />
               Kembalikan Berkas ke Operator (Revisi Internal)
@@ -911,7 +911,7 @@ export function ReviewRisikoWizard({
             </DialogDescription>
           </DialogHeader>
 
-          <div className='space-y-2 py-2'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
             <KepalaFormSelect
               items={submission.items || []}
               value={kepalaRejectForm}
@@ -938,7 +938,7 @@ export function ReviewRisikoWizard({
             </p>
           </div>
 
-          <DialogFooter className='gap-2 sm:gap-0'>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               type='button'
               variant='outline'
@@ -980,8 +980,8 @@ export function ReviewRisikoWizard({
         open={isKepalaDelegateOpen}
         onOpenChange={setIsKepalaDelegateOpen}
       >
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold text-foreground sm:text-base'>
               <ArrowRightCircle className='h-4 w-4 text-amber-600' />
               Delegasikan Revisi Evaluator ke Operator
@@ -992,7 +992,7 @@ export function ReviewRisikoWizard({
             </DialogDescription>
           </DialogHeader>
 
-          <div className='space-y-2 py-2'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
             <Label
               htmlFor='kepala-delegate-notes'
               className='text-xs font-semibold'
@@ -1009,7 +1009,7 @@ export function ReviewRisikoWizard({
             />
           </div>
 
-          <DialogFooter className='gap-2 sm:gap-0'>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               type='button'
               variant='outline'

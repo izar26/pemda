@@ -75,7 +75,7 @@ export function AuditDetailDialog({ open, onOpenChange, log }: AuditDetailDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90vh] flex flex-col p-6 overflow-hidden'>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-6 overflow-hidden'>
         <DialogHeader className='flex-shrink-0'>
           <div className='flex items-center justify-between gap-2'>
             <div className='flex items-center gap-2'>

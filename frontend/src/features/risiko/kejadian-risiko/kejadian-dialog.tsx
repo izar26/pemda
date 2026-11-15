@@ -114,8 +114,8 @@ export function KejadianDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-2xl'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
           <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
             <AlertOctagon className='h-4 w-4 text-primary' />
             {initialData
@@ -129,7 +129,7 @@ export function KejadianDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form id='kejadian-dialog-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4'>
           {/* 1. Pilih Risiko Teridentifikasi */}
           <div className='space-y-1.5'>
             <Label htmlFor='risk-select' className='text-xs font-semibold'>
@@ -233,7 +233,7 @@ export function KejadianDialog({
             </h4>
 
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='tanggal-kejadian' className='text-xs font-semibold'>
                   Tanggal Terjadi <span className='text-destructive'>*</span>
                 </Label>
@@ -249,7 +249,7 @@ export function KejadianDialog({
                 />
               </div>
 
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='sebab-kejadian' className='text-xs font-semibold'>
                   Sebab Kejadian Nyata <span className='text-destructive'>*</span>
                 </Label>
@@ -340,31 +340,33 @@ export function KejadianDialog({
             </div>
           </div>
 
-          <DialogFooter className='border-t pt-3'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={onClose}
-              disabled={isLoading}
-            >
-              Batal
-            </Button>
-            <Button
-              type='submit'
-              size='sm'
-              disabled={!isFormValid || isLoading}
-              className='gap-1.5'
-            >
-              {isLoading ? (
-                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-              ) : (
-                <Save className='h-3.5 w-3.5' />
-              )}
-              <span>{isLoading ? 'Menyimpan...' : 'Simpan Kejadian Risiko'}</span>
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={onClose}
+            disabled={isLoading}
+          >
+            Batal
+          </Button>
+          <Button
+            type='submit'
+            form='kejadian-dialog-form'
+            size='sm'
+            disabled={!isFormValid || isLoading}
+            className='gap-1.5'
+          >
+            {isLoading ? (
+              <Loader2 className='h-3.5 w-3.5 animate-spin' />
+            ) : (
+              <Save className='h-3.5 w-3.5' />
+            )}
+            <span>{isLoading ? 'Menyimpan...' : 'Simpan Kejadian Risiko'}</span>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -17,6 +17,13 @@ class SaveFraudRiskAssessmentRequest extends FormRequest
             || $user?->can('identifikasi_risiko_pemda.edit'));
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (empty($this->pemilik_risiko)) {
+            $this->merge(['pemilik_risiko' => 'Kepala SKPD']);
+        }
+    }
+
     public function rules(): array
     {
         $isPost = $this->isMethod('post');

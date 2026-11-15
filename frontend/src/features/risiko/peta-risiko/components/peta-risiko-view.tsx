@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -454,8 +455,8 @@ export function PetaRisikoView({
           if (!open) setDrilldownCell(null)
         }}
       >
-        <DialogContent className='max-w-2xl max-h-[85vh] flex flex-col'>
-          <DialogHeader className='pb-2'>
+        <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <div className='flex items-center gap-2'>
               <Badge className={ZONE_BADGE_CLASSES[drilldownCell?.cell.zona || 'merah']}>
                 Skor {drilldownCell?.cell.score} — {drilldownCell?.cell.zona.toUpperCase()}
@@ -472,8 +473,8 @@ export function PetaRisikoView({
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className='flex-1 pr-3 max-h-[55vh]'>
-            <div className='space-y-3 py-2'>
+          <ScrollArea className='flex-1 px-4 sm:px-6 py-4 min-h-0'>
+            <div className='space-y-3'>
               {drilldownCell?.cell.items.map((item, index) => (
                 <div
                   key={`${item.id}-${index}`}
@@ -529,6 +530,12 @@ export function PetaRisikoView({
               ))}
             </div>
           </ScrollArea>
+
+          <div className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end'>
+            <Button variant='outline' size='sm' onClick={() => setDrilldownCell(null)}>
+              Tutup
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -110,17 +110,18 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <DialogHeader>
-            <DialogTitle className='text-sm sm:text-base font-bold flex items-center gap-2'>
-              <BrainCircuit className='h-4 w-4 text-primary' />
-              Analisis Akar Masalah (5-Whys RCA)
-            </DialogTitle>
-            <DialogDescription className='text-xs'>
-              Mulai dari penyebab langsung, lalu tanyakan mengapa penyebab itu terjadi. Jawaban terakhir yang terisi menjadi akar penyebab untuk Form {rca?.source_type === '3c' ? '3C' : rca?.source_type === '3b' ? '3B' : '3A'}.
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b bg-muted/10 shrink-0 text-start'>
+          <DialogTitle className='text-sm sm:text-base font-bold flex items-center gap-2'>
+            <BrainCircuit className='h-4 w-4 text-primary' />
+            Analisis Akar Masalah (5-Whys RCA)
+          </DialogTitle>
+          <DialogDescription className='text-xs'>
+            Mulai dari penyebab langsung, lalu tanyakan mengapa penyebab itu terjadi. Jawaban terakhir yang terisi menjadi akar penyebab untuk Form {rca?.source_type === '3c' ? '3C' : rca?.source_type === '3b' ? '3B' : '3A'}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form id='rca-dialog-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4 text-xs'>
 
           {!canEdit && <p className='rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground'>Analisis ini hanya dapat dilihat.</p>}
           <fieldset disabled={!canEdit} className='min-w-0 space-y-4'>
@@ -264,8 +265,8 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDi
             </div>
 
             {/* Jenis Penyebab & Kegiatan Pengendalian */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1'>
-              <div className='space-y-1.5'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 min-w-0'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='jenis-penyebab' className='text-xs font-semibold'>
                   Jenis / Kategori Penyebab (Sumber Risiko) <span className='text-destructive'>*</span>
                 </Label>
@@ -289,7 +290,7 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDi
                 </p>
               </div>
 
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='kegiatan-pengendalian' className='text-xs font-semibold'>
                   Kegiatan Pengendalian yang Dirancang
                 </Label>
@@ -306,19 +307,22 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDi
           </div>
 
           </fieldset>
+        </form>
 
-          <DialogFooter className='gap-2 sm:gap-0 pt-2'>
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => onOpenChange(false)}
+            className='text-xs'
+          >
+            {canEdit ? 'Batal' : 'Tutup'}
+          </Button>
+          {canEdit && (
             <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => onOpenChange(false)}
-              className='text-xs'
-            >
-              {canEdit ? 'Batal' : 'Tutup'}
-            </Button>
-            {canEdit && <Button
               type='submit'
+              form='rca-dialog-form'
               size='sm'
               disabled={isSubmitting || !why1.trim() || !jenisPenyebab}
               className='text-xs gap-1.5 font-semibold'
@@ -329,9 +333,9 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDi
                 <Save className='h-3.5 w-3.5' />
               )}
               Simpan Analisis RCA
-            </Button>}
-          </DialogFooter>
-        </form>
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

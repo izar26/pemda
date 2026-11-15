@@ -198,8 +198,8 @@ export function IdentifikasiOperasionalItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <div className='flex items-center gap-2'>
             <div className='p-2 rounded-md bg-primary/10 text-primary'>
               <FolderKanban className='h-5 w-5' />
@@ -215,7 +215,7 @@ export function IdentifikasiOperasionalItemDialog({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4 pt-2'>
+        <form id='identifikasi-operasional-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4 text-xs'>
           <div className='space-y-3 rounded-lg border bg-muted/20 p-3.5'>
             <Label className='text-xs font-bold'>1. Sub-Kegiatan Pelaksanaan <span className='text-destructive'>*</span></Label>
             {itemToEdit?.sub_kegiatan_kustom && <p className='text-xs text-muted-foreground'>Sub-kegiatan sebelumnya: {itemToEdit.sub_kegiatan_kustom}</p>}
@@ -232,7 +232,7 @@ export function IdentifikasiOperasionalItemDialog({
           </div>
 
           {/* SECTION 2: PROBIS & KATEGORI RISIKO */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5 min-w-0'>
             {/* PROBIS (Proses Bisnis) */}
             <div className='space-y-1.5'>
               <div className='flex items-center justify-between'>
@@ -309,7 +309,7 @@ export function IdentifikasiOperasionalItemDialog({
           </div>
 
           {/* SECTION 4: PEMILIK RISIKO & SIFAT RISIKO */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5 min-w-0'>
             <div className='space-y-1.5'>
               <Label className='text-xs font-bold text-foreground'>
                 5. Pemilik Risiko <span className='text-destructive'>*</span>
@@ -352,7 +352,7 @@ export function IdentifikasiOperasionalItemDialog({
           </div>
 
           {/* SECTION 5: DAMPAK & PIHAK TERKENA */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3.5 min-w-0'>
             <div className='space-y-1.5'>
               <Label className='text-xs font-bold text-foreground'>
                 7. Uraian Dampak
@@ -382,37 +382,39 @@ export function IdentifikasiOperasionalItemDialog({
             </div>
           </div>
 
-          <DialogFooter className='pt-2 border-t'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-              className='text-xs'
-            >
-              Batal
-            </Button>
-            <Button
-              type='submit'
-              size='sm'
-              disabled={isSubmitting}
-              className='text-xs gap-1.5 font-semibold'
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  {itemToEdit ? <Save className='h-3.5 w-3.5' /> : <Plus className='h-3.5 w-3.5' />}
-                  <span>{itemToEdit ? 'Simpan Perubahan' : 'Tambahkan Risiko'}</span>
-                </>
-              )}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+            className='text-xs'
+          >
+            Batal
+          </Button>
+          <Button
+            type='submit'
+            form='identifikasi-operasional-form'
+            size='sm'
+            disabled={isSubmitting}
+            className='text-xs gap-1.5 font-semibold'
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                <span>Menyimpan...</span>
+              </>
+            ) : (
+              <>
+                {itemToEdit ? <Save className='h-3.5 w-3.5' /> : <Plus className='h-3.5 w-3.5' />}
+                <span>{itemToEdit ? 'Simpan Perubahan' : 'Tambahkan Risiko'}</span>
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

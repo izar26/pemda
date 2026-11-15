@@ -148,7 +148,7 @@ export function FraDialog({
       skenario_kecurangan: skenario.trim(),
       jenis_fraud_id: jenisFraudId || null,
       jenis_risiko_kecurangan: selectedJenis?.nama,
-      pemilik_risiko: pemilikRisiko.trim(),
+      pemilik_risiko: (pemilikRisiko || 'Kepala SKPD').trim(),
       penyebab,
       existing_control: existingControl.trim(),
       kemungkinan_kriteria: kemungkinanKriteria,
@@ -161,8 +161,8 @@ export function FraDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='max-h-[90vh] max-w-3xl overflow-y-auto'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-3xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
           <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
             <FileSearch className='h-4 w-4 text-primary' />
             <span>
@@ -176,25 +176,29 @@ export function FraDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4 py-2'>
+        <form id='fra-dialog-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4'>
           {/* 1. Proses Bisnis */}
           <div className='space-y-1.5'>
             <Label htmlFor='proses_bisnis'>
               Proses Bisnis / Area Rawan <span className='text-rose-500'>*</span>
             </Label>
-            <Input
-              id='proses_bisnis'
-              list='preset-probis-list'
-              value={prosesBisnis}
-              onChange={(e) => setProsesBisnis(e.target.value)}
-              placeholder='Contoh: Pengadaan Barang dan Jasa (PBJ), Transaksi Keuangan...'
-              required
-            />
-            <datalist id='preset-probis-list'>
-              {referenceOptions?.preset_proses_bisnis?.map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
+            <Select value={prosesBisnis} onValueChange={setProsesBisnis}>
+              <SelectTrigger id='proses_bisnis'>
+                <SelectValue placeholder='Pilih proses bisnis / area rawan...' />
+              </SelectTrigger>
+              <SelectContent>
+                {referenceOptions?.preset_proses_bisnis?.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+                {prosesBisnis && !referenceOptions?.preset_proses_bisnis?.includes(prosesBisnis) && (
+                  <SelectItem value={prosesBisnis}>
+                    {prosesBisnis}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* 2. Identifikasi Risiko & Skenario */}
@@ -227,7 +231,7 @@ export function FraDialog({
 
           {/* 3. Jenis Fraud, Pemilik, Penyebab */}
           <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-            <div className='space-y-1.5'>
+            <div className='space-y-1.5 min-w-0'>
               <Label htmlFor='jenis_fraud'>Jenis Risiko Fraud</Label>
               <Select value={jenisFraudId} onValueChange={setJenisFraudId}>
                 <SelectTrigger id='jenis_fraud'>
@@ -243,7 +247,7 @@ export function FraDialog({
               </Select>
             </div>
 
-            <div className='space-y-1.5'>
+            <div className='space-y-1.5 min-w-0'>
               <Label htmlFor='penyebab'>Penyebab (Fraud Diamond)</Label>
               <Select value={penyebab} onValueChange={setPenyebab}>
                 <SelectTrigger id='penyebab'>
@@ -259,21 +263,18 @@ export function FraDialog({
               </Select>
             </div>
 
-            <div className='space-y-1.5'>
+            <div className='space-y-1.5 min-w-0'>
               <Label htmlFor='pemilik_risiko'>Pemilik Risiko</Label>
               <Input
                 id='pemilik_risiko'
-                list='preset-pemilik-list'
-                value={pemilikRisiko}
-                onChange={(e) => setPemilikRisiko(e.target.value)}
-                placeholder='Kepala SKPD / Direktur...'
-                required
+                value={pemilikRisiko || 'Kepala SKPD'}
+                disabled
+                readOnly
+                className='text-xs bg-muted/50 cursor-not-allowed font-medium'
               />
-              <datalist id='preset-pemilik-list'>
-                {referenceOptions?.pemilik_risiko?.map((p) => (
-                  <option key={p.id} value={p.nama} />
-                ))}
-              </datalist>
+              <p className='text-[10px] text-muted-foreground'>
+                Terkunci otomatis sebagai Kepala SKPD.
+              </p>
             </div>
           </div>
 
@@ -307,7 +308,7 @@ export function FraDialog({
             </div>
 
             <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-              <div className='space-y-2 rounded-md border bg-card p-2.5'>
+              <div className='space-y-2 rounded-md border bg-card p-2.5 min-w-0'>
                 <div className='flex items-center justify-between'>
                   <Label className='text-xs font-semibold'>Tingkat Kemungkinan</Label>
                   <Badge variant='outline' className='font-mono text-xs'>
@@ -347,7 +348,7 @@ export function FraDialog({
                 </div>
               </div>
 
-              <div className='space-y-2 rounded-md border bg-card p-2.5'>
+              <div className='space-y-2 rounded-md border bg-card p-2.5 min-w-0'>
                 <div className='flex items-center justify-between'>
                   <Label className='text-xs font-semibold'>Tingkat Dampak</Label>
                   <Badge variant='outline' className='font-mono text-xs'>
@@ -403,38 +404,39 @@ export function FraDialog({
               required
             />
           </div>
-
-          <DialogFooter className='border-t pt-3'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={onClose}
-              disabled={isLoading}
-            >
-              Batal
-            </Button>
-            <Button
-              type='submit'
-              size='sm'
-              disabled={!isFormValid || isLoading}
-              className='gap-1.5'
-            >
-              {isLoading ? (
-                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-              ) : (
-                <Save className='h-3.5 w-3.5' />
-              )}
-              <span>
-                {isLoading
-                  ? 'Menyimpan...'
-                  : isEditing
-                    ? 'Simpan Perubahan'
-                    : 'Tambahkan Catatan FRA'}
-              </span>
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={onClose}
+            disabled={isLoading}
+          >
+            Batal
+          </Button>
+          <Button
+            type='submit'
+            form='fra-dialog-form'
+            size='sm'
+            disabled={!isFormValid || isLoading}
+            className='gap-1.5'
+          >
+            {isLoading ? (
+              <Loader2 className='h-3.5 w-3.5 animate-spin' />
+            ) : (
+              <Save className='h-3.5 w-3.5' />
+            )}
+            <span>
+              {isLoading
+                ? 'Menyimpan...'
+                : isEditing
+                  ? 'Simpan Perubahan'
+                  : 'Tambahkan Catatan FRA'}
+            </span>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

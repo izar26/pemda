@@ -83,8 +83,8 @@ export function SubmissionDialogs({
 
       {/* 2. KEPALA OPD REVIEW MODAL */}
       <Dialog open={isKepalaReviewOpen} onOpenChange={setIsKepalaReviewOpen}>
-        <DialogContent className='sm:max-w-lg'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-base font-bold'>
               <UserCheck className='h-5 w-5 text-primary' />
               Persetujuan Internal Kepala OPD
@@ -96,7 +96,7 @@ export function SubmissionDialogs({
             </DialogDescription>
           </DialogHeader>
 
-          <div className='space-y-4 py-2 text-xs'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4 text-xs'>
             <div className='space-y-1.5'>
               <Label className='text-xs font-semibold'>
                 Keputusan Persetujuan:
@@ -162,7 +162,7 @@ export function SubmissionDialogs({
             </div>
           </div>
 
-          <DialogFooter className='gap-2 sm:gap-0'>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               type='button'
               variant='outline'
@@ -200,8 +200,8 @@ export function SubmissionDialogs({
         open={isKepalaDelegateOpen}
         onOpenChange={setIsKepalaDelegateOpen}
       >
-        <DialogContent className='sm:max-w-lg'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
             <DialogTitle className='flex items-center gap-2 text-base font-bold'>
               <ArrowRightCircle className='h-5 w-5 text-amber-600' />
               Delegasikan Revisi ke Operator OPD
@@ -213,7 +213,7 @@ export function SubmissionDialogs({
             </DialogDescription>
           </DialogHeader>
 
-          <div className='space-y-3 py-2 text-xs'>
+          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3 text-xs'>
             <div className='space-y-2 rounded-lg border bg-muted/40 p-3'>
               <p className='text-xs font-semibold text-foreground'>
                 Catatan dari Auditor Pengawas:
@@ -256,7 +256,7 @@ export function SubmissionDialogs({
             </div>
           </div>
 
-          <DialogFooter className='gap-2 sm:gap-0'>
+          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
             <Button
               type='button'
               variant='outline'

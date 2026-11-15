@@ -169,8 +169,8 @@ export function IdentifikasiOpdItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <DialogTitle className='text-base font-bold'>
             {itemToEdit ? `Edit Butir Risiko: ${itemToEdit.kode_risiko}` : 'Tambah Risiko Strategis OPD Baru'}
           </DialogTitle>
@@ -181,7 +181,7 @@ export function IdentifikasiOpdItemDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4 py-2 text-xs'>
+        <form id='identifikasi-opd-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4 text-xs'>
           {itemToEdit?.sasaran_kustom && <p className='text-xs text-muted-foreground'>Sasaran sebelumnya: {itemToEdit.sasaran_kustom}</p>}
           {itemToEdit?.indikator_kustom && <p className='text-xs text-muted-foreground'>Indikator sebelumnya: {itemToEdit.indikator_kustom}</p>}
           <div className='space-y-2 p-3 rounded-lg border bg-muted/20'>
@@ -196,8 +196,8 @@ export function IdentifikasiOpdItemDialog({
           </div>
 
           {/* 3. Kategori Risiko & Sifat (C/UC) */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-            <div className='space-y-1.5'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0'>
+            <div className='space-y-1.5 min-w-0'>
               <Label className='text-xs font-semibold'>
                 3. Kategori Risiko <span className='text-destructive'>*</span>
               </Label>
@@ -218,14 +218,14 @@ export function IdentifikasiOpdItemDialog({
               </Select>
             </div>
 
-            <div className='space-y-1.5'>
+            <div className='space-y-1.5 min-w-0'>
               <Label className='text-xs font-semibold'>
                 4. Sifat Risiko (C / UC) <span className='text-destructive'>*</span>
               </Label>
               <RadioGroup
                 value={sifatRisiko}
                 onValueChange={(val) => setSifatRisiko(val as SifatRisiko)}
-                className='flex items-center gap-4 pt-1.5'
+                className='flex flex-wrap items-center gap-4 pt-1.5'
               >
                 <div className='flex items-center space-x-2'>
                   <RadioGroupItem value='C' id='sifat-c' />
@@ -244,7 +244,7 @@ export function IdentifikasiOpdItemDialog({
           </div>
 
           {/* 4. Pernyataan Risiko */}
-          <div className='space-y-1.5'>
+          <div className='space-y-1.5 min-w-0'>
             <Label className='text-xs font-semibold'>
               5. Pernyataan Risiko <span className='text-destructive'>*</span>
             </Label>
@@ -258,8 +258,8 @@ export function IdentifikasiOpdItemDialog({
           </div>
 
           {/* 5. Pemilik Risiko & Pihak yang Terkena */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-            <div className='space-y-1.5'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0'>
+            <div className='space-y-1.5 min-w-0'>
               <Label className='text-xs font-semibold'>6. Pemilik Risiko</Label>
               {itemToEdit?.pemilik_risiko && !(meta?.pemilik_risiko_options || []).some((p) => p.nama === itemToEdit.pemilik_risiko) && (
                 <p className='text-xs text-muted-foreground'>Pemilik sebelumnya: {itemToEdit.pemilik_risiko}. Pilih pemilik dari master data.</p>
@@ -273,7 +273,7 @@ export function IdentifikasiOpdItemDialog({
               />
             </div>
 
-            <div className='space-y-1.5'>
+            <div className='space-y-1.5 min-w-0'>
               <Label className='text-xs font-semibold'>7. Pihak yang Terkena</Label>
               <Input
                 value={pihakTerkena}
@@ -285,7 +285,7 @@ export function IdentifikasiOpdItemDialog({
           </div>
 
           {/* 6. Uraian Dampak */}
-          <div className='space-y-1.5'>
+          <div className='space-y-1.5 min-w-0'>
             <Label className='text-xs font-semibold'>8. Uraian Dampak</Label>
             <Textarea
               value={uraianDampak}
@@ -294,35 +294,36 @@ export function IdentifikasiOpdItemDialog({
               className='text-xs min-h-[60px]'
             />
           </div>
-
-          <DialogFooter className='pt-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-              className='text-xs'
-            >
-              Batal
-            </Button>
-            <Button
-              type='submit'
-              size='sm'
-              disabled={isSubmitting}
-              className='text-xs gap-1.5 font-semibold'
-            >
-              {isSubmitting ? (
-                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-              ) : itemToEdit ? (
-                <Save className='h-3.5 w-3.5' />
-              ) : (
-                <Plus className='h-3.5 w-3.5' />
-              )}
-              <span>{itemToEdit ? 'Simpan Perubahan' : 'Tambahkan Risiko'}</span>
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+            className='text-xs'
+          >
+            Batal
+          </Button>
+          <Button
+            type='submit'
+            form='identifikasi-opd-form'
+            size='sm'
+            disabled={isSubmitting}
+            className='text-xs gap-1.5 font-semibold'
+          >
+            {isSubmitting ? (
+              <Loader2 className='h-3.5 w-3.5 animate-spin' />
+            ) : itemToEdit ? (
+              <Save className='h-3.5 w-3.5' />
+            ) : (
+              <Plus className='h-3.5 w-3.5' />
+            )}
+            <span>{itemToEdit ? 'Simpan Perubahan' : 'Tambahkan Risiko'}</span>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

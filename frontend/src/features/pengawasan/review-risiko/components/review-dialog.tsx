@@ -191,7 +191,7 @@ export function ReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 shadow-2xl sm:max-w-4xl'>
+      <DialogContent className='flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 shadow-2xl sm:max-w-4xl'>
         {/* Header */}
         <DialogHeader className='shrink-0 border-b bg-muted/10 px-6 pt-5 pb-4 text-start'>
           <div className='flex items-start justify-between gap-4'>
@@ -597,8 +597,8 @@ export function ReviewDialog({
           open={rejectingFormCode !== null}
           onOpenChange={(isOpen) => !isOpen && setRejectingFormCode(null)}
         >
-          <DialogContent className='space-y-4 p-6 sm:max-w-md'>
-            <DialogHeader className='space-y-1 text-start'>
+          <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+            <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0 text-start space-y-1'>
               <DialogTitle className='flex items-center gap-2 text-base font-bold text-destructive'>
                 <AlertCircle className='h-5 w-5' />
                 Kembalikan untuk Revisi Form {rejectingFormCode?.toUpperCase()}
@@ -609,25 +609,27 @@ export function ReviewDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className='space-y-1.5'>
-              <Label className='text-xs font-semibold'>
-                Catatan Revisi Evaluator{' '}
-                <span className='text-destructive'>*</span>
-              </Label>
-              <Textarea
-                rows={4}
-                placeholder='Tuliskan catatan perbaikan secara spesifik (minimal 5 karakter)...'
-                value={rejectionNote}
-                onChange={(e) => setRejectionNote(e.target.value)}
-                className='text-xs'
-              />
-              <span className='text-[10px] text-muted-foreground'>
-                Catatan ini akan langsung tampil di halaman pengisian risiko
-                pihak OPD.
-              </span>
+            <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3.5'>
+              <div className='space-y-1.5'>
+                <Label className='text-xs font-semibold'>
+                  Catatan Revisi Evaluator{' '}
+                  <span className='text-destructive'>*</span>
+                </Label>
+                <Textarea
+                  rows={4}
+                  placeholder='Tuliskan catatan perbaikan secara spesifik (minimal 5 karakter)...'
+                  value={rejectionNote}
+                  onChange={(e) => setRejectionNote(e.target.value)}
+                  className='text-xs'
+                />
+                <span className='text-[10px] text-muted-foreground'>
+                  Catatan ini akan langsung tampil di halaman pengisian risiko
+                  pihak OPD.
+                </span>
+              </div>
             </div>
 
-            <div className='flex items-center justify-end gap-2 pt-2'>
+            <div className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
               <Button
                 type='button'
                 variant='outline'

@@ -81,24 +81,24 @@ export function AuditDestroyAllDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='max-w-md'>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <DialogHeader>
-            <div className='flex items-center gap-2 text-destructive'>
-              <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10'>
-                <AlertTriangle className='h-5 w-5 text-destructive' />
-              </div>
-              <div>
-                <DialogTitle className='text-lg font-bold text-destructive'>
-                  Hapus Permanen Seluruh Log
-                </DialogTitle>
-                <DialogDescription className='text-xs'>
-                  Tindakan berisiko tinggi khusus Superadmin
-                </DialogDescription>
-              </div>
+      <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
+          <div className='flex items-center gap-2 text-destructive'>
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10'>
+              <AlertTriangle className='h-5 w-5 text-destructive' />
             </div>
-          </DialogHeader>
+            <div>
+              <DialogTitle className='text-lg font-bold text-destructive'>
+                Hapus Permanen Seluruh Log
+              </DialogTitle>
+              <DialogDescription className='text-xs'>
+                Tindakan berisiko tinggi khusus Superadmin
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
 
+        <form id='destroy-all-form' onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4'>
           <div className='rounded-lg border border-destructive/30 bg-destructive/5 p-3.5 text-xs text-destructive-foreground'>
             <p className='font-semibold text-destructive'>
               Peringatan Kritis:
@@ -129,36 +129,37 @@ export function AuditDestroyAllDialog({
               </p>
             )}
           </div>
-
-          <DialogFooter className='gap-2 sm:gap-0 pt-2'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => handleClose(false)}
-              disabled={destroyMutation.isPending}
-            >
-              Batal
-            </Button>
-            <Button
-              type='submit'
-              variant='destructive'
-              disabled={destroyMutation.isPending || !password.trim()}
-              className='gap-1.5'
-            >
-              {destroyMutation.isPending ? (
-                <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                  Menghapus Seluruh Log...
-                </>
-              ) : (
-                <>
-                  <Trash2 className='h-4 w-4' />
-                  Hapus Seluruh Log Sekarang
-                </>
-              )}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => handleClose(false)}
+            disabled={destroyMutation.isPending}
+          >
+            Batal
+          </Button>
+          <Button
+            type='submit'
+            form='destroy-all-form'
+            variant='destructive'
+            disabled={destroyMutation.isPending || !password.trim()}
+            className='gap-1.5'
+          >
+            {destroyMutation.isPending ? (
+              <>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                Menghapus Seluruh Log...
+              </>
+            ) : (
+              <>
+                <Trash2 className='h-4 w-4' />
+                Hapus Seluruh Log Sekarang
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

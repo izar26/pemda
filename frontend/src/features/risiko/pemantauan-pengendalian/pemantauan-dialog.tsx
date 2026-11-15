@@ -53,8 +53,8 @@ export function PemantauanDialog({
         if (!open && !saving) onClose()
       }}
     >
-      <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-2xl'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
+        <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
           <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
             <Eye className='h-4 w-4 text-primary' />
             Rancangan Pemantauan atas Pengendalian Intern (Form 9)
@@ -65,7 +65,7 @@ export function PemantauanDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={submit} className='space-y-4'>
+        <form id='pemantauan-dialog-form' onSubmit={submit} className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-4'>
           {!canEdit && (
             <p className='rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground'>
               Rancangan pemantauan pengendalian ini hanya dapat dilihat.
@@ -127,7 +127,7 @@ export function PemantauanDialog({
             </div>
 
             <div className='grid gap-3 sm:grid-cols-2'>
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='rencana_waktu_pemantauan' className='text-xs font-semibold'>
                   Rencana Waktu Pemantauan
                 </Label>
@@ -146,7 +146,7 @@ export function PemantauanDialog({
                 />
               </div>
 
-              <div className='space-y-1.5'>
+              <div className='space-y-1.5 min-w-0'>
                 <Label htmlFor='realisasi_waktu_pemantauan' className='text-xs font-semibold'>
                   Realisasi Waktu Pemantauan (Opsional)
                 </Label>
@@ -191,28 +191,35 @@ export function PemantauanDialog({
             Rancangan pemantauan dapat disimpan bertahap sebelum masa evaluasi berjalan.
           </p>
 
-          <DialogFooter className='border-t pt-3'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={onClose}
-              disabled={saving}
-            >
-              {canEdit ? 'Batal' : 'Tutup'}
-            </Button>
-            {canEdit && (
-              <Button type='submit' size='sm' disabled={saving} className='gap-1.5'>
-                {saving ? (
-                  <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                ) : (
-                  <Save className='h-3.5 w-3.5' />
-                )}
-                {saving ? 'Menyimpan...' : 'Simpan'}
-              </Button>
-            )}
-          </DialogFooter>
         </form>
+
+        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={onClose}
+            disabled={saving}
+          >
+            {canEdit ? 'Batal' : 'Tutup'}
+          </Button>
+          {canEdit && (
+            <Button
+              type='submit'
+              form='pemantauan-dialog-form'
+              size='sm'
+              disabled={saving}
+              className='gap-1.5'
+            >
+              {saving ? (
+                <Loader2 className='h-3.5 w-3.5 animate-spin' />
+              ) : (
+                <Save className='h-3.5 w-3.5' />
+              )}
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
