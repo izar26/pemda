@@ -90,7 +90,6 @@ class AnalisisRisikoService
 
     public function save(string $source, string $itemId, array $data, User $user): AnalisisRisiko
     {
-        unset($data['rencana_tindak']);
         $model = $source === '3b' ? IdentifikasiRisikoOpdItem::class : IdentifikasiRisikoOpdOperasionalItem::class;
         $item = $model::with('dokumen')->findOrFail($itemId);
         $opdId = (string) $item->dokumen->opd_id;

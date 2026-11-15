@@ -340,13 +340,13 @@ class PengajuanRisiko4TierTest extends TestCase
         $payload = ['celah_pengendalian' => 'Kekurangan prosedur', 'rencana_tindak' => 'Tindak baru', 'penanggung_jawab' => 'Kepala bidang', 'target_waktu' => 'Tahun depan', 'treated_kemungkinan' => 1, 'treated_dampak' => 5];
         $this->putJson("/api/risiko/tindak-pengendalian/3b/{$itemId}", array_merge($payload, ['treated_dampak' => 6]))->assertUnprocessable();
         $this->putJson("/api/risiko/tindak-pengendalian/3b/{$itemId}", $payload)->assertOk()->assertJsonPath('data.skala_treated', 10)->assertJsonPath('data.complete', true);
-        $this->putJson("/api/risiko/analisis-risiko/3b/{$itemId}", ['rencana_tindak' => 'Nilai usang'])->assertOk();
-        $this->assertSame('Tindak baru', $analysis->fresh()->rencana_tindak);
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$itemId}", ['rencana_tindak' => 'Tindak diperbarui dari Form 4'])->assertOk();
+        $this->assertSame('Tindak diperbarui dari Form 4', $analysis->fresh()->rencana_tindak);
         $analysis->update(['residual_kemungkinan' => 1, 'residual_dampak' => 1]);
         $this->getJson("/api/risiko/tindak-pengendalian?{$params}")->assertOk()->assertJsonPath('meta.total', 1);
         $this->putJson("/api/risiko/tindak-pengendalian/3b/{$itemId}", $payload)->assertUnprocessable();
         $analysis->update(['residual_kemungkinan' => 2, 'residual_dampak' => 3]);
-        $this->getJson("/api/risiko/tindak-pengendalian?{$params}&source=3b")->assertOk()->assertJsonPath('data.0.rencana_tindak', 'Tindak baru')->assertJsonPath('data.0.celah_pengendalian', 'Kekurangan prosedur');
+        $this->getJson("/api/risiko/tindak-pengendalian?{$params}&source=3b")->assertOk()->assertJsonPath('data.0.rencana_tindak', 'Tindak diperbarui dari Form 4')->assertJsonPath('data.0.celah_pengendalian', 'Kekurangan prosedur');
         Sanctum::actingAs($this->auditorUser);
         $this->putJson("/api/risiko/tindak-pengendalian/3b/{$itemId}", $payload)->assertForbidden();
         $otherOperator = User::factory()->create(['opd_id' => $this->otherOpd->id]);
