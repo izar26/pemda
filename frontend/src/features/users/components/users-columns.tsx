@@ -26,6 +26,13 @@ export const usersColumns: ColumnDef<User>[] = [
     },
     cell: ({ row }) => {
       const user = row.original
+      const isLeader =
+        Boolean(user.is_pimpinan_daerah) ||
+        (!user.opd_id &&
+          (user.role === 'Executive' ||
+            ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+              user.jabatan || ''
+            )))
       const initials = user.name
         .split(' ')
         .map((n) => n[0])
@@ -42,9 +49,15 @@ export const usersColumns: ColumnDef<User>[] = [
             <span className='font-semibold text-sm text-foreground leading-snug whitespace-normal break-words'>
               {user.name}
             </span>
-            <span className='text-xs text-muted-foreground font-mono mt-0.5 whitespace-nowrap'>
-              {user.nip ? `NIP. ${user.nip}` : 'NIP belum diisi'}
-            </span>
+            {user.nip ? (
+              <span className='text-xs text-muted-foreground font-mono mt-0.5 whitespace-nowrap'>
+                NIP. {user.nip}
+              </span>
+            ) : isLeader ? null : (
+              <span className='text-xs text-muted-foreground font-mono mt-0.5 whitespace-nowrap'>
+                NIP belum diisi
+              </span>
+            )}
           </div>
         </div>
       )
@@ -129,7 +142,7 @@ export const usersColumns: ColumnDef<User>[] = [
             <span className='text-[11px] text-muted-foreground'>
               {user.pangkat_gol}
             </span>
-          ) : (
+          ) : isLeader ? null : (
             <span className='text-[11px] text-muted-foreground'>-</span>
           )}
         </div>
@@ -172,15 +185,10 @@ export const usersColumns: ColumnDef<User>[] = [
 
       if (isLeader) {
         return (
-          <div className='flex flex-col py-1 text-xs gap-0.5 min-w-0'>
-            <div className='flex items-center gap-1.5'>
-              <Landmark className='h-3.5 w-3.5 text-primary shrink-0' />
-              <span className='font-semibold text-foreground leading-snug whitespace-normal break-words'>
-                Pemerintah Daerah
-              </span>
-            </div>
-            <span className='text-[10px] text-amber-700 dark:text-amber-400 font-medium pl-5'>
-              Pimpinan Daerah (Non-OPD)
+          <div className='flex items-center gap-1.5 py-1 text-xs min-w-0'>
+            <Landmark className='h-3.5 w-3.5 text-primary shrink-0' />
+            <span className='font-semibold text-foreground leading-snug whitespace-normal break-words'>
+              Pemerintah Daerah
             </span>
           </div>
         )

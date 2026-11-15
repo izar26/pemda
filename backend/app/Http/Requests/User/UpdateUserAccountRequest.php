@@ -22,8 +22,32 @@ class UpdateUserAccountRequest extends FormRequest
         return $this->user()?->can('users.edit') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        if ($this->has('email') && is_string($this->email)) {
+            $merge['email'] = strtolower(trim($this->email));
+        }
+        if ($this->has('name') && is_string($this->name)) {
+            $merge['name'] = trim($this->name);
+        }
+        if ($this->has('jabatan') && is_string($this->jabatan)) {
+            $merge['jabatan'] = trim($this->jabatan);
+        }
+        if ($this->has('phone') && is_string($this->phone)) {
+            $cleaned = trim($this->phone);
+            $merge['phone'] = $cleaned === '' ? null : $cleaned;
+        }
+        if (! empty($merge)) {
+            $this->merge($merge);
+        }
+    }
+
     public function rules(): array
     {
+        $target = $this->route('user');
+        $targetUserId = $target instanceof User ? $target->id : (is_string($target) ? $target : null);
+
         $roleRule = ['required', 'string'];
         if (! $this->user()?->hasRole('Superadmin')) {
             $roleRule[] = Rule::exists('roles', 'name')->where(function ($query) {
@@ -45,6 +69,16 @@ class UpdateUserAccountRequest extends FormRequest
                     ->numbers()
                     ->symbols(),
             ],
+            'name' => ['nullable', 'string', 'max:100'],
+            'email' => [
+                'nullable',
+                'string',
+                'email',
+                'max:100',
+                Rule::unique('users', 'email')->ignore($targetUserId),
+            ],
+            'jabatan' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ];
     }
 

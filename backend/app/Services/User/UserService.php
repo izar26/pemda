@@ -404,6 +404,19 @@ class UserService
                 'status' => $data['status'],
             ];
 
+            if (isset($data['name']) && ! empty($data['name'])) {
+                $updatePayload['name'] = trim((string) $data['name']);
+            }
+            if (isset($data['email']) && ! empty($data['email'])) {
+                $updatePayload['email'] = strtolower(trim((string) $data['email']));
+            }
+            if (isset($data['jabatan']) && ! empty($data['jabatan'])) {
+                $updatePayload['jabatan'] = trim((string) $data['jabatan']);
+            }
+            if (array_key_exists('phone', $data)) {
+                $updatePayload['phone'] = ! empty($data['phone']) ? trim((string) $data['phone']) : null;
+            }
+
             if (! empty($data['password'])) {
                 $updatePayload['password'] = Hash::make($data['password']);
             }

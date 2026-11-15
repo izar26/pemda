@@ -417,20 +417,14 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
                                 <span className='font-bold text-sm text-foreground tracking-tight'>
                                   {groupMeta.groupName}
                                 </span>
-                                <Badge
-                                  variant='outline'
-                                  className={cn(
-                                    'text-[10px] uppercase font-semibold px-1.5 py-0',
-                                    isLeader
-                                      ? 'border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                                      : 'border-border bg-background text-muted-foreground'
-                                  )}
-                                >
-                                  {isLeader && (
-                                    <Crown className='h-2.5 w-2.5 inline mr-1 text-amber-600 dark:text-amber-400' />
-                                  )}
-                                  {groupMeta.groupCategory}
-                                </Badge>
+                                {!isLeader && (
+                                  <Badge
+                                    variant='outline'
+                                    className='text-[10px] uppercase font-semibold px-1.5 py-0 border-border bg-background text-muted-foreground'
+                                  >
+                                    {groupMeta.groupCategory}
+                                  </Badge>
+                                )}
                               </div>
 
                               <div className='flex items-center gap-2.5 text-xs text-muted-foreground ml-auto'>

@@ -60,6 +60,10 @@ export interface UpdateUserAccountPayload {
   role: string
   status: 'active' | 'inactive'
   password?: string
+  name?: string
+  email?: string
+  jabatan?: string
+  phone?: string
 }
 
 export interface CreateUserPayload {

@@ -487,5 +487,21 @@ class PegawaiAndUserAccountTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/pegawai/{$sekdaId}")
             ->assertNotFound();
+
+        // 6. Update direct leader profile (name, email, phone, jabatan)
+        $updateBupatiRes = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->putJson("/api/user-accounts/{$bupatiId}", [
+                'name' => 'Bupati H. Pimpinan Daerah Diperbarui',
+                'email' => 'bupati.baru@pemda.go.id',
+                'jabatan' => 'Bupati',
+                'phone' => '089999999999',
+                'role' => 'Executive',
+                'status' => 'active',
+            ]);
+
+        $updateBupatiRes->assertOk()
+            ->assertJsonPath('data.name', 'Bupati H. Pimpinan Daerah Diperbarui')
+            ->assertJsonPath('data.email', 'bupati.baru@pemda.go.id')
+            ->assertJsonPath('data.phone', '089999999999');
     }
 }

@@ -97,7 +97,7 @@ const userAccountFormSchema = z
   )
   .refine(
     (data) => {
-      if (data.isEdit || data.account_type !== 'direct') return true
+      if (data.account_type !== 'direct') return true
       return Boolean(data.name && data.name.trim().length >= 3)
     },
     {
@@ -107,7 +107,7 @@ const userAccountFormSchema = z
   )
   .refine(
     (data) => {
-      if (data.isEdit || data.account_type !== 'direct') return true
+      if (data.account_type !== 'direct') return true
       if (!data.email || data.email.trim().length === 0) return false
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)
     },
@@ -118,8 +118,13 @@ const userAccountFormSchema = z
   )
   .refine(
     (data) => {
-      if (data.isEdit || data.account_type !== 'direct') return true
-      return Boolean(data.jabatan && ['Bupati', 'Sekda'].includes(data.jabatan))
+      if (data.account_type !== 'direct') return true
+      return Boolean(
+        data.jabatan &&
+          ['Bupati', 'Sekda', 'Wakil Bupati', 'Sekretaris Daerah'].includes(
+            data.jabatan
+          )
+      )
     },
     {
       message: 'Jabatan pimpinan daerah wajib dipilih (Bupati atau Sekda).',
@@ -259,9 +264,13 @@ export function UsersActionDialog({
   }, [availablePegawaiList])
 
   const selectedPegawai = useMemo(() => {
-    if (isEdit && currentRow) return currentRow
     if (watchedAccountType === 'direct') return null
-    return availablePegawaiList.find((p) => String(p.id) === String(watchedPegawaiId)) || null
+    if (isEdit && currentRow) return currentRow
+    return (
+      availablePegawaiList.find(
+        (p) => String(p.id) === String(watchedPegawaiId)
+      ) || null
+    )
   }, [isEdit, currentRow, watchedAccountType, availablePegawaiList, watchedPegawaiId])
 
   const criteria = [
@@ -326,19 +335,24 @@ export function UsersActionDialog({
 
   // Automatically enforce Executive role and default Bupati jabatan for Pemimpin Daerah
   useEffect(() => {
-    if (open && !isEdit && watchedAccountType === 'direct') {
+    if (open && watchedAccountType === 'direct') {
       if (form.getValues('role') !== 'Executive') {
         form.setValue('role', 'Executive', { shouldValidate: true })
       }
       const curJabatan = form.getValues('jabatan')
-      if (!curJabatan || !['Bupati', 'Sekda'].includes(curJabatan)) {
+      if (
+        !curJabatan ||
+        !['Bupati', 'Sekda', 'Wakil Bupati', 'Sekretaris Daerah'].includes(
+          curJabatan
+        )
+      ) {
         form.setValue('jabatan', 'Bupati', { shouldValidate: true })
       }
       if (form.getValues('nip')) {
         form.setValue('nip', '')
       }
     }
-  }, [open, isEdit, watchedAccountType, form])
+  }, [open, watchedAccountType, form])
 
   // Generator for strong passwords
   function generateSecurePassword() {
@@ -374,12 +388,27 @@ export function UsersActionDialog({
     setIsSubmitting(true)
     try {
       if (isEdit && currentRow) {
-        await userService.updateUserAccount(currentRow.id, {
-          role: data.role,
-          status: data.status,
-          password: data.password ? data.password : undefined,
-        })
-        toast.success(`Akun user "${currentRow.name}" berhasil diperbarui.`)
+        if (data.account_type === 'direct') {
+          await userService.updateUserAccount(currentRow.id, {
+            name: data.name,
+            email: data.email,
+            jabatan: data.jabatan,
+            phone: data.phone || undefined,
+            role: data.role || 'Executive',
+            status: data.status,
+            password: data.password ? data.password : undefined,
+          })
+          toast.success(
+            `Akun pemimpin daerah "${data.name || currentRow.name}" berhasil diperbarui.`
+          )
+        } else {
+          await userService.updateUserAccount(currentRow.id, {
+            role: data.role,
+            status: data.status,
+            password: data.password ? data.password : undefined,
+          })
+          toast.success(`Akun user "${currentRow.name}" berhasil diperbarui.`)
+        }
       } else if (data.account_type === 'direct') {
         const createdUser = await userService.createUserAccount({
           account_type: 'direct',
@@ -439,10 +468,10 @@ export function UsersActionDialog({
         <DialogHeader className='px-6 pt-5 pb-4 border-b bg-muted/10 shrink-0 text-start'>
           <div className='flex items-center gap-3'>
             <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
-              {isEdit ? (
+              {watchedAccountType === 'direct' ? (
+                <Crown className='h-5 w-5 text-amber-500' />
+              ) : isEdit ? (
                 <UserCheck className='h-5 w-5' />
-              ) : watchedAccountType === 'direct' ? (
-                <Crown className='h-5 w-5 text-primary' />
               ) : (
                 <UserPlus className='h-5 w-5' />
               )}
@@ -450,17 +479,21 @@ export function UsersActionDialog({
             <div>
               <DialogTitle className='text-lg font-bold text-foreground'>
                 {isEdit
-                  ? `Edit Akun User: ${currentRow?.name}`
+                  ? watchedAccountType === 'direct'
+                    ? `Edit Akun Pemimpin Daerah: ${currentRow?.name}`
+                    : `Edit Akun User: ${currentRow?.name}`
                   : watchedAccountType === 'direct'
-                  ? 'Tambah Akun Pimpinan Daerah'
-                  : 'Tambah Akun Pegawai'}
+                    ? 'Tambah Akun Pemimpin Daerah'
+                    : 'Tambah Akun Pegawai'}
               </DialogTitle>
               <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
-                {isEdit
-                  ? 'Perbarui peran akses (RBAC), kata sandi, atau status aktif akun.'
-                  : watchedAccountType === 'direct'
-                  ? 'Form akun untuk Bupati, Wakil Bupati, Sekda, dll.'
-                  : 'Pilih OPD dan pegawai untuk memberikan akses akun login.'}
+                {watchedAccountType === 'direct'
+                  ? isEdit
+                    ? 'Perbarui data pimpinan daerah (Bupati / Sekda), kata sandi, atau status akun.'
+                    : 'Form akun untuk Bupati, Wakil Bupati, Sekda tingkat Pemerintah Daerah.'
+                  : isEdit
+                    ? 'Perbarui peran akses (RBAC), kata sandi, atau status aktif akun.'
+                    : 'Pilih OPD dan pegawai untuk memberikan akses akun login.'}
               </DialogDescription>
             </div>
           </div>
@@ -600,7 +633,7 @@ export function UsersActionDialog({
               )}
 
               {/* JIKA MODE 2: PIMPINAN DAERAH (Bupati / Sekda) */}
-              {!isEdit && watchedAccountType === 'direct' && (
+              {watchedAccountType === 'direct' && (
                 <div className='space-y-3.5'>
                   <FormField
                     control={form.control}
@@ -790,16 +823,16 @@ export function UsersActionDialog({
                         <Shield className='h-3.5 w-3.5 text-muted-foreground' />
                         <span>Peran (Role)</span> <span className='text-destructive'>*</span>
                       </div>
-                      {watchedAccountType === 'direct' && !isEdit && (
+                      {watchedAccountType === 'direct' && (
                         <Badge variant='outline' className='text-[10px] font-mono py-0 px-1.5 border-primary/30 bg-primary/10 text-primary'>
                           Terkunci: Executive
                         </Badge>
                       )}
                     </FormLabel>
                     <Select
-                      disabled={isSubmitting || isLoadingRoles || (!isEdit && watchedAccountType === 'direct')}
+                      disabled={isSubmitting || isLoadingRoles || watchedAccountType === 'direct'}
                       onValueChange={field.onChange}
-                      value={!isEdit && watchedAccountType === 'direct' ? 'Executive' : field.value}
+                      value={watchedAccountType === 'direct' ? 'Executive' : field.value}
                     >
                       <FormControl>
                         <SelectTrigger className='w-full'>
