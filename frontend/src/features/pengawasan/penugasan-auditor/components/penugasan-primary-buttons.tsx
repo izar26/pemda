@@ -7,7 +7,7 @@ export function PenugasanPrimaryButtons() {
   const { setOpen, setCurrentRow } = usePenugasan()
   const { hasPermission } = usePermissions()
 
-  if (!hasPermission('penugasan_auditor.create')) return null
+  if (!hasPermission('penugasan_evaluator.create')) return null
 
   return (
     <Button

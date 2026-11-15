@@ -91,59 +91,59 @@ export interface PenugasanAuditorResponse {
 
 export const penugasanAuditorService = {
   /**
-   * Get list of auditors with their assigned OPDs (grouped view).
+   * Get list of evaluators with their assigned OPDs (grouped view).
    */
   async getAuditorsWithAssignments(params?: Record<string, unknown>): Promise<PenugasanAuditorResponse> {
     const response = await apiClient.get<PenugasanAuditorResponse>(
-      '/pengawasan/penugasan-auditor',
+      '/pengawasan/penugasan-evaluator',
       { params }
     )
     return response.data
   },
 
   /**
-   * Fetch statistical summary of auditor coverage.
+   * Fetch statistical summary of evaluator coverage.
    */
   async getStats(periodePenilaianId?: string): Promise<PenugasanAuditorStats> {
     const response = await apiClient.get<{ data: PenugasanAuditorStats }>(
-      '/pengawasan/penugasan-auditor/stats',
+      '/pengawasan/penugasan-evaluator/stats',
       { params: { periode_penilaian_id: periodePenilaianId } }
     )
     return response.data.data
   },
 
   /**
-   * Fetch eligible auditors list for dropdown selection.
+   * Fetch eligible evaluators list for dropdown selection.
    */
   async getEligibleAuditors(): Promise<AuditorUser[]> {
     const response = await apiClient.get<{ data: AuditorUser[] }>(
-      '/pengawasan/penugasan-auditor/auditors'
+      '/pengawasan/penugasan-evaluator/evaluators'
     )
     return response.data.data
   },
 
   /**
-   * Assign an auditor to one or more OPDs.
+   * Assign an evaluator to one or more OPDs.
    */
   async createAssignment(
     payload: AssignAuditorPayload
   ): Promise<{ message: string; data: AssignedOpdInfo[] }> {
     const response = await apiClient.post<{ message: string; data: AssignedOpdInfo[] }>(
-      '/pengawasan/penugasan-auditor',
+      '/pengawasan/penugasan-evaluator',
       payload
     )
     return response.data
   },
 
   /**
-   * Update/sync OPD assignments for a specific auditor.
+   * Update/sync OPD assignments for a specific evaluator.
    */
   async updateAssignment(
     auditorId: string,
     payload: UpdateAuditorAssignmentPayload
   ): Promise<{ message: string; data: AssignedOpdInfo[] }> {
     const response = await apiClient.put<{ message: string; data: AssignedOpdInfo[] }>(
-      `/pengawasan/penugasan-auditor/${auditorId}`,
+      `/pengawasan/penugasan-evaluator/${auditorId}`,
       payload
     )
     return response.data
@@ -154,18 +154,20 @@ export const penugasanAuditorService = {
    */
   async deleteAssignment(id: string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(
-      `/pengawasan/penugasan-auditor/${id}`
+      `/pengawasan/penugasan-evaluator/${id}`
     )
     return response.data
   },
 
   /**
-   * Delete all assignments for an auditor.
+   * Delete all assignments for an evaluator.
    */
   async deleteAuditorAssignments(auditorId: string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(
-      `/pengawasan/penugasan-auditor/auditor/${auditorId}`
+      `/pengawasan/penugasan-evaluator/evaluator/${auditorId}`
     )
     return response.data
   },
 }
+
+export const penugasanEvaluatorService = penugasanAuditorService

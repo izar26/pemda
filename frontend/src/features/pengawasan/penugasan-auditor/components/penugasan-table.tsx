@@ -63,7 +63,7 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
       <DataTableToolbar
         table={table}
         searchKey='name'
-        searchPlaceholder='Cari nama auditor, NIP, atau OPD binaan...'
+        searchPlaceholder='Cari nama evaluator, NIP, atau OPD binaan...'
       />
 
       <div className='rounded-md border bg-card'>
@@ -116,9 +116,9 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
                   colSpan={columns.length}
                   className='h-36 text-center text-xs text-muted-foreground'
                 >
-                  Belum ada penugasan auditor yang aktif. Klik tombol{' '}
+                  Belum ada penugasan evaluator yang aktif. Klik tombol{' '}
                   <strong>Tambah Penugasan</strong> di atas untuk menetapkan
-                  auditor ke OPD binaannya.
+                  evaluator ke OPD binaannya.
                 </TableCell>
               </TableRow>
             )}

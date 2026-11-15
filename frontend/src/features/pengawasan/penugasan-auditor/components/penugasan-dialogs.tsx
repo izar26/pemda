@@ -234,7 +234,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     mutationFn: (data: { auditor_id: string; opd_ids: string[] }) =>
       penugasanAuditorService.createAssignment(data),
     onSuccess: (res) => {
-      toast.success(res.message || 'Penugasan auditor berhasil disimpan.')
+      toast.success(res.message || 'Penugasan evaluator berhasil disimpan.')
       queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
       handleCloseForm()
       onSuccess?.()
@@ -243,7 +243,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.opd_ids?.[0] ||
-        'Gagal menyimpan penugasan auditor.'
+        'Gagal menyimpan penugasan evaluator.'
       toast.error(msg)
     },
   })
@@ -253,7 +253,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     mutationFn: (data: { auditorId: string; payload: { opd_ids: string[] } }) =>
       penugasanAuditorService.updateAssignment(data.auditorId, data.payload),
     onSuccess: (res) => {
-      toast.success(res.message || 'Penugasan auditor berhasil diperbarui.')
+      toast.success(res.message || 'Penugasan evaluator berhasil diperbarui.')
       queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
       handleCloseForm()
       onSuccess?.()
@@ -262,7 +262,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.opd_ids?.[0] ||
-        'Gagal memperbarui penugasan auditor.'
+        'Gagal memperbarui penugasan evaluator.'
       toast.error(msg)
     },
   })
@@ -287,7 +287,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     mutationFn: (auditorId: string) =>
       penugasanAuditorService.deleteAuditorAssignments(auditorId),
     onSuccess: (res) => {
-      toast.success(res.message || 'Seluruh penugasan auditor berhasil dicabut.')
+      toast.success(res.message || 'Seluruh penugasan evaluator berhasil dicabut.')
       queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
       setOpen(null)
       setCurrentRow(null)
@@ -302,7 +302,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     e.preventDefault()
 
     if (!selectedAuditorId) {
-      toast.error('Pilih auditor pengawas terlebih dahulu.')
+      toast.error('Pilih evaluator pengawas terlebih dahulu.')
       return
     }
 
@@ -343,12 +343,12 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
               </div>
               <div>
                 <DialogTitle className='text-base font-bold text-foreground'>
-                  {isEdit ? 'Kelola Penugasan OPD' : 'Tambah Penugasan Auditor'}
+                  {isEdit ? 'Kelola Penugasan OPD' : 'Tambah Penugasan Evaluator'}
                 </DialogTitle>
                 <DialogDescription className='text-xs text-muted-foreground mt-0.5'>
                   {isEdit
-                    ? `Sesuaikan perangkat daerah (OPD) binaan untuk auditor ${currentRow?.name}.`
-                    : 'Pilih auditor dan tentukan instansi OPD binaan untuk persetujuan (approval) lembar kerja risiko.'}
+                    ? `Sesuaikan perangkat daerah (OPD) binaan untuk evaluator ${currentRow?.name}.`
+                    : 'Pilih evaluator dan tentukan instansi OPD binaan untuk persetujuan (approval) lembar kerja risiko.'}
                 </DialogDescription>
               </div>
             </div>
@@ -360,11 +360,11 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
             className='flex flex-col flex-1 overflow-hidden'
           >
             <div className='flex-1 overflow-y-auto px-6 py-5 min-h-0 space-y-5'>
-              {/* Auditor Field */}
+              {/* Evaluator Field */}
               <div className='space-y-1.5'>
                 <Label className='text-xs font-semibold flex items-center gap-1.5'>
                   <Users className='h-3.5 w-3.5 text-muted-foreground' />
-                  Auditor Pengawas <span className='text-destructive'>*</span>
+                  Evaluator Pengawas <span className='text-destructive'>*</span>
                 </Label>
 
                 {isEdit && currentRow ? (
@@ -382,11 +382,11 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                       options={auditorOptions}
                       placeholder={
                         isLoadingAuditors
-                          ? 'Memuat daftar auditor...'
-                          : 'Pilih auditor pengawas...'
+                          ? 'Memuat daftar evaluator...'
+                          : 'Pilih evaluator pengawas...'
                       }
-                      searchPlaceholder='Cari nama atau NIP auditor...'
-                      emptyMessage='Tidak ada auditor yang cocok.'
+                      searchPlaceholder='Cari nama atau NIP evaluator...'
+                      emptyMessage='Tidak ada evaluator yang cocok.'
                     />
                   </div>
                 )}
@@ -417,10 +417,10 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
                     </div>
                     <div className='space-y-0.5'>
                       <p className='text-xs font-semibold text-foreground'>
-                        Pilih Auditor Pengawas Terlebih Dahulu
+                        Pilih Evaluator Pengawas Terlebih Dahulu
                       </p>
                       <p className='text-[11px] text-muted-foreground max-w-sm'>
-                        Silakan pilih auditor pengawas pada opsi di atas untuk menampilkan dan memilih daftar Perangkat Daerah (OPD) binaan.
+                        Silakan pilih evaluator pengawas pada opsi di atas untuk menampilkan dan memilih daftar Perangkat Daerah (OPD) binaan.
                       </p>
                     </div>
                   </div>
@@ -623,13 +623,13 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
             setCurrentRow(null)
           }
         }}
-        title='Cabut Seluruh Penugasan Auditor'
+        title='Cabut Seluruh Penugasan Evaluator'
         desc={
           currentRow ? (
             <span>
               Apakah Anda yakin ingin mencabut seluruh penugasan (
               <strong>{currentRow.auditor_assignments?.length ?? 0} OPD</strong>)
-              dari auditor <strong>{currentRow.name}</strong>?
+              dari evaluator <strong>{currentRow.name}</strong>?
             </span>
           ) : (
             ''

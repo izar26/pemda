@@ -105,10 +105,10 @@ export const sidebarData: SidebarData = {
       title: 'Pengawasan & Review',
       items: [
         {
-          title: 'Penugasan Auditor',
-          url: '/pengawasan/penugasan-auditor',
+          title: 'Penugasan Evaluator',
+          url: '/pengawasan/penugasan-evaluator',
           icon: UserCheck,
-          requiredPermission: 'penugasan_auditor.view',
+          requiredPermission: 'penugasan_evaluator.view',
         },
         {
           title: 'Review Risiko',

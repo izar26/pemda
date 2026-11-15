@@ -44,7 +44,7 @@ export const NAV_CATEGORIES: NavCategoryDefinition[] = [
     id: 'pengawasan-review',
     name: 'Pengawasan & Review',
     sortOrder: 3,
-    modules: ['Penugasan Auditor', 'Review Risiko'],
+    modules: ['Penugasan Evaluator', 'Review Risiko'],
   },
   {
     id: 'pengelolaan-risiko',
@@ -302,28 +302,54 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
     badgeLabel: 'Menengah',
   },
 
-  // 8. Penugasan Auditor (Pengawasan & Review)
+  // 8. Penugasan Evaluator (Pengawasan & Review)
+  'penugasan_evaluator.view': {
+    label: 'Lihat Penugasan Evaluator',
+    description: 'Melihat direktori penugasan evaluator pengawas ke instansi perangkat daerah.',
+    risk: 'low',
+    badgeLabel: 'Aman',
+  },
+  'penugasan_evaluator.create': {
+    label: 'Tetapkan Penugasan Evaluator',
+    description: 'Menugaskan evaluator pengawas untuk melakukan pembinaan dan review OPD binaan.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'penugasan_evaluator.edit': {
+    label: 'Edit Penugasan Evaluator',
+    description: 'Mengubah cakupan instansi binaan evaluator, nomor surat tugas, atau periode penugasan.',
+    risk: 'medium',
+    badgeLabel: 'Menengah',
+  },
+  'penugasan_evaluator.delete': {
+    label: 'Cabut Penugasan Evaluator',
+    description: 'Mencabut penugasan pembinaan evaluator dari suatu perangkat daerah.',
+    risk: 'critical',
+    badgeLabel: 'Kritis',
+  },
+
+  // Legacy fallback alias
   'penugasan_auditor.view': {
-    label: 'Lihat Penugasan Auditor',
-    description: 'Melihat direktori penugasan auditor pengawas ke instansi perangkat daerah.',
+    label: 'Lihat Penugasan Evaluator',
+    description: 'Melihat direktori penugasan evaluator pengawas ke instansi perangkat daerah.',
     risk: 'low',
     badgeLabel: 'Aman',
   },
   'penugasan_auditor.create': {
-    label: 'Tetapkan Penugasan Auditor',
-    description: 'Menugaskan auditor pengawas untuk melakukan pembinaan dan review OPD binaan.',
+    label: 'Tetapkan Penugasan Evaluator',
+    description: 'Menugaskan evaluator pengawas untuk melakukan pembinaan dan review OPD binaan.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'penugasan_auditor.edit': {
-    label: 'Edit Penugasan Auditor',
-    description: 'Mengubah cakupan instansi binaan auditor, nomor surat tugas, atau periode penugasan.',
+    label: 'Edit Penugasan Evaluator',
+    description: 'Mengubah cakupan instansi binaan evaluator, nomor surat tugas, atau periode penugasan.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },
   'penugasan_auditor.delete': {
-    label: 'Cabut Penugasan Auditor',
-    description: 'Mencabut penugasan pembinaan auditor dari suatu perangkat daerah.',
+    label: 'Cabut Penugasan Evaluator',
+    description: 'Mencabut penugasan pembinaan evaluator dari suatu perangkat daerah.',
     risk: 'critical',
     badgeLabel: 'Kritis',
   },
@@ -331,7 +357,7 @@ export const PERMISSION_METADATA: Record<string, PermissionMetadata> = {
   // 9. Review Risiko (Pengawasan & Review)
   'penilaian_risiko.submit': {
     label: 'Ajukan Review Risiko',
-    description: 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Auditor Pengawas.',
+    description: 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Evaluator Pengawas.',
     risk: 'medium',
     badgeLabel: 'Menengah',
   },

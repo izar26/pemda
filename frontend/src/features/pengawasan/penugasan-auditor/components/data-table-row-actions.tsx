@@ -21,8 +21,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { hasPermission } = usePermissions()
   const auditor = row.original
 
-  const canEdit = hasPermission('penugasan_auditor.edit')
-  const canDelete = hasPermission('penugasan_auditor.delete')
+  const canEdit = hasPermission('penugasan_evaluator.edit')
+  const canDelete = hasPermission('penugasan_evaluator.delete')
   const hasAssignments = (auditor.auditor_assignments?.length ?? 0) > 0
 
   if (!canEdit && !canDelete) return null

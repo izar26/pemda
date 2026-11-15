@@ -158,7 +158,7 @@ class AuditorAssignmentTest extends TestCase
             ->postJson('/api/pengawasan/penugasan-auditor', $payload);
 
         $response->assertStatus(201)
-            ->assertJsonPath('message', 'Penugasan auditor berhasil disimpan.');
+            ->assertJsonPath('message', 'Penugasan evaluator berhasil disimpan.');
 
         $this->assertDatabaseHas('auditor_opd_assignments', [
             'auditor_id' => $this->auditorUser1->id,
@@ -328,5 +328,20 @@ class AuditorAssignmentTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['opd_ids']);
+    }
+
+    public function test_evaluator_endpoint_and_permission_work_properly(): void
+    {
+        $response = $this->actingAs($this->inspektoratUser, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['data', 'meta']);
+
+        $statsResponse = $this->actingAs($this->inspektoratUser, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/stats');
+
+        $statsResponse->assertStatus(200)
+            ->assertJsonStructure(['data']);
     }
 }

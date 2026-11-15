@@ -107,14 +107,14 @@ class RbacSeeder extends Seeder
 
             // Kategori: Pengawasan & Review
             [
-                'group' => 'Penugasan Auditor',
+                'group' => 'Penugasan Evaluator',
                 'category' => 'Pengawasan & Review',
                 'sort_order' => 8,
                 'permissions' => [
-                    ['name' => 'penugasan_auditor.view', 'description' => 'Melihat daftar penugasan auditor pengawas ke perangkat daerah (OPD)'],
-                    ['name' => 'penugasan_auditor.create', 'description' => 'Menetapkan penugasan auditor pengawas ke satu atau beberapa OPD'],
-                    ['name' => 'penugasan_auditor.edit', 'description' => 'Mengubah penugasan dan cakupan OPD binaan auditor'],
-                    ['name' => 'penugasan_auditor.delete', 'description' => 'Mencabut penugasan auditor dari suatu OPD'],
+                    ['name' => 'penugasan_evaluator.view', 'description' => 'Melihat daftar penugasan evaluator pengawas ke perangkat daerah (OPD)'],
+                    ['name' => 'penugasan_evaluator.create', 'description' => 'Menetapkan penugasan evaluator pengawas ke satu atau beberapa OPD'],
+                    ['name' => 'penugasan_evaluator.edit', 'description' => 'Mengubah penugasan dan cakupan OPD binaan evaluator'],
+                    ['name' => 'penugasan_evaluator.delete', 'description' => 'Mencabut penugasan evaluator dari suatu OPD'],
                 ],
             ],
             [
@@ -122,7 +122,7 @@ class RbacSeeder extends Seeder
                 'category' => 'Pengawasan & Review',
                 'sort_order' => 9,
                 'permissions' => [
-                    ['name' => 'penilaian_risiko.submit', 'description' => 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Auditor Pengawas'],
+                    ['name' => 'penilaian_risiko.submit', 'description' => 'Mengajukan lembar kerja pengelolaan risiko OPD untuk ditinjau oleh Evaluator Pengawas'],
                     ['name' => 'review_risiko.view', 'description' => 'Melihat daftar dan status pengajuan lembar kerja risiko OPD binaan'],
                     ['name' => 'review_risiko.approve', 'description' => 'Melakukan persetujuan atau penolakan per-form risiko beserta catatan revisi'],
                     ['name' => 'review_risiko.review_kepala', 'description' => 'Memeriksa dan menyetujui lembar kerja risiko internal OPD tingkat Kepala OPD'],
@@ -292,7 +292,7 @@ class RbacSeeder extends Seeder
                     'identifikasi_risiko_pemda.view', 'identifikasi_risiko_pemda.create', 'identifikasi_risiko_pemda.edit', 'identifikasi_risiko_pemda.delete', 'identifikasi_risiko_pemda.export',
                     'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.create', 'identifikasi_risiko_opd.edit', 'identifikasi_risiko_opd.delete', 'identifikasi_risiko_opd.export',
                     'rca.view', 'rca.edit', 'rca.export',
-                    'penugasan_auditor.view', 'penugasan_auditor.create', 'penugasan_auditor.edit', 'penugasan_auditor.delete',
+                    'penugasan_evaluator.view', 'penugasan_evaluator.create', 'penugasan_evaluator.edit', 'penugasan_evaluator.delete',
                     'penilaian_risiko.submit', 'review_risiko.view',
                     'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
@@ -341,7 +341,7 @@ class RbacSeeder extends Seeder
                     'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.export',
                     'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.export',
                     'rca.view', 'rca.export',
-                    'penugasan_auditor.view', 'penugasan_auditor.create', 'penugasan_auditor.edit', 'penugasan_auditor.delete',
+                    'penugasan_evaluator.view', 'penugasan_evaluator.create', 'penugasan_evaluator.edit', 'penugasan_evaluator.delete',
                     'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_pengawas',
                     'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
@@ -358,7 +358,7 @@ class RbacSeeder extends Seeder
                     'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.export',
                     'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.export',
                     'rca.view', 'rca.export',
-                    'penugasan_auditor.view',
+                    'penugasan_evaluator.view',
                     'review_risiko.view', 'review_risiko.approve',
                     'laporan.view', 'laporan.export',
                     'audit.view',

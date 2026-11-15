@@ -19,7 +19,6 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
-  Crown,
   Landmark,
   ShieldCheck,
 } from 'lucide-react'

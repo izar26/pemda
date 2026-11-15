@@ -1,5 +1,16 @@
 import { useAuthStore } from '@/stores/auth-store'
 
+const PERMISSION_ALIASES: Record<string, string> = {
+  'penugasan_evaluator.view': 'penugasan_auditor.view',
+  'penugasan_evaluator.create': 'penugasan_auditor.create',
+  'penugasan_evaluator.edit': 'penugasan_auditor.edit',
+  'penugasan_evaluator.delete': 'penugasan_auditor.delete',
+  'penugasan_auditor.view': 'penugasan_evaluator.view',
+  'penugasan_auditor.create': 'penugasan_evaluator.create',
+  'penugasan_auditor.edit': 'penugasan_evaluator.edit',
+  'penugasan_auditor.delete': 'penugasan_evaluator.delete',
+}
+
 /**
  * Hook to check current user's permissions from the auth store.
  * Permissions are populated from the backend /auth/me response.
@@ -10,7 +21,9 @@ export function usePermissions() {
 
   /** Check if user has a specific permission */
   function hasPermission(permission: string): boolean {
-    return permissions.includes(permission)
+    if (permissions.includes(permission)) return true
+    const alias = PERMISSION_ALIASES[permission]
+    return alias ? permissions.includes(alias) : false
   }
 
   /** Check if user has ALL of the specified permissions */

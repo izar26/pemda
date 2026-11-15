@@ -66,6 +66,7 @@ import { Route as AuthenticatedPerencanaanSasaranIndexRouteImport } from './rout
 import { Route as AuthenticatedPerencanaanPeriodeIndexRouteImport } from './routes/_authenticated/perencanaan/periode/index'
 import { Route as AuthenticatedPerencanaanIkuIndexRouteImport } from './routes/_authenticated/perencanaan/iku/index'
 import { Route as AuthenticatedPengawasanReviewRisikoIndexRouteImport } from './routes/_authenticated/pengawasan/review-risiko/index'
+import { Route as AuthenticatedPengawasanPenugasanEvaluatorIndexRouteImport } from './routes/_authenticated/pengawasan/penugasan-evaluator/index'
 import { Route as AuthenticatedPengawasanPenugasanAuditorIndexRouteImport } from './routes/_authenticated/pengawasan/penugasan-auditor/index'
 import { Route as AuthenticatedContentManagementBannersIndexRouteImport } from './routes/_authenticated/content-management/banners/index'
 
@@ -383,6 +384,12 @@ const AuthenticatedPengawasanReviewRisikoIndexRoute =
     path: '/pengawasan/review-risiko/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPengawasanPenugasanEvaluatorIndexRoute =
+  AuthenticatedPengawasanPenugasanEvaluatorIndexRouteImport.update({
+    id: '/pengawasan/penugasan-evaluator/',
+    path: '/pengawasan/penugasan-evaluator/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPengawasanPenugasanAuditorIndexRoute =
   AuthenticatedPengawasanPenugasanAuditorIndexRouteImport.update({
     id: '/pengawasan/penugasan-auditor/',
@@ -433,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/users/': typeof AuthenticatedUsersIndexRoute
   '/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
   '/pengawasan/penugasan-auditor/': typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
+  '/pengawasan/penugasan-evaluator/': typeof AuthenticatedPengawasanPenugasanEvaluatorIndexRoute
   '/pengawasan/review-risiko/': typeof AuthenticatedPengawasanReviewRisikoIndexRoute
   '/perencanaan/iku/': typeof AuthenticatedPerencanaanIkuIndexRoute
   '/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
@@ -490,6 +498,7 @@ export interface FileRoutesByTo {
   '/users': typeof AuthenticatedUsersIndexRoute
   '/content-management/banners': typeof AuthenticatedContentManagementBannersIndexRoute
   '/pengawasan/penugasan-auditor': typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
+  '/pengawasan/penugasan-evaluator': typeof AuthenticatedPengawasanPenugasanEvaluatorIndexRoute
   '/pengawasan/review-risiko': typeof AuthenticatedPengawasanReviewRisikoIndexRoute
   '/perencanaan/iku': typeof AuthenticatedPerencanaanIkuIndexRoute
   '/perencanaan/periode': typeof AuthenticatedPerencanaanPeriodeIndexRoute
@@ -552,6 +561,7 @@ export interface FileRoutesById {
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/content-management/banners/': typeof AuthenticatedContentManagementBannersIndexRoute
   '/_authenticated/pengawasan/penugasan-auditor/': typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
+  '/_authenticated/pengawasan/penugasan-evaluator/': typeof AuthenticatedPengawasanPenugasanEvaluatorIndexRoute
   '/_authenticated/pengawasan/review-risiko/': typeof AuthenticatedPengawasanReviewRisikoIndexRoute
   '/_authenticated/perencanaan/iku/': typeof AuthenticatedPerencanaanIkuIndexRoute
   '/_authenticated/perencanaan/periode/': typeof AuthenticatedPerencanaanPeriodeIndexRoute
@@ -612,6 +622,7 @@ export interface FileRouteTypes {
     | '/users/'
     | '/content-management/banners/'
     | '/pengawasan/penugasan-auditor/'
+    | '/pengawasan/penugasan-evaluator/'
     | '/pengawasan/review-risiko/'
     | '/perencanaan/iku/'
     | '/perencanaan/periode/'
@@ -669,6 +680,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/content-management/banners'
     | '/pengawasan/penugasan-auditor'
+    | '/pengawasan/penugasan-evaluator'
     | '/pengawasan/review-risiko'
     | '/perencanaan/iku'
     | '/perencanaan/periode'
@@ -730,6 +742,7 @@ export interface FileRouteTypes {
     | '/_authenticated/users/'
     | '/_authenticated/content-management/banners/'
     | '/_authenticated/pengawasan/penugasan-auditor/'
+    | '/_authenticated/pengawasan/penugasan-evaluator/'
     | '/_authenticated/pengawasan/review-risiko/'
     | '/_authenticated/perencanaan/iku/'
     | '/_authenticated/perencanaan/periode/'
@@ -1170,6 +1183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPengawasanReviewRisikoIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pengawasan/penugasan-evaluator/': {
+      id: '/_authenticated/pengawasan/penugasan-evaluator/'
+      path: '/pengawasan/penugasan-evaluator'
+      fullPath: '/pengawasan/penugasan-evaluator/'
+      preLoaderRoute: typeof AuthenticatedPengawasanPenugasanEvaluatorIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pengawasan/penugasan-auditor/': {
       id: '/_authenticated/pengawasan/penugasan-auditor/'
       path: '/pengawasan/penugasan-auditor'
@@ -1223,6 +1243,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedContentManagementBannersIndexRoute: typeof AuthenticatedContentManagementBannersIndexRoute
   AuthenticatedPengawasanPenugasanAuditorIndexRoute: typeof AuthenticatedPengawasanPenugasanAuditorIndexRoute
+  AuthenticatedPengawasanPenugasanEvaluatorIndexRoute: typeof AuthenticatedPengawasanPenugasanEvaluatorIndexRoute
   AuthenticatedPengawasanReviewRisikoIndexRoute: typeof AuthenticatedPengawasanReviewRisikoIndexRoute
   AuthenticatedPerencanaanIkuIndexRoute: typeof AuthenticatedPerencanaanIkuIndexRoute
   AuthenticatedPerencanaanPeriodeIndexRoute: typeof AuthenticatedPerencanaanPeriodeIndexRoute
@@ -1265,6 +1286,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedContentManagementBannersIndexRoute,
   AuthenticatedPengawasanPenugasanAuditorIndexRoute:
     AuthenticatedPengawasanPenugasanAuditorIndexRoute,
+  AuthenticatedPengawasanPenugasanEvaluatorIndexRoute:
+    AuthenticatedPengawasanPenugasanEvaluatorIndexRoute,
   AuthenticatedPengawasanReviewRisikoIndexRoute:
     AuthenticatedPengawasanReviewRisikoIndexRoute,
   AuthenticatedPerencanaanIkuIndexRoute: AuthenticatedPerencanaanIkuIndexRoute,

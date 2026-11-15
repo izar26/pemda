@@ -12,7 +12,9 @@ class UpdateAuditorAssignmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('penugasan_auditor.edit') ?? false;
+        $user = $this->user();
+
+        return ($user?->can('penugasan_evaluator.edit') || $user?->can('penugasan_auditor.edit')) ?? false;
     }
 
     /**

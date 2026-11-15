@@ -12,7 +12,9 @@ class StoreAuditorAssignmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('penugasan_auditor.create') ?? false;
+        $user = $this->user();
+
+        return ($user?->can('penugasan_evaluator.create') || $user?->can('penugasan_auditor.create')) ?? false;
     }
 
     /**

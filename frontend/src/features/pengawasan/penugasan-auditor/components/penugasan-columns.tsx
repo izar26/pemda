@@ -15,7 +15,7 @@ import { usePenugasan } from './penugasan-provider'
 function OpdBinaanCell({ row }: { row: { original: AuditorWithAssignments } }) {
   const { hasPermission } = usePermissions()
   const { setSelectedAssignment, setOpen } = usePenugasan()
-  const canDelete = hasPermission('penugasan_auditor.delete')
+  const canDelete = hasPermission('penugasan_evaluator.delete')
 
   const assignments = row.original.auditor_assignments || []
 
@@ -65,7 +65,7 @@ export const penugasanColumns: ColumnDef<AuditorWithAssignments>[] = [
   {
     accessorKey: 'name',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Auditor Pengawas' />
+      <DataTableColumnHeader column={column} title='Evaluator Pengawas' />
     ),
     meta: {
       className: 'min-w-[260px]',
@@ -121,7 +121,7 @@ export const penugasanColumns: ColumnDef<AuditorWithAssignments>[] = [
   },
   {
     id: 'jabatan',
-    accessorFn: (row) => row.jabatan || 'Auditor',
+    accessorFn: (row) => row.jabatan || 'Evaluator',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Peran & Jabatan' />
     ),
@@ -147,7 +147,7 @@ export const penugasanColumns: ColumnDef<AuditorWithAssignments>[] = [
             ))}
           </div>
           <span className='text-xs text-muted-foreground leading-snug'>
-            {auditor.jabatan || 'Auditor Pengawas'}
+            {auditor.jabatan || 'Evaluator Pengawas'}
           </span>
         </div>
       )

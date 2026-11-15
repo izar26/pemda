@@ -269,8 +269,20 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::post('/pengajuan/{id}/delegate-operator', [PengajuanRisikoController::class, 'delegateOperator']);
     });
 
-    // Modul Pengawasan & Pembinaan (Inspektorat / Penugasan Auditor & Review Risiko)
+    // Modul Pengawasan & Pembinaan (Inspektorat / Penugasan Evaluator & Review Risiko)
     Route::prefix('pengawasan')->group(function () {
+        // Penugasan Evaluator (Primary)
+        Route::get('/penugasan-evaluator/stats', [AuditorAssignmentController::class, 'stats']);
+        Route::get('/penugasan-evaluator/evaluators', [AuditorAssignmentController::class, 'auditors']);
+        Route::get('/penugasan-evaluator/auditors', [AuditorAssignmentController::class, 'auditors']);
+        Route::delete('/penugasan-evaluator/evaluator/{auditorId}', [AuditorAssignmentController::class, 'destroyAuditor']);
+        Route::delete('/penugasan-evaluator/auditor/{auditorId}', [AuditorAssignmentController::class, 'destroyAuditor']);
+        Route::get('/penugasan-evaluator', [AuditorAssignmentController::class, 'index']);
+        Route::post('/penugasan-evaluator', [AuditorAssignmentController::class, 'store']);
+        Route::put('/penugasan-evaluator/{auditorId}', [AuditorAssignmentController::class, 'update']);
+        Route::delete('/penugasan-evaluator/{id}', [AuditorAssignmentController::class, 'destroy']);
+
+        // Penugasan Auditor (Backward-compatible alias)
         Route::get('/penugasan-auditor/stats', [AuditorAssignmentController::class, 'stats']);
         Route::get('/penugasan-auditor/auditors', [AuditorAssignmentController::class, 'auditors']);
         Route::delete('/penugasan-auditor/auditor/{auditorId}', [AuditorAssignmentController::class, 'destroyAuditor']);

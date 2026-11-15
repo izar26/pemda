@@ -329,8 +329,8 @@ export function KonteksOperasionalPage() {
                 Belum Ada Penugasan OPD Binaan
               </p>
               <p className='leading-relaxed'>
-                Akun Auditor Anda belum memiliki penugasan Perangkat Daerah (OPD) aktif dari Inspektorat pada periode ini.
-                Silakan hubungi administrator Inspektorat untuk menambahkan penugasan pembinaan OPD Anda pada menu <strong>Pengawasan &rarr; Penugasan Auditor</strong>.
+                Akun Evaluator Anda belum memiliki penugasan Perangkat Daerah (OPD) aktif dari Inspektorat pada periode ini.
+                Silakan hubungi administrator Inspektorat untuk menambahkan penugasan pembinaan OPD Anda pada menu <strong>Pengawasan &rarr; Penugasan Evaluator</strong>.
               </p>
             </div>
           </div>

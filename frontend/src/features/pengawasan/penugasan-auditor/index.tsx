@@ -65,10 +65,10 @@ function PenugasanContent() {
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Penugasan Auditor
+              Penugasan Evaluator
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Penetapan dan pembagian instansi perangkat daerah binaan auditor Inspektorat untuk persetujuan (approval) lembar kerja risiko.
+              Penetapan dan pembagian instansi perangkat daerah binaan evaluator Inspektorat untuk persetujuan (approval) lembar kerja risiko.
             </p>
           </div>
 
@@ -95,7 +95,7 @@ function PenugasanContent() {
           <div className='flex flex-col items-center justify-center h-64 gap-2 rounded-lg border bg-card/50'>
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
             <p className='text-xs text-muted-foreground'>
-              Memuat data penugasan auditor...
+              Memuat data penugasan evaluator...
             </p>
           </div>
         ) : (
@@ -116,5 +116,7 @@ export function PenugasanAuditorManagement() {
     </PenugasanProvider>
   )
 }
+
+export const PenugasanEvaluatorManagement = PenugasanAuditorManagement
 
 export default PenugasanAuditorManagement

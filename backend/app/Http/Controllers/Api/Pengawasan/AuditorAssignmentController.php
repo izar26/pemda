@@ -18,19 +18,19 @@ class AuditorAssignmentController extends Controller
     ) {}
 
     /**
-     * Display a listing of auditor assignments (grouped by auditor or flat).
+     * Display a listing of evaluator assignments (grouped by evaluator or flat).
      */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_auditor.view')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk melihat data penugasan auditor.');
+        if (! $user?->can('penugasan_evaluator.view') && ! $user?->can('penugasan_auditor.view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat data penugasan evaluator.');
         }
 
         $perPage = (int) $request->input('per_page', 10);
         $filters = $request->only(['search', 'opd_id', 'auditor_id', 'periode_penilaian_id', 'is_active', 'has_assignment']);
 
-        // Check if flat assignments or grouped by auditor
+        // Check if flat assignments or grouped by evaluator
         if ($request->input('view') === 'flat') {
             $paginated = $this->assignmentService->getPaginatedAssignments($filters, $perPage, $user);
         } else {
@@ -49,12 +49,12 @@ class AuditorAssignmentController extends Controller
     }
 
     /**
-     * Get statistics on auditor coverage.
+     * Get statistics on evaluator coverage.
      */
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_auditor.view')) {
+        if (! $user?->can('penugasan_evaluator.view') && ! $user?->can('penugasan_auditor.view')) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik penugasan.');
         }
 
@@ -65,12 +65,12 @@ class AuditorAssignmentController extends Controller
     }
 
     /**
-     * Get list of eligible auditors for dropdown selection.
+     * Get list of eligible evaluators for dropdown selection.
      */
     public function auditors(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_auditor.view')) {
+        if (! $user?->can('penugasan_evaluator.view') && ! $user?->can('penugasan_auditor.view')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -80,7 +80,7 @@ class AuditorAssignmentController extends Controller
     }
 
     /**
-     * Store assignments for an auditor.
+     * Store assignments for an evaluator.
      */
     public function store(StoreAuditorAssignmentRequest $request): JsonResponse
     {
@@ -88,13 +88,13 @@ class AuditorAssignmentController extends Controller
         $assignments = $this->assignmentService->assignAuditor($request->validated(), $user);
 
         return response()->json([
-            'message' => 'Penugasan auditor berhasil disimpan.',
+            'message' => 'Penugasan evaluator berhasil disimpan.',
             'data' => $assignments,
         ], 201);
     }
 
     /**
-     * Sync/update all assignments for a specific auditor.
+     * Sync/update all assignments for a specific evaluator.
      */
     public function update(UpdateAuditorAssignmentRequest $request, string $auditorId): JsonResponse
     {
@@ -102,7 +102,7 @@ class AuditorAssignmentController extends Controller
         $synced = $this->assignmentService->syncAuditorAssignments($auditorId, $request->validated(), $user);
 
         return response()->json([
-            'message' => 'Penugasan auditor berhasil diperbarui.',
+            'message' => 'Penugasan evaluator berhasil diperbarui.',
             'data' => $synced,
         ]);
     }
@@ -113,31 +113,31 @@ class AuditorAssignmentController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_auditor.delete')) {
-            abort(403, 'Anda tidak memiliki hak akses untuk menghapus penugasan auditor.');
+        if (! $user?->can('penugasan_evaluator.delete') && ! $user?->can('penugasan_auditor.delete')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus penugasan evaluator.');
         }
 
         $this->assignmentService->deleteAssignment($id);
 
         return response()->json([
-            'message' => 'Penugasan auditor berhasil dicabut.',
+            'message' => 'Penugasan evaluator berhasil dicabut.',
         ]);
     }
 
     /**
-     * Delete all assignments for a specific auditor.
+     * Delete all assignments for a specific evaluator.
      */
     public function destroyAuditor(Request $request, string $auditorId): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_auditor.delete')) {
+        if (! $user?->can('penugasan_evaluator.delete') && ! $user?->can('penugasan_auditor.delete')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mencabut penugasan.');
         }
 
         $count = $this->assignmentService->deleteAuditorAssignments($auditorId);
 
         return response()->json([
-            'message' => "Seluruh penugasan ({$count} OPD) untuk auditor berhasil dicabut.",
+            'message' => "Seluruh penugasan ({$count} OPD) untuk evaluator berhasil dicabut.",
         ]);
     }
 }
