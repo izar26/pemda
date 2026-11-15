@@ -204,7 +204,7 @@ export function RoleFormDialog({
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='Contoh: Auditor Inspektorat, Bendahara Pengeluaran'
+                        placeholder='Contoh: Evaluator Inspektorat, Bendahara Pengeluaran'
                         disabled={isSubmitting || isSystem}
                         {...field}
                       />

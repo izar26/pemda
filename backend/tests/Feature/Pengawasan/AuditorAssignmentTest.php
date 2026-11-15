@@ -332,11 +332,25 @@ class AuditorAssignmentTest extends TestCase
 
     public function test_evaluator_endpoint_and_permission_work_properly(): void
     {
+        $evaluatorUser = User::factory()->create([
+            'name' => 'Fungsional Evaluator 1',
+            'email' => 'evaluator_test1@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $evaluatorUser->assignRole('Evaluator / Reviewer');
+
         $response = $this->actingAs($this->inspektoratUser, 'sanctum')
             ->getJson('/api/pengawasan/penugasan-evaluator');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['data', 'meta']);
+
+        $evaluatorsResponse = $this->actingAs($this->inspektoratUser, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/evaluators');
+
+        $evaluatorsResponse->assertStatus(200);
+        $names = collect($evaluatorsResponse->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Fungsional Evaluator 1'));
 
         $statsResponse = $this->actingAs($this->inspektoratUser, 'sanctum')
             ->getJson('/api/pengawasan/penugasan-evaluator/stats');

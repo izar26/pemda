@@ -378,14 +378,14 @@ export function ReviewRisikoManagement() {
         return (
           <Badge className='gap-1.5 border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-700 shadow-2xs dark:text-amber-400'>
             <Clock className='h-3 w-3 animate-pulse text-amber-600 dark:text-amber-400' />
-            Pemeriksaan Auditor
+            Pemeriksaan Evaluator
           </Badge>
         )
       case 'revision_by_auditor':
         return (
           <Badge className='gap-1.5 border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-800 shadow-2xs dark:text-amber-300'>
             <AlertCircle className='h-3 w-3 text-amber-600' />
-            Revisi dari Auditor
+            Revisi dari Evaluator
           </Badge>
         )
       case 'revision_to_operator':
@@ -467,7 +467,7 @@ export function ReviewRisikoManagement() {
                 </div>
                 <p className='text-xs text-muted-foreground'>
                   Telaah berjenjang internal pimpinan OPD, pemeriksaan kepatuhan
-                  auditor APIP, dan pengesahan final Pengawas Inspektorat.
+                  evaluator APIP, dan pengesahan final Pengawas Inspektorat.
                 </p>
               </div>
 
@@ -536,7 +536,7 @@ export function ReviewRisikoManagement() {
                       Tier 2: Kepala OPD ({tierCounts.kepala})
                     </SelectItem>
                     <SelectItem value='auditor' className='text-xs'>
-                      Tier 3: Auditor ({tierCounts.auditor})
+                      Tier 3: Evaluator ({tierCounts.auditor})
                     </SelectItem>
                     <SelectItem value='pengawas' className='text-xs'>
                       Tier 4: Pengawas ({tierCounts.pengawas})
@@ -610,7 +610,7 @@ export function ReviewRisikoManagement() {
                       Perangkat Daerah (OPD)
                     </TableHead>
                     <TableHead className='text-xs font-semibold'>
-                      Auditor Pengawas
+                      Evaluator Pengawas
                     </TableHead>
                     <TableHead className='text-xs font-semibold'>
                       Status Pengajuan
@@ -744,7 +744,7 @@ export function ReviewRisikoManagement() {
                                   variant='outline'
                                   className='border-destructive/30 bg-destructive/5 text-[10px] font-normal text-destructive'
                                 >
-                                  Belum Ada Auditor
+                                  Belum Ada Evaluator
                                 </Badge>
                               )}
                             </TableCell>
@@ -866,7 +866,7 @@ export function ReviewRisikoManagement() {
                                       className='text-xs'
                                     >
                                       OPD ini belum mengajukan formulir risiko
-                                      kepada auditor.
+                                      kepada evaluator.
                                     </TooltipContent>
                                   )}
                                 </Tooltip>

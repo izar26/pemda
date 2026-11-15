@@ -90,7 +90,7 @@ export function LaporanFeature() {
               Belum Ada Penugasan OPD Binaan
             </p>
             <p className='text-xs text-muted-foreground max-w-md mx-auto'>
-              Akun Auditor Anda belum memiliki penugasan Perangkat Daerah (OPD) aktif dari Inspektorat.
+              Akun Evaluator Anda belum memiliki penugasan Perangkat Daerah (OPD) aktif dari Inspektorat.
               Silakan hubungi administrator Inspektorat untuk menambahkan penugasan pembinaan OPD Anda.
             </p>
           </div>

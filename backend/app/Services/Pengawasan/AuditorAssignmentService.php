@@ -53,11 +53,14 @@ class AuditorAssignmentService
             },
         ]);
 
-        // Only display auditors who currently have OPD assignments
-        if ($currentUser && $currentUser->hasRole('Auditor') && ! $currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
-            $query->where('id', $currentUser->id)->has('auditorAssignments');
+        // If current user is an evaluator (and not an admin/koordinator), show only their own record
+        if ($currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat'])) {
+            $query->where('id', $currentUser->id);
         } else {
-            $query->has('auditorAssignments');
+            // Display all evaluators (active users with role 'Evaluator / Reviewer' or 'Auditor')
+            $query->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['Evaluator / Reviewer', 'Auditor']);
+            })->where('status', 'active');
         }
 
         if (! empty($filters['search'])) {
@@ -126,7 +129,7 @@ class AuditorAssignmentService
     public function getEligibleAuditors(): Collection
     {
         return User::whereHas('roles', function ($q) {
-            $q->whereIn('name', ['Auditor', 'Inspektorat']);
+            $q->whereIn('name', ['Evaluator / Reviewer', 'Auditor']);
         })
             ->where('status', 'active')
             ->with([
@@ -287,7 +290,7 @@ class AuditorAssignmentService
      */
     protected function applyFilters($query, array $filters, ?User $currentUser): void
     {
-        if ($currentUser && $currentUser->hasRole('Auditor') && ! $currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat'])) {
             $query->where('auditor_id', $currentUser->id);
         } elseif (! empty($filters['auditor_id'])) {
             $query->where('auditor_id', $filters['auditor_id']);

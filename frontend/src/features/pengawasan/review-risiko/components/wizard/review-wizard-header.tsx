@@ -298,7 +298,7 @@ export function ReviewWizardHeader({
                           )}
                         >
                           {isApproved
-                            ? 'Disetujui Auditor'
+                            ? 'Disetujui Evaluator'
                             : isRejected
                               ? 'Perlu Revisi OPD'
                               : isCurrent

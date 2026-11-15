@@ -94,7 +94,7 @@ export function ApprovalActionInbox() {
       case 'kepala_opd':
         return 'Persetujuan Kepala OPD'
       case 'auditor':
-        return 'Pemeriksaan Auditor'
+        return 'Pemeriksaan Evaluator'
       case 'pengawas':
         return 'Pengesahan Pengawas'
       case 'operator':
@@ -117,7 +117,7 @@ export function ApprovalActionInbox() {
         return (
           <Badge className='text-[11px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 gap-1.5 py-0.5 px-2 font-medium'>
             <AlertCircle className='h-3 w-3 text-amber-600' />
-            Revisi Auditor (Delegasikan)
+            Revisi Evaluator (Delegasikan)
           </Badge>
         )
       case 'submitted_to_auditor':
@@ -125,7 +125,7 @@ export function ApprovalActionInbox() {
         return (
           <Badge className='text-[11px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 gap-1.5 py-0.5 px-2 font-medium'>
             <Clock className='h-3 w-3 text-amber-600 animate-pulse' />
-            Pemeriksaan Auditor
+            Pemeriksaan Evaluator
           </Badge>
         )
       case 'revision_by_pengawas':

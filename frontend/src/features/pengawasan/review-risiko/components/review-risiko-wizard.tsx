@@ -180,7 +180,7 @@ export function ReviewRisikoWizard({
       toast.success(
         res.message ||
           (vars.status === 'approved'
-            ? 'Lembar kerja risiko berhasil disetujui dan diteruskan ke Auditor.'
+            ? 'Lembar kerja risiko berhasil disetujui dan diteruskan ke Evaluator.'
             : 'Pengajuan berhasil dikembalikan kepada Operator untuk perbaikan internal.')
       )
       setIsKepalaApproveOpen(false)
@@ -214,7 +214,7 @@ export function ReviewRisikoWizard({
     onSuccess: (res) => {
       toast.success(
         res.message ||
-          'Catatan revisi auditor berhasil didelegasikan kepada Operator.'
+          'Catatan revisi evaluator berhasil didelegasikan kepada Operator.'
       )
       setIsKepalaDelegateOpen(false)
       setKepalaDelegateNotes('')
@@ -472,8 +472,8 @@ export function ReviewRisikoWizard({
             <span>
               <strong>Persetujuan Pimpinan OPD:</strong>{' '}
               {submission?.status === 'revision_by_auditor'
-                ? 'Auditor APIP telah memberikan catatan revisi teknis. Anda dapat mendelegasikannya kepada Operator untuk diperbaiki atau langsung menyetujui ulang.'
-                : 'Operator OPD telah mengajukan draf lembar kerja risiko (Form 2B & 2C). Periksa keselarasan sasaran dan target sebelum diteruskan ke Auditor APIP.'}
+                ? 'Evaluator APIP telah memberikan catatan revisi teknis. Anda dapat mendelegasikannya kepada Operator untuk diperbaiki atau langsung menyetujui ulang.'
+                : 'Operator OPD telah mengajukan draf lembar kerja risiko (Form 2B & 2C). Periksa keselarasan sasaran dan target sebelum diteruskan ke Evaluator APIP.'}
             </span>
           </div>
           <div className='flex shrink-0 items-center gap-2'>
@@ -496,7 +496,7 @@ export function ReviewRisikoWizard({
                   onClick={() => setIsKepalaApproveOpen(true)}
                 >
                   <CheckCircle2 className='h-3.5 w-3.5' />
-                  <span>Setujui Ulang ke Auditor</span>
+                  <span>Setujui Ulang ke Evaluator</span>
                 </Button>
               </>
             ) : (
@@ -525,7 +525,7 @@ export function ReviewRisikoWizard({
                   onClick={() => setIsKepalaApproveOpen(true)}
                 >
                   <CheckCircle2 className='h-3.5 w-3.5' />
-                  <span>Setujui & Teruskan ke Auditor</span>
+                  <span>Setujui & Teruskan ke Evaluator</span>
                 </Button>
               </>
             )}
@@ -539,7 +539,7 @@ export function ReviewRisikoWizard({
           <span>
             Berkas saat ini sedang dalam proses{' '}
             <strong>Persetujuan Internal Kepala OPD</strong> sebelum dapat
-            diperiksa oleh Auditor Pengawas.
+            diperiksa oleh Evaluator Pengawas.
           </span>
         </div>
       )}
@@ -550,7 +550,7 @@ export function ReviewRisikoWizard({
           <div className='flex items-center gap-2 text-xs'>
             <AlertCircle className='h-4 w-4 shrink-0 text-amber-600' />
             <span>
-              <strong>Perhatian Auditor:</strong> Pengawas APIP mengembalikan
+              <strong>Perhatian Evaluator:</strong> Pengawas APIP mengembalikan
               berkas ini dengan catatan. Anda dapat meneruskannya ke Kepala OPD
               atau mengirimkan klarifikasi ulang ke Pengawas.
             </span>
@@ -707,7 +707,7 @@ export function ReviewRisikoWizard({
           </DialogHeader>
           <div className='space-y-2 py-2 text-xs'>
             <Label className='text-xs font-semibold'>
-              Catatan Pengantar Auditor (Opsional):
+              Catatan Pengantar Evaluator (Opsional):
             </Label>
             <Textarea
               rows={3}
@@ -879,7 +879,7 @@ export function ReviewRisikoWizard({
         open={isKepalaApproveOpen}
         onOpenChange={setIsKepalaApproveOpen}
         title='Setujui Lembar Kerja Risiko OPD'
-        desc='Apakah Anda yakin seluruh lembar kerja pengelolaan risiko (Form 2B dan Form 2C) telah selaras dengan arah kebijakan dinas dan siap diteruskan kepada Auditor APIP?'
+        desc='Apakah Anda yakin seluruh lembar kerja pengelolaan risiko (Form 2B dan Form 2C) telah selaras dengan arah kebijakan dinas dan siap diteruskan kepada Evaluator APIP?'
         confirmText={
           reviewKepalaMutation.isPending ? (
             <>
@@ -984,10 +984,10 @@ export function ReviewRisikoWizard({
           <DialogHeader>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold text-foreground sm:text-base'>
               <ArrowRightCircle className='h-4 w-4 text-amber-600' />
-              Delegasikan Revisi Auditor ke Operator
+              Delegasikan Revisi Evaluator ke Operator
             </DialogTitle>
             <DialogDescription className='text-xs'>
-              Teruskan temuan/catatan perbaikan dari Auditor APIP kepada
+              Teruskan temuan/catatan perbaikan dari Evaluator APIP kepada
               Operator OPD untuk diperbaiki secara teknis.
             </DialogDescription>
           </DialogHeader>
@@ -1002,7 +1002,7 @@ export function ReviewRisikoWizard({
             <Textarea
               id='kepala-delegate-notes'
               rows={3}
-              placeholder='Contoh: Tolong tim teknis operator segera sesuaikan parameter pengawasan sesuai catatan auditor di atas...'
+              placeholder='Contoh: Tolong tim teknis operator segera sesuaikan parameter pengawasan sesuai catatan evaluator di atas...'
               value={kepalaDelegateNotes}
               onChange={(e) => setKepalaDelegateNotes(e.target.value)}
               className='resize-none text-xs'

@@ -47,7 +47,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             }}
           >
             <Settings2 className='mr-2 h-4 w-4 text-muted-foreground' />
-            Kelola OPD Binaan
+            {hasAssignments ? 'Kelola OPD Binaan' : 'Tugaskan OPD Binaan'}
           </DropdownMenuItem>
         )}
 

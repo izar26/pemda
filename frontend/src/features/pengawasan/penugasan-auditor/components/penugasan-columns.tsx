@@ -19,6 +19,19 @@ function OpdBinaanCell({ row }: { row: { original: AuditorWithAssignments } }) {
 
   const assignments = row.original.auditor_assignments || []
 
+  if (assignments.length === 0) {
+    return (
+      <div className='flex items-center py-1 min-w-0'>
+        <Badge
+          variant='secondary'
+          className='text-[10px] font-medium px-2 py-0.5 bg-muted text-muted-foreground border-border'
+        >
+          Belum Ditugaskan (0 OPD)
+        </Badge>
+      </div>
+    )
+  }
+
   return (
     <div className='flex flex-col py-1 gap-1.5 min-w-0 max-w-lg'>
       <div className='flex items-center gap-1.5'>

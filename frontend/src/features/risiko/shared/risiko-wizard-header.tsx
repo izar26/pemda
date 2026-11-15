@@ -137,13 +137,13 @@ export function RisikoWizardHeader({
               readiness?.status === 'in_review') && (
               <Badge className='gap-1 border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400'>
                 <Clock className='h-3 w-3 animate-pulse text-amber-600' />
-                Review Auditor
+                Review Evaluator
               </Badge>
             )}
             {readiness?.status === 'revision_by_auditor' && (
               <Badge className='gap-1 border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300'>
                 <AlertCircle className='h-3 w-3 text-amber-600' />
-                Revisi dari Auditor
+                Revisi dari Evaluator
               </Badge>
             )}
             {readiness?.status === 'revision_to_operator' && (

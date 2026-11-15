@@ -88,7 +88,7 @@ export function ReviewWizardStepHeader({
               {isRejected && (
                 <Badge className='gap-1.5 border border-destructive/30 bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive'>
                   <XCircle className='h-3.5 w-3.5 text-destructive' />
-                  {isPengawasTier ? 'Ditolak ke Auditor' : 'Perlu Revisi OPD'}
+                  {isPengawasTier ? 'Ditolak ke Evaluator' : 'Perlu Revisi OPD'}
                 </Badge>
               )}
               {!isApproved && !isRejected && (
@@ -114,7 +114,7 @@ export function ReviewWizardStepHeader({
                     {isRejected
                       ? 'Ubah Catatan'
                       : isPengawasTier
-                        ? 'Kembalikan ke Auditor'
+                        ? 'Kembalikan ke Evaluator'
                         : 'Tolak ke Kepala OPD'}
                   </span>
                 </Button>
@@ -178,7 +178,7 @@ export function ReviewWizardStepHeader({
             <div className='flex items-center gap-2 font-bold'>
               <AlertCircle className='h-4 w-4 shrink-0' />
               <span>
-                Instruksi Catatan Revisi Auditor untuk Form {stepCode}:
+                Instruksi Catatan Revisi Evaluator untuk Form {stepCode}:
               </span>
             </div>
             {canDecide && (
@@ -205,7 +205,7 @@ export function ReviewWizardStepHeader({
             <CheckCircle2 className='h-4 w-4 shrink-0 text-emerald-600' />
             <span>
               Formulir {stepCode} telah diverifikasi dan disetujui resmi oleh
-              Auditor Pengawas.
+              Evaluator Pengawas.
             </span>
           </div>
           <span className='font-mono text-[10px] text-muted-foreground'>

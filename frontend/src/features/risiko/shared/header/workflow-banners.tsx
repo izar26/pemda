@@ -63,19 +63,19 @@ export function RisikoWorkflowBanners({
             ? 'Sebagai Auditor Pengawas, periksa lembar kerja risiko, lalu setujui ke Pengawas atau minta perbaikan ke OPD.'
             : 'Lembar kerja berstatus read-only bagi OPD selama proses pemeriksaan berlangsung.',
           langkahBerikutnya:
-            'Jika disetujui Auditor, berkas diajukan ke Pengawas APIP. Jika ada catatan, berkas dikembalikan ke Kepala OPD.',
+            'Jika disetujui Evaluator, berkas diajukan ke Pengawas APIP. Jika ada catatan, berkas dikembalikan ke Kepala OPD.',
         }
       case 'revision_by_auditor':
         return {
-          title: 'Catatan Perbaikan dari Auditor Pengawas',
-          badgeText: 'Revisi Auditor',
+          title: 'Catatan Perbaikan dari Evaluator Pengawas',
+          badgeText: 'Revisi Evaluator',
           borderCls: 'border-amber-500/30 bg-amber-500/5',
           headerIcon: AlertCircle,
           headerIconCls: 'text-amber-600',
           kondisi:
-            'Auditor Pengawas menemukan hal yang perlu disempurnakan dan mengembalikan berkas ke Kepala OPD beserta catatan.',
+            'Evaluator Pengawas menemukan hal yang perlu disempurnakan dan mengembalikan berkas ke Kepala OPD beserta catatan.',
           tindakan: readiness.can_delegate_operator
-            ? 'Kepala OPD dapat mempelajari catatan auditor lalu mendelegasikan tugas perbaikan teknis kepada Operator OPD.'
+            ? 'Kepala OPD dapat mempelajari catatan evaluator lalu mendelegasikan tugas perbaikan teknis kepada Operator OPD.'
             : 'Operator OPD menunggu disposisi / delegasi instruksi perbaikan dari Kepala OPD.',
           langkahBerikutnya:
             'Kepala OPD mendelegasikan revisi kepada Operator agar formulir dapat dibuka kembali untuk diedit.',
@@ -88,11 +88,11 @@ export function RisikoWorkflowBanners({
           headerIcon: AlertCircle,
           headerIconCls: 'text-destructive',
           kondisi:
-            'Kepala OPD telah menginstruksikan Operator untuk menindaklanjuti catatan perbaikan teknis dari Auditor Pengawas.',
+            'Kepala OPD telah menginstruksikan Operator untuk menindaklanjuti catatan perbaikan teknis dari Evaluator Pengawas.',
           tindakan:
             'Operator OPD dapat mengedit formulir yang ditandai dan memperbaiki data sesuai catatan perbaikan.',
           langkahBerikutnya:
-            'Setelah perbaikan disimpan, Operator mengajukan kembali ke Kepala OPD untuk diteruskan ke Auditor.',
+            'Setelah perbaikan disimpan, Operator mengajukan kembali ke Kepala OPD untuk diteruskan ke Evaluator.',
         }
       case 'submitted_to_pengawas':
       case 'in_review_pengawas':
@@ -103,29 +103,29 @@ export function RisikoWorkflowBanners({
           headerIcon: Clock,
           headerIconCls: 'text-purple-600 dark:text-purple-400',
           kondisi:
-            'Seluruh lembar kerja telah disetujui oleh Auditor Pengawas dan kini berada pada meja Pengawas Inspektorat untuk pengesahan akhir.',
+            'Seluruh lembar kerja telah disetujui oleh Evaluator Pengawas dan kini berada pada meja Pengawas Inspektorat untuk pengesahan akhir.',
           tindakan: readiness.can_review_pengawas
-            ? 'Sebagai Pengawas APIP, Anda dapat mengesahkan berkas secara final atau mengembalikan ke Auditor jika ada klarifikasi.'
-            : 'Lembar kerja berstatus read-only bagi OPD dan Auditor.',
+            ? 'Sebagai Pengawas APIP, Anda dapat mengesahkan berkas secara final atau mengembalikan ke Evaluator jika ada klarifikasi.'
+            : 'Lembar kerja berstatus read-only bagi OPD dan Evaluator.',
           langkahBerikutnya:
-            'Jika disahkan oleh Pengawas, dokumen menjadi resmi dan sah. Jika dikembalikan, Auditor akan menindaklanjuti klarifikasi.',
+            'Jika disahkan oleh Pengawas, dokumen menjadi resmi dan sah. Jika dikembalikan, Evaluator akan menindaklanjuti klarifikasi.',
         }
       case 'revision_by_pengawas':
         return {
-          title: 'Pengawas Mengembalikan Berkas ke Auditor',
+          title: 'Pengawas Mengembalikan Berkas ke Evaluator',
           badgeText: 'Klarifikasi APIP',
           borderCls: 'border-amber-500/30 bg-amber-500/5',
           headerIcon: AlertCircle,
           headerIconCls: 'text-amber-600',
           kondisi:
-            'Pengawas APIP meminta klarifikasi teknis kepada Auditor Pengawas sebelum pengesahan final diterbitkan.',
+            'Pengawas APIP meminta klarifikasi teknis kepada Evaluator Pengawas sebelum pengesahan final diterbitkan.',
           tindakan:
             readiness.can_forward_revision_auditor ||
             readiness.can_review_auditor
-              ? 'Auditor Pengawas dapat meninjau catatan pengawas, meneruskan perbaikan ke OPD, atau mengajukan kembali ke Pengawas.'
-              : 'Berkas sedang dalam penanganan klarifikasi teknis antara Pengawas dan Auditor.',
+              ? 'Evaluator Pengawas dapat meninjau catatan pengawas, meneruskan perbaikan ke OPD, atau mengajukan kembali ke Pengawas.'
+              : 'Berkas sedang dalam penanganan klarifikasi teknis antara Pengawas dan Evaluator.',
           langkahBerikutnya:
-            'Auditor menyelesaikan klarifikasi teknis atau meneruskan revisi ke OPD jika data awal memerlukan penyesuaian.',
+            'Evaluator menyelesaikan klarifikasi teknis atau meneruskan revisi ke OPD jika data awal memerlukan penyesuaian.',
         }
       case 'approved':
         return {
@@ -164,13 +164,13 @@ export function RisikoWorkflowBanners({
           <ShieldAlert className='mt-0.5 h-4.5 w-4.5 shrink-0' />
           <div className='space-y-0.5 text-xs'>
             <p className='font-bold text-foreground'>
-              Belum Ada Auditor Pengawas yang Ditugaskan
+              Belum Ada Evaluator Pengawas yang Ditugaskan
             </p>
             <p className='leading-relaxed text-muted-foreground'>
-              Perangkat Daerah (OPD) Anda belum memiliki Auditor Pengawas yang
+              Perangkat Daerah (OPD) Anda belum memiliki Evaluator Pengawas yang
               ditetapkan oleh Inspektorat. Pengisian lembar kerja berstatus{' '}
               <strong>read-only</strong> hingga Inspektorat menetapkan penugasan
-              auditor binaan.
+              evaluator binaan.
             </p>
           </div>
         </div>

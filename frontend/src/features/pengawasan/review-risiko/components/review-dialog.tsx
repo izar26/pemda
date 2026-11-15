@@ -219,7 +219,7 @@ export function ReviewDialog({
                   <span>•</span>
                   <span className='flex items-center gap-1'>
                     <User className='h-3 w-3' />
-                    Auditor: {submission?.auditor?.name || 'Belum ditugaskan'}
+                    Evaluator: {submission?.auditor?.name || 'Belum ditugaskan'}
                   </span>
                 </DialogDescription>
               </div>
@@ -285,7 +285,7 @@ export function ReviewDialog({
                     <Clock className='h-4 w-4 shrink-0' />
                     <span>
                       Perangkat daerah belum mengirimkan lembar kerja risiko
-                      kepada auditor (Status: <strong>Draft</strong>). Anda
+                      kepada evaluator (Status: <strong>Draft</strong>). Anda
                       dapat melihat pratinjau data, namun tombol persetujuan
                       baru akan aktif setelah OPD melakukan pengiriman resmi.
                     </span>
@@ -316,7 +316,7 @@ export function ReviewDialog({
                     <div className='space-y-1 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive'>
                       <p className='flex items-center gap-1.5 font-semibold'>
                         <AlertCircle className='h-3.5 w-3.5' /> Catatan Revisi
-                        Auditor:
+                        Evaluator:
                       </p>
                       <p className='pl-5 text-[11px]'>
                         {item2b.catatan_revisi}
@@ -442,7 +442,7 @@ export function ReviewDialog({
                     <div className='space-y-1 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive'>
                       <p className='flex items-center gap-1.5 font-semibold'>
                         <AlertCircle className='h-3.5 w-3.5' /> Catatan Revisi
-                        Auditor:
+                        Evaluator:
                       </p>
                       <p className='pl-5 text-[11px]'>
                         {item2c.catatan_revisi}
@@ -611,7 +611,7 @@ export function ReviewDialog({
 
             <div className='space-y-1.5'>
               <Label className='text-xs font-semibold'>
-                Catatan Revisi Auditor{' '}
+                Catatan Revisi Evaluator{' '}
                 <span className='text-destructive'>*</span>
               </Label>
               <Textarea

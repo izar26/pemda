@@ -60,7 +60,7 @@ export function ReviewRejectionDialog({
           <div className='space-y-1.5'>
             <div className='flex items-center justify-between'>
               <Label htmlFor='catatan-revisi' className='text-xs font-semibold'>
-                Catatan Revisi Auditor{' '}
+                Catatan Revisi Evaluator{' '}
                 <span className='text-destructive'>*</span>
               </Label>
               <span className='font-mono text-[10px] text-muted-foreground'>

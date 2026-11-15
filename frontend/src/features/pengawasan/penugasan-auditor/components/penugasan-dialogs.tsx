@@ -597,7 +597,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
           selectedAssignment ? (
             <span>
               Apakah Anda yakin ingin mencabut penugasan dari perangkat daerah{' '}
-              <strong>{selectedAssignment.opd?.nama}</strong>? Auditor ini tidak akan
+              <strong>{selectedAssignment.opd?.nama}</strong>? Evaluator ini tidak akan
               dapat melakukan approval formulir risiko untuk OPD tersebut lagi.
             </span>
           ) : (
@@ -614,7 +614,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
         }}
       />
 
-      {/* 3. Dialog Konfirmasi Cabut Semua Assignment Auditor */}
+      {/* 3. Dialog Konfirmasi Cabut Semua Assignment Evaluator */}
       <ConfirmDialog
         open={open === 'delete' && Boolean(currentRow)}
         onOpenChange={(isOpen) => {
