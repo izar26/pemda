@@ -1,8 +1,12 @@
 import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  AlertTriangle,
+  Building2,
+  FileCheck,
   Loader2,
   RefreshCw,
+  Users,
 } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { NavbarStatus } from '@/components/layout/navbar-status'
@@ -13,6 +17,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Button } from '@/components/ui/button'
+import { KpiStatsCards, type KpiStatItem } from '@/components/kpi-stat-cards'
 import { penugasanAuditorService } from '@/services/penugasan-auditor-service'
 import { PenugasanProvider } from './components/penugasan-provider'
 import { PenugasanPrimaryButtons } from './components/penugasan-primary-buttons'
@@ -35,12 +40,24 @@ function PenugasanContent() {
     staleTime: 60 * 1000,
   })
 
-  const isLoading = isLoadingList
+  // 2. Fetch Evaluator Assignment Stats
+  const {
+    data: statsData,
+    isLoading: isLoadingStats,
+    refetch: refetchStats,
+  } = useQuery({
+    queryKey: ['pengawasan', 'penugasan-stats'],
+    queryFn: () => penugasanAuditorService.getStats(),
+    staleTime: 60 * 1000,
+  })
+
+  const isLoading = isLoadingList || isLoadingStats
   const isRefetching = isRefetchingList
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
     refetchList()
+    refetchStats()
   }
 
   const auditorsList = useMemo(() => {
@@ -49,6 +66,39 @@ function PenugasanContent() {
     }
     return []
   }, [auditorResponse?.data])
+
+  const kpiItems: KpiStatItem[] = useMemo(() => {
+    return [
+      {
+        title: 'Total Evaluator Bertugas',
+        value: statsData?.total_auditor_bertugas ?? 0,
+        icon: Users,
+        color: 'bg-primary/10 text-primary',
+        subtitle: 'Evaluator dengan binaan aktif',
+      },
+      {
+        title: 'OPD Tercover',
+        value: statsData?.total_opd_tercover ?? 0,
+        icon: Building2,
+        color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        subtitle: `${statsData?.total_opd_aktif ?? 0} total perangkat daerah`,
+      },
+      {
+        title: 'OPD Belum Tercover',
+        value: statsData?.total_opd_belum_tercover ?? 0,
+        icon: AlertTriangle,
+        color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        subtitle: 'Belum ada evaluator pengawas',
+      },
+      {
+        title: 'Total Penugasan Aktif',
+        value: statsData?.total_penugasan_aktif ?? 0,
+        icon: FileCheck,
+        color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        subtitle: 'Penetapan surat tugas aktif',
+      },
+    ]
+  }, [statsData])
 
   return (
     <>
@@ -65,7 +115,7 @@ function PenugasanContent() {
         <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
           <div className='space-y-0.5 min-w-0 flex-1'>
             <h2 className='text-2xl font-bold tracking-tight text-foreground'>
-              Penugasan Evaluator
+              Penugasan Evaluator (Total: {auditorsList.length})
             </h2>
             <p className='text-xs text-muted-foreground'>
               Penetapan dan pembagian instansi perangkat daerah binaan evaluator Inspektorat untuk persetujuan (approval) lembar kerja risiko.
@@ -89,6 +139,13 @@ function PenugasanContent() {
             <PenugasanPrimaryButtons />
           </div>
         </PageHeader>
+
+        {/* KPI Metric Summary Cards */}
+        <KpiStatsCards
+          items={kpiItems}
+          isLoading={isLoadingStats}
+          count={4}
+        />
 
         {/* Standard TanStack Data Table */}
         {isLoadingList ? (

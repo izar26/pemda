@@ -177,6 +177,40 @@ export const penugasanColumns: ColumnDef<AuditorWithAssignments>[] = [
     cell: ({ row }) => <OpdBinaanCell row={row} />,
   },
   {
+    id: 'status_penugasan',
+    accessorFn: (row) =>
+      (row.auditor_assignments?.length || 0) > 0 ? 'assigned' : 'unassigned',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Status' />
+    ),
+    meta: {
+      className: 'w-36 min-w-[130px]',
+      tdClassName: 'whitespace-nowrap',
+    },
+    cell: ({ row }) => {
+      const isAssigned = (row.original.auditor_assignments?.length || 0) > 0
+      return isAssigned ? (
+        <Badge
+          variant='secondary'
+          className='text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+        >
+          Ditugaskan
+        </Badge>
+      ) : (
+        <Badge
+          variant='outline'
+          className='text-[11px] font-medium bg-muted text-muted-foreground border-border'
+        >
+          Belum Ditugaskan
+        </Badge>
+      )
+    },
+    filterFn: (row, id, value) => {
+      return Array.isArray(value) ? value.includes(row.getValue(id)) : row.getValue(id) === value
+    },
+    enableSorting: true,
+  },
+  {
     id: 'actions',
     header: () => <div className='text-right'>Aksi</div>,
     meta: {

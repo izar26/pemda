@@ -64,9 +64,19 @@ export function PenugasanTable({ data }: PenugasanTableProps) {
         table={table}
         searchKey='name'
         searchPlaceholder='Cari nama evaluator, NIP, atau OPD binaan...'
+        filters={[
+          {
+            columnId: 'status_penugasan',
+            title: 'Status',
+            options: [
+              { label: 'Ditugaskan', value: 'assigned' },
+              { label: 'Belum Ditugaskan', value: 'unassigned' },
+            ],
+          },
+        ]}
       />
 
-      <div className='rounded-md border bg-card'>
+      <div className='overflow-hidden rounded-md border bg-card shadow-2xs'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
