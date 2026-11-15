@@ -269,7 +269,7 @@ class RbacSeeder extends Seeder
         // Clean up obsolete/prototype permissions no longer in definition
         Permission::whereNotIn('name', array_keys($allPermissions))->delete();
 
-        // 2. Define Standard Roles based on Fitur dan Hak Akses Aplikasi.xlsx
+        // 2. Define Standard Roles based on current active RBAC configuration
         $rolesDefinition = [
             'Superadmin' => [
                 'description' => 'Administrator teknis dengan hak akses penuh ke seluruh fitur dan pengaturan sistem.',
@@ -286,33 +286,17 @@ class RbacSeeder extends Seeder
                     'master.view', 'master.create', 'master.edit', 'master.delete',
                     'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
                     'periode.view', 'periode.create', 'periode.edit', 'periode.delete',
-                    'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
-                    'konteks_risiko.view', 'konteks_risiko.create', 'konteks_risiko.edit', 'konteks_risiko.delete', 'konteks_risiko.export',
-                    'konteks_operasional.view', 'konteks_operasional.create', 'konteks_operasional.edit', 'konteks_operasional.delete', 'konteks_operasional.export',
-                    'identifikasi_risiko_pemda.view', 'identifikasi_risiko_pemda.create', 'identifikasi_risiko_pemda.edit', 'identifikasi_risiko_pemda.delete', 'identifikasi_risiko_pemda.export',
-                    'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.create', 'identifikasi_risiko_opd.edit', 'identifikasi_risiko_opd.delete', 'identifikasi_risiko_opd.export',
-                    'rca.view', 'rca.edit', 'rca.export',
-                    'penugasan_evaluator.view', 'penugasan_evaluator.create', 'penugasan_evaluator.edit', 'penugasan_evaluator.delete',
-                    'penilaian_risiko.submit', 'review_risiko.view',
-                    'laporan.view', 'laporan.export',
-                    'audit.view', 'audit.export',
-                    'content.view', 'content.create', 'content.edit', 'content.delete',
                     'settings.view', 'settings.edit',
+                    'content.view', 'content.create', 'content.edit', 'content.delete',
+                    'audit.view', 'audit.export',
                 ],
             ],
             'Bapperida' => [
                 'description' => 'Badan Perencanaan yang mengelola Periode Penilaian (Fitur 13) dan Cascading Makro Kinerja (Fitur 14-17).',
                 'is_system' => false,
                 'permissions' => [
-                    'periode.view', 'periode.create', 'periode.edit', 'periode.delete',
                     'tujuan.view', 'tujuan.create', 'tujuan.edit', 'tujuan.delete', 'tujuan.copy',
-                    'konteks_risiko.view', 'konteks_risiko.export',
-                    'konteks_operasional.view', 'konteks_operasional.export',
-                    'identifikasi_risiko_pemda.view', 'identifikasi_risiko_pemda.export',
-                    'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.export',
-                    'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.export',
-                    'rca.view', 'rca.export',
-                    'laporan.view', 'laporan.export',
+                    'audit.view', 'audit.export',
                 ],
             ],
             'Operator OPD' => [
@@ -327,20 +311,13 @@ class RbacSeeder extends Seeder
                     'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.create', 'identifikasi_risiko_opd_operasional.edit', 'identifikasi_risiko_opd_operasional.delete', 'identifikasi_risiko_opd_operasional.export',
                     'rca.view', 'rca.edit', 'rca.export',
                     'penilaian_risiko.submit',
-                    'laporan.view', 'laporan.export',
+                    'audit.view', 'audit.export',
                 ],
             ],
             'Koordinator Pengawas' => [
                 'description' => 'APIP / Pengawas Daerah yang memantau evaluasi SPIP, survei, wilayah, dan rekap risiko.',
                 'is_system' => false,
                 'permissions' => [
-                    'tujuan.view',
-                    'konteks_risiko.view', 'konteks_risiko.export',
-                    'konteks_operasional.view', 'konteks_operasional.export',
-                    'identifikasi_risiko_pemda.view', 'identifikasi_risiko_pemda.export',
-                    'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.export',
-                    'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.export',
-                    'rca.view', 'rca.export',
                     'penugasan_evaluator.view', 'penugasan_evaluator.create', 'penugasan_evaluator.edit', 'penugasan_evaluator.delete',
                     'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_pengawas',
                     'laporan.view', 'laporan.export',
@@ -351,31 +328,19 @@ class RbacSeeder extends Seeder
                 'description' => 'Fungsional pengawas yang melaksanakan audit, riviu, dan tindak lanjut rekomendasi perbaikan.',
                 'is_system' => false,
                 'permissions' => [
-                    'tujuan.view',
-                    'konteks_risiko.view', 'konteks_risiko.export',
-                    'konteks_operasional.view', 'konteks_operasional.export',
-                    'identifikasi_risiko_pemda.view', 'identifikasi_risiko_pemda.export',
-                    'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.export',
-                    'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.export',
-                    'rca.view', 'rca.export',
-                    'penugasan_evaluator.view',
-                    'review_risiko.view', 'review_risiko.approve',
-                    'laporan.view', 'laporan.export',
-                    'audit.view',
+                    'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_kepala', 'review_risiko.review_pengawas',
+                    'penilaian_risiko.submit',
+                    'audit.view', 'audit.export',
                 ],
             ],
             'Executive' => [
                 'description' => 'Pimpinan Daerah (Bupati / Sekda / Kepala OPD) untuk memantau dashboard eksekutif dan lembar risiko.',
                 'is_system' => false,
                 'permissions' => [
-                    'konteks_risiko.view', 'konteks_risiko.export',
-                    'konteks_operasional.view', 'konteks_operasional.export',
-                    'identifikasi_risiko_pemda.view', 'identifikasi_risiko_pemda.export',
-                    'identifikasi_risiko_opd.view', 'identifikasi_risiko_opd.export',
-                    'identifikasi_risiko_opd_operasional.view', 'identifikasi_risiko_opd_operasional.export',
-                    'rca.view', 'rca.export',
-                    'review_risiko.view', 'review_risiko.review_kepala',
+                    'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_kepala', 'review_risiko.review_pengawas',
+                    'penilaian_risiko.submit',
                     'laporan.view', 'laporan.export',
+                    'audit.view', 'audit.export',
                 ],
             ],
         ];
@@ -389,12 +354,8 @@ class RbacSeeder extends Seeder
                 ]
             );
 
-            // Sync permissions for freshly created roles; safely grant for existing roles to avoid wiping custom admin edits in live environments
-            if ($role->wasRecentlyCreated) {
-                $role->syncPermissions($info['permissions'] ?? []);
-            } else {
-                $role->givePermissionTo($info['permissions'] ?? []);
-            }
+            // Sync permissions to ensure role permissions match the exact definition
+            $role->syncPermissions($info['permissions'] ?? []);
         }
 
         // 3. Assign Superadmin to Default Superadmin User if already created
