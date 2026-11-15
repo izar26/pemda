@@ -43,10 +43,10 @@ export function ProfileDropdown() {
           <DropdownMenuLabel className='font-normal'>
             <div className='flex flex-col gap-1.5'>
               <p className='text-sm leading-none font-medium'>
-                {user?.name || 'Administrator'}
+                {user?.name || 'Superadmin'}
               </p>
               <p className='text-xs leading-none text-muted-foreground'>
-                {user?.email || 'admin@pemda.go.id'}
+                {user?.email || 'superadmin@pemda.go.id'}
               </p>
               {user?.nip && (
                 <p className='text-[10px] leading-none text-muted-foreground'>

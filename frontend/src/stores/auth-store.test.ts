@@ -10,8 +10,8 @@ async function importAuthStore() {
 
 const sampleUser: AuthUser = {
   id: 1,
-  name: 'Administrator',
-  email: 'admin@pemda.go.id',
+  name: 'Superadmin',
+  email: 'superadmin@pemda.go.id',
   nip: '198501012010011001',
   phone: '081234567890',
   role: 'superadmin',

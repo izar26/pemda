@@ -117,6 +117,7 @@ class AuditLogService
         $systemUsers = User::whereHas('roles', function ($q) use ($systemRoleIds) {
             $q->whereIn('id', $systemRoleIds);
         })->orWhereIn('role', ['Superadmin', 'Administrator'])
+            ->orWhere('email', 'superadmin@pemda.go.id')
             ->orWhere('email', 'administrator@pemda.go.id')
             ->get(['id', 'email', 'name']);
 

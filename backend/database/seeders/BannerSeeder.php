@@ -15,8 +15,8 @@ class BannerSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::where('email', 'admin@pemda.go.id')->first();
-        $adminId = $admin?->id;
+        $superadmin = User::where('email', 'superadmin@pemda.go.id')->first();
+        $adminId = $superadmin?->id;
 
         $banners = [
             [

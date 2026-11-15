@@ -37,8 +37,8 @@ export function AppSidebar() {
   })
 
   const currentUser = {
-    name: authUser?.name || 'Administrator',
-    email: authUser?.email || 'admin@pemda.go.id',
+    name: authUser?.name || 'Superadmin',
+    email: authUser?.email || 'superadmin@pemda.go.id',
     avatar: '',
   }
 

@@ -397,9 +397,8 @@ class RbacSeeder extends Seeder
             }
         }
 
-        // 3. Assign Superadmin to Default Administrator User
-        $superadmin = User::where('email', 'administrator@pemda.go.id')->first()
-            ?? User::where('email', 'admin@pemda.go.id')->first();
+        // 3. Assign Superadmin to Default Superadmin User if already created
+        $superadmin = User::where('email', 'superadmin@pemda.go.id')->first();
         if ($superadmin) {
             $superadmin->syncRoles(['Superadmin']);
         }
