@@ -13,13 +13,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Contracts\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, HasApiTokens, HasFactory, HasRoles, HasUuid7, Notifiable;
+    use Auditable, HasApiTokens, HasFactory, HasUuid7, Notifiable;
+
+    use HasRoles {
+        assignRole as spatieAssignRole;
+        syncRoles as spatieSyncRoles;
+    }
 
     /**
      * Attributes excluded from model update audit logging to reduce noise.
@@ -156,13 +163,211 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether this user is an Auditor whose data access must be limited to the
-     * OPDs they are assigned to (Superadmin / Admin Office / Inspektorat see all).
+     * Map legacy role names to modern aliases and vice-versa for resilience.
+     */
+    protected const ROLE_ALIASES = [
+        'opd' => ['Operator OPD', 'OPD'],
+        'operator opd' => ['Operator OPD', 'OPD'],
+        'auditor' => ['Evaluator / Reviewer', 'Auditor'],
+        'evaluator / reviewer' => ['Evaluator / Reviewer', 'Auditor'],
+        'evaluator/reviewer' => ['Evaluator / Reviewer', 'Auditor'],
+        'evaluator' => ['Evaluator / Reviewer', 'Auditor'],
+        'inspektorat' => ['Koordinator Pengawas', 'Inspektorat'],
+        'koordinator pengawas' => ['Koordinator Pengawas', 'Inspektorat'],
+        'admin office' => ['Administrator', 'Admin Office'],
+        'administrator' => ['Administrator', 'Admin Office'],
+        'admin' => ['Administrator', 'Admin Office'],
+        'executive' => ['Executive', 'Kepala OPD'],
+        'kepala opd' => ['Executive', 'Kepala OPD'],
+    ];
+
+    /**
+     * Normalize role name or list of roles expanding aliases.
+     *
+     * @return array<int, string>
+     */
+    public function expandRoleAliases(mixed $roles): array
+    {
+        if ($roles instanceof Collection) {
+            $roles = $roles->all();
+        }
+
+        $items = is_array($roles) ? $roles : [$roles];
+
+        $flattened = [];
+        array_walk_recursive($items, function ($item) use (&$flattened) {
+            if ($item instanceof Collection) {
+                foreach ($item as $subItem) {
+                    $flattened[] = $subItem;
+                }
+            } else {
+                $flattened[] = $item;
+            }
+        });
+
+        $expanded = [];
+        foreach ($flattened as $role) {
+            if ($role instanceof Role || $role instanceof \App\Models\Role) {
+                $role = $role->name;
+            }
+            if (! is_string($role)) {
+                continue;
+            }
+
+            $lower = strtolower(trim($role));
+            if (isset(self::ROLE_ALIASES[$lower])) {
+                foreach (self::ROLE_ALIASES[$lower] as $alias) {
+                    $expanded[] = $alias;
+                }
+            } else {
+                $expanded[] = $role;
+            }
+        }
+
+        return array_values(array_unique($expanded));
+    }
+
+    /**
+     * Check if the user has any of the given role(s), automatically resolving aliases.
+     */
+    public function hasRole($roles, ?string $guard = null): bool
+    {
+        $expanded = $this->expandRoleAliases($roles);
+
+        $this->loadMissing('roles');
+
+        $userRoles = $guard
+            ? $this->roles->where('guard_name', $guard)->pluck('name')
+            : $this->roles->pluck('name');
+
+        foreach ($expanded as $role) {
+            if ($userRoles->contains($role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the user has any of the given roles, automatically resolving aliases.
+     */
+    public function hasAnyRole(...$roles): bool
+    {
+        return $this->hasRole($roles);
+    }
+
+    /**
+     * Resolve role aliases to database role records or names.
+     *
+     * @param  array<int, mixed>  $roles
+     * @return array<int, mixed>
+     */
+    protected function resolveRoleAssignments(array $roles): array
+    {
+        $flattened = [];
+        array_walk_recursive($roles, function ($item) use (&$flattened) {
+            $flattened[] = $item;
+        });
+
+        $guard = $this->guard_name ?? 'web';
+        $mapped = [];
+
+        foreach ($flattened as $role) {
+            if ($role instanceof Role || $role instanceof \App\Models\Role || ! is_string($role)) {
+                $mapped[] = $role;
+
+                continue;
+            }
+
+            if (\App\Models\Role::where('name', $role)->where('guard_name', $guard)->exists()) {
+                $mapped[] = $role;
+            } else {
+                $expanded = $this->expandRoleAliases($role);
+                $existing = \App\Models\Role::whereIn('name', $expanded)->where('guard_name', $guard)->first();
+                $mapped[] = $existing ? $existing->name : $role;
+            }
+        }
+
+        return $mapped;
+    }
+
+    public function assignRole(...$roles): static
+    {
+        $mapped = $this->resolveRoleAssignments($roles);
+
+        return $this->spatieAssignRole($mapped);
+    }
+
+    public function syncRoles(...$roles): static
+    {
+        $mapped = $this->resolveRoleAssignments($roles);
+
+        return $this->spatieSyncRoles($mapped);
+    }
+
+    /**
+     * Whether this user is an admin that has full cross-OPD system access.
+     */
+    public function isRegionalAdmin(): bool
+    {
+        if ($this->hasRole(['Superadmin', 'Administrator'])) {
+            return true;
+        }
+
+        return $this->can('settings.edit') || $this->can('roles.edit');
+    }
+
+    /**
+     * Whether this user is an Auditor / Evaluator whose data access must be limited to the
+     * OPDs they are assigned to (Superadmin / Administrator / Inspektorat see all).
      */
     public function isScopedAuditor(): bool
     {
-        return $this->hasRole('Auditor')
-            && ! $this->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
+        $isEvaluator = $this->hasRole(['Evaluator / Reviewer', 'Auditor']) || $this->can('review_risiko.approve');
+        $isUnrestricted = $this->isRegionalAdmin()
+            || $this->hasRole(['Koordinator Pengawas', 'Inspektorat'])
+            || $this->can('review_risiko.review_pengawas');
+
+        return $isEvaluator && ! $isUnrestricted;
+    }
+
+    /**
+     * Whether this user is a Regional Executive Leader (Bupati, Wakil Bupati, Sekda) who
+     * has cross-regional scope and does not belong to a single OPD.
+     */
+    public function isRegionalLeader(): bool
+    {
+        $leadershipTitles = ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'];
+        if (in_array($this->jabatan, $leadershipTitles, true)) {
+            return true;
+        }
+
+        return empty($this->opd_id) && $this->hasRole('Executive');
+    }
+
+    /**
+     * Whether this user's access should be strictly isolated to their own OPD.
+     */
+    public function isRestrictedToOpd(): bool
+    {
+        if ($this->isRegionalAdmin() || $this->isScopedAuditor() || $this->isRegionalLeader()) {
+            return false;
+        }
+
+        if ($this->hasRole(['Koordinator Pengawas', 'Inspektorat', 'Bapperida']) || $this->can('review_risiko.review_pengawas')) {
+            return false;
+        }
+
+        if ($this->hasRole(['Operator OPD', 'OPD'])) {
+            return true;
+        }
+
+        if ($this->hasRole('Executive') && ! empty($this->opd_id)) {
+            return true;
+        }
+
+        return ! empty($this->opd_id);
     }
 
     /**

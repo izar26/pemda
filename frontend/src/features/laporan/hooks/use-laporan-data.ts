@@ -19,15 +19,15 @@ export function useLaporanData() {
   }, [user])
 
   const isOpdRole = Boolean(
-    userRoles.includes('OPD') &&
+    (userRoles.includes('Operator OPD') || userRoles.includes('OPD')) &&
       !userRoles.some((r) =>
-        ['Superadmin', 'Admin Office', 'Bapperida', 'Inspektorat', 'Auditor'].includes(r)
+        ['Superadmin', 'Administrator', 'Admin Office', 'Bapperida', 'Koordinator Pengawas', 'Inspektorat', 'Evaluator / Reviewer', 'Auditor'].includes(r)
       )
   )
 
   const isScopedAuditor = Boolean(
-    userRoles.includes('Auditor') &&
-      !userRoles.some((r) => ['Superadmin', 'Admin Office', 'Inspektorat'].includes(r))
+    (userRoles.includes('Evaluator / Reviewer') || userRoles.includes('Auditor')) &&
+      !userRoles.some((r) => ['Superadmin', 'Administrator', 'Admin Office', 'Koordinator Pengawas', 'Inspektorat'].includes(r))
   )
 
   const [selectedFormId, setSelectedFormId] = useState<string>('2b')

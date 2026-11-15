@@ -225,15 +225,16 @@ export function useRisikoWizardProgress(enabled = true) {
       : []
 
   const isOpdRole = Boolean(
-    userRoles.includes('OPD') &&
+    (userRoles.includes('Operator OPD') || userRoles.includes('OPD')) &&
     !userRoles.includes('Superadmin') &&
+    !userRoles.includes('Administrator') &&
     !userRoles.includes('Admin Office')
   )
 
   const isScopedAuditor = Boolean(
-    userRoles.includes('Auditor') &&
+    (userRoles.includes('Evaluator / Reviewer') || userRoles.includes('Auditor')) &&
     !userRoles.some((r) =>
-      ['Superadmin', 'Admin Office', 'Inspektorat'].includes(r)
+      ['Superadmin', 'Administrator', 'Admin Office', 'Koordinator Pengawas', 'Inspektorat'].includes(r)
     )
   )
 

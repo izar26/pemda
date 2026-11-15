@@ -31,6 +31,7 @@ class UserResource extends JsonResource
             'pangkat_gol' => $this->pangkat_gol,
             'jabatan' => $this->jabatan,
             'role' => $this->roles->first()?->name ?? $this->role,
+            'is_pimpinan_daerah' => $this->isRegionalLeader(),
 
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getAllPermissions()->pluck('name'),

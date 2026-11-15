@@ -2,6 +2,8 @@ import { type ColumnDef } from '@tanstack/react-table'
 import {
   Award,
   Building2,
+  Crown,
+  Landmark,
   ShieldAlert,
   ShieldCheck,
   User as UserIcon,
@@ -66,11 +68,47 @@ export const usersColumns: ColumnDef<User>[] = [
     },
     cell: ({ row }) => {
       const user = row.original
+      const isLeader =
+        Boolean(user.is_pimpinan_daerah) ||
+        (!user.opd_id &&
+          (user.role === 'Executive' ||
+            ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+              user.jabatan || ''
+            )))
+      const isBupati =
+        user.jabatan === 'Bupati' || user.jabatan === 'Wakil Bupati'
+      const isSekda =
+        user.jabatan === 'Sekda' || user.jabatan === 'Sekretaris Daerah'
       const isKepala = user.jabatan === 'Kepala OPD'
+
       return (
         <div className='flex flex-col py-1 text-xs gap-1 min-w-0'>
           <div className='flex items-center gap-1'>
-            {isKepala ? (
+            {isBupati ? (
+              <Badge
+                variant='outline'
+                className='w-fit text-[11px] font-semibold px-2 py-0 border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300 gap-1'
+              >
+                <Crown className='h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400' />
+                {user.jabatan}
+              </Badge>
+            ) : isSekda ? (
+              <Badge
+                variant='outline'
+                className='w-fit text-[11px] font-semibold px-2 py-0 border-blue-500/40 bg-blue-500/15 text-blue-700 dark:text-blue-300 gap-1'
+              >
+                <Award className='h-3 w-3 shrink-0 text-blue-600 dark:text-blue-400' />
+                {user.jabatan}
+              </Badge>
+            ) : isLeader ? (
+              <Badge
+                variant='outline'
+                className='w-fit text-[11px] font-semibold px-2 py-0 border-primary/40 bg-primary/10 text-primary gap-1'
+              >
+                <Crown className='h-3 w-3 shrink-0' />
+                {user.jabatan || 'Pimpinan Daerah'}
+              </Badge>
+            ) : isKepala ? (
               <Badge
                 variant='outline'
                 className='w-fit text-[11px] font-semibold px-2 py-0 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1'
@@ -83,7 +121,7 @@ export const usersColumns: ColumnDef<User>[] = [
                 variant='outline'
                 className='w-fit text-[11px] font-medium px-2 py-0 border-border bg-muted/40 text-foreground'
               >
-                Pegawai
+                {user.jabatan || 'Pegawai'}
               </Badge>
             )}
           </div>
@@ -101,7 +139,19 @@ export const usersColumns: ColumnDef<User>[] = [
   },
   {
     id: 'opd',
-    accessorFn: (row) => row.opd?.nama || 'Belum Ditugaskan',
+    accessorFn: (row) => {
+      const isLeader =
+        Boolean(row.is_pimpinan_daerah) ||
+        (!row.opd_id &&
+          (row.role === 'Executive' ||
+            ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+              row.jabatan || ''
+            )))
+      if (isLeader) {
+        return 'Pemerintah Daerah'
+      }
+      return row.opd?.nama || 'Belum Ditugaskan'
+    },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Instansi / OPD' />
     ),
@@ -110,7 +160,32 @@ export const usersColumns: ColumnDef<User>[] = [
       tdClassName: 'whitespace-normal',
     },
     cell: ({ row }) => {
-      const opd = row.original.opd
+      const user = row.original
+      const opd = user.opd
+      const isLeader =
+        Boolean(user.is_pimpinan_daerah) ||
+        (!user.opd_id &&
+          (user.role === 'Executive' ||
+            ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+              user.jabatan || ''
+            )))
+
+      if (isLeader) {
+        return (
+          <div className='flex flex-col py-1 text-xs gap-0.5 min-w-0'>
+            <div className='flex items-center gap-1.5'>
+              <Landmark className='h-3.5 w-3.5 text-primary shrink-0' />
+              <span className='font-semibold text-foreground leading-snug whitespace-normal break-words'>
+                Pemerintah Daerah
+              </span>
+            </div>
+            <span className='text-[10px] text-amber-700 dark:text-amber-400 font-medium pl-5'>
+              Pimpinan Daerah (Non-OPD)
+            </span>
+          </div>
+        )
+      }
+
       return (
         <div className='flex flex-col py-1 text-xs gap-1 min-w-0'>
           <div className='flex items-start gap-1.5'>

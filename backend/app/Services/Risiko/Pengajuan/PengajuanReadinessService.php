@@ -36,9 +36,12 @@ class PengajuanReadinessService
 
         $hasAuditor = $assignment !== null;
 
-        // 2. Find Kepala OPD (User with role Executive and opd_id matching)
+        // 2. Find Kepala OPD (User with role Executive / permission review_risiko.review_kepala and opd_id matching)
         $kepalaOpdUser = User::where('opd_id', $opdId)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'Executive'))
+            ->where(function ($q) {
+                $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['Executive', 'Kepala OPD']))
+                    ->orWhereHas('permissions', fn ($p) => $p->where('name', 'review_risiko.review_kepala'));
+            })
             ->select(['id', 'name', 'nip', 'jabatan', 'email'])
             ->first();
 
@@ -100,8 +103,8 @@ class PengajuanReadinessService
 
         // Kepala OPD action capabilities
         $isKepalaOpdOfThisOpd = $currentUser && (
-            $currentUser->hasRole(['Superadmin', 'Admin Office'])
-            || ($currentUser->hasRole('Executive') && (string) $currentUser->opd_id === (string) $opdId)
+            $currentUser->isRegionalAdmin()
+            || (($currentUser->can('review_risiko.review_kepala') || $currentUser->hasRole('Executive')) && (string) $currentUser->opd_id === (string) $opdId)
         );
 
         $canReviewKepala = $currentTier === PengajuanPenilaianRisiko::TIER_KEPALA_OPD
@@ -114,8 +117,10 @@ class PengajuanReadinessService
 
         // Auditor action capabilities
         $isAssignedAuditor = $currentUser && (
-            $currentUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])
-            || ($currentUser->hasRole('Auditor') && ($currentUser->id === $submission->auditor_id || $currentUser->canReadOpdData($opdId)))
+            $currentUser->isRegionalAdmin()
+            || $currentUser->hasRole('Koordinator Pengawas')
+            || $currentUser->can('review_risiko.review_pengawas')
+            || (($currentUser->can('review_risiko.approve') || $currentUser->hasRole('Auditor')) && ($currentUser->id === $submission->auditor_id || $currentUser->canReadOpdData($opdId)))
         );
 
         $canReviewAuditor = $currentTier === PengajuanPenilaianRisiko::TIER_AUDITOR
@@ -136,7 +141,11 @@ class PengajuanReadinessService
             && ($currentUser ? $isAssignedAuditor : true);
 
         // Pengawas action capabilities
-        $isPengawas = $currentUser && $currentUser->hasRole(['Inspektorat', 'Superadmin', 'Admin Office']);
+        $isPengawas = $currentUser && (
+            $currentUser->isRegionalAdmin()
+            || $currentUser->can('review_risiko.review_pengawas')
+            || $currentUser->hasRole('Koordinator Pengawas')
+        );
 
         $canReviewPengawas = $currentTier === PengajuanPenilaianRisiko::TIER_PENGAWAS
             && in_array($status, [
@@ -208,7 +217,7 @@ class PengajuanReadinessService
     public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
     {
         // 0. Tenant isolation: OPD user can never edit another OPD's data
-        if ($user && ($user->hasRole('OPD') || $user->hasRole('Executive')) && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->isRestrictedToOpd()) {
             if (! $user->opd_id || (string) $user->opd_id !== (string) $opdId) {
                 abort(403, 'Anda tidak memiliki hak akses untuk mengelola data risiko perangkat daerah lain.');
             }

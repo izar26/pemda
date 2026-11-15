@@ -112,15 +112,11 @@ class PengajuanQueryService
 
         $query = Opd::query()->where('is_active', true);
 
-        // Scope to auditor's assigned OPDs if role is Auditor (and not Superadmin / Inspektorat)
-        $isSpecialAdmin = $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
-        if (! $isSpecialAdmin && $user->hasRole('Auditor')) {
+        // Scope to auditor's assigned OPDs if role is Scoped Auditor
+        if ($user->isScopedAuditor()) {
             $assignedOpdIds = $user->activeAssignedOpdIds();
             $query->whereIn('id', $assignedOpdIds);
-        }
-
-        // Scope to Executive's own OPD if Executive
-        if ($user->hasRole('Executive') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']) && $user->opd_id) {
+        } elseif ($user->isRestrictedToOpd() && $user->opd_id) {
             $query->where('id', $user->opd_id);
         }
 
@@ -235,7 +231,7 @@ class PengajuanQueryService
 
         // Auto-transition to in_review status if appropriate
         if ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR
-            && $user->hasRole(['Auditor', 'Inspektorat', 'Superadmin'])) {
+            && ($user->isRegionalAdmin() || $user->can('review_risiko.approve') || $user->hasRole('Auditor') || $user->hasRole('Koordinator Pengawas'))) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR]);
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $submission->id,
@@ -245,7 +241,7 @@ class PengajuanQueryService
                 'created_at' => now(),
             ]);
         } elseif ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS
-            && $user->hasRole(['Inspektorat', 'Superadmin'])) {
+            && ($user->isRegionalAdmin() || $user->can('review_risiko.review_pengawas') || $user->hasRole('Koordinator Pengawas'))) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS]);
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $submission->id,
@@ -255,7 +251,7 @@ class PengajuanQueryService
                 'created_at' => now(),
             ]);
         } elseif ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED
-            && $user->hasRole(['Auditor', 'Inspektorat', 'Superadmin'])) {
+            && ($user->isRegionalAdmin() || $user->can('review_risiko.approve') || $user->hasRole('Auditor') || $user->hasRole('Koordinator Pengawas'))) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW]);
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $submission->id,
@@ -286,11 +282,11 @@ class PengajuanQueryService
     {
         $resolvedPeriodeId = $this->resolvePeriodeId($periodeId);
 
-        $isSuperadmin = $user->hasRole(['Superadmin', 'Admin Office']);
-        $isExecutive = $user->hasRole('Executive');
-        $isAuditor = $user->hasRole('Auditor');
-        $isPengawas = $user->hasRole('Inspektorat');
-        $isOpd = $user->hasRole('OPD');
+        $isSuperadmin = $user->isRegionalAdmin();
+        $isExecutive = $user->can('review_risiko.review_kepala') || $user->hasRole('Executive');
+        $isAuditor = $user->isScopedAuditor() || $user->can('review_risiko.approve') || $user->hasRole('Auditor');
+        $isPengawas = $user->can('review_risiko.review_pengawas') || $user->hasRole('Koordinator Pengawas');
+        $isOpd = $user->isRestrictedToOpd() || $user->can('penilaian_risiko.submit') || $user->hasRole('OPD');
 
         $kepalaOpdPending = 0;
         $auditorPending = 0;

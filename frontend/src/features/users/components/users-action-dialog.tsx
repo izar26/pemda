@@ -11,6 +11,7 @@ import {
   Check,
   Crown,
   KeyRound,
+  Landmark,
   Loader2,
   Mail,
   Phone,
@@ -281,11 +282,18 @@ export function UsersActionDialog({
   useEffect(() => {
     if (open) {
       if (currentRow) {
+        const isLeader =
+          Boolean(currentRow.is_pimpinan_daerah) ||
+          (!currentRow.opd_id &&
+            (currentRow.role === 'Executive' ||
+              ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+                currentRow.jabatan || ''
+              )))
         const normalizedStatus =
           currentRow.status === 'inactive' ? 'inactive' : 'active'
         form.reset({
-          account_type: 'pegawai',
-          opd_id: currentRow.opd_id ? String(currentRow.opd_id) : 'assigned',
+          account_type: isLeader ? 'direct' : 'pegawai',
+          opd_id: currentRow.opd_id ? String(currentRow.opd_id) : '',
           pegawai_id: String(currentRow.id),
           name: currentRow.name || '',
           email: currentRow.email || '',
@@ -706,24 +714,56 @@ export function UsersActionDialog({
                         {selectedPegawai.name}
                       </p>
                       <p className='text-muted-foreground font-mono text-[11px]'>
-                        NIP. {selectedPegawai.nip || '-'}
+                        {selectedPegawai.nip ? `NIP. ${selectedPegawai.nip}` : 'NIP belum diisi'}
                       </p>
                     </div>
-                    <Badge
-                      variant='outline'
-                      className={cn(
-                        'text-[11px] font-medium gap-1',
-                        selectedPegawai.jabatan === 'Kepala OPD'
-                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                          : 'border-border bg-background text-foreground'
-                      )}
-                    >
-                      {selectedPegawai.jabatan === 'Kepala OPD' && (
+                    {Boolean(selectedPegawai.is_pimpinan_daerah) ||
+                    (!selectedPegawai.opd_id &&
+                      (selectedPegawai.role === 'Executive' ||
+                        ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+                          selectedPegawai.jabatan || ''
+                        ))) ? (
+                      <Badge
+                        variant='outline'
+                        className='text-[11px] font-semibold gap-1 border-primary/40 bg-primary/10 text-primary'
+                      >
+                        <Crown className='h-3 w-3 text-primary' />
+                        {selectedPegawai.jabatan || 'Pimpinan Daerah'}
+                      </Badge>
+                    ) : selectedPegawai.jabatan === 'Kepala OPD' ? (
+                      <Badge
+                        variant='outline'
+                        className='text-[11px] font-medium gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                      >
                         <Award className='h-3 w-3' />
-                      )}
-                      {selectedPegawai.jabatan || 'Pegawai'}
-                    </Badge>
+                        Kepala OPD
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant='outline'
+                        className='text-[11px] font-medium border-border bg-background text-foreground'
+                      >
+                        {selectedPegawai.jabatan || 'Pegawai'}
+                      </Badge>
+                    )}
                   </div>
+                  {Boolean(selectedPegawai.is_pimpinan_daerah) ||
+                  (!selectedPegawai.opd_id &&
+                    (selectedPegawai.role === 'Executive' ||
+                      ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah'].includes(
+                        selectedPegawai.jabatan || ''
+                      ))) ? (
+                    <div className='flex items-center gap-1.5 pt-1 border-t text-[11px] text-muted-foreground'>
+                      <Landmark className='h-3.5 w-3.5 text-primary shrink-0' />
+                      <span className='font-semibold text-foreground'>Pemerintah Daerah</span>
+                      <span className='text-[10px] text-amber-700 dark:text-amber-400 font-medium'>(Pimpinan Daerah Non-OPD)</span>
+                    </div>
+                  ) : selectedPegawai.opd ? (
+                    <div className='flex items-center gap-1.5 pt-1 border-t text-[11px] text-muted-foreground'>
+                      <Building2 className='h-3.5 w-3.5 text-muted-foreground shrink-0' />
+                      <span className='font-medium text-foreground truncate'>{selectedPegawai.opd.nama}</span>
+                    </div>
+                  ) : null}
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 border-t text-[11px] text-muted-foreground'>
                     <div className='flex items-center gap-1.5 truncate'>
                       <Mail className='h-3 w-3 shrink-0' />

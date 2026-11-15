@@ -36,7 +36,7 @@ class RootCauseAnalysisController extends Controller
         }
 
         $targetOpdId = $request->get('opd_id');
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->isRestrictedToOpd()) {
             $targetOpdId = $user->opd_id;
         }
 

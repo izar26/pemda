@@ -162,9 +162,9 @@ class PengajuanWorkflowService
 
         $submission = PengajuanPenilaianRisiko::with('items')->findOrFail($submissionId);
 
-        // Authorization check: User must be Superadmin / Admin Office OR Executive of that OPD
-        $isAuthorized = $kepalaOpdUser->hasRole(['Superadmin', 'Admin Office'])
-            || ($kepalaOpdUser->hasRole('Executive') && (string) $kepalaOpdUser->opd_id === (string) $submission->opd_id);
+        // Authorization check: User must be Superadmin / Administrator OR Executive of that OPD
+        $isAuthorized = $kepalaOpdUser->isRegionalAdmin()
+            || (($kepalaOpdUser->can('review_risiko.review_kepala') || $kepalaOpdUser->hasRole('Executive')) && (string) $kepalaOpdUser->opd_id === (string) $submission->opd_id);
 
         if (! $isAuthorized) {
             abort(403, 'Hanya Kepala OPD bersangkutan atau Administrator yang berhak melakukan persetujuan tingkat internal OPD.');
@@ -285,8 +285,8 @@ class PengajuanWorkflowService
     ): PengajuanPenilaianRisiko {
         $submission = PengajuanPenilaianRisiko::with('items')->findOrFail($submissionId);
 
-        $isAuthorized = $kepalaOpdUser->hasRole(['Superadmin', 'Admin Office'])
-            || ($kepalaOpdUser->hasRole('Executive') && (string) $kepalaOpdUser->opd_id === (string) $submission->opd_id);
+        $isAuthorized = $kepalaOpdUser->isRegionalAdmin()
+            || (($kepalaOpdUser->can('review_risiko.review_kepala') || $kepalaOpdUser->hasRole('Executive')) && (string) $kepalaOpdUser->opd_id === (string) $submission->opd_id);
 
         if (! $isAuthorized) {
             abort(403, 'Hanya Kepala OPD bersangkutan atau Administrator yang berhak mendelegasikan revisi ke Operator.');
@@ -374,9 +374,9 @@ class PengajuanWorkflowService
 
         $submission = PengajuanPenilaianRisiko::with('items')->findOrFail($submissionId);
 
-        // Authorization check: Auditor must be assigned to OPD or Superadmin / Inspektorat
-        $isSpecialAdmin = $auditorUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
-        if (! $isSpecialAdmin && $auditorUser->hasRole('Auditor')) {
+        // Authorization check: Auditor must be assigned to OPD or Superadmin / Administrator / Pengawas
+        $isSpecialAdmin = $auditorUser->isRegionalAdmin() || $auditorUser->hasRole('Koordinator Pengawas') || $auditorUser->can('review_risiko.review_pengawas');
+        if (! $isSpecialAdmin && ($auditorUser->isScopedAuditor() || $auditorUser->can('review_risiko.approve') || $auditorUser->hasRole('Auditor'))) {
             $hasAssignment = AuditorOpdAssignment::where('auditor_id', $auditorUser->id)
                 ->where('opd_id', $submission->opd_id)
                 ->where('is_active', true)
@@ -554,8 +554,8 @@ class PengajuanWorkflowService
     ): PengajuanPenilaianRisiko {
         $submission = PengajuanPenilaianRisiko::findOrFail($submissionId);
 
-        $isSpecialAdmin = $auditorUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
-        if (! $isSpecialAdmin && $auditorUser->hasRole('Auditor')) {
+        $isSpecialAdmin = $auditorUser->isRegionalAdmin() || $auditorUser->hasRole('Koordinator Pengawas') || $auditorUser->can('review_risiko.review_pengawas');
+        if (! $isSpecialAdmin && ($auditorUser->isScopedAuditor() || $auditorUser->can('review_risiko.approve') || $auditorUser->hasRole('Auditor'))) {
             $hasAssignment = AuditorOpdAssignment::where('auditor_id', $auditorUser->id)
                 ->where('opd_id', $submission->opd_id)
                 ->where('is_active', true)
@@ -623,8 +623,8 @@ class PengajuanWorkflowService
     ): PengajuanPenilaianRisiko {
         $submission = PengajuanPenilaianRisiko::findOrFail($submissionId);
 
-        $isSpecialAdmin = $auditorUser->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']);
-        if (! $isSpecialAdmin && $auditorUser->hasRole('Auditor')) {
+        $isSpecialAdmin = $auditorUser->isRegionalAdmin() || $auditorUser->hasRole('Koordinator Pengawas') || $auditorUser->can('review_risiko.review_pengawas');
+        if (! $isSpecialAdmin && ($auditorUser->isScopedAuditor() || $auditorUser->can('review_risiko.approve') || $auditorUser->hasRole('Auditor'))) {
             $hasAssignment = AuditorOpdAssignment::where('auditor_id', $auditorUser->id)
                 ->where('opd_id', $submission->opd_id)
                 ->where('is_active', true)
@@ -722,9 +722,11 @@ class PengajuanWorkflowService
             }
         }
 
-        $isAuthorized = $pengawasUser->hasRole(['Inspektorat', 'Superadmin', 'Admin Office']);
+        $isAuthorized = $pengawasUser->isRegionalAdmin()
+            || $pengawasUser->can('review_risiko.review_pengawas')
+            || $pengawasUser->hasRole('Koordinator Pengawas');
         if (! $isAuthorized) {
-            abort(403, 'Hanya Pengawas APIP (Inspektorat) atau Administrator yang berhak mengesahkan tingkat akhir.');
+            abort(403, 'Hanya Pengawas APIP (Koordinator Pengawas) atau Administrator yang berhak mengesahkan tingkat akhir.');
         }
 
         $submission = PengajuanPenilaianRisiko::with('items')->findOrFail($submissionId);

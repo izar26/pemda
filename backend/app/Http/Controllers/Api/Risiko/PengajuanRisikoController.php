@@ -32,13 +32,8 @@ class PengajuanRisikoController extends Controller
         $user = $request->user();
         $targetOpdId = $request->get('opd_id');
 
-        // OPD role can only check their own OPD
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat', 'Auditor'])) {
-            $targetOpdId = $user->opd_id;
-        }
-
-        // Executive role with opd_id can only check their own OPD
-        if ($user && $user->hasRole('Executive') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat']) && $user->opd_id) {
+        // Restricted OPD users can only check their own OPD
+        if ($user && $user->isRestrictedToOpd() && $user->opd_id) {
             $targetOpdId = $user->opd_id;
         }
 
@@ -83,7 +78,7 @@ class PengajuanRisikoController extends Controller
     {
         $user = $request->user();
         $targetOpdId = $request->input('opd_id');
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->isRestrictedToOpd()) {
             $targetOpdId = $user->opd_id;
         }
 

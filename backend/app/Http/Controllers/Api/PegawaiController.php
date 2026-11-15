@@ -74,11 +74,13 @@ class PegawaiController extends Controller
 
         $filters = $request->only(['search', 'opd_id', 'jabatan']);
 
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($user && $user->isRestrictedToOpd()) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
-        $query = User::with(['opd']);
+        $query = User::with(['opd'])
+            ->whereNotNull('opd_id')
+            ->whereNotIn('jabatan', ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah']);
 
         if (! $user->hasRole('Superadmin')) {
             $query->whereDoesntHave('roles', function ($q) {

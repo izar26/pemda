@@ -244,13 +244,13 @@ class PegawaiAndUserAccountTest extends TestCase
         $assignRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'pegawai_id' => $pegawaiId,
-                'role' => 'OPD',
+                'role' => 'Operator OPD',
                 'password' => 'Password@123',
                 'status' => 'active',
             ]);
         $assignRes->assertCreated()
             ->assertJsonPath('data.id', $pegawaiId)
-            ->assertJsonPath('data.role', 'OPD')
+            ->assertJsonPath('data.role', 'Operator OPD')
             ->assertJsonPath('data.status', 'active')
             ->assertJsonPath('data.has_account', true);
 
@@ -258,27 +258,27 @@ class PegawaiAndUserAccountTest extends TestCase
         $dupAssignRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user-accounts', [
                 'pegawai_id' => $pegawaiId,
-                'role' => 'OPD',
+                'role' => 'Operator OPD',
                 'password' => 'Password@123',
                 'status' => 'active',
             ]);
         $dupAssignRes->assertStatus(422)
             ->assertJsonValidationErrors(['pegawai_id']);
 
-        // 5. Update user account status to inactive and change role to Auditor
+        // 5. Update user account status to inactive and change role to Evaluator / Reviewer
         $updateRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/user-accounts/{$pegawaiId}", [
-                'role' => 'Auditor',
+                'role' => 'Evaluator / Reviewer',
                 'status' => 'inactive',
             ]);
         $updateRes->assertOk()
-            ->assertJsonPath('data.role', 'Auditor')
+            ->assertJsonPath('data.role', 'Evaluator / Reviewer')
             ->assertJsonPath('data.status', 'inactive');
 
         // 6. Status other than active/inactive must fail 422
         $invalidStatusRes = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/user-accounts/{$pegawaiId}", [
-                'role' => 'Auditor',
+                'role' => 'Evaluator / Reviewer',
                 'status' => 'suspended',
             ]);
         $invalidStatusRes->assertStatus(422)
@@ -415,5 +415,77 @@ class PegawaiAndUserAccountTest extends TestCase
             ->assertJsonPath('data.jabatan', 'Sekda')
             ->assertJsonPath('data.nip', null)
             ->assertJsonPath('data.role', 'Executive');
+    }
+
+    public function test_regional_leaders_bupati_and_sekda_do_not_appear_in_pegawai_management(): void
+    {
+        $token = $this->getToken();
+
+        // 1. Create Bupati account (direct leader without OPD)
+        $bupatiRes = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Bupati H. Pimpinan Daerah',
+                'email' => 'bupati.pemda@pemda.go.id',
+                'jabatan' => 'Bupati',
+                'role' => 'Executive',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+        $bupatiRes->assertCreated()
+            ->assertJsonPath('data.is_pimpinan_daerah', true)
+            ->assertJsonPath('data.opd_id', null);
+
+        $bupatiId = $bupatiRes->json('data.id');
+
+        // 2. Create Sekda account (direct leader without OPD)
+        $sekdaRes = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/user-accounts', [
+                'account_type' => 'direct',
+                'name' => 'Sekda Pemda Terhormat',
+                'email' => 'sekda.pemda@pemda.go.id',
+                'jabatan' => 'Sekda',
+                'role' => 'Executive',
+                'password' => 'Password@123',
+                'status' => 'active',
+            ]);
+        $sekdaRes->assertCreated()
+            ->assertJsonPath('data.is_pimpinan_daerah', true)
+            ->assertJsonPath('data.opd_id', null);
+
+        $sekdaId = $sekdaRes->json('data.id');
+
+        // 3. Create normal Pegawai with OPD
+        $pegawaiRes = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/pegawai', [
+                'name' => 'Staf Dinas Kominfo',
+                'email' => 'staf.kominfo@pemda.go.id',
+                'nip' => '199501012022011005',
+                'phone' => '081234567899',
+                'opd_id' => $this->opdA->id,
+                'pangkat_gol' => 'Penata Muda (III/a)',
+                'jabatan' => 'Pegawai',
+            ]);
+        $pegawaiRes->assertCreated();
+
+        // 4. Query Pegawai List (/api/pegawai): Bupati & Sekda MUST NOT appear!
+        $pegawaiList = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/pegawai');
+
+        $pegawaiList->assertOk();
+        $pegawaiNames = collect($pegawaiList->json('data'))->pluck('name')->all();
+
+        $this->assertContains('Staf Dinas Kominfo', $pegawaiNames);
+        $this->assertNotContains('Bupati H. Pimpinan Daerah', $pegawaiNames);
+        $this->assertNotContains('Sekda Pemda Terhormat', $pegawaiNames);
+
+        // 5. Query single Pegawai by ID: Bupati & Sekda must return 404
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson("/api/pegawai/{$bupatiId}")
+            ->assertNotFound();
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson("/api/pegawai/{$sekdaId}")
+            ->assertNotFound();
     }
 }

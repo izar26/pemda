@@ -276,7 +276,7 @@ class RbacSeeder extends Seeder
                 'is_system' => true,
                 'permissions' => array_keys($allPermissions),
             ],
-            'Admin Office' => [
+            'Administrator' => [
                 'description' => 'Pengelola operasional data induk, pegawai, master data, dan pemantauan menyeluruh.',
                 'is_system' => false,
                 'permissions' => [
@@ -315,7 +315,7 @@ class RbacSeeder extends Seeder
                     'laporan.view', 'laporan.export',
                 ],
             ],
-            'OPD' => [
+            'Operator OPD' => [
                 'description' => 'Organisasi Perangkat Daerah yang mengelola data Renstra dan Risiko pada instansi masing-masing.',
                 'is_system' => false,
                 'permissions' => [
@@ -330,7 +330,7 @@ class RbacSeeder extends Seeder
                     'laporan.view', 'laporan.export',
                 ],
             ],
-            'Inspektorat' => [
+            'Koordinator Pengawas' => [
                 'description' => 'APIP / Pengawas Daerah yang memantau evaluasi SPIP, survei, wilayah, dan rekap risiko.',
                 'is_system' => false,
                 'permissions' => [
@@ -347,7 +347,7 @@ class RbacSeeder extends Seeder
                     'audit.view', 'audit.export',
                 ],
             ],
-            'Auditor' => [
+            'Evaluator / Reviewer' => [
                 'description' => 'Fungsional pengawas yang melaksanakan audit, riviu, dan tindak lanjut rekomendasi perbaikan.',
                 'is_system' => false,
                 'permissions' => [

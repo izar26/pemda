@@ -398,7 +398,7 @@ class AuditLogTest extends TestCase
         $this->assertContains('Staf memperbarui kontak OPD', $superDescriptions);
     }
 
-    public function test_non_superadmin_cannot_see_administrator_system_logs(): void
+    public function test_non_superadmin_can_see_administrator_and_other_roles_logs_but_not_superadmin(): void
     {
         $auditorRole = Role::firstOrCreate(
             ['name' => 'Auditor', 'guard_name' => 'web'],
@@ -414,18 +414,18 @@ class AuditLogTest extends TestCase
         $auditor->assignRole('Auditor');
         $auditorToken = $auditor->createToken('test-auditor2')->plainTextToken;
 
-        // Log initiated by Administrator
+        // Log initiated by Administrator (Custom role - must be visible to non-superadmin)
         AuditLog::create([
-            'user_id' => $this->superadmin->id,
-            'user_name' => 'Administrator',
-            'user_email' => 'administrator@pemda.go.id',
+            'user_id' => $this->staffWithoutPerm->id,
+            'user_name' => 'Pegawai Admin',
+            'user_email' => 'admin.opd@pemda.go.id',
             'action' => 'AUTH_LOGIN_SUCCESS',
             'module' => 'Autentikasi',
             'description' => 'Pegawai Administrator berhasil masuk ke sistem',
             'created_at' => now(),
         ]);
 
-        // Log initiated by regular staff
+        // Log initiated by regular staff / Operator OPD (must be visible)
         AuditLog::create([
             'user_id' => $this->staffWithoutPerm->id,
             'user_name' => 'Operator OPD',
@@ -436,13 +436,25 @@ class AuditLogTest extends TestCase
             'created_at' => now(),
         ]);
 
+        // Log initiated by Superadmin (Technical Superadmin - must be hidden from non-superadmin)
+        AuditLog::create([
+            'user_id' => $this->superadmin->id,
+            'user_name' => 'Superadmin',
+            'user_email' => 'superadmin@pemda.go.id',
+            'action' => 'SETTINGS_UPDATE',
+            'module' => 'Pengaturan Sistem',
+            'description' => 'Superadmin mengubah konfigurasi sistem inti',
+            'created_at' => now(),
+        ]);
+
         $responseAuditor = $this->withHeader('Authorization', 'Bearer '.$auditorToken)
             ->getJson('/api/audit-logs');
 
         $responseAuditor->assertStatus(200);
         $descriptions = collect($responseAuditor->json('data'))->pluck('description')->all();
         $this->assertContains('Operator OPD mengajukan Form 2A', $descriptions);
-        $this->assertNotContains('Pegawai Administrator berhasil masuk ke sistem', $descriptions);
+        $this->assertContains('Pegawai Administrator berhasil masuk ke sistem', $descriptions);
+        $this->assertNotContains('Superadmin mengubah konfigurasi sistem inti', $descriptions);
     }
 
     public function test_dashboard_recent_activities_accessible_by_all_authenticated_roles_with_ghost_filter(): void
@@ -450,15 +462,26 @@ class AuditLogTest extends TestCase
         // 1. Regular staff without audit.view permission
         $staffToken = $this->staffWithoutPerm->createToken('test-staff')->plainTextToken;
 
-        // Create log by Administrator
+        // Create log by Superadmin
         AuditLog::create([
             'user_id' => $this->superadmin->id,
-            'user_name' => 'Administrator',
-            'user_email' => 'administrator@pemda.go.id',
+            'user_name' => 'Superadmin',
+            'user_email' => 'superadmin@pemda.go.id',
+            'action' => 'SETTINGS_UPDATE',
+            'module' => 'Pengaturan Sistem',
+            'description' => 'Superadmin mengubah konfigurasi keamanan',
+            'created_at' => now()->addSeconds(1),
+        ]);
+
+        // Create log by Administrator
+        AuditLog::create([
+            'user_id' => $this->staffWithoutPerm->id,
+            'user_name' => 'Pegawai Admin',
+            'user_email' => 'pegawai.admin@pemda.go.id',
             'action' => 'AUTH_LOGIN_SUCCESS',
             'module' => 'Autentikasi',
             'description' => 'Pegawai Administrator berhasil masuk ke sistem',
-            'created_at' => now(),
+            'created_at' => now()->addSeconds(2),
         ]);
 
         // Create log by another staff member
@@ -469,7 +492,7 @@ class AuditLogTest extends TestCase
             'action' => 'RISK_VERIFIED',
             'module' => 'Pengawasan Risiko',
             'description' => 'Pengawas Lapangan menyetujui lembar kerja OPD',
-            'created_at' => now(),
+            'created_at' => now()->addSeconds(3),
         ]);
 
         // Staff visits dashboard recent activities - should succeed (200) without 403
@@ -479,9 +502,10 @@ class AuditLogTest extends TestCase
         $responseStaff->assertStatus(200);
         $descriptions = collect($responseStaff->json('data'))->pluck('description')->all();
         $this->assertContains('Pengawas Lapangan menyetujui lembar kerja OPD', $descriptions);
-        $this->assertNotContains('Pegawai Administrator berhasil masuk ke sistem', $descriptions);
+        $this->assertContains('Pegawai Administrator berhasil masuk ke sistem', $descriptions);
+        $this->assertNotContains('Superadmin mengubah konfigurasi keamanan', $descriptions);
 
-        // Administrator visits dashboard recent activities - should see Administrator logs
+        // Superadmin visits dashboard recent activities - should see ALL logs including Superadmin logs
         app('auth')->forgetGuards();
         $superadminToken = $this->superadmin->createToken('test-super-dashboard')->plainTextToken;
         $responseSuper = $this->withHeader('Authorization', 'Bearer '.$superadminToken)
@@ -489,6 +513,7 @@ class AuditLogTest extends TestCase
 
         $responseSuper->assertStatus(200);
         $superDescriptions = collect($responseSuper->json('data'))->pluck('description')->all();
+        $this->assertContains('Superadmin mengubah konfigurasi keamanan', $superDescriptions);
         $this->assertContains('Pegawai Administrator berhasil masuk ke sistem', $superDescriptions);
         $this->assertContains('Pengawas Lapangan menyetujui lembar kerja OPD', $superDescriptions);
     }

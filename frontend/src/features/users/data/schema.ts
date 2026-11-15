@@ -26,6 +26,7 @@ export const userSchema = z.object({
   phone: z.string().nullable().optional(),
   pangkat_gol: z.string().nullable().optional(),
   jabatan: z.string().nullable().optional(),
+  is_pimpinan_daerah: z.boolean().optional(),
   opd_id: z.union([z.string(), z.number()]).nullable().optional(),
   opd: opdSchema.nullable().optional(),
   role: z.string().nullable().optional(),

@@ -37,8 +37,8 @@ class KonteksPenilaianController extends Controller
 
         $filters = $request->only(['periode_penilaian_id', 'opd_id', 'status', 'search']);
 
-        // Scope to user's OPD if role is OPD
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+        // Scope to user's OPD if restricted
+        if ($user && $user->isRestrictedToOpd()) {
             $filters['opd_id'] = $user->opd_id;
         }
 
@@ -88,7 +88,7 @@ class KonteksPenilaianController extends Controller
 
         $targetOpdId = $request->get('opd_id');
 
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office'])) {
+        if ($user && $user->isRestrictedToOpd()) {
             $targetOpdId = $user->opd_id;
         }
 
@@ -147,7 +147,7 @@ class KonteksPenilaianController extends Controller
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->isRestrictedToOpd() && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat konteks risiko OPD lain.');
         }
         if (! $user->canReadOpdData((string) $konteks->opd_id)) {
@@ -171,7 +171,7 @@ class KonteksPenilaianController extends Controller
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->isRestrictedToOpd() && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah konteks risiko OPD lain.');
         }
 
@@ -200,7 +200,7 @@ class KonteksPenilaianController extends Controller
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user->isRestrictedToOpd() && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus konteks risiko OPD lain.');
         }
 
@@ -230,7 +230,7 @@ class KonteksPenilaianController extends Controller
         }
 
         $konteks = $this->service->getKonteksById($id);
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $konteks->opd_id !== $user->opd_id) {
+        if ($user && $user->isRestrictedToOpd() && $konteks->opd_id !== $user->opd_id) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengekspor konteks risiko OPD lain.');
         }
         if ($user && ! $user->canReadOpdData((string) $konteks->opd_id)) {

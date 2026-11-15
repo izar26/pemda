@@ -19,14 +19,21 @@ export function AppSidebar() {
   const { collapsible, variant } = useLayout()
   const authUser = useAuthStore((state) => state.auth.user)
 
+  const userRoles = authUser?.roles || (authUser?.role ? [authUser.role] : [])
+  const userPermissions = authUser?.permissions || []
+
   const isSuperadmin =
-    authUser?.roles?.includes('Superadmin') || authUser?.role === 'Superadmin'
-  const isAuditor =
-    authUser?.roles?.includes('Auditor') || authUser?.role === 'Auditor'
+    userRoles.some((r) => ['Superadmin', 'Administrator', 'Admin Office'].includes(r)) ||
+    userPermissions.includes('settings.edit')
   const isPengawas =
-    authUser?.roles?.includes('Inspektorat') || authUser?.role === 'Inspektorat'
+    userRoles.some((r) => ['Koordinator Pengawas', 'Inspektorat'].includes(r)) ||
+    userPermissions.includes('review_risiko.review_pengawas')
+  const isAuditor =
+    userRoles.some((r) => ['Evaluator / Reviewer', 'Auditor'].includes(r)) ||
+    userPermissions.includes('review_risiko.approve')
   const isKepalaOpd =
-    authUser?.roles?.includes('Executive') || authUser?.role === 'Executive'
+    userRoles.some((r) => ['Executive', 'Kepala OPD'].includes(r)) ||
+    userPermissions.includes('review_risiko.review_kepala')
 
   const { data: pendingCounts } = useQuery({
     queryKey: ['risiko-pending-counts'],

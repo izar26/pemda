@@ -104,7 +104,7 @@ class RootCauseAnalysisService
         $item3a = IdentifikasiRisikoPemdaItem::with('dokumen')->find($itemId);
         if ($item3a) {
             $dokumen = $item3a->dokumen;
-            if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $dokumen) {
+            if ($user && $user->isRestrictedToOpd() && $dokumen) {
                 if ((string) $user->opd_id !== (string) $dokumen->opd_id) {
                     abort(403, 'Anda tidak memiliki hak akses untuk data RCA perangkat daerah lain.');
                 }
@@ -124,7 +124,7 @@ class RootCauseAnalysisService
         $item3b = IdentifikasiRisikoOpdItem::with('dokumen')->find($itemId);
         if ($item3b) {
             $dokumen = $item3b->dokumen;
-            if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $dokumen) {
+            if ($user && $user->isRestrictedToOpd() && $dokumen) {
                 if ((string) $user->opd_id !== (string) $dokumen->opd_id) {
                     abort(403, 'Anda tidak memiliki hak akses untuk data RCA perangkat daerah lain.');
                 }
@@ -144,7 +144,7 @@ class RootCauseAnalysisService
         $item3c = IdentifikasiRisikoOpdOperasionalItem::with('dokumen')->find($itemId);
         if ($item3c) {
             $dokumen = $item3c->dokumen;
-            if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office']) && $dokumen) {
+            if ($user && $user->isRestrictedToOpd() && $dokumen) {
                 if ((string) $user->opd_id !== (string) $dokumen->opd_id) {
                     abort(403, 'Anda tidak memiliki hak akses untuk data RCA perangkat daerah lain.');
                 }

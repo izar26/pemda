@@ -26,11 +26,13 @@ class PegawaiService
     {
         $user = $currentUser ?? auth('sanctum')->user() ?? auth()->user();
 
-        if ($user && $user->hasRole('OPD') && ! $user->hasRole(['Superadmin', 'Admin Office', 'Inspektorat'])) {
+        if ($user && $user->isRestrictedToOpd()) {
             $filters['opd_id'] = (string) $user->opd_id;
         }
 
-        $query = User::with(['roles', 'opd']);
+        $query = User::with(['roles', 'opd'])
+            ->whereNotNull('opd_id')
+            ->whereNotIn('jabatan', ['Bupati', 'Wakil Bupati', 'Sekda', 'Sekretaris Daerah', 'Pimpinan Daerah']);
 
         // Ghost filter: non-superadmin users must not see Superadmin accounts
         if (! $user?->hasRole('Superadmin')) {
@@ -97,6 +99,10 @@ class PegawaiService
         $pegawai = User::with(['roles', 'opd'])->findOrFail($id);
 
         if ($pegawai->hasRole('Superadmin') && ! $user?->hasRole('Superadmin')) {
+            abort(404, 'Data pegawai tidak ditemukan.');
+        }
+
+        if ($pegawai->isRegionalLeader() || empty($pegawai->opd_id)) {
             abort(404, 'Data pegawai tidak ditemukan.');
         }
 
