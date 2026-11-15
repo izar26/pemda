@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { Plus } from 'lucide-react'
@@ -34,7 +33,6 @@ import { KejadianTable } from './kejadian-table'
 import type { KejadianRisikoInput, KejadianRisikoRow } from './types'
 
 export function KejadianRisikoPage() {
-  const navigate = useNavigate()
   const wizard = useRisikoWizardProgress()
   const { hasPermission } = usePermissions()
   const queryClient = useQueryClient()

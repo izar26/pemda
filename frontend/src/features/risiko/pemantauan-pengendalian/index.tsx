@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 import { ConfigDrawer } from '@/components/config-drawer'
@@ -33,7 +32,6 @@ import { PemantauanDialog } from './pemantauan-dialog'
 export function PemantauanPengendalianPage() {
   const wizard = useRisikoWizardProgress()
   const { hasPermission } = usePermissions()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<PemantauanRow | null>(null)
   const [source, setSource] = useState('')

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { ClipboardList, Loader2, Save } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'

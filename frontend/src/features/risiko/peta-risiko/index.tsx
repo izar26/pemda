@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { NavbarStatus } from '@/components/layout/navbar-status'
@@ -22,7 +21,6 @@ import { PetaRisikoView } from './components/peta-risiko-view'
 
 export function PetaRisikoPage() {
   const wizard = useRisikoWizardProgress()
-  const navigate = useNavigate()
   const [source, setSource] = useState<string>('')
 
   const opdId = wizard.effectiveOpdId
