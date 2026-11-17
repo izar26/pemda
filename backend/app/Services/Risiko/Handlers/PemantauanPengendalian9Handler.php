@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 use App\Policies\Risiko\AnalisisRisikoPolicy;
 use App\Services\Risiko\PemantauanPengendalianService;
 
-class PemantauanPengendalian9Handler implements RiskFormHandlerInterface
+class PemantauanPengendalian9Handler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function __construct(
         protected TindakPengendalian6Handler $tindakHandler,
@@ -83,5 +86,70 @@ class PemantauanPengendalian9Handler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return [];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $result = $this->pemantauanService->list((string) $opd->id, (string) $periode->id, $user, ['per_page' => 1000]);
+
+        return [
+            'rows' => $result['items'],
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Sumber',
+            'Kode Risiko',
+            'Pernyataan Risiko',
+            'Kategori',
+            'Pemilik Risiko',
+            'Uraian Dampak',
+            'Rencana Tindak (Form 6)',
+            'Bentuk Pemantauan',
+            'Penanggung Jawab Pemantauan',
+            'Rencana Waktu Pemantauan',
+            'Realisasi Waktu Pemantauan',
+            'Keterangan',
+            'Status Kelengkapan',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $items = $laporanData['rows'] ?? [];
+
+        if (empty($items)) {
+            return [
+                ['1', '-', '-', 'Belum ada data pemantauan pengendalian intern (Form 9) untuk periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ];
+        }
+
+        $rows = [];
+        $no = 1;
+
+        foreach ($items as $item) {
+            $rowArr = (array) $item;
+            $rows[] = [
+                (string) ($no++),
+                ($rowArr['source'] ?? '') === '3b' ? 'Strategis OPD (3B)' : 'Operasional OPD (3C)',
+                $rowArr['kode_risiko'] ?? '',
+                $rowArr['pernyataan_risiko'] ?? '',
+                $rowArr['kategori_risiko'] ?? '',
+                $rowArr['pemilik_risiko'] ?? '',
+                $rowArr['uraian_dampak'] ?? '',
+                $rowArr['rencana_tindak'] ?? '',
+                $rowArr['bentuk_pemantauan'] ?? '',
+                $rowArr['penanggung_jawab_pemantauan'] ?? '',
+                $rowArr['rencana_waktu_pemantauan'] ?? '',
+                $rowArr['realisasi_waktu_pemantauan'] ?? '',
+                $rowArr['keterangan'] ?? '',
+                ! empty($rowArr['complete']) ? 'Lengkap' : 'Belum Lengkap',
+            ];
+        }
+
+        return $rows;
     }
 }

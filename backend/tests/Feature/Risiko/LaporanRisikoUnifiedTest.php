@@ -177,6 +177,50 @@ class LaporanRisikoUnifiedTest extends TestCase
             ->assertJsonPath('data.opd.id', $this->opd->id);
     }
 
+    public function test_get_laporan_8_returns_unified_structure(): void
+    {
+        $response = $this->actingAs($this->superadmin, 'sanctum')
+            ->getJson("/api/risiko/laporan/8?opd_id={$this->opd->id}&tahun=2026");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.form_code', '8')
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+    }
+
+    public function test_get_laporan_9_returns_unified_structure(): void
+    {
+        $response = $this->actingAs($this->superadmin, 'sanctum')
+            ->getJson("/api/risiko/laporan/9?opd_id={$this->opd->id}&tahun=2026");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.form_code', '9')
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+    }
+
+    public function test_get_laporan_10_returns_unified_structure(): void
+    {
+        $response = $this->actingAs($this->superadmin, 'sanctum')
+            ->getJson("/api/risiko/laporan/10?opd_id={$this->opd->id}&tahun=2026");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.form_code', '10')
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+    }
+
+    public function test_get_laporan_fra_returns_unified_structure(): void
+    {
+        $response = $this->actingAs($this->superadmin, 'sanctum')
+            ->getJson("/api/risiko/laporan/fra?opd_id={$this->opd->id}&tahun=2026");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.form_code', 'fra')
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+    }
+
     public function test_export_excel_denied_when_submission_is_not_approved(): void
     {
         // Belum disetujui (submission draft)
@@ -240,5 +284,29 @@ class LaporanRisikoUnifiedTest extends TestCase
             ->get("/api/risiko/laporan/7/export?opd_id={$this->opd->id}&tahun=2026");
         $response7->assertOk();
         $this->assertStringContainsString('spreadsheetml.sheet', (string) $response7->headers->get('Content-Type'));
+
+        // Form 8 export
+        $response8 = $this->actingAs($this->superadmin, 'sanctum')
+            ->get("/api/risiko/laporan/8/export?opd_id={$this->opd->id}&tahun=2026");
+        $response8->assertOk();
+        $this->assertStringContainsString('spreadsheetml.sheet', (string) $response8->headers->get('Content-Type'));
+
+        // Form 9 export
+        $response9 = $this->actingAs($this->superadmin, 'sanctum')
+            ->get("/api/risiko/laporan/9/export?opd_id={$this->opd->id}&tahun=2026");
+        $response9->assertOk();
+        $this->assertStringContainsString('spreadsheetml.sheet', (string) $response9->headers->get('Content-Type'));
+
+        // Form 10 export
+        $response10 = $this->actingAs($this->superadmin, 'sanctum')
+            ->get("/api/risiko/laporan/10/export?opd_id={$this->opd->id}&tahun=2026");
+        $response10->assertOk();
+        $this->assertStringContainsString('spreadsheetml.sheet', (string) $response10->headers->get('Content-Type'));
+
+        // Form FRA export
+        $responseFra = $this->actingAs($this->superadmin, 'sanctum')
+            ->get("/api/risiko/laporan/fra/export?opd_id={$this->opd->id}&tahun=2026");
+        $responseFra->assertOk();
+        $this->assertStringContainsString('spreadsheetml.sheet', (string) $responseFra->headers->get('Content-Type'));
     }
 }

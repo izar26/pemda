@@ -19,6 +19,10 @@ import { LaporanTable4 } from './components/laporan-table-4'
 import { LaporanTable5 } from './components/laporan-table-5'
 import { LaporanTable6 } from './components/laporan-table-6'
 import { LaporanTable7 } from './components/laporan-table-7'
+import { LaporanTable8 } from './components/laporan-table-8'
+import { LaporanTable9 } from './components/laporan-table-9'
+import { LaporanTable10 } from './components/laporan-table-10'
+import { LaporanTableFra } from './components/laporan-table-fra'
 import { LaporanSheetPlaceholder } from './components/laporan-sheet-placeholder'
 
 export interface LaporanSheetRenderProps {
@@ -96,6 +100,26 @@ export const LAPORAN_SHEET_REGISTRY: Record<string, LaporanSheetRegistryEntry> =
     render: ({ data }) => {
       const item = resolveRaw<PetaRisikoData>(data)
       return <LaporanTable7 data={item} />
+    },
+  },
+  '8': {
+    render: ({ data }) => {
+      return <LaporanTable8 data={data as Parameters<typeof LaporanTable8>[0]['data']} />
+    },
+  },
+  '9': {
+    render: ({ data }) => {
+      return <LaporanTable9 data={data as Parameters<typeof LaporanTable9>[0]['data']} />
+    },
+  },
+  '10': {
+    render: ({ data }) => {
+      return <LaporanTable10 data={data as Parameters<typeof LaporanTable10>[0]['data']} />
+    },
+  },
+  'fra': {
+    render: ({ data }) => {
+      return <LaporanTableFra data={data as Parameters<typeof LaporanTableFra>[0]['data']} />
     },
   },
 }

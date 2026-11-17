@@ -5,15 +5,15 @@ import {
 } from './laporan-sheet-registry'
 
 describe('LaporanSheetRegistry', () => {
-  it('returns valid renderers for registered forms 2b, 2c, 3a, 3b, 3c, rca, 4, 5, 6, and 7', () => {
-    const registeredCodes = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7']
+  it('returns valid renderers for all 14 forms: 2b, 2c, 3a, 3b, 3c, rca, 4, 5, 6, 7, 8, 9, 10, and fra', () => {
+    const registeredCodes = ['2b', '2c', '3a', '3b', '3c', 'rca', '4', '5', '6', '7', '8', '9', '10', 'fra']
     registeredCodes.forEach((code) => {
       expect(LAPORAN_SHEET_REGISTRY[code]).toBeDefined()
       expect(typeof getLaporanSheetRenderer(code)).toBe('function')
     })
   })
 
-  it('handles case-insensitive form codes for cluster 1, 2, and 3 forms', () => {
+  it('handles case-insensitive form codes for all forms', () => {
     expect(getLaporanSheetRenderer('2B')).toBe(LAPORAN_SHEET_REGISTRY['2b'].render)
     expect(getLaporanSheetRenderer('2C')).toBe(LAPORAN_SHEET_REGISTRY['2c'].render)
     expect(getLaporanSheetRenderer('3A')).toBe(LAPORAN_SHEET_REGISTRY['3a'].render)
@@ -24,11 +24,15 @@ describe('LaporanSheetRegistry', () => {
     expect(getLaporanSheetRenderer('5')).toBe(LAPORAN_SHEET_REGISTRY['5'].render)
     expect(getLaporanSheetRenderer('6')).toBe(LAPORAN_SHEET_REGISTRY['6'].render)
     expect(getLaporanSheetRenderer('7')).toBe(LAPORAN_SHEET_REGISTRY['7'].render)
+    expect(getLaporanSheetRenderer('8')).toBe(LAPORAN_SHEET_REGISTRY['8'].render)
+    expect(getLaporanSheetRenderer('9')).toBe(LAPORAN_SHEET_REGISTRY['9'].render)
+    expect(getLaporanSheetRenderer('10')).toBe(LAPORAN_SHEET_REGISTRY['10'].render)
+    expect(getLaporanSheetRenderer('FRA')).toBe(LAPORAN_SHEET_REGISTRY['fra'].render)
   })
 
-  it('falls back gracefully to placeholder renderer for cluster 4 forms', () => {
-    const unImplementedCodes = ['8', '9', '10', 'fra']
-    unImplementedCodes.forEach((code) => {
+  it('falls back gracefully to placeholder renderer for unknown form codes', () => {
+    const unknownCodes = ['unknown-code', 'form-99', 'invalid']
+    unknownCodes.forEach((code) => {
       const renderer = getLaporanSheetRenderer(code)
       expect(typeof renderer).toBe('function')
     })
