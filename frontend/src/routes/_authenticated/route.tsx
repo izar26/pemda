@@ -6,16 +6,20 @@ import { useAuthStore } from '@/stores/auth-store'
 
 let verifiedToken: string | null = null
 
+export function resetVerifiedToken(): void {
+  verifiedToken = null
+}
+
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async ({ location }) => {
     const { accessToken, setUser, reset } = useAuthStore.getState().auth
     if (!accessToken) {
       verifiedToken = null
+      const targetPath = location.href
+      const hasSpecificPath = targetPath && targetPath !== '/' && !targetPath.includes('/sign-in')
       throw redirect({
         to: '/sign-in',
-        search: {
-          redirect: location.href,
-        },
+        search: hasSpecificPath ? { redirect: targetPath } : undefined,
       })
     }
 
@@ -30,11 +34,11 @@ export const Route = createFileRoute('/_authenticated')({
         if (isAxiosError(error) && error.response?.status === 401) {
           verifiedToken = null
           reset()
+          const targetPath = location.href
+          const hasSpecificPath = targetPath && targetPath !== '/' && !targetPath.includes('/sign-in')
           throw redirect({
             to: '/sign-in',
-            search: {
-              redirect: location.href,
-            },
+            search: hasSpecificPath ? { redirect: targetPath } : undefined,
           })
         }
       }

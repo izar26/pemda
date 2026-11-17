@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
@@ -62,6 +62,7 @@ export function UserAuthForm({
   const [turnstileToken, setTurnstileToken] = useState<string>('')
   const [turnstileKey, setTurnstileKey] = useState<number>(0)
 
+  const router = useRouter()
   const navigate = useNavigate()
   const { auth } = useAuthStore()
 
@@ -104,26 +105,35 @@ export function UserAuthForm({
       return
     }
 
+    const currentTurnstileToken = turnstileToken
     setIsLoading(true)
     setErrorMessage(null)
 
     try {
       const response = await authService.login({
         ...data,
-        turnstile_token: turnstileToken,
+        turnstile_token: currentTurnstileToken,
       })
 
       if (response.requires_2fa) {
         setTempToken(response.temp_token)
         setStep('2fa')
         toast.info('Masukkan kode 6-digit Google Authenticator Anda.')
+        setIsLoading(false)
       } else {
         auth.setAccessToken(response.token)
         auth.setUser(response.user)
         toast.success(response.message || `Selamat datang, ${response.user.name}!`)
 
-        const targetPath = redirectTo || '/'
-        navigate({ to: targetPath, replace: true })
+        const safeRedirect =
+          redirectTo && !redirectTo.includes('/sign-in')
+            ? redirectTo
+            : '/'
+
+        if (router?.invalidate) {
+          await router.invalidate()
+        }
+        await navigate({ to: safeRedirect, replace: true })
       }
     } catch (error) {
       // Reset Turnstile token on failure so user gets a fresh token
@@ -138,7 +148,6 @@ export function UserAuthForm({
         setErrorMessage(fallback)
         toast.error(fallback)
       }
-    } finally {
       setIsLoading(false)
     }
   }
@@ -168,8 +177,15 @@ export function UserAuthForm({
         toast.success(response.message || `Selamat datang, ${response.user.name}!`)
       }
 
-      const targetPath = redirectTo || '/'
-      navigate({ to: targetPath, replace: true })
+      const safeRedirect =
+        redirectTo && !redirectTo.includes('/sign-in')
+          ? redirectTo
+          : '/'
+
+      if (router?.invalidate) {
+        await router.invalidate()
+      }
+      await navigate({ to: safeRedirect, replace: true })
     } catch (error) {
       if (isAxiosError(error) && error.response?.data?.message) {
         const msg = error.response.data.message
@@ -180,7 +196,6 @@ export function UserAuthForm({
         setErrorMessage(fallback)
         toast.error(fallback)
       }
-    } finally {
       setIsLoading(false)
     }
   }

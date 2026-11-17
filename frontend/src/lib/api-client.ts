@@ -38,7 +38,11 @@ apiClient.interceptors.response.use(
       if (!isLoginRoute && !skipRedirect) {
         useAuthStore.getState().auth.reset()
         queryClient.clear()
-        window.location.href = `/sign-in?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
+        const targetPath = window.location.pathname + window.location.search
+        const hasSpecificPath = targetPath && targetPath !== '/' && !targetPath.includes('/sign-in')
+        window.location.href = hasSpecificPath
+          ? `/sign-in?redirect=${encodeURIComponent(targetPath)}`
+          : '/sign-in'
       }
     }
     return Promise.reject(error)

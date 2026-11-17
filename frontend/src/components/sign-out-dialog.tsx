@@ -1,7 +1,8 @@
-import { useNavigate, useLocation } from '@tanstack/react-router'
+import { useNavigate, useLocation, useRouter } from '@tanstack/react-router'
 import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { authService } from '@/services/auth-service'
+import { resetVerifiedToken } from '@/routes/_authenticated/route'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
 interface SignOutDialogProps {
@@ -10,6 +11,7 @@ interface SignOutDialogProps {
 }
 
 export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
+  const router = useRouter()
   const navigate = useNavigate()
   const location = useLocation()
   const { auth } = useAuthStore()
@@ -20,12 +22,22 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     } catch {
       // Ignore network errors on logout to allow clean local exit
     } finally {
+      resetVerifiedToken()
       auth.reset()
       queryClient.clear()
+      if (router?.invalidate) {
+        await router.invalidate()
+      }
+
       const currentPath = location.href
-      navigate({
+      const hasSpecificRedirect =
+        Boolean(currentPath) &&
+        currentPath !== '/' &&
+        !currentPath.includes('/sign-in')
+
+      await navigate({
         to: '/sign-in',
-        search: { redirect: currentPath },
+        search: hasSpecificRedirect ? { redirect: currentPath } : undefined,
         replace: true,
       })
     }
