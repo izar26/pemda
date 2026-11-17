@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 use App\Policies\Risiko\AnalisisRisikoPolicy;
 use App\Services\Risiko\TindakPengendalianService;
 
-class RisikoPrioritas5Handler implements RiskFormHandlerInterface
+class RisikoPrioritas5Handler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function __construct(
         protected AnalisisRisiko4Handler $analisisHandler,
@@ -77,5 +80,66 @@ class RisikoPrioritas5Handler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return ['6'];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $result = $this->tindakService->list(
+            (string) $opd->id,
+            (string) $periode->id,
+            $user,
+            ['per_page' => 1000]
+        );
+
+        return [
+            'raw' => $result['items'] ?? [],
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Asal (3B/3C)',
+            'Kode Risiko',
+            'Pernyataan Risiko',
+            'Kategori Risiko',
+            'Skala Residual',
+            'Pemilik Risiko',
+            'Penyebab (Akar Masalah)',
+            'Uraian Dampak',
+            'Status Prioritas',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $items = $laporanData['raw'] ?? [];
+
+        if (empty($items)) {
+            return [
+                ['1', '-', '-', 'Tidak ada risiko prioritas yang melampaui selera risiko untuk periode ini', '-', '-', '-', '-', '-', '-'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+        foreach ($items as $row) {
+            $r = (array) $row;
+            $rows[] = [
+                (string) ($no++),
+                strtoupper((string) ($r['source'] ?? '-')),
+                $r['kode_risiko'] ?? '-',
+                $r['pernyataan_risiko'] ?? '-',
+                $r['kategori_risiko'] ?? '-',
+                (string) ($r['skala_residual'] ?? '-'),
+                $r['pemilik_risiko'] ?? '-',
+                $r['akar_penyebab'] ?? '-',
+                $r['uraian_dampak'] ?? '-',
+                'Memerlukan Mitigasi',
+            ];
+        }
+
+        return $rows;
     }
 }

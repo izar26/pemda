@@ -7,6 +7,7 @@ import type {
   IdentifikasiRisikoOpdOperasional,
   RootCauseAnalysis,
 } from '@/types/risiko'
+import type { PetaRisikoData } from '@/features/risiko/peta-risiko/types'
 import type { RisikoWizardStepConfig } from '@/features/risiko/shared/risiko-wizard-store'
 import { LaporanTable2B } from './components/laporan-table-2b'
 import { LaporanTable2C } from './components/laporan-table-2c'
@@ -14,6 +15,10 @@ import { LaporanTable3A } from './components/laporan-table-3a'
 import { LaporanTable3B } from './components/laporan-table-3b'
 import { LaporanTable3C } from './components/laporan-table-3c'
 import { LaporanTableRca } from './components/laporan-table-rca'
+import { LaporanTable4 } from './components/laporan-table-4'
+import { LaporanTable5 } from './components/laporan-table-5'
+import { LaporanTable6 } from './components/laporan-table-6'
+import { LaporanTable7 } from './components/laporan-table-7'
 import { LaporanSheetPlaceholder } from './components/laporan-sheet-placeholder'
 
 export interface LaporanSheetRenderProps {
@@ -70,6 +75,27 @@ export const LAPORAN_SHEET_REGISTRY: Record<string, LaporanSheetRegistryEntry> =
     render: ({ data }) => {
       const items = resolveRaw<RootCauseAnalysis[]>(data)
       return <LaporanTableRca data={items} />
+    },
+  },
+  '4': {
+    render: ({ data }) => {
+      return <LaporanTable4 data={data as Parameters<typeof LaporanTable4>[0]['data']} />
+    },
+  },
+  '5': {
+    render: ({ data }) => {
+      return <LaporanTable5 data={data as Parameters<typeof LaporanTable5>[0]['data']} />
+    },
+  },
+  '6': {
+    render: ({ data }) => {
+      return <LaporanTable6 data={data as Parameters<typeof LaporanTable6>[0]['data']} />
+    },
+  },
+  '7': {
+    render: ({ data }) => {
+      const item = resolveRaw<PetaRisikoData>(data)
+      return <LaporanTable7 data={item} />
     },
   },
 }

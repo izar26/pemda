@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\AnalisisRisiko;
 use App\Models\Risiko\IdentifikasiRisikoOpdItem;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasionalItem;
@@ -13,7 +16,7 @@ use App\Models\User;
 use App\Policies\Risiko\AnalisisRisikoPolicy;
 use App\Services\Risiko\AnalisisRisikoService;
 
-class AnalisisRisiko4Handler implements RiskFormHandlerInterface
+class AnalisisRisiko4Handler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function __construct(
         protected AnalisisRisikoService $analisisService,
@@ -90,5 +93,86 @@ class AnalisisRisiko4Handler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return ['5', '6', '7', '8', '9'];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $result = $this->analisisService->list(
+            (string) $opd->id,
+            (string) $periode->id,
+            $user,
+            ['per_page' => 1000]
+        );
+
+        return [
+            'raw' => $result['items'] ?? [],
+            'stats' => $result['stats'] ?? null,
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Asal (3B/3C)',
+            'Kode Risiko',
+            'Pernyataan Risiko',
+            'Kategori',
+            'Pemilik Risiko',
+            'Kemungkinan Inheren',
+            'Dampak Inheren',
+            'Level Inheren',
+            'Ada Pengendalian?',
+            'Uraian Pengendalian',
+            'Memadai?',
+            'Kemungkinan Residual',
+            'Dampak Residual',
+            'Level Residual',
+            'Peringkat',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $items = $laporanData['raw'] ?? [];
+
+        if (empty($items)) {
+            return [
+                ['1', '-', '-', 'Belum ada data analisis dan evaluasi risiko untuk periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+        foreach ($items as $row) {
+            $analysis = $row['analysis'] ?? null;
+            $pengendalianAda = isset($analysis['pengendalian_ada'])
+                ? ($analysis['pengendalian_ada'] ? 'Ya' : 'Tidak')
+                : '-';
+            $memadai = isset($analysis['pengendalian_memadai'])
+                ? ($analysis['pengendalian_memadai'] ? 'Memadai' : 'Belum Memadai')
+                : '-';
+
+            $rows[] = [
+                (string) ($no++),
+                strtoupper((string) ($row['source'] ?? '-')),
+                $row['kode_risiko'] ?? '-',
+                $row['pernyataan_risiko'] ?? '-',
+                $row['kategori_risiko'] ?? '-',
+                $row['pemilik_risiko'] ?? '-',
+                (string) ($analysis['inheren_kemungkinan'] ?? '-'),
+                (string) ($analysis['inheren_dampak'] ?? '-'),
+                (string) ($row['skala_inheren'] ?? '-'),
+                $pengendalianAda,
+                $analysis['pengendalian_uraian'] ?? '-',
+                $memadai,
+                (string) ($analysis['residual_kemungkinan'] ?? '-'),
+                (string) ($analysis['residual_dampak'] ?? '-'),
+                (string) ($row['skala_residual'] ?? '-'),
+                (string) ($row['peringkat'] ?? '-'),
+            ];
+        }
+
+        return $rows;
     }
 }

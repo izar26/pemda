@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 use App\Policies\Risiko\AnalisisRisikoPolicy;
 use App\Services\Risiko\PetaRisikoService;
 
-class PetaRisiko7Handler implements RiskFormHandlerInterface
+class PetaRisiko7Handler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function __construct(
         protected PetaRisikoService $petaRisikoService,
@@ -79,5 +82,52 @@ class PetaRisiko7Handler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return [];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        return $this->petaRisikoService->generate(
+            (string) $opd->id,
+            (string) $periode->id,
+            $user
+        );
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Zona Risiko',
+            'Rentang Skor Matriks',
+            'Jumlah Risiko Inheren',
+            'Jumlah Risiko Residual',
+            'Jumlah Risiko Treated',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $rekap = $laporanData['rekapitulasi'] ?? [];
+
+        if (empty($rekap)) {
+            return [
+                ['1', 'Belum ada data pemetaan risiko 5x5 untuk periode ini', '-', '0', '0', '0'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+        foreach ($rekap as $z) {
+            $rows[] = [
+                (string) ($no++),
+                $z['label'] ?? '-',
+                (string) ($z['skor_range'] ?? '-'),
+                (string) ($z['inherent_count'] ?? 0),
+                (string) ($z['residual_count'] ?? 0),
+                (string) ($z['treated_count'] ?? 0),
+            ];
+        }
+
+        return $rows;
     }
 }
