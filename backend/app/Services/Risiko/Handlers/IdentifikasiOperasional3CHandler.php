@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
 use App\Http\Resources\Risiko\IdentifikasiRisikoOpdOperasionalResource;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 
-class IdentifikasiOperasional3CHandler implements RiskFormHandlerInterface
+class IdentifikasiOperasional3CHandler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function getFormCode(): string
     {
@@ -112,5 +115,82 @@ class IdentifikasiOperasional3CHandler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return ['rca', '4', '5', '6'];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $document = IdentifikasiRisikoOpdOperasional::where('opd_id', (string) $opd->id)
+            ->where('periode_penilaian_id', (string) $periode->id)
+            ->with(['opd', 'periode', 'urusanPemerintahan'])
+            ->first();
+
+        if (! $document) {
+            return ['raw' => null];
+        }
+
+        $items = $document->items()
+            ->with(['subKegiatan.parent.parent', 'subKegiatan.indikators', 'rca'])
+            ->reorder()
+            ->orderBy('urutan')
+            ->orderBy('id')
+            ->get();
+
+        $document->setRelation('items', $items);
+
+        return [
+            'raw' => (new IdentifikasiRisikoOpdOperasionalResource($document))->resolve(),
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Sub-Kegiatan Operasional',
+            'Proses Bisnis (PROBIS)',
+            'Kategori Risiko',
+            'Kode Risiko',
+            'Pernyataan Risiko',
+            'Pemilik Risiko',
+            'Uraian Sebab (RCA)',
+            'Sumber Risiko',
+            'C/UC',
+            'Uraian Dampak',
+            'Pihak Terkena',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $raw = $laporanData['raw'] ?? null;
+        $items = $raw['items'] ?? [];
+
+        if (empty($items)) {
+            return [
+                ['1', 'Belum ada data risiko operasional yang diidentifikasi untuk periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+        foreach ($items as $item) {
+            $subKegiatanName = $item['sub_kegiatan']['nama'] ?? '-';
+            $rows[] = [
+                (string) ($item['nomor_urut'] ?? $no++),
+                $subKegiatanName,
+                $item['probis'] ?? '-',
+                $item['kategori_risiko'] ?? '-',
+                $item['kode_risiko'] ?? '-',
+                $item['pernyataan_risiko'] ?? '-',
+                $item['pemilik_risiko'] ?? '-',
+                $item['uraian_sebab'] ?? '-',
+                $item['sumber_risiko'] ?? '-',
+                $item['sifat_risiko'] ?? '-',
+                $item['uraian_dampak'] ?? '-',
+                $item['pihak_terkena'] ?? '-',
+            ];
+        }
+
+        return $rows;
     }
 }

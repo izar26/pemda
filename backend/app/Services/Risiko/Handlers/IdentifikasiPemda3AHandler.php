@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
 use App\Http\Resources\Risiko\IdentifikasiRisikoPemdaResource;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 
-class IdentifikasiPemda3AHandler implements RiskFormHandlerInterface
+class IdentifikasiPemda3AHandler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function getFormCode(): string
     {
@@ -112,5 +115,81 @@ class IdentifikasiPemda3AHandler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return ['rca'];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $document = IdentifikasiRisikoPemda::where('opd_id', (string) $opd->id)
+            ->where('periode_penilaian_id', (string) $periode->id)
+            ->with(['opd', 'periode', 'urusanPemerintahan'])
+            ->first();
+
+        if (! $document) {
+            return ['raw' => null];
+        }
+
+        $items = $document->items()
+            ->with(['sasaran', 'indikator', 'rca'])
+            ->reorder()
+            ->orderBy('urutan')
+            ->orderBy('id')
+            ->get();
+
+        $document->setRelation('items', $items);
+
+        return [
+            'raw' => (new IdentifikasiRisikoPemdaResource($document))->resolve(),
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Sasaran Strategis Pemda',
+            'Indikator Sasaran (IKU)',
+            'Kategori Risiko',
+            'Kode Risiko',
+            'Pernyataan Risiko',
+            'Pemilik Risiko',
+            'Uraian Sebab (RCA)',
+            'Sumber Risiko',
+            'C/UC',
+            'Uraian Dampak',
+            'Pihak Terkena',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $raw = $laporanData['raw'] ?? null;
+        $items = $raw['items'] ?? [];
+
+        if (empty($items)) {
+            return [
+                ['1', 'Belum ada data risiko strategis Pemda yang diidentifikasi untuk OPD ini', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+        foreach ($items as $item) {
+            $rows[] = [
+                (string) ($item['nomor_urut'] ?? $no++),
+                $item['resolved_sasaran'] ?? '-',
+                $item['resolved_indikator'] ?? '-',
+                $item['kategori_risiko'] ?? '-',
+                $item['kode_risiko'] ?? '-',
+                $item['pernyataan_risiko'] ?? '-',
+                $item['pemilik_risiko'] ?? '-',
+                $item['uraian_sebab'] ?? '-',
+                $item['sumber_risiko'] ?? '-',
+                $item['sifat_risiko'] ?? '-',
+                $item['uraian_dampak'] ?? '-',
+                $item['pihak_terkena'] ?? '-',
+            ];
+        }
+
+        return $rows;
     }
 }

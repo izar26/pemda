@@ -5,20 +5,28 @@ import {
 } from './laporan-sheet-registry'
 
 describe('LaporanSheetRegistry', () => {
-  it('returns valid renderers for registered forms 2b and 2c', () => {
-    expect(LAPORAN_SHEET_REGISTRY['2b']).toBeDefined()
-    expect(LAPORAN_SHEET_REGISTRY['2c']).toBeDefined()
-    expect(typeof getLaporanSheetRenderer('2b')).toBe('function')
-    expect(typeof getLaporanSheetRenderer('2c')).toBe('function')
+  it('returns valid renderers for registered forms 2b, 2c, 3a, 3b, 3c, and rca', () => {
+    const registeredCodes = ['2b', '2c', '3a', '3b', '3c', 'rca']
+    registeredCodes.forEach((code) => {
+      expect(LAPORAN_SHEET_REGISTRY[code]).toBeDefined()
+      expect(typeof getLaporanSheetRenderer(code)).toBe('function')
+    })
   })
 
-  it('handles case-insensitive form codes', () => {
+  it('handles case-insensitive form codes for all cluster 1 & 2 forms', () => {
     expect(getLaporanSheetRenderer('2B')).toBe(LAPORAN_SHEET_REGISTRY['2b'].render)
     expect(getLaporanSheetRenderer('2C')).toBe(LAPORAN_SHEET_REGISTRY['2c'].render)
+    expect(getLaporanSheetRenderer('3A')).toBe(LAPORAN_SHEET_REGISTRY['3a'].render)
+    expect(getLaporanSheetRenderer('3B')).toBe(LAPORAN_SHEET_REGISTRY['3b'].render)
+    expect(getLaporanSheetRenderer('3C')).toBe(LAPORAN_SHEET_REGISTRY['3c'].render)
+    expect(getLaporanSheetRenderer('RCA')).toBe(LAPORAN_SHEET_REGISTRY['rca'].render)
   })
 
-  it('falls back gracefully to placeholder renderer for un-implemented forms', () => {
-    const renderer = getLaporanSheetRenderer('3a')
-    expect(typeof renderer).toBe('function')
+  it('falls back gracefully to placeholder renderer for cluster 3 and 4 forms', () => {
+    const unImplementedCodes = ['4', '5', '6', '7', '8', '9', '10', 'fra']
+    unImplementedCodes.forEach((code) => {
+      const renderer = getLaporanSheetRenderer(code)
+      expect(typeof renderer).toBe('function')
+    })
   })
 })

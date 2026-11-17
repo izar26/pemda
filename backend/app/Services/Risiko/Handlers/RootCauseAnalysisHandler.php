@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
 use App\Http\Resources\Risiko\RootCauseAnalysisResource;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\IdentifikasiRisikoOpd;
 use App\Models\Risiko\IdentifikasiRisikoOpdOperasional;
 use App\Models\Risiko\IdentifikasiRisikoPemda;
@@ -14,7 +17,7 @@ use App\Models\Risiko\RootCauseAnalysis;
 use App\Models\User;
 use App\Services\Risiko\RootCauseAnalysisService;
 
-class RootCauseAnalysisHandler implements RiskFormHandlerInterface
+class RootCauseAnalysisHandler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function __construct(
         protected RootCauseAnalysisService $rcaService
@@ -168,5 +171,72 @@ class RootCauseAnalysisHandler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return ['4', '5', '6'];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $rcaItems = $this->rcaService
+            ->queryRcaByOpd((string) $opd->id, (string) $periode->id)
+            ->orderBy('id')
+            ->get();
+
+        return [
+            'raw' => RootCauseAnalysisResource::collection($rcaItems)->resolve(),
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Asal Formulir',
+            'Kode Risiko',
+            'Pernyataan Risiko',
+            'Why 1 (Gejala/Pemicu)',
+            'Why 2',
+            'Why 3',
+            'Why 4',
+            'Why 5',
+            'Akar Penyebab (Root Cause)',
+            'Jenis Penyebab',
+            'Sumber Risiko',
+            'Rencana Pengendalian',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $items = $laporanData['raw'] ?? [];
+
+        if (empty($items)) {
+            return [
+                ['1', '-', '-', 'Belum ada data analisis akar masalah (RCA) untuk periode ini', '-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+        foreach ($items as $rca) {
+            $item = $rca['item'] ?? [];
+            $sourceType = strtoupper((string) ($rca['source_type'] ?? '3A'));
+
+            $rows[] = [
+                (string) ($item['nomor_urut'] ?? $no++),
+                sprintf('Form %s', $sourceType),
+                $item['kode_risiko'] ?? '-',
+                $item['pernyataan_risiko'] ?? '-',
+                $rca['why_1'] ?? '-',
+                $rca['why_2'] ?? '-',
+                $rca['why_3'] ?? '-',
+                $rca['why_4'] ?? '-',
+                $rca['why_5'] ?? '-',
+                $rca['akar_penyebab'] ?? '-',
+                $rca['jenis_penyebab'] ?? '-',
+                $item['sifat_risiko'] ?? '-',
+                $rca['kegiatan_pengendalian'] ?? '-',
+            ];
+        }
+
+        return $rows;
     }
 }
