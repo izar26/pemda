@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Risiko\Handlers;
 
+use App\Contracts\Risiko\LaporanFormHandlerInterface;
 use App\Contracts\Risiko\RiskFormHandlerInterface;
 use App\Http\Resources\Risiko\KonteksOperasionalResource;
+use App\Models\Opd;
+use App\Models\Perencanaan\PeriodePenilaian;
 use App\Models\Risiko\KonteksOperasional;
 use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\User;
 
-class KonteksOperasional2CHandler implements RiskFormHandlerInterface
+class KonteksOperasional2CHandler implements LaporanFormHandlerInterface, RiskFormHandlerInterface
 {
     public function getFormCode(): string
     {
@@ -90,5 +93,115 @@ class KonteksOperasional2CHandler implements RiskFormHandlerInterface
     public function getDownstreamFormCodes(): array
     {
         return ['3c'];
+    }
+
+    public function getLaporanData(Opd $opd, PeriodePenilaian $periode, User $user): array
+    {
+        $data = KonteksOperasional::where('opd_id', (string) $opd->id)
+            ->where('periode_penilaian_id', (string) $periode->id)
+            ->with([
+                'opd',
+                'periode',
+                'sumberData',
+                'konteksStrategis.tujuan',
+                'programs.indikators',
+                'programs.children.indikators',
+                'programs.children.children.indikators',
+            ])->first();
+
+        return [
+            'raw' => $data ? (new KonteksOperasionalResource($data))->resolve() : null,
+        ];
+    }
+
+    public function getExcelHeaders(): array
+    {
+        return [
+            'No',
+            'Program / Kegiatan / Sub Kegiatan',
+            'Tingkat (Level)',
+            'Indikator Kinerja',
+            'Target',
+            'Satuan',
+        ];
+    }
+
+    public function getExcelRows(array $laporanData): iterable
+    {
+        $raw = $laporanData['raw'] ?? null;
+        if (! $raw || empty($raw['programs'])) {
+            return [
+                ['1', 'Belum ada data pohon kinerja operasional yang ditetapkan', '-', '-', '-', '-'],
+            ];
+        }
+
+        $no = 1;
+        $rows = [];
+
+        foreach ($raw['programs'] as $prog) {
+            $progName = sprintf('Program: %s', $prog['nama_program'] ?? '-');
+            $pIndikators = $prog['indikators'] ?? [];
+
+            if (empty($pIndikators)) {
+                $rows[] = [(string) $no++, $progName, 'Program', '-', '-', '-'];
+            } else {
+                foreach ($pIndikators as $idx => $ind) {
+                    $rows[] = [
+                        $idx === 0 ? (string) $no++ : '',
+                        $idx === 0 ? $progName : '',
+                        'Program',
+                        $ind['nama_indikator'] ?? '-',
+                        (string) ($ind['target'] ?? '-'),
+                        $ind['satuan'] ?? '-',
+                    ];
+                }
+            }
+
+            // Kegiatan (Children)
+            $kegiatans = $prog['children'] ?? [];
+            foreach ($kegiatans as $keg) {
+                $kegName = sprintf('  Kegiatan: %s', $keg['nama_program'] ?? '-');
+                $kIndikators = $keg['indikators'] ?? [];
+
+                if (empty($kIndikators)) {
+                    $rows[] = ['', $kegName, 'Kegiatan', '-', '-', '-'];
+                } else {
+                    foreach ($kIndikators as $ind) {
+                        $rows[] = [
+                            '',
+                            $kegName,
+                            'Kegiatan',
+                            $ind['nama_indikator'] ?? '-',
+                            (string) ($ind['target'] ?? '-'),
+                            $ind['satuan'] ?? '-',
+                        ];
+                    }
+                }
+
+                // Sub-Kegiatan (Children of Kegiatan)
+                $subKegiatans = $keg['children'] ?? [];
+                foreach ($subKegiatans as $sub) {
+                    $subName = sprintf('    Sub-Kegiatan: %s', $sub['nama_program'] ?? '-');
+                    $sIndikators = $sub['indikators'] ?? [];
+
+                    if (empty($sIndikators)) {
+                        $rows[] = ['', $subName, 'Sub-Kegiatan', '-', '-', '-'];
+                    } else {
+                        foreach ($sIndikators as $ind) {
+                            $rows[] = [
+                                '',
+                                $subName,
+                                'Sub-Kegiatan',
+                                $ind['nama_indikator'] ?? '-',
+                                (string) ($ind['target'] ?? '-'),
+                                $ind['satuan'] ?? '-',
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $rows;
     }
 }

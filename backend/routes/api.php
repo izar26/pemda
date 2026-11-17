@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Risiko\KejadianRisikoController;
 use App\Http\Controllers\Api\Risiko\KomunikasiPengendalianController;
 use App\Http\Controllers\Api\Risiko\KonteksOperasionalController;
 use App\Http\Controllers\Api\Risiko\KonteksPenilaianController;
+use App\Http\Controllers\Api\Risiko\LaporanRisikoController;
 use App\Http\Controllers\Api\Risiko\PemantauanPengendalianController;
 use App\Http\Controllers\Api\Risiko\PengajuanRisikoController;
 use App\Http\Controllers\Api\Risiko\PetaRisikoController;
@@ -194,6 +195,10 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
 
     // Modul Pengelolaan Data Risiko (Fitur 26 - Form 2-10, RCA)
     Route::prefix('risiko')->group(function () {
+        // Laporan Risiko OPD (Unified SOLID Architecture)
+        Route::get('/laporan/{form_code}', [LaporanRisikoController::class, 'show'])->where('form_code', '[a-zA-Z0-9_-]+');
+        Route::get('/laporan/{form_code}/export', [LaporanRisikoController::class, 'exportExcel'])->where('form_code', '[a-zA-Z0-9_-]+');
+
         // Form 2B: Penetapan Konteks Risiko Strategis OPD
         Route::get('/konteks-strategis/current', [KonteksPenilaianController::class, 'current']);
         Route::get('/konteks-strategis/{konteks}/export', [KonteksPenilaianController::class, 'export']);

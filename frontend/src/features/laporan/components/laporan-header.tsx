@@ -1,4 +1,4 @@
-import { Download, Printer, RefreshCw } from 'lucide-react'
+import { Download, Lock, Printer, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 
@@ -8,6 +8,7 @@ interface LaporanHeaderProps {
   onRefresh: () => void
   onPrint: () => void
   onExportExcel: () => void
+  isApproved?: boolean
 }
 
 export function LaporanHeader({
@@ -16,6 +17,7 @@ export function LaporanHeader({
   onRefresh,
   onPrint,
   onExportExcel,
+  isApproved = false,
 }: LaporanHeaderProps) {
   return (
     <PageHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden'>
@@ -54,12 +56,25 @@ export function LaporanHeader({
         </Button>
         <Button
           size='sm'
-          className='h-9 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm'
+          className={`h-9 text-xs gap-1.5 font-medium shadow-sm ${
+            isApproved
+              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              : 'bg-muted text-muted-foreground hover:bg-muted border'
+          }`}
           onClick={onExportExcel}
           disabled={isExporting}
+          title={
+            isApproved
+              ? 'Unduh file Excel resmi'
+              : 'Terkunci: Pengajuan risiko OPD belum disetujui penuh oleh Inspektorat'
+          }
         >
-          <Download className='h-3.5 w-3.5' />
-          Unduh Excel (.xlsx)
+          {isApproved ? (
+            <Download className='h-3.5 w-3.5' />
+          ) : (
+            <Lock className='h-3.5 w-3.5 text-muted-foreground' />
+          )}
+          {isApproved ? 'Unduh Excel (.xlsx)' : 'Excel (Terkunci)'}
         </Button>
       </div>
     </PageHeader>

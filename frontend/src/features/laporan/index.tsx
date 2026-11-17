@@ -10,9 +10,8 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { useLaporanData } from './hooks/use-laporan-data'
 import { LaporanHeader } from './components/laporan-header'
 import { LaporanFilterBar } from './components/laporan-filter-bar'
-import { LaporanSheet2B } from './components/laporan-sheet-2b'
-import { LaporanSheet2C } from './components/laporan-sheet-2c'
-import { LaporanSheetPlaceholder } from './components/laporan-sheet-placeholder'
+import { LaporanDocumentWrapper } from './components/laporan-document-wrapper'
+import { getLaporanSheetRenderer } from './laporan-sheet-registry'
 
 export function LaporanFeature() {
   const {
@@ -27,9 +26,9 @@ export function LaporanFeature() {
     opdOptions,
     isLoadingOpds,
     currentStage,
-    activePeriode,
-    data2BResp,
-    data2C,
+    resolvedTahun,
+    laporanData,
+    isApproved,
     isLoadingData,
     isExporting,
     handleRefresh,
@@ -37,10 +36,7 @@ export function LaporanFeature() {
     handleExportExcel,
   } = useLaporanData()
 
-  const resolvedTahun =
-    data2BResp?.data?.periode?.tahun_penilaian ||
-    data2C?.periode?.tahun_penilaian ||
-    activePeriode?.tahun_penilaian
+  const renderSheet = getLaporanSheetRenderer(selectedFormId)
 
   return (
     <>
@@ -60,6 +56,7 @@ export function LaporanFeature() {
           onRefresh={handleRefresh}
           onPrint={handlePrint}
           onExportExcel={handleExportExcel}
+          isApproved={isApproved}
         />
 
         {/* Filter Bar (Formulir, OPD, Tahun) */}
@@ -96,32 +93,14 @@ export function LaporanFeature() {
           </div>
         ) : (
           <div className='py-2 pb-12 print:p-0 print:m-0'>
-            {selectedFormId === '2b' && (
-              <LaporanSheet2B
-                data={data2BResp?.data || null}
-                meta={data2BResp?.meta}
-                opdNama={selectedOpdName}
-                tahun={resolvedTahun}
-              />
-            )}
-
-            {selectedFormId === '2c' && (
-              <LaporanSheet2C
-                data={data2C || null}
-                opdNama={selectedOpdName}
-                tahun={resolvedTahun}
-              />
-            )}
-
-            {selectedFormId !== '2b' && selectedFormId !== '2c' && (
-              <LaporanSheetPlaceholder
-                formTitle={currentStage.title}
-                shortTitle={currentStage.shortTitle}
-                description={currentStage.subtitle}
-                opdNama={selectedOpdName}
-                tahun={resolvedTahun}
-              />
-            )}
+            <LaporanDocumentWrapper laporan={laporanData}>
+              {renderSheet({
+                data: laporanData?.content,
+                opdNama: selectedOpdName,
+                tahun: resolvedTahun,
+                stepConfig: currentStage,
+              })}
+            </LaporanDocumentWrapper>
           </div>
         )}
       </Main>
