@@ -23,7 +23,11 @@ class AuditorAssignmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_evaluator.view') && ! $user?->can('penugasan_auditor.view')) {
+        $canView = $user?->can('penugasan_evaluator.view')
+            || $user?->can('penugasan_auditor.view')
+            || $user?->hasRole(['Evaluator / Reviewer', 'Auditor']);
+
+        if (! $canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data penugasan evaluator.');
         }
 
@@ -54,12 +58,16 @@ class AuditorAssignmentController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user() ?? auth('sanctum')->user();
-        if (! $user?->can('penugasan_evaluator.view') && ! $user?->can('penugasan_auditor.view')) {
+        $canView = $user?->can('penugasan_evaluator.view')
+            || $user?->can('penugasan_auditor.view')
+            || $user?->hasRole(['Evaluator / Reviewer', 'Auditor']);
+
+        if (! $canView) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat statistik penugasan.');
         }
 
         $periodePenilaianId = $request->input('periode_penilaian_id');
-        $stats = $this->assignmentService->getStats($periodePenilaianId ? (string) $periodePenilaianId : null);
+        $stats = $this->assignmentService->getStats($periodePenilaianId ? (string) $periodePenilaianId : null, $user);
 
         return response()->json(['data' => $stats]);
     }
@@ -74,7 +82,7 @@ class AuditorAssignmentController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        $auditors = $this->assignmentService->getEligibleAuditors();
+        $auditors = $this->assignmentService->getEligibleAuditors($user);
 
         return response()->json(['data' => $auditors]);
     }
@@ -117,7 +125,7 @@ class AuditorAssignmentController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus penugasan evaluator.');
         }
 
-        $this->assignmentService->deleteAssignment($id);
+        $this->assignmentService->deleteAssignment($id, $user);
 
         return response()->json([
             'message' => 'Penugasan evaluator berhasil dicabut.',
@@ -134,7 +142,7 @@ class AuditorAssignmentController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk mencabut penugasan.');
         }
 
-        $count = $this->assignmentService->deleteAuditorAssignments($auditorId);
+        $count = $this->assignmentService->deleteAuditorAssignments($auditorId, $user);
 
         return response()->json([
             'message' => "Seluruh penugasan ({$count} OPD) untuk evaluator berhasil dicabut.",

@@ -242,6 +242,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
       const msg =
         err.response?.data?.message ||
+        err.response?.data?.errors?.auditor_id?.[0] ||
         err.response?.data?.errors?.opd_ids?.[0] ||
         'Gagal menyimpan penugasan evaluator.'
       toast.error(msg)
@@ -261,6 +262,7 @@ export function PenugasanDialogs({ onSuccess }: PenugasanDialogsProps) {
     onError: (err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
       const msg =
         err.response?.data?.message ||
+        err.response?.data?.errors?.auditor_id?.[0] ||
         err.response?.data?.errors?.opd_ids?.[0] ||
         'Gagal memperbarui penugasan evaluator.'
       toast.error(msg)

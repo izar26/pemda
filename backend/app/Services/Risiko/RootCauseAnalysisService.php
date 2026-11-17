@@ -185,11 +185,11 @@ class RootCauseAnalysisService
         }
 
         return DB::transaction(function () use ($rca, $data, $user) {
-            $rca->why_1 = $data['why_1'] ?? $rca->why_1;
-            $rca->why_2 = $data['why_2'] ?? $rca->why_2;
-            $rca->why_3 = $data['why_3'] ?? $rca->why_3;
-            $rca->why_4 = $data['why_4'] ?? $rca->why_4;
-            $rca->why_5 = $data['why_5'] ?? $rca->why_5;
+            $rca->why_1 = array_key_exists('why_1', $data) ? $data['why_1'] : $rca->why_1;
+            $rca->why_2 = array_key_exists('why_2', $data) ? $data['why_2'] : $rca->why_2;
+            $rca->why_3 = array_key_exists('why_3', $data) ? $data['why_3'] : $rca->why_3;
+            $rca->why_4 = array_key_exists('why_4', $data) ? $data['why_4'] : $rca->why_4;
+            $rca->why_5 = array_key_exists('why_5', $data) ? $data['why_5'] : $rca->why_5;
 
             // Automatically derive root cause from deepest non-empty why (5 down to 1)
             $rca->akar_penyebab = $rca->computeAkarPenyebab();

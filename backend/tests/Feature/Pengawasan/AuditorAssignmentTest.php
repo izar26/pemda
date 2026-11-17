@@ -358,4 +358,190 @@ class AuditorAssignmentTest extends TestCase
         $statsResponse->assertStatus(200)
             ->assertJsonStructure(['data']);
     }
+
+    public function test_two_pengawas_and_three_evaluators_isolation_flow(): void
+    {
+        $pengawas1 = User::factory()->create([
+            'name' => 'Pengawas Satu',
+            'email' => 'pengawas1_flow@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $pengawas1->assignRole('Koordinator Pengawas');
+
+        $pengawas2 = User::factory()->create([
+            'name' => 'Pengawas Dua',
+            'email' => 'pengawas2_flow@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $pengawas2->assignRole('Koordinator Pengawas');
+
+        $evaluator1 = User::factory()->create([
+            'name' => 'Evaluator Alpha',
+            'email' => 'evaluator_alpha@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $evaluator1->assignRole('Evaluator / Reviewer');
+
+        $evaluator2 = User::factory()->create([
+            'name' => 'Evaluator Beta',
+            'email' => 'evaluator_beta@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $evaluator2->assignRole('Evaluator / Reviewer');
+
+        $evaluator3 = User::factory()->create([
+            'name' => 'Evaluator Gamma',
+            'email' => 'evaluator_gamma@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $evaluator3->assignRole('Evaluator / Reviewer');
+
+        // 1. Kondisi awal: ketiga evaluator belum ditugaskan ke OPD mana pun.
+        // Data harus muncul di kedua pengawas (tabel dan dropdown).
+        $resPengawas1Initial = $this->actingAs($pengawas1, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator');
+        $resPengawas1Initial->assertStatus(200);
+        $p1Names = collect($resPengawas1Initial->json('data'))->pluck('name');
+        $this->assertTrue($p1Names->contains('Evaluator Alpha'));
+        $this->assertTrue($p1Names->contains('Evaluator Beta'));
+        $this->assertTrue($p1Names->contains('Evaluator Gamma'));
+
+        $resPengawas2Initial = $this->actingAs($pengawas2, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator');
+        $resPengawas2Initial->assertStatus(200);
+        $p2Names = collect($resPengawas2Initial->json('data'))->pluck('name');
+        $this->assertTrue($p2Names->contains('Evaluator Alpha'));
+        $this->assertTrue($p2Names->contains('Evaluator Beta'));
+        $this->assertTrue($p2Names->contains('Evaluator Gamma'));
+
+        $dropdownP2Initial = $this->actingAs($pengawas2, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/evaluators');
+        $dropdownP2Initial->assertStatus(200);
+        $p2DropdownNames = collect($dropdownP2Initial->json('data'))->pluck('name');
+        $this->assertTrue($p2DropdownNames->contains('Evaluator Alpha'));
+
+        // 2. Pengawas 1 menugaskan Evaluator Alpha ke Dinkes
+        $assignResponse = $this->actingAs($pengawas1, 'sanctum')
+            ->postJson('/api/pengawasan/penugasan-evaluator', [
+                'auditor_id' => $evaluator1->id,
+                'opd_ids' => [$this->opdDinkes->id],
+            ]);
+        $assignResponse->assertStatus(201);
+
+        // Pengawas 1 masih melihat Evaluator Alpha (milik dirinya) dan evaluator bebas lainnya
+        $resPengawas1After = $this->actingAs($pengawas1, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator');
+        $p1AfterNames = collect($resPengawas1After->json('data'))->pluck('name');
+        $this->assertTrue($p1AfterNames->contains('Evaluator Alpha'));
+        $this->assertTrue($p1AfterNames->contains('Evaluator Beta'));
+        $this->assertTrue($p1AfterNames->contains('Evaluator Gamma'));
+
+        // Pengawas 2: Evaluator Alpha TIDAK BOLEH MUNCUL (di tabel maupun dropdown)
+        $resPengawas2After = $this->actingAs($pengawas2, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator');
+        $p2AfterNames = collect($resPengawas2After->json('data'))->pluck('name');
+        $this->assertFalse($p2AfterNames->contains('Evaluator Alpha'), 'Evaluator Alpha seharusnya tidak muncul di tabel Pengawas 2');
+        $this->assertTrue($p2AfterNames->contains('Evaluator Beta'));
+        $this->assertTrue($p2AfterNames->contains('Evaluator Gamma'));
+
+        $dropdownP2After = $this->actingAs($pengawas2, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/evaluators');
+        $p2AfterDropdownNames = collect($dropdownP2After->json('data'))->pluck('name');
+        $this->assertFalse($p2AfterDropdownNames->contains('Evaluator Alpha'), 'Evaluator Alpha seharusnya tidak muncul di dropdown Pengawas 2');
+        $this->assertTrue($p2AfterDropdownNames->contains('Evaluator Beta'));
+        $this->assertTrue($p2AfterDropdownNames->contains('Evaluator Gamma'));
+
+        // 3. Pengawas 2 mencoba membajak/menugaskan Evaluator Alpha -> Ditolak (422)
+        $stealResponse = $this->actingAs($pengawas2, 'sanctum')
+            ->postJson('/api/pengawasan/penugasan-evaluator', [
+                'auditor_id' => $evaluator1->id,
+                'opd_ids' => [$this->opdDisdik->id],
+            ]);
+        $stealResponse->assertStatus(422)
+            ->assertJsonValidationErrors(['auditor_id']);
+
+        // 4. Pengawas 2 mencoba mencabut penugasan Evaluator Alpha -> Ditolak (403)
+        $deleteUnauthorized = $this->actingAs($pengawas2, 'sanctum')
+            ->deleteJson("/api/pengawasan/penugasan-evaluator/evaluator/{$evaluator1->id}");
+        $deleteUnauthorized->assertStatus(403);
+
+        // 5. Pengawas 1 mencabut seluruh penugasan Evaluator Alpha
+        $releaseResponse = $this->actingAs($pengawas1, 'sanctum')
+            ->deleteJson("/api/pengawasan/penugasan-evaluator/evaluator/{$evaluator1->id}");
+        $releaseResponse->assertStatus(200);
+
+        // 6. Sekarang Evaluator Alpha kembali berstatus unassigned -> Muncul lagi di Pengawas 2!
+        $resPengawas2Released = $this->actingAs($pengawas2, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator');
+        $p2ReleasedNames = collect($resPengawas2Released->json('data'))->pluck('name');
+        $this->assertTrue($p2ReleasedNames->contains('Evaluator Alpha'), 'Evaluator Alpha harus muncul kembali setelah dicabut oleh Pengawas 1');
+
+        $dropdownP2Released = $this->actingAs($pengawas2, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/evaluators');
+        $p2ReleasedDropdownNames = collect($dropdownP2Released->json('data'))->pluck('name');
+        $this->assertTrue($p2ReleasedDropdownNames->contains('Evaluator Alpha'));
+    }
+
+    public function test_kpi_stats_scoped_to_current_pengawas_and_global_for_superadmin(): void
+    {
+        $pengawasA = User::factory()->create([
+            'name' => 'Pengawas A',
+            'email' => 'pengawas_a@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $pengawasA->assignRole('Koordinator Pengawas');
+
+        $pengawasB = User::factory()->create([
+            'name' => 'Pengawas B',
+            'email' => 'pengawas_b@pemda.go.id',
+            'status' => 'active',
+        ]);
+        $pengawasB->assignRole('Koordinator Pengawas');
+
+        // Pengawas A menugaskan Auditor 1 ke Dinkes & Disdik
+        $this->actingAs($pengawasA, 'sanctum')
+            ->postJson('/api/pengawasan/penugasan-evaluator', [
+                'auditor_id' => $this->auditorUser1->id,
+                'opd_ids' => [$this->opdDinkes->id, $this->opdDisdik->id],
+            ])
+            ->assertStatus(201);
+
+        // Pengawas B menugaskan Auditor 2 ke PUPR
+        $this->actingAs($pengawasB, 'sanctum')
+            ->postJson('/api/pengawasan/penugasan-evaluator', [
+                'auditor_id' => $this->auditorUser2->id,
+                'opd_ids' => [$this->opdPupr->id],
+            ])
+            ->assertStatus(201);
+
+        // Cek Stats Pengawas A
+        $statsA = $this->actingAs($pengawasA, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/stats')
+            ->assertStatus(200)
+            ->json('data');
+
+        $this->assertEquals(1, $statsA['total_auditor_bertugas']);
+        $this->assertEquals(2, $statsA['total_opd_tercover']);
+        $this->assertEquals(2, $statsA['total_penugasan_aktif']);
+
+        // Cek Stats Pengawas B
+        $statsB = $this->actingAs($pengawasB, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/stats')
+            ->assertStatus(200)
+            ->json('data');
+
+        $this->assertEquals(1, $statsB['total_auditor_bertugas']);
+        $this->assertEquals(1, $statsB['total_opd_tercover']);
+        $this->assertEquals(1, $statsB['total_penugasan_aktif']);
+
+        // Cek Stats Superadmin (Global Aggregate)
+        $statsSuper = $this->actingAs($this->superadmin, 'sanctum')
+            ->getJson('/api/pengawasan/penugasan-evaluator/stats')
+            ->assertStatus(200)
+            ->json('data');
+
+        $this->assertEquals(2, $statsSuper['total_auditor_bertugas']);
+        $this->assertEquals(3, $statsSuper['total_opd_tercover']);
+        $this->assertEquals(3, $statsSuper['total_penugasan_aktif']);
+    }
 }

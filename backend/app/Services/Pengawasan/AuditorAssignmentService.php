@@ -45,22 +45,37 @@ class AuditorAssignmentService
      */
     public function getAuditorsWithAssignments(array $filters = [], int $perPage = 10, ?User $currentUser = null): LengthAwarePaginator
     {
+        $isRegionalAdmin = $currentUser?->isRegionalAdmin() ?? false;
+        $isEvaluator = $currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat']);
+
         $query = User::with([
             'roles:id,name',
-            'auditorAssignments' => function ($q) {
+            'auditorAssignments' => function ($q) use ($currentUser, $isRegionalAdmin, $isEvaluator) {
                 $q->with(['opd:id,kode,nama,kategori', 'periodePenilaian:id,nama_periode,tahun_mulai,tahun_akhir'])
+                    ->when(! $isRegionalAdmin && ! $isEvaluator && $currentUser, function ($sq) use ($currentUser) {
+                        $sq->where('assigned_by', $currentUser->id);
+                    })
                     ->orderBy('created_at', 'desc');
             },
         ]);
 
         // If current user is an evaluator (and not an admin/koordinator), show only their own record
-        if ($currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat'])) {
+        if ($isEvaluator) {
             $query->where('id', $currentUser->id);
         } else {
-            // Display all evaluators (active users with role 'Evaluator / Reviewer' or 'Auditor')
+            // Display evaluators (active users with role 'Evaluator / Reviewer' or 'Auditor')
             $query->whereHas('roles', function ($q) {
                 $q->whereIn('name', ['Evaluator / Reviewer', 'Auditor']);
             })->where('status', 'active');
+
+            // Scoping: Pengawas only sees unassigned evaluators OR evaluators assigned by themselves
+            if (! $isRegionalAdmin && $currentUser) {
+                $query->whereDoesntHave('auditorAssignments', function ($aq) use ($currentUser) {
+                    $aq->where('is_active', true)
+                        ->whereNotNull('assigned_by')
+                        ->where('assigned_by', '!=', $currentUser->id);
+                });
+            }
         }
 
         if (! empty($filters['search'])) {
@@ -98,19 +113,27 @@ class AuditorAssignmentService
      *
      * @return array<string, int>
      */
-    public function getStats(?string $periodePenilaianId = null): array
+    public function getStats(?string $periodePenilaianId = null, ?User $currentUser = null): array
     {
-        $assignmentQuery = AuditorOpdAssignment::where('is_active', true);
+        $isRegionalAdmin = $currentUser?->isRegionalAdmin() ?? false;
+
+        $globalAssignmentQuery = AuditorOpdAssignment::where('is_active', true);
         if ($periodePenilaianId) {
-            $assignmentQuery->where('periode_penilaian_id', $periodePenilaianId);
+            $globalAssignmentQuery->where('periode_penilaian_id', $periodePenilaianId);
         }
 
-        $totalAuditorBertugas = (clone $assignmentQuery)->distinct('auditor_id')->count('auditor_id');
-        $totalOpdTercover = (clone $assignmentQuery)->distinct('opd_id')->count('opd_id');
-        $totalPenugasanAktif = (clone $assignmentQuery)->count();
+        $scopedAssignmentQuery = clone $globalAssignmentQuery;
+        if (! $isRegionalAdmin && $currentUser) {
+            $scopedAssignmentQuery->where('assigned_by', $currentUser->id);
+        }
+
+        $totalAuditorBertugas = (clone $scopedAssignmentQuery)->distinct('auditor_id')->count('auditor_id');
+        $totalOpdTercover = (clone $scopedAssignmentQuery)->distinct('opd_id')->count('opd_id');
+        $totalPenugasanAktif = (clone $scopedAssignmentQuery)->count();
 
         $totalOpdAktif = Opd::where('is_active', true)->count();
-        $totalOpdBelumTercover = max(0, $totalOpdAktif - $totalOpdTercover);
+        $globalOpdTercover = (clone $globalAssignmentQuery)->distinct('opd_id')->count('opd_id');
+        $totalOpdBelumTercover = max(0, $totalOpdAktif - $globalOpdTercover);
 
         return [
             'total_auditor_bertugas' => $totalAuditorBertugas,
@@ -126,20 +149,38 @@ class AuditorAssignmentService
      *
      * @return Collection<int, User>
      */
-    public function getEligibleAuditors(): Collection
+    public function getEligibleAuditors(?User $currentUser = null): Collection
     {
-        return User::whereHas('roles', function ($q) {
+        $isRegionalAdmin = $currentUser?->isRegionalAdmin() ?? false;
+        $isEvaluator = $currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat']);
+
+        $query = User::whereHas('roles', function ($q) {
             $q->whereIn('name', ['Evaluator / Reviewer', 'Auditor']);
         })
-            ->where('status', 'active')
-            ->with([
-                'roles:id,name',
-                'auditorAssignments' => function ($q) {
-                    $q->select('id', 'auditor_id', 'opd_id', 'is_active');
-                },
-            ])
-            ->withCount(['auditorAssignments as active_opd_count' => function ($q) {
-                $q->where('is_active', true);
+            ->where('status', 'active');
+
+        if (! $isRegionalAdmin && ! $isEvaluator && $currentUser) {
+            $query->whereDoesntHave('auditorAssignments', function ($aq) use ($currentUser) {
+                $aq->where('is_active', true)
+                    ->whereNotNull('assigned_by')
+                    ->where('assigned_by', '!=', $currentUser->id);
+            });
+        }
+
+        return $query->with([
+            'roles:id,name',
+            'auditorAssignments' => function ($q) use ($currentUser, $isRegionalAdmin, $isEvaluator) {
+                $q->select('id', 'auditor_id', 'opd_id', 'is_active', 'assigned_by')
+                    ->when(! $isRegionalAdmin && ! $isEvaluator && $currentUser, function ($sq) use ($currentUser) {
+                        $sq->where('assigned_by', $currentUser->id);
+                    });
+            },
+        ])
+            ->withCount(['auditorAssignments as active_opd_count' => function ($q) use ($currentUser, $isRegionalAdmin, $isEvaluator) {
+                $q->where('is_active', true)
+                    ->when(! $isRegionalAdmin && ! $isEvaluator && $currentUser, function ($sq) use ($currentUser) {
+                        $sq->where('assigned_by', $currentUser->id);
+                    });
             }])
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'nip', 'email', 'jabatan']);
@@ -155,8 +196,26 @@ class AuditorAssignmentService
     {
         $auditor = User::findOrFail($data['auditor_id']);
         $opdIds = (array) $data['opd_ids'];
+        $isRegionalAdmin = $assignedBy?->isRegionalAdmin() ?? false;
 
-        return DB::transaction(function () use ($auditor, $opdIds, $data, $assignedBy) {
+        // Guard: check if this evaluator has active assignments by another pengawas
+        if (! $isRegionalAdmin && $assignedBy) {
+            $conflictPengawas = AuditorOpdAssignment::where('auditor_id', $auditor->id)
+                ->where('is_active', true)
+                ->whereNotNull('assigned_by')
+                ->where('assigned_by', '!=', $assignedBy->id)
+                ->with('assignedBy:id,name')
+                ->first();
+
+            if ($conflictPengawas) {
+                $pengawasName = $conflictPengawas->assignedBy?->name ?? 'pengawas lain';
+                throw ValidationException::withMessages([
+                    'auditor_id' => ["Evaluator {$auditor->name} telah ditugaskan oleh {$pengawasName}. Anda tidak dapat menugaskan evaluator ini."],
+                ]);
+            }
+        }
+
+        return DB::transaction(function () use ($auditor, $opdIds, $data, $assignedBy, $isRegionalAdmin) {
             // Guard: 1 OPD can only be assigned to 1 auditor
             $conflict = AuditorOpdAssignment::whereIn('opd_id', $opdIds)
                 ->where('auditor_id', '!=', $auditor->id)
@@ -170,10 +229,17 @@ class AuditorAssignmentService
             }
 
             // Sync: delete assignments for OPDs no longer in the list for this auditor
-            AuditorOpdAssignment::where('auditor_id', $auditor->id)
-                ->whereNotIn('opd_id', $opdIds)
-                ->get()
-                ->each(fn ($obs) => $obs->delete());
+            $deleteQuery = AuditorOpdAssignment::where('auditor_id', $auditor->id)
+                ->whereNotIn('opd_id', $opdIds);
+
+            if (! $isRegionalAdmin && $assignedBy) {
+                $deleteQuery->where(function ($q) use ($assignedBy) {
+                    $q->whereNull('assigned_by')
+                        ->orWhere('assigned_by', $assignedBy->id);
+                });
+            }
+
+            $deleteQuery->get()->each(fn ($obs) => $obs->delete());
 
             $createdAssignments = [];
 
@@ -211,8 +277,26 @@ class AuditorAssignmentService
     {
         $auditor = User::findOrFail($auditorId);
         $newOpdIds = (array) $data['opd_ids'];
+        $isRegionalAdmin = $assignedBy?->isRegionalAdmin() ?? false;
 
-        return DB::transaction(function () use ($auditor, $newOpdIds, $data, $assignedBy) {
+        // Guard: check if this evaluator has active assignments by another pengawas
+        if (! $isRegionalAdmin && $assignedBy) {
+            $conflictPengawas = AuditorOpdAssignment::where('auditor_id', $auditor->id)
+                ->where('is_active', true)
+                ->whereNotNull('assigned_by')
+                ->where('assigned_by', '!=', $assignedBy->id)
+                ->with('assignedBy:id,name')
+                ->first();
+
+            if ($conflictPengawas) {
+                $pengawasName = $conflictPengawas->assignedBy?->name ?? 'pengawas lain';
+                throw ValidationException::withMessages([
+                    'auditor_id' => ["Evaluator {$auditor->name} telah ditugaskan oleh {$pengawasName}. Anda tidak dapat menugaskan evaluator ini."],
+                ]);
+            }
+        }
+
+        return DB::transaction(function () use ($auditor, $newOpdIds, $data, $assignedBy, $isRegionalAdmin) {
             // Guard: 1 OPD can only be assigned to 1 auditor
             $conflict = AuditorOpdAssignment::whereIn('opd_id', $newOpdIds)
                 ->where('auditor_id', '!=', $auditor->id)
@@ -226,9 +310,17 @@ class AuditorAssignmentService
             }
 
             // 1. Delete assignments for OPDs no longer in the list
-            $obsoleteAssignments = AuditorOpdAssignment::where('auditor_id', $auditor->id)
-                ->whereNotIn('opd_id', $newOpdIds)
-                ->get();
+            $obsoleteQuery = AuditorOpdAssignment::where('auditor_id', $auditor->id)
+                ->whereNotIn('opd_id', $newOpdIds);
+
+            if (! $isRegionalAdmin && $assignedBy) {
+                $obsoleteQuery->where(function ($q) use ($assignedBy) {
+                    $q->whereNull('assigned_by')
+                        ->orWhere('assigned_by', $assignedBy->id);
+                });
+            }
+
+            $obsoleteAssignments = $obsoleteQuery->get();
 
             foreach ($obsoleteAssignments as $obs) {
                 $obs->delete(); // Triggers Auditable event
@@ -263,9 +355,14 @@ class AuditorAssignmentService
     /**
      * Delete a single assignment by assignment ID.
      */
-    public function deleteAssignment(string $id): bool
+    public function deleteAssignment(string $id, ?User $currentUser = null): bool
     {
         $assignment = AuditorOpdAssignment::findOrFail($id);
+
+        $isRegionalAdmin = $currentUser?->isRegionalAdmin() ?? false;
+        if (! $isRegionalAdmin && $currentUser && $assignment->assigned_by && $assignment->assigned_by !== $currentUser->id) {
+            abort(403, 'Anda tidak memiliki hak untuk menghapus penugasan yang dibuat oleh pengawas lain.');
+        }
 
         return (bool) $assignment->delete();
     }
@@ -273,9 +370,27 @@ class AuditorAssignmentService
     /**
      * Delete all assignments for an auditor.
      */
-    public function deleteAuditorAssignments(string $auditorId): int
+    public function deleteAuditorAssignments(string $auditorId, ?User $currentUser = null): int
     {
-        $assignments = AuditorOpdAssignment::where('auditor_id', $auditorId)->get();
+        $isRegionalAdmin = $currentUser?->isRegionalAdmin() ?? false;
+
+        $query = AuditorOpdAssignment::where('auditor_id', $auditorId);
+        if (! $isRegionalAdmin && $currentUser) {
+            $otherAssignment = (clone $query)->whereNotNull('assigned_by')
+                ->where('assigned_by', '!=', $currentUser->id)
+                ->first();
+
+            if ($otherAssignment) {
+                abort(403, 'Anda tidak memiliki hak untuk mencabut penugasan evaluator yang ditugaskan oleh pengawas lain.');
+            }
+
+            $query->where(function ($q) use ($currentUser) {
+                $q->whereNull('assigned_by')
+                    ->orWhere('assigned_by', $currentUser->id);
+            });
+        }
+
+        $assignments = $query->get();
         $count = 0;
         foreach ($assignments as $assignment) {
             $assignment->delete();
@@ -290,8 +405,13 @@ class AuditorAssignmentService
      */
     protected function applyFilters($query, array $filters, ?User $currentUser): void
     {
-        if ($currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat'])) {
+        $isRegionalAdmin = $currentUser?->isRegionalAdmin() ?? false;
+        $isEvaluator = $currentUser && $currentUser->hasRole(['Evaluator / Reviewer', 'Auditor']) && ! $currentUser->hasRole(['Superadmin', 'Administrator', 'Koordinator Pengawas', 'Admin Office', 'Inspektorat']);
+
+        if ($isEvaluator) {
             $query->where('auditor_id', $currentUser->id);
+        } elseif (! $isRegionalAdmin && $currentUser) {
+            $query->where('assigned_by', $currentUser->id);
         } elseif (! empty($filters['auditor_id'])) {
             $query->where('auditor_id', $filters['auditor_id']);
         }
