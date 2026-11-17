@@ -115,10 +115,10 @@ export function LaporanTableRca({ data }: LaporanTableRcaProps) {
                     </td>
                     <td className='p-2.5 text-center align-top'>
                       <Badge variant='outline' className='font-mono text-[9px]'>
-                        {item?.sifat_risiko === 'E'
-                          ? 'Eksternal'
-                          : item?.sifat_risiko === 'I'
-                            ? 'Internal'
+                        {item?.sifat_risiko === 'C'
+                          ? 'C'
+                          : item?.sifat_risiko === 'UC'
+                            ? 'UC'
                             : item?.sifat_risiko || '-'}
                       </Badge>
                     </td>

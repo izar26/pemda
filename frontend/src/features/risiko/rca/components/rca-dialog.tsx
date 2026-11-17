@@ -454,35 +454,3 @@ export function RcaDialog({ open, onOpenChange, rca, onSuccess, canEdit }: RcaDi
     </Dialog>
   )
 }
-
-        <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => onOpenChange(false)}
-            className='text-xs'
-          >
-            {canEdit ? 'Batal' : 'Tutup'}
-          </Button>
-          {canEdit && (
-            <Button
-              type='submit'
-              form='rca-dialog-form'
-              size='sm'
-              disabled={isSubmitting || !why1.trim() || !jenisPenyebab}
-              className='text-xs gap-1.5 font-semibold'
-            >
-              {isSubmitting ? (
-                <Loader2 className='h-3 w-3 animate-spin' />
-              ) : (
-                <Save className='h-3.5 w-3.5' />
-              )}
-              Simpan Analisis RCA
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}

@@ -101,11 +101,7 @@ export function LaporanTable3B({ data }: LaporanTable3BProps) {
                       {item.uraian_sebab ? (
                         <>
                           <Badge variant='outline' className='bg-background font-mono text-[9px]'>
-                            {item.sumber_risiko === 'I'
-                              ? 'Internal'
-                              : item.sumber_risiko === 'E'
-                                ? 'Eksternal'
-                                : item.sumber_risiko || 'Internal'}
+                            {item.sumber_risiko || 'Internal'}
                           </Badge>
                           <p className='leading-tight text-foreground print:text-black'>
                             {item.uraian_sebab}
