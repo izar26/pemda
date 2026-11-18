@@ -180,6 +180,7 @@ class ReviewRisikoRoleScopingTest extends TestCase
             PengajuanPenilaianRisikoItem::create([
                 'pengajuan_id' => $submission->id,
                 'form_code' => $code,
+                'current_tier' => $tier,
                 'status' => PengajuanPenilaianRisikoItem::STATUS_SUBMITTED,
             ]);
         }

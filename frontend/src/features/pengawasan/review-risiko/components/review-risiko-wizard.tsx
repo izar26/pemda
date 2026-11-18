@@ -5,17 +5,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   pengajuanRisikoService,
   type SubmissionItem,
+  type SubmissionTier,
 } from '@/services/pengajuan-risiko-service'
 import { id as idLocale } from 'date-fns/locale'
 import {
-  AlertCircle,
-  ArrowRightCircle,
   CheckCircle2,
-  Clock,
   History,
   Loader2,
+  RefreshCw,
   Send,
-  XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
@@ -33,7 +31,6 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { KepalaFormSelect } from '@/features/risiko/shared/header/kepala-form-select'
 import {
   RISIKO_WIZARD_STEPS,
   type RisikoWizardStepConfig,
@@ -42,7 +39,10 @@ import { useActiveReviewForm } from './use-review-form-data'
 import { ReviewRejectionDialog } from './wizard/review-rejection-dialog'
 import { ReviewStepContent } from './wizard/review-step-content'
 import { ReviewWizardFooter } from './wizard/review-wizard-footer'
-import { ReviewWizardHeader } from './wizard/review-wizard-header'
+import {
+  ReviewWizardHeader,
+  type ReviewStepVisualStatus,
+} from './wizard/review-wizard-header'
 import { ReviewWizardStepHeader } from './wizard/review-wizard-step-header'
 
 interface ReviewRisikoWizardProps {
@@ -51,6 +51,29 @@ interface ReviewRisikoWizardProps {
   periodeId: string
   onBack: () => void
   onSuccess?: () => void
+}
+
+const TIER_ORDER: Record<SubmissionTier, number> = {
+  operator: 0,
+  kepala_opd: 1,
+  auditor: 2,
+  pengawas: 3,
+  completed: 4,
+}
+
+function getTierLocationLabel(tier: SubmissionTier): string {
+  switch (tier) {
+    case 'operator':
+      return 'Di Operator OPD'
+    case 'kepala_opd':
+      return 'Di Kepala OPD'
+    case 'auditor':
+      return 'Di Evaluator'
+    case 'pengawas':
+      return 'Di Pengawas'
+    default:
+      return 'Selesai'
+  }
 }
 
 export function ReviewRisikoWizard({
@@ -64,17 +87,21 @@ export function ReviewRisikoWizard({
   const { hasPermission, hasRole } = usePermissions()
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-  // Rejection Dialog state
+  // Per-form Rejection / Forward / Delegation Dialog state
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
   const [rejectionNote, setRejectionNote] = useState('')
   const [targetFormCode, setTargetFormCode] = useState<string>('')
+  const [rejectMode, setRejectMode] = useState<
+    'reject' | 'delegate_operator' | 'forward_kepala'
+  >('reject')
 
-  // Auditor action on Pengawas rejection dialogs
-  const [isForwardModalOpen, setIsForwardModalOpen] = useState(false)
-  const [forwardNotes, setForwardNotes] = useState('')
-
+  // Clarify to Pengawas Dialog state (per-form)
   const [isResubmitModalOpen, setIsResubmitModalOpen] = useState(false)
+  const [resubmitFormCode, setResubmitFormCode] = useState<string>('')
   const [resubmitNotes, setResubmitNotes] = useState('')
+
+  // Explicit Forward / Finalize Confirmation Dialog
+  const [isForwardConfirmOpen, setIsForwardConfirmOpen] = useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
 
   const {
@@ -148,107 +175,68 @@ export function ReviewRisikoWizard({
     (hasRole('Koordinator Pengawas') &&
       hasPermission('review_risiko.review_pengawas'))
 
-  const isKepalaTier =
-    submission?.current_tier === 'kepala_opd' ||
-    submission?.status === 'submitted_to_kepala_opd' ||
-    submission?.status === 'revision_by_auditor'
-  const isPengawasTier =
-    submission?.current_tier === 'pengawas' ||
-    submission?.status === 'submitted_to_pengawas' ||
-    submission?.status === 'in_review_pengawas'
+  // Resolve active viewer tier
+  const viewerTier: 'kepala_opd' | 'auditor' | 'pengawas' = !isRegionalAdmin
+    ? hasRole('Koordinator Pengawas')
+      ? 'pengawas'
+      : hasRole('Evaluator / Reviewer')
+        ? 'auditor'
+        : 'kepala_opd'
+    : submission?.current_tier === 'kepala_opd'
+      ? 'kepala_opd'
+      : submission?.current_tier === 'auditor'
+        ? 'auditor'
+        : 'pengawas'
 
-  // Kepala OPD Dialogs State
-  const [isKepalaApproveOpen, setIsKepalaApproveOpen] = useState(false)
-  const [isKepalaRejectOpen, setIsKepalaRejectOpen] = useState(false)
-  const [kepalaRejectNotes, setKepalaRejectNotes] = useState('')
-  const [kepalaRejectForm, setKepalaRejectForm] = useState('')
-  const [isKepalaDelegateOpen, setIsKepalaDelegateOpen] = useState(false)
-  const [kepalaDelegateNotes, setKepalaDelegateNotes] = useState('')
+  const isKepalaViewer = viewerTier === 'kepala_opd'
+  const isAuditorViewer = viewerTier === 'auditor'
+  const isPengawasViewer = viewerTier === 'pengawas'
 
-  // Kepala OPD Review Mutation
-  const reviewKepalaMutation = useMutation({
-    mutationFn: ({
-      status,
-      catatan,
-      form_code,
-    }: {
-      status: 'approved' | 'rejected'
-      catatan?: string
-      form_code?: string
-    }) =>
-      pengajuanRisikoService.reviewByKepalaOpd(submissionId, {
-        status,
-        catatan,
-        form_code,
-      }),
-    onSuccess: (res, vars) => {
-      toast.success(
-        res.message ||
-          (vars.status === 'approved'
-            ? 'Lembar kerja risiko berhasil disetujui dan diteruskan ke Evaluator.'
-            : 'Pengajuan berhasil dikembalikan kepada Operator untuk perbaikan internal.')
-      )
-      setIsKepalaApproveOpen(false)
-      setIsKepalaRejectOpen(false)
-      setKepalaRejectNotes('')
-      setKepalaRejectForm('')
-      queryClient.invalidateQueries({
-        queryKey: ['pengawasan', 'review-detail', submissionId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      queryClient.invalidateQueries({ queryKey: ['risiko-pending-counts'] })
-      onSuccess?.()
-    },
-    onError: (
-      err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>
-    ) => {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.errors?.catatan?.[0] ||
-        'Gagal memproses persetujuan Kepala OPD.'
-      toast.error(msg)
-    },
-  })
+  function invalidateAllReviewQueries() {
+    queryClient.invalidateQueries({
+      queryKey: ['pengawasan', 'review-detail', submissionId],
+    })
+    queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
+    queryClient.invalidateQueries({
+      queryKey: ['risiko-pengajuan-readiness'],
+    })
+    queryClient.invalidateQueries({ queryKey: ['risiko-pending-counts'] })
+  }
 
-  // Kepala OPD Delegate Mutation
-  const delegateOperatorMutation = useMutation({
-    mutationFn: (catatan: string) =>
-      pengajuanRisikoService.delegateToOperator(submissionId, {
-        catatan: catatan.trim() || undefined,
-      }),
-    onSuccess: (res) => {
-      toast.success(
-        res.message ||
-          'Catatan revisi evaluator berhasil didelegasikan kepada Operator.'
-      )
-      setIsKepalaDelegateOpen(false)
-      setKepalaDelegateNotes('')
-      queryClient.invalidateQueries({
-        queryKey: ['pengawasan', 'review-detail', submissionId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      queryClient.invalidateQueries({ queryKey: ['risiko-pending-counts'] })
-      onSuccess?.()
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err.response?.data?.message || 'Gagal mendelegasikan catatan revisi.'
-      )
-    },
-  })
-
-  // Review mutation (Auditor or Pengawas based on current tier)
+  // Unified Per-Form Approve / Reject Mutation across all 3 tiers
   const reviewMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       formCode,
       status,
       catatan,
+      mode = 'reject',
     }: {
       formCode: string
       status: 'approved' | 'rejected'
       catatan?: string
+      mode?: 'reject' | 'delegate_operator' | 'forward_kepala'
     }) => {
-      if (isPengawasTier) {
+      if (status === 'rejected' && mode === 'delegate_operator') {
+        return pengajuanRisikoService.delegateToOperator(submissionId, {
+          form_code: formCode,
+          catatan,
+        })
+      }
+      if (status === 'rejected' && mode === 'forward_kepala') {
+        return pengajuanRisikoService.forwardRevisionFromAuditor(submissionId, {
+          form_code: formCode,
+          catatan,
+        })
+      }
+
+      if (isKepalaViewer) {
+        return pengajuanRisikoService.reviewByKepalaOpd(submissionId, {
+          form_code: formCode,
+          status,
+          catatan,
+        })
+      }
+      if (isPengawasViewer) {
         return pengajuanRisikoService.reviewByPengawas(submissionId, {
           form_code: formCode,
           status,
@@ -266,17 +254,11 @@ export function ReviewRisikoWizard({
         res.message ||
           (vars.status === 'approved'
             ? `Form ${vars.formCode.toUpperCase()} berhasil disetujui.`
-            : `Form ${vars.formCode.toUpperCase()} ditolak dengan catatan revisi.`)
+            : `Form ${vars.formCode.toUpperCase()} dikembalikan dengan catatan revisi.`)
       )
       setIsRejectDialogOpen(false)
       setRejectionNote('')
-      queryClient.invalidateQueries({
-        queryKey: ['pengawasan', 'review-detail', submissionId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      queryClient.invalidateQueries({
-        queryKey: ['risiko-pengajuan-readiness'],
-      })
+      invalidateAllReviewQueries()
       onSuccess?.()
     },
     onError: (
@@ -285,40 +267,18 @@ export function ReviewRisikoWizard({
       const msg =
         err.response?.data?.message ||
         err.response?.data?.errors?.catatan_revisi?.[0] ||
-        'Gagal memproses review form.'
+        err.response?.data?.errors?.catatan?.[0] ||
+        err.response?.data?.errors?.form_code?.[0] ||
+        'Gagal memproses keputusan form.'
       toast.error(msg)
     },
   })
 
-  // Auditor forwards Pengawas rejection down to Kepala OPD
-  const forwardRevisionMutation = useMutation({
-    mutationFn: () =>
-      pengajuanRisikoService.forwardRevisionFromAuditor(submissionId, {
-        catatan: forwardNotes.trim() || undefined,
-      }),
-    onSuccess: (res) => {
-      toast.success(
-        res.message || 'Catatan revisi berhasil diteruskan ke Kepala OPD.'
-      )
-      setIsForwardModalOpen(false)
-      setForwardNotes('')
-      queryClient.invalidateQueries({
-        queryKey: ['pengawasan', 'review-detail', submissionId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
-      onSuccess?.()
-    },
-    onError: (err: AxiosError<{ message?: string }>) => {
-      toast.error(
-        err.response?.data?.message || 'Gagal meneruskan catatan revisi.'
-      )
-    },
-  })
-
-  // Auditor clarifies and re-submits directly back to Pengawas
+  // Evaluator clarifies & resubmits 1 form directly back to Pengawas
   const resubmitPengawasMutation = useMutation({
     mutationFn: () =>
       pengajuanRisikoService.resubmitToPengawas(submissionId, {
+        form_code: resubmitFormCode || undefined,
         catatan: resubmitNotes.trim() || undefined,
       }),
     onSuccess: (res) => {
@@ -327,10 +287,8 @@ export function ReviewRisikoWizard({
       )
       setIsResubmitModalOpen(false)
       setResubmitNotes('')
-      queryClient.invalidateQueries({
-        queryKey: ['pengawasan', 'review-detail', submissionId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['pengawasan'] })
+      setResubmitFormCode('')
+      invalidateAllReviewQueries()
       onSuccess?.()
     },
     onError: (err: AxiosError<{ message?: string }>) => {
@@ -340,17 +298,193 @@ export function ReviewRisikoWizard({
     },
   })
 
-  const currentStep = reviewSteps[currentStepIndex] || reviewSteps[0]
-  const currentItem = submission?.items?.find(
-    (i) => i.form_code.toLowerCase() === currentStep.id.toLowerCase()
-  )
+  // Explicit Forward / Finalize Mutation (only permitted at 100% approval)
+  const forwardTierMutation = useMutation({
+    mutationFn: async () => {
+      if (isKepalaViewer) {
+        return pengajuanRisikoService.forwardToAuditor(submissionId)
+      }
+      if (isAuditorViewer) {
+        return pengajuanRisikoService.forwardToPengawas(submissionId)
+      }
+      return pengajuanRisikoService.finalizeByPengawas(submissionId)
+    },
+    onSuccess: (res) => {
+      toast.success(res.message || 'Berkas berhasil diteruskan ke tahap berikutnya.')
+      setIsForwardConfirmOpen(false)
+      invalidateAllReviewQueries()
+      onSuccess?.()
+    },
+    onError: (
+      err: AxiosError<{ message?: string; errors?: Record<string, string[]> }>
+    ) => {
+      toast.error(
+        err.response?.data?.message ||
+          err.response?.data?.errors?.status?.[0] ||
+          'Gagal meneruskan berkas.'
+      )
+    },
+  })
 
-  const isCurrentApproved = currentItem?.status === 'approved'
-  const isCurrentRejected = currentItem?.status === 'rejected'
-  const isDraftSubmission =
-    submission?.status === 'draft' ||
-    submission?.status === 'submitted_to_kepala_opd' ||
-    submission?.status === 'revision_by_kepala_opd'
+  function getItemStatusForStep(stepConfig: RisikoWizardStepConfig): {
+    status: ReviewStepVisualStatus
+    revisionLocation?: string
+    revisionNote?: string | null
+    incomingRevisionSource?: string
+    incomingRevisionNote?: string | null
+    item?: SubmissionItem
+  } {
+    const item = submission?.items?.find(
+      (i) => i.form_code.toLowerCase() === stepConfig.id.toLowerCase()
+    )
+
+    if (!item) {
+      if (stepConfig.id === '4') return { status: 'draft' }
+      return {
+        status: submission?.status === 'draft' ? 'draft' : 'submitted',
+      }
+    }
+
+    const itemTier: SubmissionTier =
+      item.current_tier || submission?.current_tier || 'operator'
+
+    if (submission?.status === 'approved' || itemTier === 'completed') {
+      return { status: 'approved', item }
+    }
+
+    if (submission?.status === 'draft') {
+      return { status: 'draft', item }
+    }
+
+    const itemRank = TIER_ORDER[itemTier] ?? 0
+    const viewerRank = TIER_ORDER[viewerTier]
+
+    if (isKepalaViewer) {
+      if (itemRank < viewerRank) {
+        return {
+          status: 'in_revision',
+          revisionLocation: getTierLocationLabel(itemTier),
+          revisionNote: item.catatan_kepala_opd || item.catatan_revisi,
+          item,
+        }
+      }
+      if (itemTier === 'kepala_opd' && item.status_auditor === 'rejected') {
+        return {
+          status: 'needs_action',
+          incomingRevisionSource: 'Evaluator',
+          incomingRevisionNote: item.catatan_auditor || item.catatan_revisi,
+          item,
+        }
+      }
+      if (item.status_kepala_opd === 'approved' && itemRank >= viewerRank) {
+        return { status: 'approved', item }
+      }
+      return { status: 'submitted', item }
+    }
+
+    if (isAuditorViewer) {
+      if (itemRank < viewerRank) {
+        return {
+          status: 'in_revision',
+          revisionLocation: getTierLocationLabel(itemTier),
+          revisionNote: item.catatan_auditor || item.catatan_revisi,
+          item,
+        }
+      }
+      if (itemTier === 'auditor' && item.status_pengawas === 'rejected') {
+        return {
+          status: 'needs_action',
+          incomingRevisionSource: 'Pengawas APIP',
+          incomingRevisionNote: item.catatan_pengawas || item.catatan_revisi,
+          item,
+        }
+      }
+      if (item.status_auditor === 'approved' && itemRank >= viewerRank) {
+        return { status: 'approved', item }
+      }
+      return { status: 'submitted', item }
+    }
+
+    // Pengawas viewer
+    if (itemRank < viewerRank) {
+      return {
+        status: 'in_revision',
+        revisionLocation: getTierLocationLabel(itemTier),
+        revisionNote: item.catatan_pengawas || item.catatan_revisi,
+        item,
+      }
+    }
+    if (item.status_pengawas === 'approved') {
+      return { status: 'approved', item }
+    }
+    return { status: 'submitted', item }
+  }
+
+  const currentStep = reviewSteps[currentStepIndex] || reviewSteps[0]
+  const currentStepState = getItemStatusForStep(currentStep)
+  const currentItem = currentStepState.item
+  const currentItemTier: SubmissionTier =
+    currentItem?.current_tier || submission?.current_tier || 'operator'
+
+  const isDraftSubmission = submission?.status === 'draft'
+
+  const totalSteps = reviewSteps.length
+  const requiredSteps = reviewSteps.filter(
+    (step) => step.id !== '4' || hasForm4Item
+  )
+  const stepStates = requiredSteps.map((s) => getItemStatusForStep(s))
+  const approvedCount = stepStates.filter((s) => s.status === 'approved').length
+  const inRevisionCount = stepStates.filter(
+    (s) => s.status === 'in_revision'
+  ).length
+  const needsActionCount = stepStates.filter(
+    (s) => s.status === 'needs_action'
+  ).length
+  const pendingCount =
+    requiredSteps.length - approvedCount - inRevisionCount
+  const progressPercentage =
+    requiredSteps.length > 0
+      ? Math.round((approvedCount / requiredSteps.length) * 100)
+      : 0
+
+  const canDecideCurrentStep =
+    !isDraftSubmission &&
+    submission?.status !== 'approved' &&
+    ((isKepalaViewer && canActAsKepalaOpd && currentItemTier === 'kepala_opd') ||
+      (isAuditorViewer && canActAsAuditor && currentItemTier === 'auditor') ||
+      (isPengawasViewer && canActAsPengawas && currentItemTier === 'pengawas'))
+
+  const showForwardBanner =
+    !isDraftSubmission &&
+    submission?.status !== 'approved' &&
+    submission?.current_tier === viewerTier &&
+    ((isKepalaViewer && canActAsKepalaOpd) ||
+      (isAuditorViewer && canActAsAuditor) ||
+      (isPengawasViewer && canActAsPengawas))
+
+  const isReadyToForward =
+    requiredSteps.length > 0 &&
+    approvedCount === requiredSteps.length &&
+    inRevisionCount === 0 &&
+    needsActionCount === 0
+
+  const forwardActionLabel = isKepalaViewer
+    ? 'Kirim ke Evaluator'
+    : isAuditorViewer
+      ? 'Kirim ke Pengawas'
+      : 'Sahkan Final'
+
+  const forwardConfirmTitle = isKepalaViewer
+    ? 'Kirim Seluruh Berkas ke Evaluator APIP?'
+    : isAuditorViewer
+      ? 'Kirim Seluruh Berkas ke Pengawas Inspektorat?'
+      : 'Sahkan Final Lembar Kerja Risiko OPD?'
+
+  const forwardConfirmDesc = isKepalaViewer
+    ? `Seluruh ${requiredSteps.length} formulir telah disetujui (100% hijau). Berkas akan dikirim resmi ke tahap pemeriksaan Evaluator.`
+    : isAuditorViewer
+      ? `Seluruh ${requiredSteps.length} formulir telah disetujui Evaluator (100% hijau). Berkas akan dikirim ke Pengawas untuk pengesahan akhir.`
+      : `Seluruh ${requiredSteps.length} formulir telah disetujui Pengawas (100% hijau). Dokumen akan disahkan final dan dikunci sebagai arsip resmi.`
 
   function handleApprove(formCode: string) {
     reviewMutation.mutate({ formCode, status: 'approved' })
@@ -361,7 +495,28 @@ export function ReviewRisikoWizard({
       (i) => i.form_code.toLowerCase() === formCode.toLowerCase()
     )
     setTargetFormCode(formCode)
-    setRejectionNote(existing?.catatan_revisi || '')
+
+    // Pre-fill editable notes when forwarding upper-tier rejection down the waterfall
+    if (isAuditorViewer && existing?.status_pengawas === 'rejected') {
+      setRejectMode('forward_kepala')
+      setRejectionNote(
+        existing.catatan_pengawas || existing.catatan_revisi || ''
+      )
+    } else if (isKepalaViewer && existing?.status_auditor === 'rejected') {
+      setRejectMode('delegate_operator')
+      setRejectionNote(
+        existing.catatan_auditor || existing.catatan_revisi || ''
+      )
+    } else {
+      setRejectMode('reject')
+      const existingNote = isKepalaViewer
+        ? existing?.catatan_kepala_opd
+        : isPengawasViewer
+          ? existing?.catatan_pengawas
+          : existing?.catatan_auditor
+      setRejectionNote(existingNote || '')
+    }
+
     setIsRejectDialogOpen(true)
   }
 
@@ -375,46 +530,9 @@ export function ReviewRisikoWizard({
       formCode: targetFormCode,
       status: 'rejected',
       catatan: rejectionNote.trim(),
+      mode: rejectMode,
     })
   }
-
-  function getItemStatusForStep(stepConfig: RisikoWizardStepConfig): {
-    status: 'approved' | 'rejected' | 'submitted' | 'draft'
-    item?: SubmissionItem
-  } {
-    const item = submission?.items?.find(
-      (i) => i.form_code.toLowerCase() === stepConfig.id.toLowerCase()
-    )
-
-    if (!item) {
-      if (stepConfig.id === '4') return { status: 'draft' }
-      if (
-        submission?.status &&
-        submission.status !== 'draft' &&
-        submission.status !== 'revision_by_kepala_opd'
-      ) {
-        return { status: 'submitted' }
-      }
-      return { status: 'draft' }
-    }
-
-    return { status: item.status, item }
-  }
-
-  const totalSteps = reviewSteps.length
-  const requiredSteps = reviewSteps.filter(
-    (step) => step.id !== '4' || hasForm4Item
-  )
-  const approvedCount = requiredSteps.filter(
-    (s) => getItemStatusForStep(s).status === 'approved'
-  ).length
-  const rejectedCount = requiredSteps.filter(
-    (s) => getItemStatusForStep(s).status === 'rejected'
-  ).length
-  const pendingCount = requiredSteps.length - approvedCount - rejectedCount
-  const progressPercentage = Math.round(
-    (approvedCount / requiredSteps.length) * 100
-  )
 
   if (isLoadingSubmission) {
     return (
@@ -449,7 +567,25 @@ export function ReviewRisikoWizard({
     )
   }
 
-  const isRevisionByPengawas = submission?.status === 'revision_by_pengawas'
+  const rejectButtonLabel =
+    isAuditorViewer && currentStepState.status === 'needs_action'
+      ? 'Teruskan ke Kepala OPD'
+      : isKepalaViewer && currentStepState.status === 'needs_action'
+        ? 'Delegasikan ke Operator'
+        : isPengawasViewer
+          ? 'Tolak ke Evaluator'
+          : isKepalaViewer
+            ? 'Tolak ke Operator'
+            : 'Tolak ke Kepala OPD'
+
+  const approveButtonLabel =
+    currentStepState.status === 'approved'
+      ? 'Sudah Disetujui'
+      : isKepalaViewer && submission.current_tier !== 'kepala_opd'
+        ? `Setujui Ulang Form ${currentStep.code}`
+        : isAuditorViewer && submission.current_tier === 'pengawas'
+          ? `Setujui Ulang Form ${currentStep.code}`
+          : `Setujui Form ${currentStep.code}`
 
   return (
     <div className='flex flex-1 flex-col gap-4 pb-16'>
@@ -460,7 +596,7 @@ export function ReviewRisikoWizard({
         currentStepIndex={currentStepIndex}
         totalSteps={totalSteps}
         approvedCount={approvedCount}
-        rejectedCount={rejectedCount}
+        rejectedCount={inRevisionCount}
         pendingCount={pendingCount}
         progressPercentage={progressPercentage}
         currentStep={currentStep}
@@ -469,118 +605,59 @@ export function ReviewRisikoWizard({
         onSelectStep={setCurrentStepIndex}
       />
 
-      {/* Kepala OPD Action Banner when in Tier 2 */}
-      {isKepalaTier && canActAsKepalaOpd && (
-        <div className='flex flex-col justify-between gap-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3.5 text-sky-900 sm:flex-row sm:items-center dark:text-sky-200'>
+      {/* EXPLICIT FORWARD / FINALIZE ACTION BAR (Enabled ONLY when 100% green) */}
+      {showForwardBanner && (
+        <div
+          className={
+            isReadyToForward
+              ? 'flex flex-col justify-between gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3.5 text-emerald-900 sm:flex-row sm:items-center dark:text-emerald-200'
+              : 'flex flex-col justify-between gap-3 rounded-xl border border-border bg-muted/40 p-3.5 text-foreground sm:flex-row sm:items-center'
+          }
+        >
           <div className='flex items-center gap-2.5 text-xs'>
-            <CheckCircle2 className='h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400' />
-            <span>
-              <strong>Persetujuan Pimpinan OPD:</strong>{' '}
-              {submission?.status === 'revision_by_auditor'
-                ? 'Evaluator APIP telah memberikan catatan revisi teknis. Anda dapat mendelegasikannya kepada Operator untuk diperbaiki atau langsung menyetujui ulang.'
-                : 'Operator OPD telah mengajukan draf lembar kerja risiko (Form 2B & 2C). Periksa keselarasan sasaran dan target sebelum diteruskan ke Evaluator APIP.'}
-            </span>
-          </div>
-          <div className='flex shrink-0 items-center gap-2'>
-            {submission?.status === 'revision_by_auditor' ? (
-              <>
-                <Button
-                  type='button'
-                  size='sm'
-                  variant='outline'
-                  className='h-8 gap-1.5 border-sky-600/40 text-xs text-sky-800 dark:text-sky-200'
-                  onClick={() => setIsKepalaDelegateOpen(true)}
-                >
-                  <ArrowRightCircle className='h-3.5 w-3.5' />
-                  <span>Delegasikan ke Operator</span>
-                </Button>
-                <Button
-                  type='button'
-                  size='sm'
-                  className='h-8 gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700'
-                  onClick={() => setIsKepalaApproveOpen(true)}
-                >
-                  <CheckCircle2 className='h-3.5 w-3.5' />
-                  <span>Setujui Ulang ke Evaluator</span>
-                </Button>
-              </>
+            {isReadyToForward ? (
+              <CheckCircle2 className='h-4 w-4 shrink-0 text-emerald-600' />
             ) : (
-              <>
-                <Button
-                  type='button'
-                  size='sm'
-                  variant='destructive'
-                  className='h-8 gap-1.5 text-xs font-medium'
-                  onClick={() => {
-                    setKepalaRejectForm(
-                      currentItem && currentItem.status !== 'approved'
-                        ? currentStep.id
-                        : ''
-                    )
-                    setIsKepalaRejectOpen(true)
-                  }}
-                >
-                  <XCircle className='h-3.5 w-3.5' />
-                  <span>Kembalikan ke Operator (Revisi)</span>
-                </Button>
-                <Button
-                  type='button'
-                  size='sm'
-                  className='h-8 gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700'
-                  onClick={() => setIsKepalaApproveOpen(true)}
-                >
-                  <CheckCircle2 className='h-3.5 w-3.5' />
-                  <span>Setujui & Teruskan ke Evaluator</span>
-                </Button>
-              </>
+              <RefreshCw className='h-4 w-4 shrink-0 text-amber-600' />
             )}
-          </div>
-        </div>
-      )}
-
-      {isKepalaTier && !canActAsKepalaOpd && (
-        <div className='flex items-center gap-2 rounded-xl border border-muted bg-muted/40 p-3 text-xs text-muted-foreground'>
-          <Clock className='h-4 w-4 shrink-0 text-muted-foreground' />
-          <span>
-            Berkas saat ini sedang dalam proses{' '}
-            <strong>Persetujuan Internal Kepala OPD</strong> sebelum dapat
-            diperiksa oleh Evaluator Pengawas.
-          </span>
-        </div>
-      )}
-
-      {/* Auditor Action Bar when Pengawas has rejected */}
-      {isRevisionByPengawas && canActAsAuditor && (
-        <div className='flex flex-col justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-800 sm:flex-row sm:items-center dark:text-amber-300'>
-          <div className='flex items-center gap-2 text-xs'>
-            <AlertCircle className='h-4 w-4 shrink-0 text-amber-600' />
             <span>
-              <strong>Perhatian Evaluator:</strong> Pengawas APIP mengembalikan
-              berkas ini dengan catatan. Anda dapat meneruskannya ke Kepala OPD
-              atau mengirimkan klarifikasi ulang ke Pengawas.
+              {isReadyToForward ? (
+                <>
+                  <strong>Siap Diteruskan (100% Disetujui):</strong> Seluruh{' '}
+                  {requiredSteps.length} formulir telah disetujui tanpa catatan
+                  revisi tersisa. Klik tombol di samping untuk meneruskan
+                  berkas.
+                </>
+              ) : (
+                <>
+                  <strong>Progres Penilaian Per-Form:</strong> {approvedCount}/
+                  {requiredSteps.length} formulir disetujui
+                  {inRevisionCount > 0 && (
+                    <span className='font-semibold text-amber-700 dark:text-amber-400'>
+                      {' '}
+                      • {inRevisionCount} sedang direvisi (kuning)
+                    </span>
+                  )}
+                  . Tombol <strong>{forwardActionLabel}</strong> akan aktif
+                  setelah seluruh formulir disetujui (100%).
+                </>
+              )}
             </span>
           </div>
-          <div className='flex shrink-0 items-center gap-2'>
-            <Button
-              type='button'
-              size='sm'
-              variant='outline'
-              className='h-8 gap-1.5 border-amber-600/40 text-xs text-amber-800 dark:text-amber-200'
-              onClick={() => setIsResubmitModalOpen(true)}
-            >
-              <Send className='h-3 w-3' />
-              <span>Kirim Klarifikasi ke Pengawas</span>
-            </Button>
-            <Button
-              type='button'
-              size='sm'
-              className='h-8 gap-1.5 bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700'
-              onClick={() => setIsForwardModalOpen(true)}
-            >
-              <ArrowRightCircle className='h-3.5 w-3.5' />
-              <span>Teruskan ke Kepala OPD</span>
-            </Button>
-          </div>
+          <Button
+            type='button'
+            size='sm'
+            disabled={!isReadyToForward || forwardTierMutation.isPending}
+            onClick={() => setIsForwardConfirmOpen(true)}
+            className='h-8 shrink-0 gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50'
+          >
+            {forwardTierMutation.isPending ? (
+              <Loader2 className='h-3.5 w-3.5 animate-spin' />
+            ) : (
+              <Send className='h-3.5 w-3.5' />
+            )}
+            <span>{forwardActionLabel}</span>
+          </Button>
         </div>
       )}
 
@@ -605,32 +682,44 @@ export function ReviewRisikoWizard({
         </div>
 
         <div className='overflow-hidden rounded-xl border bg-card shadow-xs'>
-          {/* Step Header with Decision Bar */}
           <ReviewWizardStepHeader
             informationOnly={currentStep.id === '4' && !hasForm4Item}
-            canDecide={
-              isPengawasTier
-                ? canActAsPengawas
-                : submission.current_tier === 'auditor' && canActAsAuditor
-            }
+            canDecide={canDecideCurrentStep}
             stepNumber={currentStep.stepNumber}
             totalSteps={totalSteps}
             stepCode={currentStep.code}
             stepTitle={currentStep.title}
             stepSubtitle={currentStep.subtitle}
-            isApproved={isCurrentApproved}
-            isRejected={isCurrentRejected}
+            isApproved={currentStepState.status === 'approved'}
+            isRejected={currentStepState.status === 'in_revision'}
+            isInRevision={currentStepState.status === 'in_revision'}
+            revisionLocation={currentStepState.revisionLocation}
+            revisionNote={currentStepState.revisionNote}
+            isNeedsAction={currentStepState.status === 'needs_action'}
+            incomingRevisionSource={currentStepState.incomingRevisionSource}
+            incomingRevisionNote={currentStepState.incomingRevisionNote}
             isDraftSubmission={isDraftSubmission}
             isPendingMutation={
               reviewMutation.isPending ||
               isActiveFormError ||
               isActiveFormLoading
             }
-            isPengawasTier={isPengawasTier}
-            isKepalaTier={isKepalaTier}
+            isPengawasTier={isPengawasViewer}
+            isKepalaTier={isKepalaViewer}
             currentItem={currentItem}
+            rejectButtonLabel={rejectButtonLabel}
+            approveButtonLabel={approveButtonLabel}
             onApprove={() => handleApprove(currentStep.id)}
             onOpenReject={() => handleOpenReject(currentStep.id)}
+            onClarifyToPengawas={
+              isAuditorViewer && currentStepState.status === 'needs_action'
+                ? () => {
+                    setResubmitFormCode(currentStep.id)
+                    setResubmitNotes('')
+                    setIsResubmitModalOpen(true)
+                  }
+                : undefined
+            }
           />
 
           {/* Step Data Content Area via Registry */}
@@ -681,7 +770,7 @@ export function ReviewRisikoWizard({
         </div>
       </div>
 
-      {/* 3. REJECTION NOTES MODAL DIALOG */}
+      {/* 3. PER-FORM REJECTION / DELEGATION / FORWARD NOTES DIALOG (Pre-filled & Editable) */}
       <ReviewRejectionDialog
         open={isRejectDialogOpen}
         onOpenChange={setIsRejectDialogOpen}
@@ -692,68 +781,21 @@ export function ReviewRisikoWizard({
         isPending={reviewMutation.isPending}
       />
 
-      {/* 4. MODAL FORWARD REVISION TO KEPALA OPD */}
-      <Dialog open={isForwardModalOpen} onOpenChange={setIsForwardModalOpen}>
-        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
-          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
-            <DialogTitle className='flex items-center gap-2 text-sm font-bold'>
-              <ArrowRightCircle className='h-4 w-4 text-amber-600' />
-              Teruskan Catatan Revisi ke Kepala OPD
-            </DialogTitle>
-            <DialogDescription className='text-xs'>
-              Berkas akan dikembalikan ke Kepala OPD agar dikoordinasikan kepada
-              Operator OPD terkait.
-            </DialogDescription>
-          </DialogHeader>
-          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
-            <Label className='text-xs font-semibold'>
-              Catatan Pengantar Evaluator (Opsional):
-            </Label>
-            <Textarea
-              rows={3}
-              value={forwardNotes}
-              onChange={(e) => setForwardNotes(e.target.value)}
-              placeholder='Tambahkan instruksi pengantar ke pimpinan OPD...'
-              className='text-xs'
-            />
-          </div>
-          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setIsForwardModalOpen(false)}
-              disabled={forwardRevisionMutation.isPending}
-            >
-              Batal
-            </Button>
-            <Button
-              size='sm'
-              className='bg-amber-600 text-white hover:bg-amber-700'
-              disabled={forwardRevisionMutation.isPending}
-              onClick={() => forwardRevisionMutation.mutate()}
-            >
-              {forwardRevisionMutation.isPending
-                ? 'Meneruskan...'
-                : 'Teruskan ke Kepala OPD'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 5. MODAL RESUBMIT TO PENGAWAS */}
+      {/* 4. MODAL CLARIFY & RESUBMIT FORM DIRECTLY TO PENGAWAS */}
       <Dialog open={isResubmitModalOpen} onOpenChange={setIsResubmitModalOpen}>
-        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
-          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
+        <DialogContent className='flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 shadow-2xl sm:max-w-md'>
+          <DialogHeader className='shrink-0 border-b px-4 py-4 sm:px-6'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold'>
               <Send className='h-4 w-4 text-primary' />
-              Kirim Klarifikasi ke Pengawas
+              Kirim Klarifikasi Form {resubmitFormCode.toUpperCase()} ke
+              Pengawas
             </DialogTitle>
             <DialogDescription className='text-xs'>
-              Kirimkan kembali berkas disertai catatan klarifikasi penjelasan
-              langsung kepada Pengawas APIP.
+              Kirimkan kembali formulir ini disertai catatan klarifikasi
+              langsung kepada Pengawas APIP tanpa perlu mengembalikan ke OPD.
             </DialogDescription>
           </DialogHeader>
-          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
+          <div className='min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-4 text-xs sm:px-6'>
             <Label className='text-xs font-semibold'>
               Catatan Penjelasan Klarifikasi:
             </Label>
@@ -765,7 +807,7 @@ export function ReviewRisikoWizard({
               className='text-xs'
             />
           </div>
-          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <DialogFooter className='flex shrink-0 items-center justify-end gap-2 border-t bg-muted/10 px-4 py-3 sm:px-6'>
             <Button
               variant='outline'
               size='sm'
@@ -781,27 +823,27 @@ export function ReviewRisikoWizard({
             >
               {resubmitPengawasMutation.isPending
                 ? 'Mengirim...'
-                : 'Kirim ke Pengawas'}
+                : 'Kirim Klarifikasi ke Pengawas'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 6. MODAL AUDIT TRAIL / RIWAYAT PERSETUJUAN */}
+      {/* 5. MODAL AUDIT TRAIL / RIWAYAT PERSETUJUAN */}
       <Dialog open={isHistoryModalOpen} onOpenChange={setIsHistoryModalOpen}>
-        <DialogContent className='sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
-          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
+        <DialogContent className='flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 shadow-2xl sm:max-w-lg'>
+          <DialogHeader className='shrink-0 border-b px-4 py-4 sm:px-6'>
             <DialogTitle className='flex items-center gap-2 text-sm font-bold sm:text-base'>
               <History className='h-4.5 w-4.5 text-primary' />
               <span>Jejak Audit & Riwayat Verifikasi Berjenjang</span>
             </DialogTitle>
             <DialogDescription className='text-xs'>
-              Histori kronologis pengajuan, catatan revisi, dan keputusan
-              persetujuan berkas ini.
+              Histori kronologis pengajuan, catatan revisi per-form, dan
+              keputusan persetujuan berkas ini.
             </DialogDescription>
           </DialogHeader>
 
-          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-3 text-xs'>
+          <div className='min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 text-xs sm:px-6'>
             {submission?.histories && submission.histories.length > 0 ? (
               <div className='relative space-y-4 pl-6 before:absolute before:top-2 before:bottom-2 before:left-2 before:w-[2px] before:bg-border'>
                 {submission.histories.map((hist) => {
@@ -810,9 +852,7 @@ export function ReviewRisikoWizard({
                     dateFormatted = format(
                       parseISO(hist.created_at),
                       'dd MMM yyyy, HH:mm',
-                      {
-                        locale: idLocale,
-                      }
+                      { locale: idLocale }
                     )
                   } catch {
                     dateFormatted = hist.created_at
@@ -825,11 +865,16 @@ export function ReviewRisikoWizard({
                       </span>
                       <div className='flex flex-wrap items-center gap-2'>
                         <span className='font-bold text-foreground'>
-                          {hist.user?.name ||
-                            (hist as unknown as { actor?: { name?: string } })
-                              .actor?.name ||
-                            'Sistem'}
+                          {hist.user?.name || 'Sistem'}
                         </span>
+                        {hist.form_code && (
+                          <Badge
+                            variant='secondary'
+                            className='font-mono text-[10px]'
+                          >
+                            Form {hist.form_code.toUpperCase()}
+                          </Badge>
+                        )}
                         <Badge
                           variant='outline'
                           className='font-mono text-[10px]'
@@ -840,13 +885,9 @@ export function ReviewRisikoWizard({
                           {dateFormatted}
                         </span>
                       </div>
-                      {(hist.catatan ||
-                        (hist as unknown as { notes?: string }).notes) && (
+                      {hist.catatan && (
                         <p className='rounded border border-border/40 bg-muted/40 p-2 text-[11px] text-muted-foreground italic'>
-                          &ldquo;
-                          {hist.catatan ||
-                            (hist as unknown as { notes?: string }).notes}
-                          &rdquo;
+                          &ldquo;{hist.catatan}&rdquo;
                         </p>
                       )}
                     </div>
@@ -860,7 +901,7 @@ export function ReviewRisikoWizard({
             )}
           </div>
 
-          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
+          <DialogFooter className='flex shrink-0 items-center justify-end gap-2 border-t bg-muted/10 px-4 py-3 sm:px-6'>
             <Button
               type='button'
               variant='outline'
@@ -874,168 +915,25 @@ export function ReviewRisikoWizard({
         </DialogContent>
       </Dialog>
 
-      {/* 7. MODAL KEPALA OPD: APPROVE CONFIRMATION */}
+      {/* 6. EXPLICIT FORWARD / FINALIZE CONFIRMATION DIALOG */}
       <ConfirmDialog
-        open={isKepalaApproveOpen}
-        onOpenChange={setIsKepalaApproveOpen}
-        title='Setujui Lembar Kerja Risiko OPD'
-        desc='Apakah Anda yakin seluruh lembar kerja pengelolaan risiko (Form 2B dan Form 2C) telah selaras dengan arah kebijakan dinas dan siap diteruskan kepada Evaluator APIP?'
+        open={isForwardConfirmOpen}
+        onOpenChange={setIsForwardConfirmOpen}
+        title={forwardConfirmTitle}
+        desc={forwardConfirmDesc}
         confirmText={
-          reviewKepalaMutation.isPending ? (
+          forwardTierMutation.isPending ? (
             <>
               <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
               Memproses...
             </>
           ) : (
-            'Ya, Setujui & Kirim'
+            `Ya, ${forwardActionLabel}`
           )
         }
-        handleConfirm={() =>
-          reviewKepalaMutation.mutate({ status: 'approved' })
-        }
-        isLoading={reviewKepalaMutation.isPending}
+        handleConfirm={() => forwardTierMutation.mutate()}
+        isLoading={forwardTierMutation.isPending}
       />
-
-      {/* 8. MODAL KEPALA OPD: REJECTION NOTES */}
-      <Dialog open={isKepalaRejectOpen} onOpenChange={setIsKepalaRejectOpen}>
-        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
-          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
-            <DialogTitle className='flex items-center gap-2 text-sm font-bold text-destructive sm:text-base'>
-              <XCircle className='h-4 w-4' />
-              Kembalikan Berkas ke Operator (Revisi Internal)
-            </DialogTitle>
-            <DialogDescription className='text-xs'>
-              Berikan catatan arahan perbaikan internal yang harus
-              ditindaklanjuti oleh staf teknis/operator dinas sebelum diajukan
-              kembali ke pimpinan.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
-            <KepalaFormSelect
-              items={submission.items || []}
-              value={kepalaRejectForm}
-              onValueChange={setKepalaRejectForm}
-            />
-            <Label
-              htmlFor='kepala-reject-notes'
-              className='text-xs font-semibold'
-            >
-              Catatan Arahan Revisi Pimpinan{' '}
-              <span className='text-destructive'>*</span>
-            </Label>
-            <Textarea
-              id='kepala-reject-notes'
-              rows={4}
-              placeholder='Contoh: Mohon sesuaikan kembali target IKU pada sasaran kedua dan perbaiki kriteria kemungkinan risiko...'
-              value={kepalaRejectNotes}
-              onChange={(e) => setKepalaRejectNotes(e.target.value)}
-              className='resize-none text-xs'
-            />
-            <p className='text-[11px] text-muted-foreground'>
-              Minimal 5 karakter. Catatan ini akan tampil jelas pada akun
-              Operator.
-            </p>
-          </div>
-
-          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-8 text-xs'
-              onClick={() => setIsKepalaRejectOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button
-              type='button'
-              variant='destructive'
-              size='sm'
-              className='h-8 gap-1.5 text-xs'
-              disabled={
-                reviewKepalaMutation.isPending ||
-                !kepalaRejectForm ||
-                kepalaRejectNotes.trim().length < 5
-              }
-              onClick={() =>
-                reviewKepalaMutation.mutate({
-                  status: 'rejected',
-                  catatan: kepalaRejectNotes.trim(),
-                  form_code: kepalaRejectForm,
-                })
-              }
-            >
-              {reviewKepalaMutation.isPending && (
-                <Loader2 className='mr-1.5 h-3 w-3 animate-spin' />
-              )}
-              Kirim Arahan Revisi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 9. MODAL KEPALA OPD: DELEGATE AUDITOR REVISION TO OPERATOR */}
-      <Dialog
-        open={isKepalaDelegateOpen}
-        onOpenChange={setIsKepalaDelegateOpen}
-      >
-        <DialogContent className='sm:max-w-md max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl'>
-          <DialogHeader className='px-4 sm:px-6 py-4 border-b shrink-0'>
-            <DialogTitle className='flex items-center gap-2 text-sm font-bold text-foreground sm:text-base'>
-              <ArrowRightCircle className='h-4 w-4 text-amber-600' />
-              Delegasikan Revisi Evaluator ke Operator
-            </DialogTitle>
-            <DialogDescription className='text-xs'>
-              Teruskan temuan/catatan perbaikan dari Evaluator APIP kepada
-              Operator OPD untuk diperbaiki secara teknis.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className='flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0 space-y-2 text-xs'>
-            <Label
-              htmlFor='kepala-delegate-notes'
-              className='text-xs font-semibold'
-            >
-              Instruksi Tambahan untuk Operator (Opsional)
-            </Label>
-            <Textarea
-              id='kepala-delegate-notes'
-              rows={3}
-              placeholder='Contoh: Tolong tim teknis operator segera sesuaikan parameter pengawasan sesuai catatan evaluator di atas...'
-              value={kepalaDelegateNotes}
-              onChange={(e) => setKepalaDelegateNotes(e.target.value)}
-              className='resize-none text-xs'
-            />
-          </div>
-
-          <DialogFooter className='px-4 sm:px-6 py-3 border-t bg-muted/10 shrink-0 flex items-center justify-end gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-8 text-xs'
-              onClick={() => setIsKepalaDelegateOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button
-              type='button'
-              size='sm'
-              className='h-8 gap-1.5 bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700'
-              disabled={delegateOperatorMutation.isPending}
-              onClick={() =>
-                delegateOperatorMutation.mutate(kepalaDelegateNotes)
-              }
-            >
-              {delegateOperatorMutation.isPending && (
-                <Loader2 className='mr-1.5 h-3 w-3 animate-spin' />
-              )}
-              Delegasikan ke Operator
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

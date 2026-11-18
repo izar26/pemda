@@ -69,11 +69,22 @@ class PengajuanReadinessService
         $formStatuses = [];
         $formDetails = [];
         $rejectionNotes = [];
+        $editableForms = [];
+        $isDraft = $submission->isDraft();
+
         foreach ($submission->items as $item) {
             $code = strtolower((string) $item->form_code);
+            $itemTier = $item->current_tier ?? ($isDraft ? PengajuanPenilaianRisiko::TIER_OPERATOR : ($submission->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR));
+            $isEditableByOperator = $item->isEditableByOperator($submission->status);
+            if ($isEditableByOperator) {
+                $editableForms[] = $code;
+            }
+
             $formStatuses[$code] = $item->status;
             $formDetails[$code] = [
                 'form_code' => $code,
+                'current_tier' => $itemTier,
+                'is_editable_by_operator' => $isEditableByOperator,
                 'status' => $item->status,
                 'status_kepala_opd' => $item->status_kepala_opd,
                 'catatan_kepala_opd' => $item->catatan_kepala_opd,
@@ -85,73 +96,86 @@ class PengajuanReadinessService
                 'reviewed_at' => $item->reviewed_at,
                 'reviewed_by' => $item->reviewedBy,
             ];
-            if ($item->status === PengajuanPenilaianRisikoItem::STATUS_REJECTED) {
+            if ($itemTier === PengajuanPenilaianRisiko::TIER_OPERATOR && ! $isDraft) {
+                $rejectionNotes[$code] = $item->catatan_kepala_opd ?: $item->catatan_revisi;
+            } elseif ($item->status === PengajuanPenilaianRisikoItem::STATUS_REJECTED) {
                 $rejectionNotes[$code] = $item->catatan_revisi;
             }
         }
+
+        if ($isDraft) {
+            $editableForms = $this->registry->getCodes();
+        } else {
+            $editableForms = array_values(array_unique($editableForms));
+        }
+
+        $revisionFormsCount = $isDraft ? 0 : count($editableForms);
 
         // 5. Permissions and state machine capabilities
         $currentTier = $submission->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR;
         $status = $submission->status;
 
-        // Operator submission capability
-        $canSubmitToKepala = $hasAuditor && $allFormsComplete && in_array($status, [
-            PengajuanPenilaianRisiko::STATUS_DRAFT,
-            PengajuanPenilaianRisiko::STATUS_REVISION_BY_KEPALA,
-            PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
-        ], true);
+        // Operator submission capability (initial draft OR at least 1 form returned for revision)
+        $canSubmitToKepala = $hasAuditor && (
+            ($isDraft && $allFormsComplete)
+            || (! $isDraft && $revisionFormsCount > 0)
+        );
 
         // Kepala OPD action capabilities
         $isKepalaOpdOfThisOpd = $currentUser && (
             $currentUser->isRegionalAdmin()
-            || (($currentUser->can('review_risiko.review_kepala') || $currentUser->hasRole('Executive')) && (string) $currentUser->opd_id === (string) $opdId)
+            || ($currentUser->isKepalaOpd() && $currentUser->can('review_risiko.review_kepala') && (string) $currentUser->opd_id === (string) $opdId)
         );
 
-        $canReviewKepala = $currentTier === PengajuanPenilaianRisiko::TIER_KEPALA_OPD
-            && $status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA
+        $hasItemsAtKepala = $submission->items->contains(
+            fn (PengajuanPenilaianRisikoItem $i) => $i->current_tier === PengajuanPenilaianRisiko::TIER_KEPALA_OPD
+        );
+        $hasAuditorRejectAtKepala = $submission->items->contains(
+            fn (PengajuanPenilaianRisikoItem $i) => $i->current_tier === PengajuanPenilaianRisiko::TIER_KEPALA_OPD
+                && $i->status_auditor === PengajuanPenilaianRisikoItem::STATUS_REJECTED
+        );
+
+        $canReviewKepala = $hasItemsAtKepala && ! $isDraft && ! $submission->isApproved()
             && ($currentUser ? $isKepalaOpdOfThisOpd : true);
 
-        $canDelegateOperator = $currentTier === PengajuanPenilaianRisiko::TIER_KEPALA_OPD
-            && $status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR
+        $canDelegateOperator = $hasAuditorRejectAtKepala
             && ($currentUser ? $isKepalaOpdOfThisOpd : true);
 
         // Auditor action capabilities
         $isAssignedAuditor = $currentUser && (
             $currentUser->isRegionalAdmin()
-            || $currentUser->hasRole('Koordinator Pengawas')
-            || $currentUser->can('review_risiko.review_pengawas')
-            || (($currentUser->can('review_risiko.approve') || $currentUser->hasRole('Auditor')) && ($currentUser->id === $submission->auditor_id || $currentUser->canReadOpdData($opdId)))
+            || ($currentUser->isScopedAuditor() && $currentUser->can('review_risiko.approve') && ((string) $currentUser->id === (string) $submission->auditor_id || $currentUser->canReadOpdData($opdId)))
         );
 
-        $canReviewAuditor = $currentTier === PengajuanPenilaianRisiko::TIER_AUDITOR
-            && in_array($status, [
-                PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
-                PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
-                PengajuanPenilaianRisiko::STATUS_SUBMITTED,
-                PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
-            ], true)
+        $hasItemsAtAuditor = $submission->items->contains(
+            fn (PengajuanPenilaianRisikoItem $i) => $i->current_tier === PengajuanPenilaianRisiko::TIER_AUDITOR
+        );
+        $hasPengawasRejectAtAuditor = $submission->items->contains(
+            fn (PengajuanPenilaianRisikoItem $i) => $i->current_tier === PengajuanPenilaianRisiko::TIER_AUDITOR
+                && $i->status_pengawas === PengajuanPenilaianRisikoItem::STATUS_REJECTED
+        );
+
+        $canReviewAuditor = $hasItemsAtAuditor && ! $isDraft && ! $submission->isApproved()
             && ($currentUser ? $isAssignedAuditor : true);
 
-        $canForwardRevisionAuditor = $currentTier === PengajuanPenilaianRisiko::TIER_AUDITOR
-            && $status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS
+        $canForwardRevisionAuditor = $hasPengawasRejectAtAuditor
             && ($currentUser ? $isAssignedAuditor : true);
 
-        $canResubmitPengawas = $currentTier === PengajuanPenilaianRisiko::TIER_AUDITOR
-            && $status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS
+        $canResubmitPengawas = $hasPengawasRejectAtAuditor
             && ($currentUser ? $isAssignedAuditor : true);
 
         // Pengawas action capabilities
         $isPengawas = $currentUser && (
             $currentUser->isRegionalAdmin()
-            || $currentUser->can('review_risiko.review_pengawas')
-            || $currentUser->hasRole('Koordinator Pengawas')
+            || ($currentUser->isScopedPengawas() && $currentUser->can('review_risiko.review_pengawas') && in_array((string) $opdId, $currentUser->pengawasAssignedOpdIds(), true))
+        );
+
+        $hasItemsAtPengawas = $submission->items->contains(
+            fn (PengajuanPenilaianRisikoItem $i) => $i->current_tier === PengajuanPenilaianRisiko::TIER_PENGAWAS
         );
 
         $canReviewPengawas = $currentTier === PengajuanPenilaianRisiko::TIER_PENGAWAS
-            && in_array($status, [
-                PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
-                PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
-            ], true)
+            && $hasItemsAtPengawas
             && ($currentUser ? $isPengawas : true);
 
         $isReadyToSubmit = $canSubmitToKepala;
@@ -193,6 +217,8 @@ class PengajuanReadinessService
             'form_completeness' => $formCompleteness,
             'form_statuses' => $formStatuses,
             'form_details' => $formDetails,
+            'editable_forms' => $editableForms,
+            'revision_forms_count' => $revisionFormsCount,
             'rejection_notes' => $rejectionNotes,
             'all_forms_complete' => $allFormsComplete,
             'missing_forms' => $missingForms,
@@ -212,7 +238,8 @@ class PengajuanReadinessService
 
     /**
      * Check if a given OPD can edit their forms in the specified period.
-     * Throws 403 / ValidationException if not allowed.
+     * Supports selective per-form editing when individual items are returned for revision.
+     * Throws 403 if not allowed.
      */
     public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
     {
@@ -235,24 +262,25 @@ class PengajuanReadinessService
 
         $resolvedPeriodeId = $this->queryService->resolvePeriodeId($periodeId);
 
-        // 2. Check submission status lock
+        // 2. Check submission & per-form lock
         $submission = PengajuanPenilaianRisiko::where('opd_id', $opdId)
             ->where('periode_penilaian_id', $resolvedPeriodeId)
             ->first();
 
-        if ($submission) {
-            if ($submission->isLockedForOperator()) {
-                abort(403, 'Lembar kerja risiko sedang dalam proses pemeriksaan berjenjang atau telah disetujui (read-only).');
+        if ($submission && ! $submission->isDraft()) {
+            if ($submission->isApproved()) {
+                abort(403, 'Lembar kerja risiko telah disahkan final dan tidak dapat diubah lagi.');
             }
 
-            // If a specific form is requested, ensure that form item was not already approved
             if ($formCode) {
                 $cleanCode = strtolower($formCode);
                 $item = $submission->items()->where('form_code', $cleanCode)->first();
-                if ($item && $item->status === PengajuanPenilaianRisikoItem::STATUS_APPROVED) {
+                if (! $item || ! $item->isEditableByOperator($submission->status)) {
                     $upperCode = strtoupper($formCode);
-                    abort(403, "Lembar kerja Form {$upperCode} telah disetujui dan tidak dapat diubah lagi.");
+                    abort(403, "Lembar kerja Form {$upperCode} sedang dalam proses pemeriksaan atau telah disetujui dan tidak dapat diubah.");
                 }
+            } elseif ($submission->isLockedForOperator()) {
+                abort(403, 'Lembar kerja risiko sedang dalam proses pemeriksaan berjenjang atau telah disetujui (read-only).');
             }
         }
     }

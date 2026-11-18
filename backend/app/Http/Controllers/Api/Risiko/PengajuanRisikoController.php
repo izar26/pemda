@@ -6,7 +6,10 @@ namespace App\Http\Controllers\Api\Risiko;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Risiko\DelegateOperatorRequest;
+use App\Http\Requests\Risiko\FinalizePengawasRequest;
 use App\Http\Requests\Risiko\ForwardRevisionAuditorRequest;
+use App\Http\Requests\Risiko\ForwardToAuditorRequest;
+use App\Http\Requests\Risiko\ForwardToPengawasRequest;
 use App\Http\Requests\Risiko\ResubmitPengawasRequest;
 use App\Http\Requests\Risiko\ReviewAuditorItemRequest;
 use App\Http\Requests\Risiko\ReviewFormRequest;
@@ -90,22 +93,28 @@ class PengajuanRisikoController extends Controller
 
         $periodeId = $request->input('periode_penilaian_id');
         $catatan = $request->input('catatan');
+        $formCode = $request->input('form_code');
 
         $submission = $this->service->submitToKepalaOpd(
             (string) $targetOpdId,
             $periodeId ? (string) $periodeId : null,
             $user,
-            $catatan ? (string) $catatan : null
+            $catatan ? (string) $catatan : null,
+            $formCode ? (string) $formCode : null
         );
 
+        $message = $formCode
+            ? 'Perbaikan Form '.strtoupper((string) $formCode).' berhasil diajukan ulang kepada Kepala OPD.'
+            : 'Lembar kerja pengelolaan risiko berhasil diajukan kepada Kepala OPD.';
+
         return response()->json([
-            'message' => 'Seluruh lembar kerja pengelolaan risiko berhasil diajukan kepada Kepala OPD.',
+            'message' => $message,
             'data' => $submission,
         ]);
     }
 
     /**
-     * Review by Kepala OPD (Approve or Reject).
+     * Review a single form item by Kepala OPD (Approve or Reject per-form).
      */
     public function reviewKepalaOpd(ReviewKepalaOpdRequest $request, string $id): JsonResponse
     {
@@ -118,18 +127,37 @@ class PengajuanRisikoController extends Controller
             $validated['form_code'] ?? null
         );
 
+        $upperCode = strtoupper((string) ($validated['form_code'] ?? ''));
         $actionText = $validated['status'] === 'approved'
-            ? 'disetujui dan diteruskan kepada Auditor Pengawas'
-            : 'dikembalikan kepada Operator OPD untuk diperbaiki';
+            ? "Form {$upperCode} berhasil disetujui."
+            : "Form {$upperCode} dikembalikan kepada Operator OPD untuk diperbaiki.";
 
         return response()->json([
-            'message' => "Pengajuan berhasil {$actionText}.",
+            'message' => $actionText,
             'data' => $submission,
         ]);
     }
 
     /**
-     * Delegate auditor revision down to Operator OPD.
+     * Explicit forward from Kepala OPD to Evaluator (requires 100% forms approved).
+     */
+    public function forwardToAuditor(ForwardToAuditorRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->forwardToAuditor(
+            $id,
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Seluruh lembar kerja telah disetujui dan resmi dikirim kepada Evaluator APIP.',
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Delegate auditor revision down to Operator OPD (per-form or all returned items).
      */
     public function delegateOperator(DelegateOperatorRequest $request, string $id): JsonResponse
     {
@@ -137,7 +165,8 @@ class PengajuanRisikoController extends Controller
         $submission = $this->service->delegateRevisionToOperator(
             $id,
             $validated['catatan'] ?? null,
-            $request->user()
+            $request->user(),
+            $validated['form_code'] ?? null
         );
 
         return response()->json([
@@ -233,7 +262,25 @@ class PengajuanRisikoController extends Controller
     }
 
     /**
-     * Auditor forwards Pengawas rejection to Kepala OPD.
+     * Explicit forward from Evaluator to Pengawas (requires 100% forms approved).
+     */
+    public function forwardToPengawas(ForwardToPengawasRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->forwardToPengawas(
+            $id,
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Seluruh formulir telah disetujui Evaluator dan resmi dikirim kepada Pengawas Inspektorat.',
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Auditor forwards Pengawas rejection to Kepala OPD (per-form or all returned items).
      */
     public function forwardRevisionAuditor(ForwardRevisionAuditorRequest $request, string $id): JsonResponse
     {
@@ -241,7 +288,8 @@ class PengajuanRisikoController extends Controller
         $submission = $this->service->forwardRevisionFromAuditor(
             $id,
             $validated['catatan'] ?? null,
-            $request->user()
+            $request->user(),
+            $validated['form_code'] ?? null
         );
 
         return response()->json([
@@ -251,7 +299,7 @@ class PengajuanRisikoController extends Controller
     }
 
     /**
-     * Auditor resubmits clarification directly back to Pengawas.
+     * Auditor resubmits clarification directly back to Pengawas (per-form or all returned items).
      */
     public function resubmitPengawas(ResubmitPengawasRequest $request, string $id): JsonResponse
     {
@@ -259,7 +307,8 @@ class PengajuanRisikoController extends Controller
         $submission = $this->service->resubmitToPengawas(
             $id,
             $validated['catatan'] ?? null,
-            $request->user()
+            $request->user(),
+            $validated['form_code'] ?? null
         );
 
         return response()->json([
@@ -269,7 +318,7 @@ class PengajuanRisikoController extends Controller
     }
 
     /**
-     * Pengawas (Inspektorat) reviews a specific form item (Approve final or Reject to Auditor).
+     * Pengawas (Inspektorat) reviews a specific form item (Approve or Reject to Auditor).
      */
     public function reviewPengawas(ReviewPengawasItemRequest $request, string $id): JsonResponse
     {
@@ -282,11 +331,29 @@ class PengajuanRisikoController extends Controller
             $request->user()
         );
 
-        $actionText = $validated['status'] === 'approved' ? 'disahkan' : 'ditolak (dikembalikan ke Auditor)';
+        $actionText = $validated['status'] === 'approved' ? 'disetujui' : 'ditolak (dikembalikan ke Evaluator)';
 
         return response()->json([
             'message' => "Form {$validated['form_code']} berhasil {$actionText}.",
             'data' => $item,
+        ]);
+    }
+
+    /**
+     * Explicit final approval by Pengawas (requires 100% forms approved).
+     */
+    public function finalizePengawas(FinalizePengawasRequest $request, string $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $submission = $this->service->finalizeByPengawas(
+            $id,
+            $validated['catatan'] ?? null,
+            $request->user()
+        );
+
+        return response()->json([
+            'message' => 'Seluruh lembar kerja risiko OPD berhasil disahkan secara final.',
+            'data' => $submission,
         ]);
     }
 }

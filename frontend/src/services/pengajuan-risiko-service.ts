@@ -30,6 +30,7 @@ export interface SubmissionItem {
   id: string
   pengajuan_id: string
   form_code: string
+  current_tier?: SubmissionTier
   status: ItemStatus
   status_kepala_opd?: string | null
   catatan_kepala_opd?: string | null
@@ -185,6 +186,8 @@ export interface ReadinessResponse {
     string,
     {
       form_code: string
+      current_tier?: SubmissionTier
+      is_editable_by_operator?: boolean
       status: ItemStatus
       status_kepala_opd?: string | null
       catatan_kepala_opd?: string | null
@@ -200,6 +203,8 @@ export interface ReadinessResponse {
       } | null
     }
   >
+  editable_forms?: string[]
+  revision_forms_count?: number
   rejection_notes?: Record<string, string | null>
   all_forms_complete: boolean
   missing_forms: MissingFormInfo[]
@@ -298,12 +303,13 @@ export const pengajuanRisikoService = {
   },
 
   /**
-   * Submit completed risk forms from Operator to Kepala OPD.
+   * Submit completed risk forms or resubmit revised form(s) from Operator to Kepala OPD.
    */
   async submitToKepalaOpd(payload: {
     opd_id: string
     periode_penilaian_id?: string
     catatan?: string
+    form_code?: string
   }): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     const response = await apiClient.post<{
       message: string
@@ -319,19 +325,20 @@ export const pengajuanRisikoService = {
     opd_id: string
     periode_penilaian_id?: string
     catatan?: string
+    form_code?: string
   }): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     return this.submitToKepalaOpd(payload)
   },
 
   /**
-   * Review by Kepala OPD (Approve or Reject internal submission).
+   * Review a single form item by Kepala OPD (Approve or Reject per-form).
    */
   async reviewByKepalaOpd(
     submissionId: string,
     payload: {
       status: 'approved' | 'rejected'
       catatan?: string
-      form_code?: string
+      form_code: string
     }
   ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     const response = await apiClient.post<{
@@ -342,12 +349,29 @@ export const pengajuanRisikoService = {
   },
 
   /**
-   * Delegate auditor revision down to Operator OPD.
+   * Explicit forward from Kepala OPD to Evaluator (requires 100% forms approved).
+   */
+  async forwardToAuditor(
+    submissionId: string,
+    payload?: {
+      catatan?: string
+    }
+  ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
+    const response = await apiClient.post<{
+      message: string
+      data: PengajuanPenilaianRisiko
+    }>(`/risiko/pengajuan/${submissionId}/forward-auditor`, payload || {})
+    return response.data
+  },
+
+  /**
+   * Delegate auditor revision down to Operator OPD (per-form or all returned items).
    */
   async delegateToOperator(
     submissionId: string,
     payload?: {
       catatan?: string
+      form_code?: string
     }
   ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     const response = await apiClient.post<{
@@ -487,12 +511,29 @@ export const pengajuanRisikoService = {
   },
 
   /**
-   * Auditor forwards Pengawas rejection to Kepala OPD.
+   * Explicit forward from Evaluator to Pengawas (requires 100% forms approved).
+   */
+  async forwardToPengawas(
+    submissionId: string,
+    payload?: {
+      catatan?: string
+    }
+  ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
+    const response = await apiClient.post<{
+      message: string
+      data: PengajuanPenilaianRisiko
+    }>(`/pengawasan/review-risiko/${submissionId}/forward-pengawas`, payload || {})
+    return response.data
+  },
+
+  /**
+   * Auditor forwards Pengawas rejection to Kepala OPD (per-form or all returned items).
    */
   async forwardRevisionFromAuditor(
     submissionId: string,
     payload?: {
       catatan?: string
+      form_code?: string
     }
   ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     const response = await apiClient.post<{
@@ -506,12 +547,13 @@ export const pengajuanRisikoService = {
   },
 
   /**
-   * Auditor resubmits clarification directly back to Pengawas.
+   * Auditor resubmits clarification directly back to Pengawas (per-form or all returned items).
    */
   async resubmitToPengawas(
     submissionId: string,
     payload?: {
       catatan?: string
+      form_code?: string
     }
   ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
     const response = await apiClient.post<{
@@ -525,7 +567,7 @@ export const pengajuanRisikoService = {
   },
 
   /**
-   * Pengawas (Inspektorat) reviews a specific form item (Approve final or Reject to Auditor).
+   * Pengawas (Inspektorat) reviews a specific form item (Approve or Reject to Auditor).
    */
   async reviewByPengawas(
     submissionId: string,
@@ -539,6 +581,22 @@ export const pengajuanRisikoService = {
       message: string
       data: SubmissionItem
     }>(`/pengawasan/review-risiko/${submissionId}/review-pengawas`, payload)
+    return response.data
+  },
+
+  /**
+   * Explicit final approval by Pengawas (requires 100% forms approved).
+   */
+  async finalizeByPengawas(
+    submissionId: string,
+    payload?: {
+      catatan?: string
+    }
+  ): Promise<{ message: string; data: PengajuanPenilaianRisiko }> {
+    const response = await apiClient.post<{
+      message: string
+      data: PengajuanPenilaianRisiko
+    }>(`/pengawasan/review-risiko/${submissionId}/finalize-pengawas`, payload || {})
     return response.data
   },
 }

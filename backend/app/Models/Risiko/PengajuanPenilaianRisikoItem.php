@@ -30,11 +30,26 @@ class PengajuanPenilaianRisikoItem extends Model
         self::STATUS_REJECTED,
     ];
 
+    /**
+     * Tier rank order used to evaluate whether an item is currently sitting
+     * in revision below a reviewer's tier (yellow indicator).
+     *
+     * @var array<string, int>
+     */
+    public const TIER_ORDER = [
+        PengajuanPenilaianRisiko::TIER_OPERATOR => 0,
+        PengajuanPenilaianRisiko::TIER_KEPALA_OPD => 1,
+        PengajuanPenilaianRisiko::TIER_AUDITOR => 2,
+        PengajuanPenilaianRisiko::TIER_PENGAWAS => 3,
+        PengajuanPenilaianRisiko::TIER_COMPLETED => 4,
+    ];
+
     protected $table = 'pengajuan_penilaian_risiko_items';
 
     protected $fillable = [
         'pengajuan_id',
         'form_code',
+        'current_tier',
         'status',
         'catatan_revisi',
         'status_kepala_opd',
@@ -68,11 +83,34 @@ class PengajuanPenilaianRisikoItem extends Model
 
     public function isRejected(): bool
     {
-        return $this->status === self::STATUS_REVISION_REJECTED ?? $this->status === self::STATUS_REJECTED;
+        return $this->status === self::STATUS_REJECTED;
     }
 
     public function isSubmitted(): bool
     {
         return $this->status === self::STATUS_SUBMITTED;
+    }
+
+    /**
+     * Whether this item is currently sitting in revision below the given reviewer tier.
+     */
+    public function isInRevisionBelow(string $tier): bool
+    {
+        $itemRank = self::TIER_ORDER[$this->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR] ?? 0;
+        $targetRank = self::TIER_ORDER[$tier] ?? 0;
+
+        return $itemRank < $targetRank;
+    }
+
+    /**
+     * Whether an Operator OPD is currently allowed to edit this specific form item.
+     */
+    public function isEditableByOperator(string $parentStatus): bool
+    {
+        if ($parentStatus === PengajuanPenilaianRisiko::STATUS_DRAFT) {
+            return true;
+        }
+
+        return ($this->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR) === PengajuanPenilaianRisiko::TIER_OPERATOR;
     }
 }

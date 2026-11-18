@@ -67,6 +67,7 @@ export function WizardStepper({
           {steps.map((step) => {
             const isCurrent = step.id === currentStepId
             const isCompleted = step.isCompleted
+            const isInRevision = Boolean(step.isInRevision)
             const isLocked = !step.isUnlocked
             const cleanTitle = getCleanStepTitle(step.title)
 
@@ -80,24 +81,32 @@ export function WizardStepper({
                     className={cn(
                       'flex min-w-0 flex-1 items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-[11px] font-medium transition-all select-none',
                       isCurrent
-                        ? 'border-primary bg-primary font-bold text-primary-foreground shadow-xs ring-1 ring-primary/40'
-                        : isCompleted
-                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400'
-                          : isLocked
-                            ? 'cursor-not-allowed border-border/50 bg-muted/40 text-muted-foreground/80 hover:bg-muted/60'
-                            : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? isInRevision
+                          ? 'border-amber-500 bg-amber-500 font-bold text-white shadow-xs ring-1 ring-amber-400/50'
+                          : 'border-primary bg-primary font-bold text-primary-foreground shadow-xs ring-1 ring-primary/40'
+                        : isInRevision
+                          ? 'border-amber-500/50 bg-amber-500/15 font-semibold text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
+                          : isCompleted
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400'
+                            : isLocked
+                              ? 'cursor-not-allowed border-border/50 bg-muted/40 text-muted-foreground/80 hover:bg-muted/60'
+                              : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
                     <span
                       className={cn(
                         'flex h-4 w-4 shrink-0 items-center justify-center rounded-full font-mono text-[9px] font-bold',
                         isCurrent
-                          ? 'bg-primary-foreground text-primary'
-                          : isCompleted
-                            ? 'bg-emerald-600 text-white'
-                            : isLocked
-                              ? 'bg-muted-foreground/15 text-muted-foreground'
-                              : 'bg-muted text-foreground'
+                          ? isInRevision
+                            ? 'bg-white text-amber-600'
+                            : 'bg-primary-foreground text-primary'
+                          : isInRevision
+                            ? 'bg-amber-500 text-white'
+                            : isCompleted
+                              ? 'bg-emerald-600 text-white'
+                              : isLocked
+                                ? 'bg-muted-foreground/15 text-muted-foreground'
+                                : 'bg-muted text-foreground'
                       )}
                     >
                       {step.stepNumber}

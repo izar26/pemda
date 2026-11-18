@@ -47,11 +47,11 @@ class PengajuanRisikoService
     }
 
     /**
-     * Submit risk management forms by OPD Operator to Kepala OPD.
+     * Submit risk management forms by OPD Operator to Kepala OPD (initial or per-form/bulk revision).
      */
-    public function submitToKepalaOpd(string $opdId, ?string $periodeId, User $user, ?string $catatan = null): PengajuanPenilaianRisiko
+    public function submitToKepalaOpd(string $opdId, ?string $periodeId, User $user, ?string $catatan = null, ?string $formCode = null): PengajuanPenilaianRisiko
     {
-        return $this->workflowService->submitToKepalaOpd($opdId, $periodeId, $user, $catatan);
+        return $this->workflowService->submitToKepalaOpd($opdId, $periodeId, $user, $catatan, $formCode);
     }
 
     /**
@@ -63,7 +63,7 @@ class PengajuanRisikoService
     }
 
     /**
-     * Review by Kepala OPD (Approve or Reject internal submission).
+     * Review by Kepala OPD (Approve or Reject a single form item).
      */
     public function reviewByKepalaOpd(
         string $submissionId,
@@ -76,18 +76,30 @@ class PengajuanRisikoService
     }
 
     /**
-     * Delegate revision returned from Auditor down to Operator OPD.
+     * Explicit forward from Kepala OPD to Evaluator once 100% of forms are approved.
      */
-    public function delegateRevisionToOperator(
+    public function forwardToAuditor(
         string $submissionId,
         ?string $catatan,
         User $kepalaOpdUser
     ): PengajuanPenilaianRisiko {
-        return $this->workflowService->delegateRevisionToOperator($submissionId, $catatan, $kepalaOpdUser);
+        return $this->workflowService->forwardToAuditor($submissionId, $catatan, $kepalaOpdUser);
     }
 
     /**
-     * Auditor reviews a specific form item (2B or 2C).
+     * Delegate revision returned from Auditor down to Operator OPD (per-form or all returned items).
+     */
+    public function delegateRevisionToOperator(
+        string $submissionId,
+        ?string $catatan,
+        User $kepalaOpdUser,
+        ?string $formCode = null
+    ): PengajuanPenilaianRisiko {
+        return $this->workflowService->delegateRevisionToOperator($submissionId, $catatan, $kepalaOpdUser, $formCode);
+    }
+
+    /**
+     * Auditor reviews a specific form item.
      */
     public function reviewByAuditor(
         string $submissionId,
@@ -113,29 +125,42 @@ class PengajuanRisikoService
     }
 
     /**
-     * Auditor forwards Pengawas rejection down to Kepala OPD.
+     * Explicit forward from Evaluator to Pengawas once 100% of forms are approved.
+     */
+    public function forwardToPengawas(
+        string $submissionId,
+        ?string $catatan,
+        User $auditorUser
+    ): PengajuanPenilaianRisiko {
+        return $this->workflowService->forwardToPengawas($submissionId, $catatan, $auditorUser);
+    }
+
+    /**
+     * Auditor forwards Pengawas rejection down to Kepala OPD (per-form or all returned items).
      */
     public function forwardRevisionFromAuditor(
         string $submissionId,
         ?string $catatan,
-        User $auditorUser
+        User $auditorUser,
+        ?string $formCode = null
     ): PengajuanPenilaianRisiko {
-        return $this->workflowService->forwardRevisionFromAuditor($submissionId, $catatan, $auditorUser);
+        return $this->workflowService->forwardRevisionFromAuditor($submissionId, $catatan, $auditorUser, $formCode);
     }
 
     /**
-     * Auditor re-submits directly back to Pengawas with clarification.
+     * Auditor re-submits directly back to Pengawas with clarification (per-form or all returned items).
      */
     public function resubmitToPengawas(
         string $submissionId,
         ?string $catatan,
-        User $auditorUser
+        User $auditorUser,
+        ?string $formCode = null
     ): PengajuanPenilaianRisiko {
-        return $this->workflowService->resubmitToPengawas($submissionId, $catatan, $auditorUser);
+        return $this->workflowService->resubmitToPengawas($submissionId, $catatan, $auditorUser, $formCode);
     }
 
     /**
-     * Pengawas (Inspektorat) reviews a specific form item (Approve final or Reject to Auditor).
+     * Pengawas (Inspektorat) reviews a specific form item (Approve or Reject per-form).
      */
     public function reviewByPengawas(
         string $submissionId,
@@ -145,6 +170,17 @@ class PengajuanRisikoService
         User $pengawasUser
     ): PengajuanPenilaianRisikoItem {
         return $this->workflowService->reviewByPengawas($submissionId, $formCode, $status, $catatanRevisi, $pengawasUser);
+    }
+
+    /**
+     * Explicit final approval by Pengawas once 100% of forms are approved.
+     */
+    public function finalizeByPengawas(
+        string $submissionId,
+        ?string $catatan,
+        User $pengawasUser
+    ): PengajuanPenilaianRisiko {
+        return $this->workflowService->finalizeByPengawas($submissionId, $catatan, $pengawasUser);
     }
 
     /**

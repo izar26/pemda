@@ -46,14 +46,16 @@ export function useRisikoSubmission({
   const setSubmitOpen =
     controlledSetIsSubmitDialogOpen || setInternalSubmitDialogOpen
 
-  // 1. Operator submit to Kepala OPD mutation
+  // 1. Operator submit to Kepala OPD mutation (initial draft, single revised form, or all revised forms)
   const submitToKepalaMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (formCode?: string) =>
       pengajuanRisikoService.submitToKepalaOpd({
         opd_id: effectiveOpdId!,
         periode_penilaian_id: activePeriodeId,
+        form_code: formCode,
       }),
-    onMutate: async () => {
+    onMutate: async (formCode?: string) => {
+      if (formCode) return
       queryClient.setQueriesData<ReadinessResponse>(
         { queryKey: ['risiko-pengajuan-readiness'] },
         (old) => {
@@ -117,13 +119,13 @@ export function useRisikoSubmission({
     },
   })
 
-  // 2. Kepala OPD review mutation (Approve or Reject internal)
+  // 2. Kepala OPD review mutation (Approve or Reject per-form)
   const reviewKepalaMutation = useMutation({
     mutationFn: () =>
       pengajuanRisikoService.reviewByKepalaOpd(readiness!.submission.id, {
         status: kepalaAction,
         catatan: kepalaNotes.trim(),
-        form_code: kepalaAction === 'rejected' ? kepalaFormCode : undefined,
+        form_code: kepalaFormCode,
       }),
     onSuccess: async (res) => {
       toast.success(res.message || 'Keputusan Kepala OPD berhasil disimpan.')

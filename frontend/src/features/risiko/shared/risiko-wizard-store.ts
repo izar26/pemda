@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useLocation } from '@tanstack/react-router'
 import { opdService } from '@/services/opd-service'
 import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
 import { perencanaanService } from '@/services/perencanaan-service'
@@ -208,6 +209,7 @@ export interface ResolvedWizardStep extends RisikoWizardStepConfig {
   status: WizardStepStatus
   isCompleted: boolean
   isUnlocked: boolean
+  isInRevision?: boolean
 }
 
 /**
@@ -217,6 +219,7 @@ export interface ResolvedWizardStep extends RisikoWizardStepConfig {
 export function useRisikoWizardProgress(enabled = true) {
   const user = useAuthStore((state) => state.auth.user)
   const { selectedOpdId, setSelectedOpdId } = useRisikoWizardStore()
+  const pathname = useLocation({ select: (loc) => loc.pathname })
 
   const userRoles = Array.isArray(user?.roles)
     ? user.roles
@@ -584,9 +587,27 @@ export function useRisikoWizardProgress(enabled = true) {
       ...step,
       isCompleted,
       isUnlocked,
+      isInRevision: Boolean(
+        readiness &&
+          readiness.status !== 'draft' &&
+          readiness.editable_forms?.includes(step.id)
+      ),
       status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available',
     }
   })
+
+  const activeRouteStep = RISIKO_WIZARD_STEPS.find((s) =>
+    pathname.startsWith(s.url)
+  )
+  const isDraftSubmission = !readiness || readiness.status === 'draft'
+  const editableForms = readiness?.editable_forms ?? []
+  const isCurrentFormLocked = readiness
+    ? isDraftSubmission
+      ? false
+      : activeRouteStep
+        ? !editableForms.includes(activeRouteStep.id)
+        : readiness.is_locked
+    : false
 
   const completedCount = steps.filter((s) => s.isCompleted).length
   const totalSteps = steps.length
@@ -626,7 +647,7 @@ export function useRisikoWizardProgress(enabled = true) {
     refetch3B,
     refetch3C,
     hasAuditor: Boolean(readiness?.has_auditor),
-    isLocked: readiness ? readiness.is_locked : false,
+    isLocked: isCurrentFormLocked,
     submissionStatus: readiness ? readiness.status : 'draft',
     isLoading:
       isLoadingPeriode ||

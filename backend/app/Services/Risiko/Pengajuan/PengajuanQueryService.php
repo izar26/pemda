@@ -83,6 +83,7 @@ class PengajuanQueryService
                     'form_code' => $code,
                 ],
                 [
+                    'current_tier' => $submission->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR,
                     'status' => PengajuanPenilaianRisikoItem::STATUS_DRAFT,
                 ]
             );
@@ -178,18 +179,25 @@ class PengajuanQueryService
                             PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
                             PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
                             PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
-                        ]);
+                        ])
+                        ->whereDoesntHave('items', function ($iq) {
+                            $iq->where('status', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
+                        });
                 });
             } elseif (in_array($status, ['revision_requested', 'perlu_revisi'], true)) {
                 $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
                     $sq->where('periode_penilaian_id', $resolvedPeriodeId)
-                        ->whereIn('status', [
-                            PengajuanPenilaianRisiko::STATUS_REVISION_REQUESTED,
-                            PengajuanPenilaianRisiko::STATUS_REVISION_BY_KEPALA,
-                            PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
-                            PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
-                            PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
-                        ]);
+                        ->where(function ($rq) {
+                            $rq->whereIn('status', [
+                                PengajuanPenilaianRisiko::STATUS_REVISION_REQUESTED,
+                                PengajuanPenilaianRisiko::STATUS_REVISION_BY_KEPALA,
+                                PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
+                                PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
+                                PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
+                            ])->orWhereHas('items', function ($iq) {
+                                $iq->where('status', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
+                            });
+                        });
                 });
             } elseif (in_array($status, ['approved', 'disetujui'], true)) {
                 $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
@@ -300,14 +308,25 @@ class PengajuanQueryService
         $myPendingTotal = 0;
         $pendingItems = [];
 
-        // 1. Kepala OPD pending logic
+        // 1. Kepala OPD pending logic (submission at TIER_KEPALA_OPD OR any item returned to kepala_opd)
         if ($isSuperadmin || $isKepalaOpd) {
             $query = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
-                ->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
-                ->whereIn('status', [
-                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA,
-                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
-                ]);
+                ->whereNotIn('status', [PengajuanPenilaianRisiko::STATUS_DRAFT, PengajuanPenilaianRisiko::STATUS_APPROVED])
+                ->where(function ($q) {
+                    $q->where(function ($sq) {
+                        $sq->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
+                            ->whereIn('status', [
+                                PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_KEPALA,
+                                PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
+                            ]);
+                    })->orWhereHas('items', function ($iq) {
+                        $iq->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
+                            ->where(function ($siq) {
+                                $siq->whereNull('status_kepala_opd')
+                                    ->orWhere('status_kepala_opd', '!=', PengajuanPenilaianRisikoItem::STATUS_APPROVED);
+                            });
+                    });
+                });
 
             if ($isKepalaOpd) {
                 $query->where('opd_id', $user->opd_id);
@@ -319,6 +338,11 @@ class PengajuanQueryService
                 $myPendingTotal += $kepalaOpdPending;
                 $items = (clone $query)->with('opd:id,nama,kode')->limit(5)->get();
                 foreach ($items as $item) {
+                    $hasAuditorReject = $item->items()
+                        ->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
+                        ->where('status_auditor', PengajuanPenilaianRisikoItem::STATUS_REJECTED)
+                        ->exists();
+                    $isDelegate = $hasAuditorReject || $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR;
                     $pendingItems[] = [
                         'id' => $item->id,
                         'opd_id' => $item->opd_id,
@@ -327,8 +351,8 @@ class PengajuanQueryService
                         'status' => $item->status,
                         'tier' => $item->current_tier,
                         'submitted_at' => $item->submitted_at?->toISOString(),
-                        'action_type' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR ? 'delegate_revision' : 'review_internal',
-                        'title' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR ? 'Delegasikan Revisi Auditor' : 'Persetujuan Internal OPD',
+                        'action_type' => $isDelegate ? 'delegate_revision' : 'review_internal',
+                        'title' => $isDelegate ? 'Tindak Lanjut Revisi Evaluator' : 'Persetujuan Internal OPD',
                         'url' => '/pengawasan/review-risiko',
                     ];
                 }
@@ -339,17 +363,29 @@ class PengajuanQueryService
                 ->count();
         }
 
-        // 2. Auditor pending logic
+        // 2. Auditor pending logic (submission at TIER_AUDITOR OR any item returned to auditor)
         if ($isSuperadmin || $isAuditor || $isPengawas) {
             $auditorQuery = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
-                ->where('current_tier', PengajuanPenilaianRisiko::TIER_AUDITOR)
-                ->whereIn('status', [
-                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
-                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
-                    PengajuanPenilaianRisiko::STATUS_SUBMITTED,
-                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
-                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
-                ]);
+                ->whereNotIn('status', [PengajuanPenilaianRisiko::STATUS_DRAFT, PengajuanPenilaianRisiko::STATUS_APPROVED])
+                ->where(function ($q) {
+                    $q->where(function ($sq) {
+                        $sq->where('current_tier', PengajuanPenilaianRisiko::TIER_AUDITOR)
+                            ->whereIn('status', [
+                                PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
+                                PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
+                                PengajuanPenilaianRisiko::STATUS_SUBMITTED,
+                                PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
+                                PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
+                            ]);
+                    })->orWhereHas('items', function ($iq) {
+                        $iq->where('current_tier', PengajuanPenilaianRisiko::TIER_AUDITOR)
+                            ->where(function ($siq) {
+                                $siq->whereNull('status_auditor')
+                                    ->orWhere('status_auditor', '!=', PengajuanPenilaianRisikoItem::STATUS_APPROVED)
+                                    ->orWhere('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_REJECTED);
+                            });
+                    });
+                });
 
             if ($isAuditor) {
                 $auditorQuery->whereIn('opd_id', $user->activeAssignedOpdIds());
@@ -363,6 +399,11 @@ class PengajuanQueryService
                 $myPendingTotal += $auditorPending;
                 $items = (clone $auditorQuery)->with('opd:id,nama,kode')->limit(5)->get();
                 foreach ($items as $item) {
+                    $hasPengawasReject = $item->items()
+                        ->where('current_tier', PengajuanPenilaianRisiko::TIER_AUDITOR)
+                        ->where('status_pengawas', PengajuanPenilaianRisikoItem::STATUS_REJECTED)
+                        ->exists();
+                    $isPengawasRev = $hasPengawasReject || $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS;
                     $pendingItems[] = [
                         'id' => $item->id,
                         'opd_id' => $item->opd_id,
@@ -371,8 +412,8 @@ class PengajuanQueryService
                         'status' => $item->status,
                         'tier' => $item->current_tier,
                         'submitted_at' => $item->submitted_at?->toISOString(),
-                        'action_type' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS ? 'auditor_resolve_rejection' : 'auditor_review',
-                        'title' => $item->status === PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS ? 'Tindak Lanjut Revisi Pengawas' : 'Pemeriksaan Risiko OPD',
+                        'action_type' => $isPengawasRev ? 'auditor_resolve_rejection' : 'auditor_review',
+                        'title' => $isPengawasRev ? 'Tindak Lanjut Revisi Pengawas' : 'Pemeriksaan Risiko OPD',
                         'url' => '/pengawasan/review-risiko',
                     ];
                 }
@@ -414,16 +455,24 @@ class PengajuanQueryService
             }
         }
 
-        // 4. Operator (OPD) action required logic
+        // 4. Operator (OPD) action required logic (legacy status OR any individual form at TIER_OPERATOR)
         if ($isOpd && $user->opd_id) {
             $opdSubmission = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
                 ->where('opd_id', $user->opd_id)
                 ->first();
 
-            if ($opdSubmission && in_array($opdSubmission->status, [
-                PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
-                PengajuanPenilaianRisiko::STATUS_REVISION_BY_KEPALA,
-            ], true)) {
+            $hasReturnedItems = $opdSubmission
+                && ! $opdSubmission->isDraft()
+                && ! $opdSubmission->isApproved()
+                && (
+                    in_array($opdSubmission->status, [
+                        PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
+                        PengajuanPenilaianRisiko::STATUS_REVISION_BY_KEPALA,
+                    ], true)
+                    || $opdSubmission->items()->where('current_tier', PengajuanPenilaianRisiko::TIER_OPERATOR)->exists()
+                );
+
+            if ($hasReturnedItems) {
                 $operatorActionRequired = true;
                 $myPendingTotal = 1;
                 $pendingItems[] = [

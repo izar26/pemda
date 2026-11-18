@@ -35,7 +35,10 @@ export interface SubmissionDialogsProps {
   setIsKepalaDelegateOpen: (open: boolean) => void
   delegateNotes: string
   setDelegateNotes: (notes: string) => void
-  submitToKepalaMutation: { isPending: boolean; mutate: () => void }
+  submitToKepalaMutation: {
+    isPending: boolean
+    mutate: (formCode?: string) => void
+  }
   reviewKepalaMutation: { isPending: boolean; mutate: () => void }
   delegateMutation: { isPending: boolean; mutate: () => void }
   readiness?: ReadinessResponse

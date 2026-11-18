@@ -271,6 +271,7 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::get('/pengajuan/pending-counts', [PengajuanRisikoController::class, 'pendingCounts']);
         Route::post('/pengajuan/submit', [PengajuanRisikoController::class, 'submit']);
         Route::post('/pengajuan/{id}/review-kepala', [PengajuanRisikoController::class, 'reviewKepalaOpd']);
+        Route::post('/pengajuan/{id}/forward-auditor', [PengajuanRisikoController::class, 'forwardToAuditor']);
         Route::post('/pengajuan/{id}/delegate-operator', [PengajuanRisikoController::class, 'delegateOperator']);
     });
 
@@ -302,8 +303,10 @@ Route::middleware(['auth:sanctum', 'two_factor.fully_authenticated'])->group(fun
         Route::get('/review-risiko/{id}/forms/{form}', [PengajuanRisikoController::class, 'reviewForm'])->where('form', '[a-zA-Z0-9_-]+');
         Route::post('/review-risiko/{id}/start', [PengajuanRisikoController::class, 'startReview']);
         Route::post('/review-risiko/{id}/item', [PengajuanRisikoController::class, 'reviewItem']);
+        Route::post('/review-risiko/{id}/forward-pengawas', [PengajuanRisikoController::class, 'forwardToPengawas']);
         Route::post('/review-risiko/{id}/forward-revision', [PengajuanRisikoController::class, 'forwardRevisionAuditor']);
         Route::post('/review-risiko/{id}/resubmit-pengawas', [PengajuanRisikoController::class, 'resubmitPengawas']);
         Route::post('/review-risiko/{id}/review-pengawas', [PengajuanRisikoController::class, 'reviewPengawas']);
+        Route::post('/review-risiko/{id}/finalize-pengawas', [PengajuanRisikoController::class, 'finalizePengawas']);
     });
 });

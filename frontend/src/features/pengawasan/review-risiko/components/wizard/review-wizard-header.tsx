@@ -3,15 +3,15 @@ import {
   type SubmissionItem,
 } from '@/services/pengajuan-risiko-service'
 import {
+  AlertTriangle,
   ArrowLeft,
   Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
+  RefreshCw,
   User,
-  X,
-  XCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,13 @@ import {
 } from '@/components/ui/tooltip'
 import { type RisikoWizardStepConfig } from '@/features/risiko/shared/risiko-wizard-store'
 
+export type ReviewStepVisualStatus =
+  | 'approved'
+  | 'in_revision'
+  | 'needs_action'
+  | 'submitted'
+  | 'draft'
+
 interface ReviewWizardHeaderProps {
   steps: RisikoWizardStepConfig[]
   submission?: PengajuanPenilaianRisiko
@@ -35,7 +42,8 @@ interface ReviewWizardHeaderProps {
   progressPercentage: number
   currentStep: RisikoWizardStepConfig
   getItemStatusForStep: (step: RisikoWizardStepConfig) => {
-    status: 'approved' | 'rejected' | 'submitted' | 'draft'
+    status: ReviewStepVisualStatus
+    revisionLocation?: string
     item?: SubmissionItem
   }
   onBack: () => void
@@ -105,14 +113,14 @@ export function ReviewWizardHeader({
               <CheckCircle2 className='h-3 w-3 text-emerald-600' />
               <span className='hidden sm:inline'>Selesai</span> Disetujui
             </Badge>
-          ) : submission?.status === 'revision_requested' ? (
-            <Badge className='gap-1 border border-destructive/30 bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold text-destructive shadow-2xs sm:text-xs'>
-              <XCircle className='h-3 w-3 text-destructive' />
-              Perlu Revisi
+          ) : rejectedCount > 0 ? (
+            <Badge className='gap-1 border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-800 shadow-2xs sm:text-xs dark:text-amber-300'>
+              <RefreshCw className='h-3 w-3 text-amber-600' />
+              {rejectedCount} Sedang Direvisi
             </Badge>
           ) : (
-            <Badge className='gap-1 border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 shadow-2xs sm:text-xs dark:text-amber-400'>
-              <Clock className='h-3 w-3 animate-pulse text-amber-600' />
+            <Badge className='gap-1 border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold text-sky-700 shadow-2xs sm:text-xs dark:text-sky-400'>
+              <Clock className='h-3 w-3 animate-pulse text-sky-600' />
               <span className='hidden sm:inline'>Menunggu</span> Review
             </Badge>
           )}
@@ -144,14 +152,14 @@ export function ReviewWizardHeader({
           <div className='hidden items-center gap-1.5 pl-1 font-mono text-[10px] xl:flex'>
             <Badge
               variant='outline'
-              className='border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0 text-[10px] font-semibold text-emerald-700'
+              className='border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400'
             >
               {approvedCount} Disetujui
             </Badge>
             {rejectedCount > 0 && (
               <Badge
                 variant='outline'
-                className='border-destructive/30 bg-destructive/10 px-1.5 py-0 text-[10px] font-semibold text-destructive'
+                className='border-amber-500/40 bg-amber-500/15 px-1.5 py-0 text-[10px] font-semibold text-amber-800 dark:text-amber-300'
               >
                 {rejectedCount} Revisi
               </Badge>
@@ -159,7 +167,7 @@ export function ReviewWizardHeader({
             {pendingCount > 0 && (
               <Badge
                 variant='outline'
-                className='border-amber-500/30 bg-amber-500/10 px-1.5 py-0 text-[10px] font-semibold text-amber-700'
+                className='border-slate-400/40 bg-muted/60 px-1.5 py-0 text-[10px] font-semibold text-muted-foreground'
               >
                 {pendingCount} Menunggu
               </Badge>
@@ -168,7 +176,7 @@ export function ReviewWizardHeader({
         </div>
       </div>
 
-      {/* 2. COMPACT 13-STEP TIMELINE TRACK (DESKTOP & TABLET) */}
+      {/* 2. COMPACT 14-STEP TIMELINE TRACK (DESKTOP & TABLET) */}
       <TooltipProvider delayDuration={150}>
         <nav
           aria-label='Progress'
@@ -176,10 +184,11 @@ export function ReviewWizardHeader({
         >
           <ol className='flex w-full items-start justify-between'>
             {steps.map((step, index) => {
-              const { status } = getItemStatusForStep(step)
+              const { status, revisionLocation } = getItemStatusForStep(step)
               const isCurrent = index === currentStepIndex
               const isApproved = status === 'approved'
-              const isRejected = status === 'rejected'
+              const isInRevision = status === 'in_revision'
+              const isNeedsAction = status === 'needs_action'
               const isLast = index === totalSteps - 1
 
               return (
@@ -211,20 +220,26 @@ export function ReviewWizardHeader({
                             isCurrent
                               ? isApproved
                                 ? 'scale-105 bg-emerald-600 text-white shadow-sm ring-3 ring-primary/40 ring-offset-1 ring-offset-background'
-                                : isRejected
-                                  ? 'scale-105 bg-destructive text-white shadow-sm ring-3 ring-primary/40 ring-offset-1 ring-offset-background'
-                                  : 'scale-105 bg-primary text-primary-foreground shadow-sm ring-3 ring-primary/40 ring-offset-1 ring-offset-background'
+                                : isInRevision
+                                  ? 'scale-105 bg-amber-500 text-white shadow-sm ring-3 ring-amber-400/50 ring-offset-1 ring-offset-background'
+                                  : isNeedsAction
+                                    ? 'scale-105 bg-amber-600 text-white shadow-sm ring-3 ring-amber-500/50 ring-offset-1 ring-offset-background'
+                                    : 'scale-105 bg-primary text-primary-foreground shadow-sm ring-3 ring-primary/40 ring-offset-1 ring-offset-background'
                               : isApproved
                                 ? 'bg-emerald-600 text-white ring-1 ring-emerald-600/30 group-hover:scale-105'
-                                : isRejected
-                                  ? 'bg-destructive text-white ring-1 ring-destructive/30 group-hover:scale-105'
-                                  : 'border border-border bg-background text-foreground group-hover:scale-105 group-hover:border-primary'
+                                : isInRevision
+                                  ? 'bg-amber-500 text-white ring-1 ring-amber-500/40 group-hover:scale-105'
+                                  : isNeedsAction
+                                    ? 'bg-amber-500/90 text-white ring-1 ring-amber-600/40 group-hover:scale-105'
+                                    : 'border border-border bg-background text-foreground group-hover:scale-105 group-hover:border-primary'
                           )}
                         >
                           {isApproved ? (
                             <Check className='h-3.5 w-3.5 stroke-[2.8]' />
-                          ) : isRejected ? (
-                            <X className='h-3.5 w-3.5 stroke-[2.8]' />
+                          ) : isInRevision ? (
+                            <RefreshCw className='h-3.5 w-3.5 stroke-[2.5]' />
+                          ) : isNeedsAction ? (
+                            <AlertTriangle className='h-3.5 w-3.5 stroke-[2.5]' />
                           ) : (
                             <span className='font-mono text-[11px] font-bold'>
                               {step.stepNumber}
@@ -237,11 +252,13 @@ export function ReviewWizardHeader({
                           className={cn(
                             'mt-1 max-w-full truncate text-center font-mono text-[10px] leading-none transition-colors select-none sm:text-[11px]',
                             isCurrent
-                              ? 'font-extrabold text-primary'
+                              ? isInRevision || isNeedsAction
+                                ? 'font-extrabold text-amber-600 dark:text-amber-400'
+                                : 'font-extrabold text-primary'
                               : isApproved
                                 ? 'font-bold text-emerald-700 dark:text-emerald-400'
-                                : isRejected
-                                  ? 'font-bold text-destructive'
+                                : isInRevision || isNeedsAction
+                                  ? 'font-bold text-amber-600 dark:text-amber-400'
                                   : 'font-semibold text-foreground group-hover:text-primary'
                           )}
                         >
@@ -250,7 +267,14 @@ export function ReviewWizardHeader({
 
                         {/* Active Indicator Dot */}
                         {isCurrent && (
-                          <span className='mt-0.5 h-1 w-1 rounded-full bg-primary shadow-2xs' />
+                          <span
+                            className={cn(
+                              'mt-0.5 h-1 w-1 rounded-full shadow-2xs',
+                              isInRevision || isNeedsAction
+                                ? 'bg-amber-500'
+                                : 'bg-primary'
+                            )}
+                          />
                         )}
                       </button>
                     </TooltipTrigger>
@@ -277,33 +301,35 @@ export function ReviewWizardHeader({
                         <span
                           className={cn(
                             'h-1.5 w-1.5 rounded-full',
-                            isCurrent
-                              ? 'bg-primary'
-                              : isApproved
-                                ? 'bg-emerald-500'
-                                : isRejected
-                                  ? 'bg-destructive'
-                                  : 'bg-amber-500'
+                            isApproved
+                              ? 'bg-emerald-500'
+                              : isInRevision || isNeedsAction
+                                ? 'bg-amber-500'
+                                : isCurrent
+                                  ? 'bg-primary'
+                                  : 'bg-slate-400'
                           )}
                         />
                         <span
                           className={cn(
-                            isCurrent
-                              ? 'font-bold text-primary'
-                              : isApproved
-                                ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                                : isRejected
-                                  ? 'font-semibold text-destructive'
+                            isApproved
+                              ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+                              : isInRevision || isNeedsAction
+                                ? 'font-semibold text-amber-700 dark:text-amber-400'
+                                : isCurrent
+                                  ? 'font-bold text-primary'
                                   : 'text-muted-foreground'
                           )}
                         >
                           {isApproved
-                            ? 'Disetujui Evaluator'
-                            : isRejected
-                              ? 'Perlu Revisi OPD'
-                              : isCurrent
-                                ? 'Sedang Ditinjau'
-                                : 'Menunggu Pemeriksaan'}
+                            ? 'Disetujui'
+                            : isInRevision
+                              ? `Sedang Direvisi (${revisionLocation || 'Menunggu Perbaikan'})`
+                              : isNeedsAction
+                                ? 'Perlu Tindak Lanjut Revisi'
+                                : isCurrent
+                                  ? 'Sedang Ditinjau'
+                                  : 'Menunggu Pemeriksaan'}
                         </span>
                       </div>
                     </TooltipContent>
@@ -320,9 +346,11 @@ export function ReviewWizardHeader({
                           'h-full transition-all duration-300',
                           isApproved
                             ? 'w-full bg-emerald-500'
-                            : isCurrent
-                              ? 'w-1/2 bg-primary/40'
-                              : 'w-0'
+                            : isInRevision || isNeedsAction
+                              ? 'w-full bg-amber-400'
+                              : isCurrent
+                                ? 'w-1/2 bg-primary/40'
+                                : 'w-0'
                         )}
                       />
                     </div>
@@ -336,13 +364,14 @@ export function ReviewWizardHeader({
 
       {/* 3. MOBILE (<640px): MULTI-SEGMENT PROGRESS + TOUCH NAVIGATOR */}
       <div className='space-y-2 border-t border-border/60 pt-1.5 sm:hidden'>
-        {/* Segmented Micro Progress Bar (13 segments) */}
+        {/* Segmented Micro Progress Bar */}
         <div className='flex h-1.5 w-full items-center gap-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700'>
           {steps.map((step, idx) => {
             const { status } = getItemStatusForStep(step)
             const isCurrent = idx === currentStepIndex
             const isApproved = status === 'approved'
-            const isRejected = status === 'rejected'
+            const isInRevision =
+              status === 'in_revision' || status === 'needs_action'
 
             return (
               <button
@@ -353,11 +382,13 @@ export function ReviewWizardHeader({
                 className={cn(
                   'h-full flex-1 rounded-full transition-all',
                   isCurrent
-                    ? 'bg-primary ring-2 ring-primary/40'
+                    ? isInRevision
+                      ? 'bg-amber-500 ring-2 ring-amber-400/50'
+                      : 'bg-primary ring-2 ring-primary/40'
                     : isApproved
                       ? 'bg-emerald-500'
-                      : isRejected
-                        ? 'bg-destructive'
+                      : isInRevision
+                        ? 'bg-amber-500'
                         : 'bg-slate-300 dark:bg-slate-600'
                 )}
               />

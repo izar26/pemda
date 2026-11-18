@@ -190,16 +190,34 @@ class PengajuanPenilaianRisiko extends Model
     }
 
     /**
-     * Determines whether Operator editing is locked.
-     * Operator can only edit when in draft, revision_by_kepala_opd, or revision_to_operator.
+     * Whether Operator OPD currently has at least one form open for editing
+     * (either full draft or individual form items returned for revision).
      */
-    public function isLockedForOperator(): bool
+    public function hasOperatorEditableItems(): bool
     {
-        return ! in_array($this->status, [
+        if (in_array($this->status, [
             self::STATUS_DRAFT,
             self::STATUS_REVISION_BY_KEPALA,
             self::STATUS_REVISION_TO_OPERATOR,
-        ], true);
+        ], true)) {
+            return true;
+        }
+
+        if ($this->relationLoaded('items')) {
+            return $this->items->contains(
+                fn (PengajuanPenilaianRisikoItem $item) => $item->current_tier === self::TIER_OPERATOR
+            );
+        }
+
+        return $this->items()->where('current_tier', self::TIER_OPERATOR)->exists();
+    }
+
+    /**
+     * Determines whether Operator editing is completely locked across all forms.
+     */
+    public function isLockedForOperator(): bool
+    {
+        return ! $this->hasOperatorEditableItems();
     }
 
     /**

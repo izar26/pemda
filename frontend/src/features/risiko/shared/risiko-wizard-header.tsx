@@ -93,6 +93,16 @@ export function RisikoWizardHeader({
   const activeStep = steps[currentIndex] || steps[0]
   const cleanActiveTitle = activeStep ? getCleanStepTitle(activeStep.title) : ''
 
+  const isDraft = !readiness || readiness.status === 'draft'
+  const editableForms = readiness?.editable_forms ?? []
+  const revisionFormsCount = readiness?.revision_forms_count ?? 0
+  const isCurrentFormInRevision =
+    !isDraft && editableForms.includes(String(currentStepId))
+  const currentFormRevisionNote =
+    readiness?.rejection_notes?.[String(currentStepId)] ||
+    readiness?.form_details?.[String(currentStepId)]?.catatan_kepala_opd ||
+    readiness?.form_details?.[String(currentStepId)]?.catatan_revisi
+
   return (
     <>
       <PageHeader className='space-y-2 pt-3 pb-2.5'>
@@ -235,12 +245,61 @@ export function RisikoWizardHeader({
           </div>
         </div>
 
-        {/* 13-Step Responsive Stepper */}
+        {/* 14-Step Responsive Stepper */}
         <WizardStepper
           steps={steps}
           currentStepId={currentStepId}
           totalSteps={totalSteps}
         />
+
+        {/* Yellow Revision Banner for Operator when current form is open for revision */}
+        {isCurrentFormInRevision && (
+          <div className='flex flex-col justify-between gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2.5 text-xs text-amber-900 sm:flex-row sm:items-center dark:text-amber-200'>
+            <div className='space-y-0.5'>
+              <div className='flex items-center gap-1.5 font-bold'>
+                <AlertCircle className='h-4 w-4 shrink-0 text-amber-600' />
+                <span>
+                  Form {formCode || activeStep?.code} Sedang Dalam Revisi
+                  (Terbuka untuk Diperbaiki)
+                </span>
+              </div>
+              {currentFormRevisionNote && (
+                <p className='pl-5.5 text-[11px] font-medium text-foreground'>
+                  Catatan Revisi: &ldquo;{currentFormRevisionNote}&rdquo;
+                </p>
+              )}
+            </div>
+            <div className='flex shrink-0 flex-wrap items-center gap-2'>
+              <Button
+                type='button'
+                size='sm'
+                disabled={submitToKepalaMutation.isPending}
+                onClick={() =>
+                  submitToKepalaMutation.mutate(String(currentStepId))
+                }
+                className='h-7.5 gap-1.5 bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700'
+              >
+                <Send className='h-3 w-3' />
+                <span>Kirim Ulang Form Ini</span>
+              </Button>
+              {revisionFormsCount > 1 && (
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  disabled={submitToKepalaMutation.isPending}
+                  onClick={() => submitToKepalaMutation.mutate(undefined)}
+                  className='h-7.5 gap-1.5 border-amber-600/40 text-xs font-semibold text-amber-900 dark:text-amber-200'
+                >
+                  <Send className='h-3 w-3' />
+                  <span>
+                    Kirim Ulang Semua Perbaikan ({revisionFormsCount} Form)
+                  </span>
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </PageHeader>
 
       {/* 3 Interactive Modals */}

@@ -28,7 +28,7 @@ class ReviewKepalaOpdRequest extends FormRequest
     {
         return [
             'status' => ['required', 'string', 'in:approved,rejected'],
-            'form_code' => ['nullable', 'required_if:status,rejected', 'string', Rule::in(app(RiskFormRegistry::class)->getCodes())],
+            'form_code' => ['required', 'string', Rule::in(app(RiskFormRegistry::class)->getCodes())],
             'catatan' => ['nullable', 'string', 'required_if:status,rejected', 'min:5', 'max:2000'],
         ];
     }

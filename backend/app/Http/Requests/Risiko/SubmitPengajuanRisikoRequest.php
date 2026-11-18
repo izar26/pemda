@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Risiko;
 
+use App\Services\Risiko\Registry\RiskFormRegistry;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SubmitPengajuanRisikoRequest extends FormRequest
 {
@@ -14,7 +16,7 @@ class SubmitPengajuanRisikoRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
@@ -22,6 +24,7 @@ class SubmitPengajuanRisikoRequest extends FormRequest
             'opd_id' => ['nullable', 'uuid'],
             'periode_penilaian_id' => ['nullable', 'uuid'],
             'catatan' => ['nullable', 'string', 'max:2000'],
+            'form_code' => ['nullable', 'string', Rule::in(app(RiskFormRegistry::class)->getCodes())],
         ];
     }
 }
