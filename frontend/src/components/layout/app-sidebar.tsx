@@ -13,27 +13,23 @@ import { NavGroup } from './nav-group'
 import { NavUser } from './nav-user'
 import { TeamSwitcher } from './team-switcher'
 import { useAuthStore } from '@/stores/auth-store'
+import { userHasRole } from '@/hooks/use-permissions'
 import { pengajuanRisikoService } from '@/services/pengajuan-risiko-service'
 
 export function AppSidebar() {
   const { collapsible, variant } = useLayout()
   const authUser = useAuthStore((state) => state.auth.user)
 
-  const userRoles = authUser?.roles || (authUser?.role ? [authUser.role] : [])
   const userPermissions = authUser?.permissions || []
 
   const isSuperadmin =
-    userRoles.some((r) => ['Superadmin', 'Administrator', 'Admin Office'].includes(r)) ||
+    userHasRole(authUser, 'Superadmin') ||
+    userHasRole(authUser, 'Administrator') ||
     userPermissions.includes('settings.edit')
-  const isPengawas =
-    userRoles.some((r) => ['Koordinator Pengawas', 'Inspektorat'].includes(r)) ||
-    userPermissions.includes('review_risiko.review_pengawas')
-  const isAuditor =
-    userRoles.some((r) => ['Evaluator / Reviewer', 'Auditor'].includes(r)) ||
-    userPermissions.includes('review_risiko.approve')
+  const isPengawas = !isSuperadmin && userHasRole(authUser, 'Koordinator Pengawas')
+  const isAuditor = !isSuperadmin && !isPengawas && userHasRole(authUser, 'Evaluator / Reviewer')
   const isKepalaOpd =
-    userRoles.some((r) => ['Executive', 'Kepala OPD'].includes(r)) ||
-    userPermissions.includes('review_risiko.review_kepala')
+    !isSuperadmin && userHasRole(authUser, 'Executive') && Boolean(authUser?.opd_id)
 
   const { data: pendingCounts } = useQuery({
     queryKey: ['risiko-pending-counts'],

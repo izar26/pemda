@@ -130,18 +130,23 @@ export function ReviewRisikoWizard({
   )
 
   const authUser = useAuthStore((state) => state.auth.user)
-  const isSuperadmin =
-    authUser?.roles?.includes('Superadmin') || authUser?.role === 'Superadmin'
-  const isKepalaOpdUser =
-    authUser?.roles?.includes('Executive') || authUser?.role === 'Executive'
+  const isRegionalAdmin = hasRole('Superadmin') || hasRole('Administrator')
+  const isKepalaOpdUser = hasRole('Executive') && Boolean(authUser?.opd_id)
 
   const canActAsKepalaOpd =
-    isSuperadmin ||
+    isRegionalAdmin ||
     (isKepalaOpdUser &&
-      Boolean(
-        authUser?.opd_id &&
-        String(authUser.opd_id) === String(submission?.opd_id)
-      ))
+      hasPermission('review_risiko.review_kepala') &&
+      String(authUser?.opd_id) === String(submission?.opd_id))
+
+  const canActAsAuditor =
+    isRegionalAdmin ||
+    (hasRole('Evaluator / Reviewer') && hasPermission('review_risiko.approve'))
+
+  const canActAsPengawas =
+    isRegionalAdmin ||
+    (hasRole('Koordinator Pengawas') &&
+      hasPermission('review_risiko.review_pengawas'))
 
   const isKepalaTier =
     submission?.current_tier === 'kepala_opd' ||
@@ -545,7 +550,7 @@ export function ReviewRisikoWizard({
       )}
 
       {/* Auditor Action Bar when Pengawas has rejected */}
-      {isRevisionByPengawas && (
+      {isRevisionByPengawas && canActAsAuditor && (
         <div className='flex flex-col justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-800 sm:flex-row sm:items-center dark:text-amber-300'>
           <div className='flex items-center gap-2 text-xs'>
             <AlertCircle className='h-4 w-4 shrink-0 text-amber-600' />
@@ -604,14 +609,9 @@ export function ReviewRisikoWizard({
           <ReviewWizardStepHeader
             informationOnly={currentStep.id === '4' && !hasForm4Item}
             canDecide={
-              !['4', '5', '6'].includes(currentStep.id) ||
-              (isPengawasTier
-                ? hasRole('Superadmin') ||
-                  hasRole('Admin Office') ||
-                  (hasRole('Inspektorat') &&
-                    hasPermission('review_risiko.review_pengawas'))
-                : submission.current_tier === 'auditor' &&
-                  hasPermission('review_risiko.approve'))
+              isPengawasTier
+                ? canActAsPengawas
+                : submission.current_tier === 'auditor' && canActAsAuditor
             }
             stepNumber={currentStep.stepNumber}
             totalSteps={totalSteps}

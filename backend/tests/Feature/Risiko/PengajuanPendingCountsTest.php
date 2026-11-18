@@ -86,6 +86,7 @@ class PengajuanPendingCountsTest extends TestCase
             'auditor_id' => $this->auditorUser->id,
             'opd_id' => $this->opd->id,
             'periode_penilaian_id' => $this->activePeriode->id,
+            'assigned_by' => $this->pengawasUser->id,
             'is_active' => true,
         ]);
     }

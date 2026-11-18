@@ -43,13 +43,19 @@ import {
 export function NavGroup({ title, items }: NavGroupProps) {
   const { state, isMobile } = useSidebar()
   const href = useLocation({ select: (location) => location.href })
-  const { hasPermission, hasRole, isSuperadmin } = usePermissions()
+  const { hasPermission, hasRole, isSuperadmin, canAccessReviewRisiko } =
+    usePermissions()
   const user = useAuthStore((state) => state.auth.user)
   const isRisikoWizardGroup = title === 'Pengelolaan Risiko'
   const { steps: wizardSteps, completedCount, totalSteps } =
     useRisikoWizardProgress(isRisikoWizardGroup)
 
   function checkItemAccess(item: NavItem): boolean {
+    if ('url' in item && item.url === '/pengawasan/review-risiko') {
+      if (!canAccessReviewRisiko) {
+        return false
+      }
+    }
     if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
       return false
     }
