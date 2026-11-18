@@ -126,7 +126,6 @@ export function ReviewTable({
               { label: 'Tier 3: Evaluator', value: 'auditor' },
               { label: 'Tier 4: Pengawas', value: 'pengawas' },
               { label: 'Disahkan Final', value: 'approved' },
-              { label: 'Tier 1: Draf Operator', value: 'opd' },
             ],
           },
           {
@@ -136,7 +135,6 @@ export function ReviewTable({
               { label: 'Menunggu Review', value: 'submitted' },
               { label: 'Perlu Revisi', value: 'revision_requested' },
               { label: 'Telah Disetujui', value: 'approved' },
-              { label: 'Belum Mengirim', value: 'belum_mengirim' },
             ],
           },
         ]}
@@ -191,7 +189,7 @@ export function ReviewTable({
                   colSpan={columns.length}
                   className='h-36 text-center text-xs text-muted-foreground'
                 >
-                  Tidak ada data review risiko perangkat daerah yang sesuai dengan filter.
+                  Belum ada pengajuan risiko perangkat daerah yang masuk pada tahap review Anda.
                 </TableCell>
               </TableRow>
             )}

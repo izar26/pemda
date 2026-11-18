@@ -218,11 +218,11 @@ class ReviewRisikoRoleScopingTest extends TestCase
     {
         Sanctum::actingAs($this->evaluator1);
 
+        // Disdik is still at TIER_KEPALA_OPD (not forwarded to Evaluator yet), so only Dinkes appears
         $list = $this->getJson('/api/pengawasan/review-risiko');
         $list->assertStatus(200);
-        $ids = collect($list->json('data'))->pluck('id')->sort()->values()->all();
-        $expected = collect([$this->opdDisdik->id, $this->opdDinkes->id])->sort()->values()->all();
-        $this->assertEquals($expected, $ids);
+        $ids = collect($list->json('data'))->pluck('id')->all();
+        $this->assertEquals([$this->opdDinkes->id], $ids);
 
         // Can open assigned OPD submission
         $this->getJson("/api/pengawasan/review-risiko/{$this->subDinkes->id}")
@@ -235,13 +235,22 @@ class ReviewRisikoRoleScopingTest extends TestCase
 
     public function test_pengawas_only_sees_and_approves_opds_assigned_by_themselves(): void
     {
-        // Pengawas 1 only sees Disdik & Dinkes (Evaluator 1's OPDs assigned by Pengawas 1)
+        // Pengawas 1 has Disdik (at Kepala OPD) and Dinkes (at Evaluator) — neither forwarded to Pengawas yet
         Sanctum::actingAs($this->pengawas1);
         $list1 = $this->getJson('/api/pengawasan/review-risiko');
         $list1->assertStatus(200);
-        $ids1 = collect($list1->json('data'))->pluck('id')->sort()->values()->all();
-        $expected1 = collect([$this->opdDisdik->id, $this->opdDinkes->id])->sort()->values()->all();
-        $this->assertEquals($expected1, $ids1);
+        $this->assertEquals([], collect($list1->json('data'))->pluck('id')->all());
+
+        // Once Evaluator forwards Dinkes to Pengawas, Pengawas 1 sees Dinkes (and still not Disdik or Dinsos)
+        $this->subDinkes->update([
+            'current_tier' => PengajuanPenilaianRisiko::TIER_PENGAWAS,
+            'status' => PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
+            'auditor_reviewed_at' => now(),
+        ]);
+
+        $list1AfterForward = $this->getJson('/api/pengawasan/review-risiko');
+        $list1AfterForward->assertStatus(200);
+        $this->assertEquals([$this->opdDinkes->id], collect($list1AfterForward->json('data'))->pluck('id')->all());
 
         // Pengawas 1 cannot view or approve Dinsos (Evaluator 2 assigned by Pengawas 2)
         $this->getJson("/api/pengawasan/review-risiko/{$this->subDinsos->id}")
@@ -266,6 +275,69 @@ class ReviewRisikoRoleScopingTest extends TestCase
             'form_code' => '2b',
             'status' => 'approved',
         ])->assertStatus(200);
+    }
+
+    public function test_unsubmitted_draft_and_lower_tier_opds_are_hidden_until_forwarded_to_each_role(): void
+    {
+        $opdDraft = Opd::create([
+            'nama' => 'Dinas Perhubungan',
+            'kode' => 'DISHUB',
+            'kategori' => 'Dinas',
+            'is_active' => true,
+        ]);
+
+        $kepalaDishub = User::factory()->create([
+            'name' => 'Kepala Dishub',
+            'email' => 'kepala.dishub@pemda.go.id',
+            'opd_id' => $opdDraft->id,
+            'status' => 'active',
+        ]);
+        $kepalaDishub->assignRole('Executive');
+
+        AuditorOpdAssignment::create([
+            'auditor_id' => $this->evaluator1->id,
+            'opd_id' => $opdDraft->id,
+            'periode_penilaian_id' => $this->periode->id,
+            'assigned_by' => $this->pengawas1->id,
+            'is_active' => true,
+        ]);
+
+        // Draft submission (not sent by Operator yet)
+        PengajuanPenilaianRisiko::create([
+            'opd_id' => $opdDraft->id,
+            'periode_penilaian_id' => $this->periode->id,
+            'auditor_id' => $this->evaluator1->id,
+            'current_tier' => PengajuanPenilaianRisiko::TIER_OPERATOR,
+            'status' => PengajuanPenilaianRisiko::STATUS_DRAFT,
+            'submitted_at' => null,
+        ]);
+
+        // Kepala Dishub sees 0 rows because Operator has not submitted yet
+        Sanctum::actingAs($kepalaDishub);
+        $this->getJson('/api/pengawasan/review-risiko')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        // Superadmin does not see draft OPD either (only the 3 already-submitted OPDs)
+        Sanctum::actingAs($this->superadmin);
+        $superIds = collect($this->getJson('/api/pengawasan/review-risiko')->assertOk()->json('data'))
+            ->pluck('id')
+            ->all();
+        $this->assertNotContains($opdDraft->id, $superIds);
+        $this->assertCount(3, $superIds);
+
+        // Once Dinkes has reached Evaluator and Evaluator sends it back for revision, Dinkes stays visible to Evaluator
+        $this->subDinkes->update([
+            'kepala_opd_approved_at' => now(),
+            'status' => PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
+        ]);
+        Sanctum::actingAs($this->evaluator1);
+        $evalIds = collect($this->getJson('/api/pengawasan/review-risiko')->assertOk()->json('data'))
+            ->pluck('id')
+            ->all();
+        $this->assertContains($this->opdDinkes->id, $evalIds);
+        $this->assertNotContains($opdDraft->id, $evalIds);
+        $this->assertNotContains($this->opdDisdik->id, $evalIds);
     }
 
     public function test_superadmin_sees_all_opds_globally(): void

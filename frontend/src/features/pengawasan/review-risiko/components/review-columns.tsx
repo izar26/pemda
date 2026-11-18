@@ -357,48 +357,6 @@ export function getReviewColumns({
       enableSorting: true,
     },
     {
-      id: 'lembar_kerja',
-      header: () => <div className='text-xs font-semibold'>Status Lembar Kerja</div>,
-      cell: ({ row }) => {
-        const submission = row.original.pengajuan_risiko?.[0]
-        const item2b = submission?.items?.find((i) => i.form_code === '2b')
-        const item2c = submission?.items?.find((i) => i.form_code === '2c')
-
-        return (
-          <div className='flex items-center gap-1.5 py-0.5'>
-            <Badge
-              variant='outline'
-              className={`px-1.5 py-0 font-mono text-[10px] ${
-                item2b?.status === 'approved'
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : item2b?.status === 'rejected'
-                    ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                    : item2b?.status === 'submitted'
-                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                      : 'text-muted-foreground'
-              }`}
-            >
-              2B: {item2b?.status || 'draft'}
-            </Badge>
-            <Badge
-              variant='outline'
-              className={`px-1.5 py-0 font-mono text-[10px] ${
-                item2c?.status === 'approved'
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : item2c?.status === 'rejected'
-                    ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                    : item2c?.status === 'submitted'
-                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                      : 'text-muted-foreground'
-              }`}
-            >
-              2C: {item2c?.status || 'draft'}
-            </Badge>
-          </div>
-        )
-      },
-    },
-    {
       id: 'actions',
       header: () => <div className='pr-4 text-right'>Aksi</div>,
       cell: ({ row }) => {

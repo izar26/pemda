@@ -5,7 +5,6 @@ import {
   Building2,
   CheckCircle2,
   Clock,
-  FileEdit,
   Loader2,
   RefreshCw,
 } from 'lucide-react'
@@ -71,13 +70,10 @@ export function ReviewRisikoManagement() {
     let menunggu = 0
     let revisi = 0
     let disetujui = 0
-    let belumKirim = 0
 
     for (const opd of rawOpdList) {
       const s = opd.pengajuan_risiko?.[0]?.status
-      if (!s || s === 'draft') {
-        belumKirim++
-      } else if (
+      if (
         s === 'submitted' ||
         s === 'in_review' ||
         s === 'submitted_to_kepala_opd' ||
@@ -100,16 +96,16 @@ export function ReviewRisikoManagement() {
       }
     }
 
-    return { total, menunggu, revisi, disetujui, belumKirim }
+    return { total, menunggu, revisi, disetujui }
   }, [rawOpdList])
 
   // KPI Items using the standard unified KpiStatsCards
   const kpiItems: KpiStatItem[] = useMemo(
     () => [
       {
-        title: 'Total Binaan',
+        title: 'Total Pengajuan',
         value: metrics.total,
-        subtitle: 'Perangkat Daerah',
+        subtitle: 'Perangkat Daerah Masuk',
         icon: Building2,
         color: 'bg-primary/10 text-primary',
         onClick: () => setStatusFilter('semua'),
@@ -151,18 +147,6 @@ export function ReviewRisikoManagement() {
         isActive: statusFilter === 'approved',
         activeClassName:
           'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5',
-      },
-      {
-        title: 'Belum Mengirim',
-        value: metrics.belumKirim,
-        subtitle: 'Belum Ada Draf',
-        icon: FileEdit,
-        color: 'bg-muted text-muted-foreground',
-        valueColor: 'text-muted-foreground',
-        onClick: () => setStatusFilter('belum_mengirim'),
-        isActive: statusFilter === 'belum_mengirim',
-        activeClassName:
-          'border-muted-foreground/60 ring-2 ring-muted/40 bg-muted/20',
       },
     ],
     [metrics, statusFilter]
@@ -228,8 +212,8 @@ export function ReviewRisikoManagement() {
             <KpiStatsCards
               items={kpiItems}
               isLoading={isLoading}
-              count={5}
-              className='grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
+              count={4}
+              className='grid-cols-2 lg:grid-cols-4'
             />
 
             {/* 3. Standard TanStack Data Table */}

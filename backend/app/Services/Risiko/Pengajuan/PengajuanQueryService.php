@@ -114,13 +114,58 @@ class PengajuanQueryService
         $query = Opd::query()->where('is_active', true);
 
         if ($user->isRegionalAdmin()) {
-            // Global visibility across all active OPDs
+            // Global visibility across all active OPDs that have already been submitted by Operator OPD
+            $query->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                    ->where(function ($q) {
+                        $q->where('status', '!=', PengajuanPenilaianRisiko::STATUS_DRAFT)
+                            ->orWhereNotNull('submitted_at');
+                    });
+            });
         } elseif ($user->isScopedPengawas()) {
-            $query->whereIn('id', $user->pengawasAssignedOpdIds());
+            $query->whereIn('id', $user->pengawasAssignedOpdIds())
+                ->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                    $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                        ->where(function ($q) {
+                            $q->whereNotNull('auditor_reviewed_at')
+                                ->orWhereIn('status', [
+                                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
+                                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
+                                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
+                                    PengajuanPenilaianRisiko::STATUS_APPROVED,
+                                ]);
+                        });
+                });
         } elseif ($user->isScopedAuditor()) {
-            $query->whereIn('id', $user->activeAssignedOpdIds());
+            $query->whereIn('id', $user->activeAssignedOpdIds())
+                ->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                    $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                        ->where(function ($q) {
+                            $q->whereNotNull('kepala_opd_approved_at')
+                                ->orWhereIn('status', [
+                                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR,
+                                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR,
+                                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
+                                    PengajuanPenilaianRisiko::STATUS_REVISION_TO_OPERATOR,
+                                    PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS,
+                                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
+                                    PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
+                                    PengajuanPenilaianRisiko::STATUS_APPROVED,
+                                    PengajuanPenilaianRisiko::STATUS_SUBMITTED,
+                                    PengajuanPenilaianRisiko::STATUS_IN_REVIEW,
+                                    PengajuanPenilaianRisiko::STATUS_REVISION_REQUESTED,
+                                ]);
+                        });
+                });
         } elseif ($user->isKepalaOpd()) {
-            $query->where('id', $user->opd_id);
+            $query->where('id', $user->opd_id)
+                ->whereHas('pengajuanRisiko', function ($sq) use ($resolvedPeriodeId) {
+                    $sq->where('periode_penilaian_id', $resolvedPeriodeId)
+                        ->where(function ($q) {
+                            $q->where('status', '!=', PengajuanPenilaianRisiko::STATUS_DRAFT)
+                                ->orWhereNotNull('submitted_at');
+                        });
+                });
         } else {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar review risiko OPD.');
         }
