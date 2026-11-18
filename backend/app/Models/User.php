@@ -320,16 +320,51 @@ class User extends Authenticatable
 
     /**
      * Whether this user is an Auditor / Evaluator whose data access must be limited to the
-     * OPDs they are assigned to (Superadmin / Administrator / Inspektorat see all).
+     * OPDs they are assigned to (Superadmin / Administrator / Pengawas see their respective scopes).
      */
     public function isScopedAuditor(): bool
     {
-        $isEvaluator = $this->hasRole(['Evaluator / Reviewer', 'Auditor']) || $this->can('review_risiko.approve');
-        $isUnrestricted = $this->isRegionalAdmin()
-            || $this->hasRole(['Koordinator Pengawas', 'Inspektorat'])
-            || $this->can('review_risiko.review_pengawas');
+        if ($this->isRegionalAdmin() || $this->hasRole(['Koordinator Pengawas', 'Inspektorat'])) {
+            return false;
+        }
 
-        return $isEvaluator && ! $isUnrestricted;
+        if ($this->hasRole(['Evaluator / Reviewer', 'Auditor'])) {
+            return true;
+        }
+
+        return $this->can('review_risiko.approve') && ! $this->can('review_risiko.review_pengawas') && ! $this->hasRole('Executive');
+    }
+
+    /**
+     * Whether this user is a Kepala OPD (Executive attached to a specific OPD).
+     */
+    public function isKepalaOpd(): bool
+    {
+        return ! $this->isRegionalAdmin()
+            && $this->hasRole(['Executive', 'Kepala OPD'])
+            && ! empty($this->opd_id);
+    }
+
+    /**
+     * Whether this user is a Pengawas (Koordinator Pengawas / Inspektorat) whose review scope
+     * is limited to OPDs handled by evaluators they assigned.
+     */
+    public function isScopedPengawas(): bool
+    {
+        return ! $this->isRegionalAdmin()
+            && $this->hasRole(['Koordinator Pengawas', 'Inspektorat']);
+    }
+
+    /**
+     * Whether this user is allowed to access the Review Risiko module.
+     * Only 3 operational roles (Kepala OPD with opd_id, Evaluator, Pengawas) + Regional Admin.
+     */
+    public function canAccessReviewRisiko(): bool
+    {
+        return $this->isRegionalAdmin()
+            || $this->isKepalaOpd()
+            || $this->isScopedAuditor()
+            || $this->isScopedPengawas();
     }
 
     /**
@@ -355,19 +390,39 @@ class User extends Authenticatable
             return false;
         }
 
-        if ($this->hasRole(['Koordinator Pengawas', 'Inspektorat', 'Bapperida']) || $this->can('review_risiko.review_pengawas')) {
+        if ($this->hasRole(['Koordinator Pengawas', 'Inspektorat', 'Bapperida', 'Admin Office'])) {
             return false;
+        }
+
+        if ($this->hasRole(['Executive', 'Kepala OPD']) && ! empty($this->opd_id)) {
+            return true;
         }
 
         if ($this->hasRole(['Operator OPD', 'OPD'])) {
             return true;
         }
 
-        if ($this->hasRole('Executive') && ! empty($this->opd_id)) {
-            return true;
+        if ($this->can('review_risiko.review_pengawas')) {
+            return false;
         }
 
         return ! empty($this->opd_id);
+    }
+
+    /**
+     * IDs of OPDs whose active evaluator was assigned by this Pengawas.
+     *
+     * @return array<int, string>
+     */
+    public function pengawasAssignedOpdIds(): array
+    {
+        return AuditorOpdAssignment::where('assigned_by', $this->id)
+            ->where('is_active', true)
+            ->pluck('opd_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

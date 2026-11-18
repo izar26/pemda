@@ -112,12 +112,16 @@ class PengajuanQueryService
 
         $query = Opd::query()->where('is_active', true);
 
-        // Scope to auditor's assigned OPDs if role is Scoped Auditor
-        if ($user->isScopedAuditor()) {
-            $assignedOpdIds = $user->activeAssignedOpdIds();
-            $query->whereIn('id', $assignedOpdIds);
-        } elseif ($user->isRestrictedToOpd() && $user->opd_id) {
+        if ($user->isRegionalAdmin()) {
+            // Global visibility across all active OPDs
+        } elseif ($user->isScopedPengawas()) {
+            $query->whereIn('id', $user->pengawasAssignedOpdIds());
+        } elseif ($user->isScopedAuditor()) {
+            $query->whereIn('id', $user->activeAssignedOpdIds());
+        } elseif ($user->isKepalaOpd()) {
             $query->where('id', $user->opd_id);
+        } else {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar review risiko OPD.');
         }
 
         if (! empty($filters['search'])) {
@@ -231,7 +235,7 @@ class PengajuanQueryService
 
         // Auto-transition to in_review status if appropriate
         if ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_AUDITOR
-            && ($user->isRegionalAdmin() || $user->can('review_risiko.approve') || $user->hasRole('Auditor') || $user->hasRole('Koordinator Pengawas'))) {
+            && ($user->isRegionalAdmin() || $user->isScopedAuditor())) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_AUDITOR]);
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $submission->id,
@@ -241,7 +245,7 @@ class PengajuanQueryService
                 'created_at' => now(),
             ]);
         } elseif ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED_TO_PENGAWAS
-            && ($user->isRegionalAdmin() || $user->can('review_risiko.review_pengawas') || $user->hasRole('Koordinator Pengawas'))) {
+            && ($user->isRegionalAdmin() || $user->isScopedPengawas())) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS]);
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $submission->id,
@@ -251,7 +255,7 @@ class PengajuanQueryService
                 'created_at' => now(),
             ]);
         } elseif ($startReview && $submission->status === PengajuanPenilaianRisiko::STATUS_SUBMITTED
-            && ($user->isRegionalAdmin() || $user->can('review_risiko.approve') || $user->hasRole('Auditor') || $user->hasRole('Koordinator Pengawas'))) {
+            && ($user->isRegionalAdmin() || $user->isScopedAuditor())) {
             $submission->update(['status' => PengajuanPenilaianRisiko::STATUS_IN_REVIEW]);
             PengajuanPenilaianRisikoHistory::create([
                 'pengajuan_id' => $submission->id,
@@ -283,10 +287,11 @@ class PengajuanQueryService
         $resolvedPeriodeId = $this->resolvePeriodeId($periodeId);
 
         $isSuperadmin = $user->isRegionalAdmin();
-        $isExecutive = $user->can('review_risiko.review_kepala') || $user->hasRole('Executive');
-        $isAuditor = $user->isScopedAuditor() || $user->can('review_risiko.approve') || $user->hasRole('Auditor');
-        $isPengawas = $user->can('review_risiko.review_pengawas') || $user->hasRole('Koordinator Pengawas');
-        $isOpd = $user->isRestrictedToOpd() || $user->can('penilaian_risiko.submit') || $user->hasRole('OPD');
+        $isKepalaOpd = $user->isKepalaOpd();
+        $isRegionalLeader = $user->isRegionalLeader();
+        $isAuditor = $user->isScopedAuditor();
+        $isPengawas = $user->isScopedPengawas();
+        $isOpd = $user->hasRole(['Operator OPD', 'OPD']) && ! empty($user->opd_id);
 
         $kepalaOpdPending = 0;
         $auditorPending = 0;
@@ -296,7 +301,7 @@ class PengajuanQueryService
         $pendingItems = [];
 
         // 1. Kepala OPD pending logic
-        if ($isSuperadmin || ($isExecutive && $user->opd_id)) {
+        if ($isSuperadmin || $isKepalaOpd) {
             $query = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
                 ->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
                 ->whereIn('status', [
@@ -304,13 +309,13 @@ class PengajuanQueryService
                     PengajuanPenilaianRisiko::STATUS_REVISION_BY_AUDITOR,
                 ]);
 
-            if ($user->opd_id && ! $isSuperadmin) {
+            if ($isKepalaOpd) {
                 $query->where('opd_id', $user->opd_id);
             }
 
             $kepalaOpdPending = $query->count();
 
-            if ($isExecutive && $user->opd_id) {
+            if ($isKepalaOpd) {
                 $myPendingTotal += $kepalaOpdPending;
                 $items = (clone $query)->with('opd:id,nama,kode')->limit(5)->get();
                 foreach ($items as $item) {
@@ -328,7 +333,7 @@ class PengajuanQueryService
                     ];
                 }
             }
-        } elseif ($isExecutive && ! $user->opd_id) {
+        } elseif ($isRegionalLeader) {
             $kepalaOpdPending = PengajuanPenilaianRisiko::where('periode_penilaian_id', $resolvedPeriodeId)
                 ->where('current_tier', PengajuanPenilaianRisiko::TIER_KEPALA_OPD)
                 ->count();
@@ -346,14 +351,15 @@ class PengajuanQueryService
                     PengajuanPenilaianRisiko::STATUS_REVISION_BY_PENGAWAS,
                 ]);
 
-            if ($isAuditor && ! $isSuperadmin && ! $isPengawas) {
-                $assignedOpds = $user->activeAssignedOpdIds();
-                $auditorQuery->whereIn('opd_id', $assignedOpds);
+            if ($isAuditor) {
+                $auditorQuery->whereIn('opd_id', $user->activeAssignedOpdIds());
+            } elseif ($isPengawas) {
+                $auditorQuery->whereIn('opd_id', $user->pengawasAssignedOpdIds());
             }
 
             $auditorPending = $auditorQuery->count();
 
-            if ($isAuditor && ! $isPengawas && ! $isSuperadmin) {
+            if ($isAuditor) {
                 $myPendingTotal += $auditorPending;
                 $items = (clone $auditorQuery)->with('opd:id,nama,kode')->limit(5)->get();
                 foreach ($items as $item) {
@@ -382,9 +388,13 @@ class PengajuanQueryService
                     PengajuanPenilaianRisiko::STATUS_IN_REVIEW_PENGAWAS,
                 ]);
 
+            if ($isPengawas) {
+                $pengawasQuery->whereIn('opd_id', $user->pengawasAssignedOpdIds());
+            }
+
             $pengawasPending = $pengawasQuery->count();
 
-            if ($isPengawas && ! $isSuperadmin) {
+            if ($isPengawas) {
                 $myPendingTotal += $pengawasPending;
                 $items = (clone $pengawasQuery)->with('opd:id,nama,kode')->limit(5)->get();
                 foreach ($items as $item) {

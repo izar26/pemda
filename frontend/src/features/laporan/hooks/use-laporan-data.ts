@@ -10,6 +10,14 @@ import {
   type RisikoWizardStepConfig,
 } from '@/features/risiko/shared/risiko-wizard-store'
 
+const LEADERSHIP_TITLES = [
+  'Bupati',
+  'Wakil Bupati',
+  'Sekda',
+  'Sekretaris Daerah',
+  'Pimpinan Daerah',
+]
+
 export function useLaporanData() {
   const user = useAuthStore((s) => s.auth.user)
   const userRoles = useMemo(() => {
@@ -18,35 +26,44 @@ export function useLaporanData() {
     return []
   }, [user])
 
-  const isOpdRole = Boolean(
-    (userRoles.includes('Operator OPD') || userRoles.includes('OPD')) &&
-      !userRoles.some((r) =>
-        [
-          'Superadmin',
-          'Administrator',
-          'Admin Office',
-          'Bapperida',
-          'Koordinator Pengawas',
-          'Inspektorat',
-          'Evaluator / Reviewer',
-          'Auditor',
-        ].includes(r)
-      )
+  const isGlobalRole = userRoles.some((r) =>
+    [
+      'Superadmin',
+      'Administrator',
+      'Admin Office',
+      'Bapperida',
+      'Koordinator Pengawas',
+      'Inspektorat',
+    ].includes(r)
   )
 
   const isScopedAuditor = Boolean(
     (userRoles.includes('Evaluator / Reviewer') ||
       userRoles.includes('Auditor')) &&
-      !userRoles.some((r) =>
-        [
-          'Superadmin',
-          'Administrator',
-          'Admin Office',
-          'Koordinator Pengawas',
-          'Inspektorat',
-        ].includes(r)
-      )
+      !isGlobalRole
   )
+
+  const isRegionalLeader = Boolean(
+    (user?.jabatan && LEADERSHIP_TITLES.includes(user.jabatan)) ||
+      (userRoles.includes('Executive') && !user?.opd_id)
+  )
+
+  const isKepalaOpd = Boolean(
+    (userRoles.includes('Executive') || userRoles.includes('Kepala OPD')) &&
+      Boolean(user?.opd_id) &&
+      !isRegionalLeader &&
+      !isGlobalRole &&
+      !isScopedAuditor
+  )
+
+  const isOpdRole = Boolean(
+    (userRoles.includes('Operator OPD') || userRoles.includes('OPD')) &&
+      !isGlobalRole &&
+      !isScopedAuditor
+  )
+
+  // Kepala OPD (role Executive ber-opd_id) & Operator OPD terkunci pada OPD masing-masing
+  const isOpdLocked = isKepalaOpd || isOpdRole
 
   const [selectedFormId, setSelectedFormId] = useState<string>('2b')
   const [selectedOpdId, setSelectedOpdId] = useState<string>(
@@ -61,7 +78,7 @@ export function useLaporanData() {
     staleTime: 5 * 60 * 1000,
   })
 
-  // 2. Fetch OPD List (auditor: only OPDs assigned to them)
+  // 2. Fetch OPD List (skip untuk user yang terkunci pada OPD miliknya sendiri)
   const { data: opdListResp, isLoading: isLoadingOpds } = useQuery({
     queryKey: ['opds', 'all-for-laporan', isScopedAuditor],
     queryFn: () =>
@@ -69,27 +86,32 @@ export function useLaporanData() {
         all: true,
         ...(isScopedAuditor ? { assigned_only: true } : {}),
       }),
+    enabled: !isOpdLocked,
     staleTime: 5 * 60 * 1000,
   })
 
   const opdOptions = useMemo(() => {
-    if (!Array.isArray(opdListResp)) return []
+    if (isOpdLocked || !Array.isArray(opdListResp)) return []
     return opdListResp.map((opd) => ({
       value: String(opd.id),
       label: opd.nama,
     }))
-  }, [opdListResp])
+  }, [isOpdLocked, opdListResp])
 
-  // Selected OPD must belong to the (possibly scoped) option list
-  const effectiveOpdId =
-    (selectedOpdId && opdOptions.some((o) => o.value === selectedOpdId)
-      ? selectedOpdId
-      : opdOptions[0]?.value) || ''
+  // Selected OPD must belong to the (possibly scoped) option list, or strictly user's own OPD when locked
+  const effectiveOpdId = isOpdLocked
+    ? user?.opd_id
+      ? String(user.opd_id)
+      : ''
+    : (selectedOpdId && opdOptions.some((o) => o.value === selectedOpdId)
+        ? selectedOpdId
+        : opdOptions[0]?.value) || ''
 
-  const selectedOpdName =
-    opdOptions.find((o) => o.value === effectiveOpdId)?.label ||
-    user?.opd?.nama ||
-    'Perangkat Daerah'
+  const selectedOpdName = isOpdLocked
+    ? user?.opd?.nama || 'Perangkat Daerah Anda'
+    : opdOptions.find((o) => o.value === effectiveOpdId)?.label ||
+      user?.opd?.nama ||
+      'Perangkat Daerah'
 
   const resolvedTahun = activePeriode?.tahun_penilaian
 
@@ -164,12 +186,15 @@ export function useLaporanData() {
   return {
     user,
     isOpdRole,
+    isOpdLocked,
     isScopedAuditor,
     selectedFormId,
     setSelectedFormId,
     effectiveOpdId,
     setSelectedOpdId,
-    selectedOpdName,
+    selectedOpdName: isOpdLocked
+      ? laporanData?.opd?.nama || selectedOpdName
+      : selectedOpdName,
     opdOptions,
     isLoadingOpds,
     currentStage,

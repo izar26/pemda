@@ -149,12 +149,25 @@ class LaporanRisikoService
 
     protected function resolveOpd(?string $opdId, User $user): Opd
     {
-        // Jika user adalah role OPD murni (bukan admin/inspektorat), kunci ke opd_id mereka sendiri
-        $isGlobalAdmin = $user->hasRole(['Superadmin', 'Administrator', 'Admin Office', 'Inspektorat', 'Koordinator Pengawas']);
-        $isScopedAuditor = $user->hasRole(['Evaluator / Reviewer', 'Auditor']);
+        // Pengguna terisolasi OPD (Operator OPD & Kepala OPD ber-role Executive) wajib hanya mengakses OPD miliknya.
+        if ($user->isRestrictedToOpd()) {
+            if (! $user->opd_id) {
+                throw new AuthorizationException('Akun Anda belum terhubung dengan Perangkat Daerah (OPD).');
+            }
 
-        if (! $isGlobalAdmin && ! $isScopedAuditor && $user->opd_id) {
+            if ($opdId !== null && $opdId !== '' && $opdId !== (string) $user->opd_id) {
+                throw new AuthorizationException('Anda tidak memiliki akses untuk melihat laporan Perangkat Daerah lain.');
+            }
+
             $targetOpdId = (string) $user->opd_id;
+        } elseif ($user->isScopedAuditor()) {
+            $assignedIds = $user->activeAssignedOpdIds();
+
+            if ($opdId !== null && $opdId !== '' && ! in_array($opdId, $assignedIds, true)) {
+                throw new AuthorizationException('Perangkat Daerah tersebut tidak termasuk dalam penugasan binaan Anda.');
+            }
+
+            $targetOpdId = $opdId ?: ($assignedIds[0] ?? '');
         } else {
             $targetOpdId = $opdId ?: (string) $user->opd_id;
         }

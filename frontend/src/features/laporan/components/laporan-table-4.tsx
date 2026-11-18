@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge'
+import { LaporanRiskCodeBadge } from './laporan-risk-code-badge'
 
 interface AnalisisItem {
   id: string
@@ -101,14 +102,11 @@ export function LaporanTable4({ data }: LaporanTable4Props) {
                       {idx + 1}
                     </td>
                     <td className='space-y-1 p-2 align-top border-r'>
-                      <div className='flex items-center gap-1.5'>
-                        <Badge variant='outline' className='text-[9px]'>
-                          {row.source?.toUpperCase()}
-                        </Badge>
-                        <Badge className='bg-amber-400 font-mono text-[9px] font-bold text-slate-900'>
-                          {row.kode_risiko}
-                        </Badge>
-                      </div>
+                      <LaporanRiskCodeBadge
+                        inline
+                        sourceLabel={row.source?.toUpperCase()}
+                        code={row.kode_risiko}
+                      />
                       <p className='leading-snug font-medium text-foreground print:text-black'>
                         {row.pernyataan_risiko}
                       </p>

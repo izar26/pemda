@@ -60,7 +60,7 @@ export function LaporanAuditBanner({ auditStatus }: LaporanAuditBannerProps) {
           </span>
         </div>
         <p className='text-muted-foreground'>
-          Sesuai tata kelola kepatuhan audit SPIP, tombol <strong>Cetak Dokumen Resmi</strong> dan <strong>Ekspor Excel</strong> dikunci hingga seluruh paket penilaian risiko OPD telah berstatus <em>Approved</em> oleh Inspektorat.
+          Sesuai tata kelola kepatuhan audit SPIP, tombol <strong>Ekspor Excel Resmi</strong> dikunci hingga seluruh paket penilaian risiko OPD berstatus <em>Approved</em> oleh Inspektorat. Cetakan pratinjau saat ini otomatis ditandai watermark <strong>DRAFT</strong>.
         </p>
       </div>
     </div>

@@ -12,18 +12,31 @@ class PengajuanPenilaianRisikoPolicy
 {
     public function view(User $user, PengajuanPenilaianRisiko $submission): bool
     {
-        if (! $user->can('review_risiko.view')) {
+        if (! $user->can('review_risiko.view') || ! $user->canAccessReviewRisiko()) {
             return false;
         }
-        if ($user->isRegionalAdmin() || $user->hasRole('Koordinator Pengawas') || $user->can('review_risiko.review_pengawas')) {
+
+        if ($user->isRegionalAdmin()) {
             return true;
         }
-        if ($user->can('review_risiko.review_kepala') || $user->hasRole('Executive')) {
-            return $user->opd_id && (string) $user->opd_id === (string) $submission->opd_id;
+
+        if ($user->isScopedPengawas()) {
+            return AuditorOpdAssignment::where('opd_id', $submission->opd_id)
+                ->where('assigned_by', $user->id)
+                ->where('is_active', true)
+                ->exists();
         }
-        if ($user->can('review_risiko.approve') || $user->hasRole('Auditor')) {
-            return (string) $submission->auditor_id === (string) $user->id || AuditorOpdAssignment::where('auditor_id', $user->id)
-                ->where('opd_id', $submission->opd_id)->where('is_active', true)->exists();
+
+        if ($user->isScopedAuditor()) {
+            return (string) $submission->auditor_id === (string) $user->id
+                || AuditorOpdAssignment::where('auditor_id', $user->id)
+                    ->where('opd_id', $submission->opd_id)
+                    ->where('is_active', true)
+                    ->exists();
+        }
+
+        if ($user->isKepalaOpd()) {
+            return (string) $user->opd_id === (string) $submission->opd_id;
         }
 
         return false;

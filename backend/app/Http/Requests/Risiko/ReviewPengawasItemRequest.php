@@ -17,8 +17,8 @@ class ReviewPengawasItemRequest extends FormRequest
             return false;
         }
 
-        return $user->hasRole(['Superadmin', 'Admin Office'])
-            || ($user->hasRole('Inspektorat') && $user->can('review_risiko.review_pengawas'));
+        return $user->isRegionalAdmin()
+            || ($user->isScopedPengawas() && $user->can('review_risiko.review_pengawas'));
     }
 
     /**

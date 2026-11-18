@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge'
+import { LaporanRiskCodeBadge } from './laporan-risk-code-badge'
 
 interface PriorityRiskItem {
   id: string
@@ -73,15 +73,15 @@ export function LaporanTable5({ data }: LaporanTable5Props) {
                   <td className='p-2.5 text-center font-mono text-muted-foreground'>
                     {idx + 1}
                   </td>
-                  <td className='space-y-1 p-2.5 align-top'>
-                    <Badge variant='outline' className='text-[9px]'>
-                      {row.source?.toUpperCase() === '3B' ? 'Strategis OPD' : 'Operasional'}
-                    </Badge>
-                    <div>
-                      <Badge className='border border-amber-500 bg-amber-400 font-mono text-[10px] font-bold text-slate-900'>
-                        {row.kode_risiko}
-                      </Badge>
-                    </div>
+                  <td className='p-2.5 align-top'>
+                    <LaporanRiskCodeBadge
+                      sourceLabel={
+                        row.source?.toUpperCase() === '3B'
+                          ? 'Strategis OPD'
+                          : 'Operasional'
+                      }
+                      code={row.kode_risiko}
+                    />
                   </td>
                   <td className='p-2.5 align-top leading-snug font-medium text-foreground print:text-black'>
                     {row.pernyataan_risiko}

@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge'
+import { LaporanRiskCodeBadge } from './laporan-risk-code-badge'
 
 interface PemantauanItem {
   id: string | number
@@ -80,15 +81,15 @@ export function LaporanTable9({ data }: LaporanTable9Props) {
                   <td className='p-2 text-center font-mono text-muted-foreground border-r'>
                     {idx + 1}
                   </td>
-                  <td className='space-y-1 p-2 align-top border-r'>
-                    <Badge variant='outline' className='text-[9px]'>
-                      {row.source?.toUpperCase() === '3B' ? 'Strategis' : 'Operasional'}
-                    </Badge>
-                    <div>
-                      <Badge className='border border-indigo-500 bg-indigo-400 font-mono text-[10px] font-bold text-slate-900'>
-                        {row.kode_risiko || '-'}
-                      </Badge>
-                    </div>
+                  <td className='p-2 align-top border-r'>
+                    <LaporanRiskCodeBadge
+                      sourceLabel={
+                        row.source?.toUpperCase() === '3B'
+                          ? 'Strategis'
+                          : 'Operasional'
+                      }
+                      code={row.kode_risiko}
+                    />
                   </td>
                   <td className='p-2 align-top leading-snug font-medium text-foreground border-r print:text-black'>
                     <div>{row.pernyataan_risiko || '-'}</div>

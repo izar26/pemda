@@ -309,4 +309,72 @@ class LaporanRisikoUnifiedTest extends TestCase
         $responseFra->assertOk();
         $this->assertStringContainsString('spreadsheetml.sheet', (string) $responseFra->headers->get('Content-Type'));
     }
+
+    public function test_kepala_opd_executive_can_only_access_own_opd_and_is_forbidden_from_other_opds(): void
+    {
+        $otherOpd = Opd::create([
+            'nama' => 'Dinas Pendidikan Kabupaten Cianjur',
+            'kode' => '1.01.01',
+            'kategori' => 'Dinas',
+            'kepala' => 'Drs. Budi Santoso',
+            'is_active' => true,
+            'urutan' => 2,
+        ]);
+
+        $kepalaOpd = User::factory()->create([
+            'name' => 'Kepala Dinas Kesehatan',
+            'email' => 'kepala.dinkes@pemda.test',
+            'opd_id' => $this->opd->id,
+            'jabatan' => 'Kepala Dinas Kesehatan',
+        ]);
+        $kepalaOpd->assignRole('Executive');
+
+        // Akses tanpa opd_id -> otomatis diarahkan ke OPD miliknya
+        $ownDefault = $this->actingAs($kepalaOpd, 'sanctum')
+            ->getJson('/api/risiko/laporan/2b?tahun=2026');
+        $ownDefault->assertOk()
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+
+        // Akses dengan opd_id miliknya -> diizinkan
+        $ownExplicit = $this->actingAs($kepalaOpd, 'sanctum')
+            ->getJson("/api/risiko/laporan/2b?opd_id={$this->opd->id}&tahun=2026");
+        $ownExplicit->assertOk()
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+
+        // Akses ke OPD lain -> 403 Forbidden
+        $foreignShow = $this->actingAs($kepalaOpd, 'sanctum')
+            ->getJson("/api/risiko/laporan/2b?opd_id={$otherOpd->id}&tahun=2026");
+        $foreignShow->assertForbidden();
+
+        // Ekspor Excel OPD lain (meskipun approved) -> 403 Forbidden
+        PengajuanPenilaianRisiko::create([
+            'opd_id' => $otherOpd->id,
+            'periode_penilaian_id' => $this->periode->id,
+            'status' => PengajuanPenilaianRisiko::STATUS_APPROVED,
+            'current_tier' => PengajuanPenilaianRisiko::TIER_COMPLETED,
+            'approved_at' => now(),
+            'approved_by' => $this->superadmin->id,
+        ]);
+
+        $foreignExport = $this->actingAs($kepalaOpd, 'sanctum')
+            ->get("/api/risiko/laporan/2b/export?opd_id={$otherOpd->id}&tahun=2026");
+        $foreignExport->assertForbidden();
+    }
+
+    public function test_regional_leader_executive_without_opd_can_access_any_opd(): void
+    {
+        $bupati = User::factory()->create([
+            'name' => 'Bupati Cianjur',
+            'email' => 'bupati@pemda.test',
+            'opd_id' => null,
+            'jabatan' => 'Bupati',
+        ]);
+        $bupati->assignRole('Executive');
+
+        $response = $this->actingAs($bupati, 'sanctum')
+            ->getJson("/api/risiko/laporan/2b?opd_id={$this->opd->id}&tahun=2026");
+
+        $response->assertOk()
+            ->assertJsonPath('data.opd.id', $this->opd->id);
+    }
 }

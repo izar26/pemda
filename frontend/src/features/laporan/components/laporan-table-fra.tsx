@@ -70,7 +70,7 @@ export function LaporanTableFra({ data }: LaporanTableFraProps) {
             </h3>
             <p className='text-xs sm:text-sm text-muted-foreground leading-relaxed print:text-black'>
               Berdasarkan evaluasi integritas dan identifikasi proses bisnis rawan, Organisasi Perangkat Daerah menyatakan bahwa
-              <strong className='text-foreground print:text-black'> tidak ditemukan indikasi potensi risiko kecurangan (*fraud*)</strong> yang
+              <strong className='text-foreground print:text-black'> tidak ditemukan indikasi potensi risiko kecurangan (<em>fraud</em>)</strong> yang
               melebihi batas toleransi risiko untuk tahun anggaran berjalan.
             </p>
             {nihilInfo?.confirmed_at && (

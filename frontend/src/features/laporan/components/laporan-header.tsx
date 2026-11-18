@@ -50,9 +50,14 @@ export function LaporanHeader({
           size='sm'
           className='h-9 text-xs gap-1.5'
           onClick={onPrint}
+          title={
+            isApproved
+              ? 'Cetak lembar laporan resmi dalam format A4 Landscape'
+              : 'Cetak pratinjau (akan ditandai watermark DRAFT)'
+          }
         >
           <Printer className='h-3.5 w-3.5' />
-          Cetak / PDF
+          {isApproved ? 'Cetak Dokumen Resmi' : 'Cetak Pratinjau (Draft)'}
         </Button>
         <Button
           size='sm'

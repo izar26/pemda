@@ -1,5 +1,5 @@
 import { ShieldAlert, ShieldCheck } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { LaporanRiskCodeBadge } from './laporan-risk-code-badge'
 
 interface KejadianItem {
   id: string
@@ -130,15 +130,11 @@ export function LaporanTable10({ data }: LaporanTable10Props) {
                     <td className='p-2 text-center font-mono text-muted-foreground border-r'>
                       {idx + 1}
                     </td>
-                    <td className='space-y-1 p-2 align-top border-r'>
-                      <Badge variant='outline' className='text-[9px]'>
-                        {sourceLabel}
-                      </Badge>
-                      <div>
-                        <Badge className='border border-rose-500 bg-rose-400 font-mono text-[10px] font-bold text-slate-900'>
-                          {row.kode_risiko || '-'}
-                        </Badge>
-                      </div>
+                    <td className='p-2 align-top border-r'>
+                      <LaporanRiskCodeBadge
+                        sourceLabel={sourceLabel}
+                        code={row.kode_risiko}
+                      />
                     </td>
                     <td className='p-2 align-top leading-snug font-medium text-foreground border-r print:text-black'>
                       <div>{row.pernyataan_risiko || '-'}</div>

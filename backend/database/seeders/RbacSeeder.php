@@ -319,7 +319,7 @@ class RbacSeeder extends Seeder
                 'is_system' => false,
                 'permissions' => [
                     'penugasan_evaluator.view', 'penugasan_evaluator.create', 'penugasan_evaluator.edit', 'penugasan_evaluator.delete',
-                    'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_pengawas',
+                    'review_risiko.view', 'review_risiko.review_pengawas',
                     'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
                 ],
@@ -328,8 +328,7 @@ class RbacSeeder extends Seeder
                 'description' => 'Fungsional pengawas yang melaksanakan audit, riviu, dan tindak lanjut rekomendasi perbaikan.',
                 'is_system' => false,
                 'permissions' => [
-                    'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_kepala', 'review_risiko.review_pengawas',
-                    'penilaian_risiko.submit',
+                    'review_risiko.view', 'review_risiko.approve',
                     'audit.view', 'audit.export',
                 ],
             ],
@@ -337,8 +336,7 @@ class RbacSeeder extends Seeder
                 'description' => 'Pimpinan Daerah (Bupati / Sekda / Kepala OPD) untuk memantau dashboard eksekutif dan lembar risiko.',
                 'is_system' => false,
                 'permissions' => [
-                    'review_risiko.view', 'review_risiko.approve', 'review_risiko.review_kepala', 'review_risiko.review_pengawas',
-                    'penilaian_risiko.submit',
+                    'review_risiko.view', 'review_risiko.review_kepala',
                     'laporan.view', 'laporan.export',
                     'audit.view', 'audit.export',
                 ],

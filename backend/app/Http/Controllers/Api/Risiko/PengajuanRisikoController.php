@@ -152,7 +152,7 @@ class PengajuanRisikoController extends Controller
     public function indexReviews(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! $user?->can('review_risiko.view')) {
+        if (! $user?->can('review_risiko.view') || ! $user->canAccessReviewRisiko()) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat daftar review risiko OPD.');
         }
 
@@ -178,7 +178,7 @@ class PengajuanRisikoController extends Controller
     public function showReview(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (! $user?->can('review_risiko.view')) {
+        if (! $user?->can('review_risiko.view') || ! $user->canAccessReviewRisiko()) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat detail review risiko.');
         }
 
@@ -190,7 +190,7 @@ class PengajuanRisikoController extends Controller
     public function reviewForm(ReviewFormRequest $request, string $id, string $form, RiskFormRegistry $registry): JsonResponse
     {
         $user = $request->user();
-        if (! $user?->can('review_risiko.view')) {
+        if (! $user?->can('review_risiko.view') || ! $user->canAccessReviewRisiko()) {
             abort(403, 'Anda tidak memiliki hak akses untuk memeriksa risiko.');
         }
         $submission = $this->service->getSubmissionDetail($id, $user);
@@ -203,7 +203,7 @@ class PengajuanRisikoController extends Controller
     public function startReview(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        if (! $user?->can('review_risiko.view')) {
+        if (! $user?->can('review_risiko.view') || ! $user->canAccessReviewRisiko()) {
             abort(403, 'Anda tidak memiliki hak akses untuk memeriksa risiko.');
         }
 

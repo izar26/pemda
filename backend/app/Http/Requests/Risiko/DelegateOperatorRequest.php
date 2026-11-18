@@ -15,8 +15,8 @@ class DelegateOperatorRequest extends FormRequest
             return false;
         }
 
-        return $user->hasRole(['Superadmin', 'Admin Office'])
-            || ($user->hasRole('Executive') && $user->can('review_risiko.review_kepala'));
+        return $user->isRegionalAdmin()
+            || ($user->isKepalaOpd() && $user->can('review_risiko.review_kepala'));
     }
 
     /**

@@ -10,13 +10,13 @@ import { ConfigDrawer } from '@/components/config-drawer'
 import { useLaporanData } from './hooks/use-laporan-data'
 import { LaporanHeader } from './components/laporan-header'
 import { LaporanFilterBar } from './components/laporan-filter-bar'
+import { LaporanFormNavigator } from './components/laporan-form-navigator'
 import { LaporanDocumentWrapper } from './components/laporan-document-wrapper'
 import { getLaporanSheetRenderer } from './laporan-sheet-registry'
 
 export function LaporanFeature() {
   const {
-    user,
-    isOpdRole,
+    isOpdLocked,
     isScopedAuditor,
     selectedFormId,
     setSelectedFormId,
@@ -67,10 +67,15 @@ export function LaporanFeature() {
           onSelectOpdId={setSelectedOpdId}
           opdOptions={opdOptions}
           isLoadingOpds={isLoadingOpds}
-          isOpdRole={isOpdRole}
+          isOpdLocked={isOpdLocked}
           isScopedAuditor={isScopedAuditor}
-          userOpdNama={user?.opd?.nama}
           tahunAktif={resolvedTahun}
+        />
+
+        {/* Quick Cluster Switcher & Prev/Next Stepper */}
+        <LaporanFormNavigator
+          selectedFormId={selectedFormId}
+          onSelectFormId={setSelectedFormId}
         />
 
         {/* Sheet Content Area */}

@@ -7,7 +7,7 @@ interface LaporanSignatureBlockProps {
 
 export function LaporanSignatureBlock({
   penandatangan,
-  kota = 'Tempat',
+  kota = 'Cianjur',
 }: LaporanSignatureBlockProps) {
   const { nama, nip, jabatan, tanggal } = penandatangan
 

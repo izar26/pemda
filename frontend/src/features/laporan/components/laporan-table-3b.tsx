@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge'
+import { LaporanRiskCodeBadge } from './laporan-risk-code-badge'
 import type { IdentifikasiRisikoOpd, IdentifikasiRisikoOpdItem } from '@/types/risiko'
 
 interface LaporanTable3BProps {
@@ -81,15 +82,11 @@ export function LaporanTable3B({ data }: LaporanTable3BProps) {
                         </span>
                       )}
                     </td>
-                    <td className='space-y-1 p-2.5 align-top'>
-                      <Badge variant='secondary' className='text-[10px]'>
-                        {item.kategori_risiko}
-                      </Badge>
-                      <div>
-                        <Badge className='border border-amber-500 bg-amber-400 font-mono text-[10px] font-bold text-slate-900'>
-                          {item.kode_risiko}
-                        </Badge>
-                      </div>
+                    <td className='p-2.5 align-top'>
+                      <LaporanRiskCodeBadge
+                        sourceLabel={item.kategori_risiko}
+                        code={item.kode_risiko}
+                      />
                     </td>
                     <td className='p-2.5 align-top leading-snug font-medium text-foreground print:text-black'>
                       {item.pernyataan_risiko}

@@ -10,7 +10,13 @@ class ForwardRevisionAuditorRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('review_risiko.approve') ?? false;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->isRegionalAdmin()
+            || ($user->isScopedAuditor() && $user->can('review_risiko.approve'));
     }
 
     /**
