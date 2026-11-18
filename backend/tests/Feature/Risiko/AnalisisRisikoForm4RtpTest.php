@@ -15,11 +15,13 @@ use App\Services\Risiko\AnalisisRisikoService;
 use App\Services\Risiko\TindakPengendalianService;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class AnalisisRisikoForm4RtpTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     public function test_form_4_persists_rencana_tindak_and_syncs_with_form_6(): void
     {
@@ -63,6 +65,8 @@ class AnalisisRisikoForm4RtpTest extends TestCase
             'jenis_penyebab' => 'Man',
             'kegiatan_pengendalian' => 'Audit mutu berkala',
         ]);
+
+        $this->seedPrerequisitesBefore((string) $opd->id, (string) $periode->id, '4');
 
         $service = app(AnalisisRisikoService::class);
         $payload = [

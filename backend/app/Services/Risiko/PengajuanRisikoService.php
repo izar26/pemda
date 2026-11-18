@@ -205,9 +205,14 @@ class PengajuanRisikoService
      * Check if a given OPD can edit their forms in the specified period.
      * Throws 403 / ValidationException if not allowed.
      */
-    public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
-    {
-        $this->readinessService->assertOpdCanEdit($opdId, $periodeId, $user, $formCode);
+    public function assertOpdCanEdit(
+        string $opdId,
+        ?string $periodeId = null,
+        ?User $user = null,
+        ?string $formCode = null,
+        bool $enforcePrerequisites = true
+    ): void {
+        $this->readinessService->assertOpdCanEdit($opdId, $periodeId, $user, $formCode, $enforcePrerequisites);
     }
 
     /**

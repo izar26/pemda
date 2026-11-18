@@ -21,11 +21,13 @@ use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected User $opdUser;
 
@@ -139,6 +141,8 @@ class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
             'satuan' => 'Dokumen',
             'urutan' => 1,
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->activePeriode->id, '3c');
     }
 
     public function test_can_get_current_3c_with_form_2c_metadata(): void
@@ -169,11 +173,15 @@ class IdentifikasiRisikoOpdOperasionalDanRcaTest extends TestCase
     {
         Sanctum::actingAs($this->opdUser);
 
-        IdentifikasiRisikoPemda::create([
-            'periode_penilaian_id' => $this->activePeriode->id,
-            'opd_id' => $this->opd->id,
-            'master_urusan_pemerintahan_id' => $this->urusan->id,
-        ]);
+        IdentifikasiRisikoPemda::updateOrCreate(
+            [
+                'periode_penilaian_id' => $this->activePeriode->id,
+                'opd_id' => $this->opd->id,
+            ],
+            [
+                'master_urusan_pemerintahan_id' => $this->urusan->id,
+            ]
+        );
 
         $payload = [
             'opd_id' => $this->opd->id,

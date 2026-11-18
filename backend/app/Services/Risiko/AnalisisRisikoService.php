@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Policies\Risiko\AnalisisRisikoPolicy;
 use App\Services\Risiko\Pengajuan\PengajuanReadinessService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class AnalisisRisikoService
 {
@@ -95,10 +94,6 @@ class AnalisisRisikoService
         $opdId = (string) $item->dokumen->opd_id;
         abort_unless($this->policy->edit($user, $opdId, $source), 403);
         $this->readiness->assertOpdCanEdit($opdId, (string) $item->dokumen->periode_penilaian_id, $user, '4');
-        $readiness = $this->readiness->checkReadiness($opdId, (string) $item->dokumen->periode_penilaian_id, $user);
-        if (! $readiness['is_rca_complete']) {
-            throw ValidationException::withMessages(['rca' => 'Lengkapi RCA sebelum mengisi Form 4.']);
-        }
         $column = $source === '3b' ? 'risiko_opd_item_id' : 'risiko_operasional_item_id';
         if (array_key_exists('pengendalian_ada', $data) && $data['pengendalian_ada'] !== null) {
             $data['pengendalian_ada'] = (bool) $data['pengendalian_ada'];

@@ -9,6 +9,7 @@ use App\Models\Risiko\PengajuanPenilaianRisiko;
 use App\Models\Risiko\PengajuanPenilaianRisikoItem;
 use App\Models\User;
 use App\Services\Risiko\Registry\RiskFormRegistry;
+use Illuminate\Validation\ValidationException;
 
 class PengajuanReadinessService
 {
@@ -46,13 +47,22 @@ class PengajuanReadinessService
             ->first();
 
         // 3. Evaluate completeness across all registered form handlers (Strategy Pattern)
+        $orderedHandlers = $this->registry->all();
         $formCompleteness = [];
         $missingForms = [];
+        $firstIncompleteForm = null;
 
-        foreach ($this->registry->all() as $code => $handler) {
+        foreach ($orderedHandlers as $code => $handler) {
             $stringCode = (string) $code;
             $isComplete = $handler->isComplete($opdId, $resolvedPeriodeId);
             $formCompleteness[$stringCode] = $isComplete;
+
+            if (! $isComplete && $firstIncompleteForm === null) {
+                $firstIncompleteForm = [
+                    'code' => $stringCode,
+                    'name' => $handler->getName(),
+                ];
+            }
 
             if (! $isComplete && $handler->isRequired($submission)) {
                 $missingForms[] = [
@@ -71,6 +81,20 @@ class PengajuanReadinessService
         $rejectionNotes = [];
         $editableForms = [];
         $isDraft = $submission->isDraft();
+
+        // Draft uses strict sequential prefix unlocking; post-submit keeps forms open for viewing & revision navigation
+        $unlockedForms = [];
+        if ($isDraft) {
+            foreach ($orderedHandlers as $code => $handler) {
+                $stringCode = (string) $code;
+                $unlockedForms[] = $stringCode;
+                if (! ($formCompleteness[$stringCode] ?? false)) {
+                    break;
+                }
+            }
+        } else {
+            $unlockedForms = $orderedHandlers->keys()->map(fn ($c) => (string) $c)->values()->all();
+        }
 
         foreach ($submission->items as $item) {
             $code = strtolower((string) $item->form_code);
@@ -217,6 +241,8 @@ class PengajuanReadinessService
             'form_completeness' => $formCompleteness,
             'form_statuses' => $formStatuses,
             'form_details' => $formDetails,
+            'unlocked_forms' => $unlockedForms,
+            'first_incomplete_form' => $firstIncompleteForm,
             'editable_forms' => $editableForms,
             'revision_forms_count' => $revisionFormsCount,
             'rejection_notes' => $rejectionNotes,
@@ -238,11 +264,17 @@ class PengajuanReadinessService
 
     /**
      * Check if a given OPD can edit their forms in the specified period.
-     * Supports selective per-form editing when individual items are returned for revision.
-     * Throws 403 if not allowed.
+     * Supports selective per-form editing when individual items are returned for revision,
+     * and enforces strict sequential form prerequisites during draft mode.
+     * Throws 403 / ValidationException (422) if not allowed.
      */
-    public function assertOpdCanEdit(string $opdId, ?string $periodeId = null, ?User $user = null, ?string $formCode = null): void
-    {
+    public function assertOpdCanEdit(
+        string $opdId,
+        ?string $periodeId = null,
+        ?User $user = null,
+        ?string $formCode = null,
+        bool $enforcePrerequisites = true
+    ): void {
         // 0. Tenant isolation: OPD user can never edit another OPD's data
         if ($user && $user->isRestrictedToOpd()) {
             if (! $user->opd_id || (string) $user->opd_id !== (string) $opdId) {
@@ -281,6 +313,43 @@ class PengajuanReadinessService
                 }
             } elseif ($submission->isLockedForOperator()) {
                 abort(403, 'Lembar kerja risiko sedang dalam proses pemeriksaan berjenjang atau telah disetujui (read-only).');
+            }
+
+            return;
+        }
+
+        // 3. Enforce strict sequential prerequisite completion in draft mode
+        if ($enforcePrerequisites && $formCode) {
+            $this->assertPrerequisiteFormsComplete($opdId, $resolvedPeriodeId, $formCode);
+        }
+    }
+
+    /**
+     * Ensure every preceding form in the 14-step workflow is complete before editing the target form.
+     *
+     * @throws ValidationException
+     */
+    public function assertPrerequisiteFormsComplete(string $opdId, string $periodeId, string $formCode): void
+    {
+        $cleanCode = strtolower(trim($formCode));
+        if (! $this->registry->has($cleanCode)) {
+            return;
+        }
+
+        $targetHandler = $this->registry->get($cleanCode);
+        $targetOrder = $targetHandler->getOrder();
+
+        foreach ($this->registry->all() as $handler) {
+            if ($handler->getOrder() >= $targetOrder) {
+                break;
+            }
+
+            if (! $handler->isComplete($opdId, $periodeId)) {
+                throw ValidationException::withMessages([
+                    'prerequisite' => [
+                        "Lengkapi {$handler->getName()} terlebih dahulu sebelum mengisi {$targetHandler->getName()}.",
+                    ],
+                ]);
             }
         }
     }

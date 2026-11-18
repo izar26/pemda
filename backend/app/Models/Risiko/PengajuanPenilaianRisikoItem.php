@@ -111,6 +111,10 @@ class PengajuanPenilaianRisikoItem extends Model
             return true;
         }
 
+        if ($this->isSubmitted() || $this->isApproved()) {
+            return false;
+        }
+
         return ($this->current_tier ?? PengajuanPenilaianRisiko::TIER_OPERATOR) === PengajuanPenilaianRisiko::TIER_OPERATOR;
     }
 }

@@ -21,11 +21,13 @@ use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class IdentifikasiRisikoPemdaDanRcaTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected User $opdUser;
 
@@ -137,6 +139,8 @@ class IdentifikasiRisikoPemdaDanRcaTest extends TestCase
             'is_active' => true,
             'urutan' => 1,
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->activePeriode->id, '3a');
     }
 
     public function test_opd_can_get_current_3a_and_it_provides_2b_reference_metadata(): void
@@ -194,9 +198,11 @@ class IdentifikasiRisikoPemdaDanRcaTest extends TestCase
             'master_urusan_pemerintahan_id' => $this->urusan->id,
         ];
         $this->postJson('/api/risiko/identifikasi-pemda/header', $payload)->assertOk();
+        $this->ensureForm3aComplete((string) $this->opd->id, (string) $this->activePeriode->id);
         $header = ['periode_penilaian_id' => $this->activePeriode->id, 'opd_id' => $this->opd->id];
         $this->postJson('/api/risiko/identifikasi-opd/header', $header)->assertOk()
             ->assertJsonPath('data.master_urusan_pemerintahan_id', $this->urusan->id);
+        $this->ensureForm3bComplete((string) $this->opd->id, (string) $this->activePeriode->id);
         $this->postJson('/api/risiko/identifikasi-operasional/header', $header)->assertOk()
             ->assertJsonPath('data.master_urusan_pemerintahan_id', $this->urusan->id);
 
@@ -272,6 +278,8 @@ class IdentifikasiRisikoPemdaDanRcaTest extends TestCase
     public function test_rca_auto_computes_deepest_akar_penyebab_and_reflects_in_3a(): void
     {
         Sanctum::actingAs($this->opdUser);
+        $this->ensureForm3bComplete((string) $this->opd->id, (string) $this->activePeriode->id);
+        $this->ensureForm3cComplete((string) $this->opd->id, (string) $this->activePeriode->id);
 
         $dokumen = IdentifikasiRisikoPemda::create([
             'periode_penilaian_id' => $this->activePeriode->id,

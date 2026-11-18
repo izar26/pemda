@@ -19,11 +19,13 @@ use App\Services\Risiko\Handlers\PemantauanPengendalian9Handler;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class PemantauanPengendalianTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected Opd $opd;
 
@@ -122,6 +124,8 @@ class PemantauanPengendalianTest extends TestCase
             'treated_kemungkinan' => 2,
             'treated_dampak' => 2,
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->periode->id, '9');
     }
 
     public function test_opd_can_list_pemantauan_pengendalian(): void

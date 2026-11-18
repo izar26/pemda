@@ -17,11 +17,13 @@ use App\Services\Risiko\Handlers\FraudRiskAssessmentHandler;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class FraudRiskAssessmentTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected Opd $opd;
 
@@ -108,6 +110,8 @@ class FraudRiskAssessmentTest extends TestCase
             'periode_penilaian_id' => $this->periode->id,
             'is_active' => true,
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->periode->id, 'fra');
     }
 
     public function test_can_list_fra_items_and_status_nihil(): void

@@ -114,9 +114,6 @@ class KomunikasiPengendalianService
         }
         $readiness = app(PengajuanReadinessService::class);
         $readiness->assertOpdCanEdit($opdId, $periodeId, $user, '8');
-        if (! $readiness->checkReadiness($opdId, $periodeId, $user)['is_6_complete']) {
-            throw ValidationException::withMessages(['form6' => 'Lengkapi Form 6 sebelum mengisi Form 8.']);
-        }
 
         DB::transaction(function () use ($opdId, $periodeId, $source, $itemId, $data, $user, $readiness) {
             $submission = PengajuanPenilaianRisiko::where('opd_id', $opdId)->where('periode_penilaian_id', $periodeId)->lockForUpdate()->first();

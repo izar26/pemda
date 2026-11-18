@@ -23,11 +23,13 @@ use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class IdentifikasiRisikoOpdDanRcaTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected User $opdUser;
 
@@ -134,6 +136,8 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
             'urutan' => 3,
         ]);
         MasterPemilikRisiko::create(['nama' => 'Kadis PUTR', 'is_active' => true, 'urutan' => 1]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->activePeriode->id, '3b');
     }
 
     public function test_opd_can_get_current_3b_and_it_provides_2b_reference_metadata(): void
@@ -164,11 +168,15 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
     {
         Sanctum::actingAs($this->opdUser);
 
-        IdentifikasiRisikoPemda::create([
-            'periode_penilaian_id' => $this->activePeriode->id,
-            'opd_id' => $this->opd->id,
-            'master_urusan_pemerintahan_id' => $this->urusan->id,
-        ]);
+        IdentifikasiRisikoPemda::updateOrCreate(
+            [
+                'periode_penilaian_id' => $this->activePeriode->id,
+                'opd_id' => $this->opd->id,
+            ],
+            [
+                'master_urusan_pemerintahan_id' => $this->urusan->id,
+            ]
+        );
 
         $payload = [
             'periode_penilaian_id' => $this->activePeriode->id,
@@ -244,7 +252,15 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
         $this->postJson($url, array_merge($payload, ['sasaran_kustom' => 'Manual']))->assertUnprocessable()->assertJsonValidationErrors('sasaran_kustom');
         $this->postJson($url, array_merge($payload, ['pemilik_risiko' => 'Tidak terdaftar']))->assertUnprocessable()->assertJsonValidationErrors('pemilik_risiko');
         $konteks = KonteksPenilaian::where('opd_id', $this->opd->id)->firstOrFail();
-        $konteks->indikators()->detach($this->indikator->id);
+        $otherIndikator = IndikatorPenilaian::create([
+            'periode_penilaian_id' => $this->activePeriode->id,
+            'opd_id' => $this->opd->id,
+            'tujuan_penilaian_id' => $this->tujuan->id,
+            'sasaran_penilaian_id' => $this->sasaran->id,
+            'kode_indikator' => 'I.2',
+            'indikator' => 'Indikator Pengganti Form 2B',
+        ]);
+        $konteks->indikators()->sync([$otherIndikator->id]);
         $this->postJson($url, $payload)->assertUnprocessable()->assertJsonValidationErrors('indikator_penilaian_id');
         $this->assertDatabaseCount('identifikasi_risiko_opd_items', 0);
     }
@@ -263,6 +279,7 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
     public function test_rca_3b_auto_computes_deepest_akar_penyebab_and_reflects_in_3b(): void
     {
         Sanctum::actingAs($this->opdUser);
+        $this->ensureForm3cComplete((string) $this->opd->id, (string) $this->activePeriode->id);
 
         $dokumen = IdentifikasiRisikoOpd::create([
             'periode_penilaian_id' => $this->activePeriode->id,
@@ -318,11 +335,16 @@ class IdentifikasiRisikoOpdDanRcaTest extends TestCase
         Sanctum::actingAs($this->opdUser);
 
         // Create 3A item + RCA
-        $dokumen3a = IdentifikasiRisikoPemda::create([
-            'periode_penilaian_id' => $this->activePeriode->id,
-            'opd_id' => $this->opd->id,
-            'master_urusan_pemerintahan_id' => $this->urusan->id,
-        ]);
+        $dokumen3a = IdentifikasiRisikoPemda::updateOrCreate(
+            [
+                'periode_penilaian_id' => $this->activePeriode->id,
+                'opd_id' => $this->opd->id,
+            ],
+            [
+                'master_urusan_pemerintahan_id' => $this->urusan->id,
+            ]
+        );
+        $dokumen3a->items()->delete();
         $item3a = IdentifikasiRisikoPemdaItem::create([
             'identifikasi_risiko_pemda_id' => $dokumen3a->id,
             'kategori_risiko' => 'Risiko Fraud',

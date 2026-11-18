@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import type { ReadinessResponse } from '@/services/pengajuan-risiko-service'
 import {
   AlertCircle,
@@ -7,6 +9,7 @@ import {
   Clock,
   Send,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -89,9 +92,60 @@ export function RisikoWizardHeader({
     controlledSetIsSubmitDialogOpen,
   })
 
+  const navigate = useNavigate()
+  const redirectedKeyRef = useRef<string | null>(null)
+
   const currentIndex = steps.findIndex((s) => s.id === currentStepId)
   const activeStep = steps[currentIndex] || steps[0]
   const cleanActiveTitle = activeStep ? getCleanStepTitle(activeStep.title) : ''
+
+  useEffect(() => {
+    if (!readiness || !effectiveOpdId || !activePeriodeId || steps.length === 0) {
+      return
+    }
+
+    const currentStep = steps.find((s) => s.id === currentStepId)
+    if (!currentStep) {
+      return
+    }
+
+    if (currentStep.isUnlocked) {
+      redirectedKeyRef.current = null
+      return
+    }
+
+    const fallbackStep =
+      [...steps].reverse().find((s) => s.isUnlocked) ?? steps[0]
+
+    if (!fallbackStep || fallbackStep.id === currentStep.id) {
+      return
+    }
+
+    const guardKey = `${effectiveOpdId}:${activePeriodeId}:${currentStep.id}`
+    if (redirectedKeyRef.current === guardKey) {
+      return
+    }
+    redirectedKeyRef.current = guardKey
+
+    const blockingStep = steps.find(
+      (s) => s.stepNumber < currentStep.stepNumber && !s.isCompleted
+    )
+    const blockingLabel = blockingStep
+      ? `${getCleanStepTitle(blockingStep.title)} (Form ${blockingStep.code})`
+      : 'langkah sebelumnya'
+
+    toast.warning(
+      `Form ${currentStep.code} masih terkunci. Lengkapi ${blockingLabel} terlebih dahulu.`
+    )
+    navigate({ to: fallbackStep.url, replace: true })
+  }, [
+    readiness,
+    effectiveOpdId,
+    activePeriodeId,
+    steps,
+    currentStepId,
+    navigate,
+  ])
 
   const isDraft = !readiness || readiness.status === 'draft'
   const editableForms = readiness?.editable_forms ?? []

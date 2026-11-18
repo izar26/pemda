@@ -28,11 +28,13 @@ use App\Services\Risiko\KejadianRisikoService;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class KejadianRisikoTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected Opd $opd;
 
@@ -173,6 +175,8 @@ class KejadianRisikoTest extends TestCase
             'sifat_risiko' => 'C',
             'uraian_dampak' => 'Proyek molor',
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->periode->id, '10');
     }
 
     public function test_opd_can_list_risk_options_across_3a_3b_3c(): void

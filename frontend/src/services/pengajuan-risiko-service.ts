@@ -170,11 +170,17 @@ export interface ReadinessResponse {
   is_rca_complete?: boolean
   form_completeness?: Record<
     string,
-    {
-      is_complete: boolean
-      [key: string]: unknown
-    }
+    | boolean
+    | {
+        is_complete: boolean
+        [key: string]: unknown
+      }
   >
+  unlocked_forms?: string[]
+  first_incomplete_form?: {
+    code: string
+    name: string
+  } | null
   is_2b_approved?: boolean
   is_2c_approved?: boolean
   is_3a_approved?: boolean

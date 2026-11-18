@@ -95,7 +95,8 @@ class IdentifikasiRisikoPemdaService
             foreach (['3b' => IdentifikasiRisikoOpd::class, '3c' => IdentifikasiRisikoOpdOperasional::class] as $form => $model) {
                 $related = $model::where('opd_id', $opdId)->where('periode_penilaian_id', $periodeId)->first();
                 if ($related && $related->master_urusan_pemerintahan_id !== $data['master_urusan_pemerintahan_id']) {
-                    $this->readinessService->assertOpdCanEdit($opdId, $periodeId, $user, $form);
+                    // Propagate urusan header to existing 3B/3C drafts without requiring 3A items to exist first
+                    $this->readinessService->assertOpdCanEdit($opdId, $periodeId, $user, $form, false);
                     $related->master_urusan_pemerintahan_id = $data['master_urusan_pemerintahan_id'];
                     $related->updated_by = $user?->id;
                     $related->save();

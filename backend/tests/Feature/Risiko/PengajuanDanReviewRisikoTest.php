@@ -526,6 +526,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
         Sanctum::actingAs($this->opdUser);
         $this->putJson("/api/risiko/analisis-risiko/3b/{$item->id}", ['inheren_kemungkinan' => 3])->assertOk();
         $params = http_build_query(['opd_id' => $this->opd->id, 'periode_penilaian_id' => $this->activePeriode->id]);
+        $this->getJson("/api/risiko/pengajuan/status?{$params}")->assertOk();
         $this->getJson("/api/risiko/analisis-risiko?{$params}")->assertOk()->assertJsonPath('data.0.complete', false)->assertJsonPath('data.0.evaluasi', null);
         $submission = PengajuanPenilaianRisiko::where('opd_id', $this->opd->id)->firstOrFail();
         Sanctum::actingAs($this->auditorUser);
@@ -549,7 +550,7 @@ class PengajuanDanReviewRisikoTest extends TestCase
             'residual_kriteria_kemungkinan' => 'Jumlah Frekuensi (dlm 1 tahun)', 'residual_kriteria_dampak' => 'Penurunan kinerja', 'residual_kemungkinan' => 2, 'residual_dampak' => 3];
         $rca = RootCauseAnalysis::where('identifikasi_risiko_opd_item_id', $item3b->id)->firstOrFail();
         $rca->update(['jenis_penyebab' => null]);
-        $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertUnprocessable()->assertJsonValidationErrors('rca');
+        $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertUnprocessable()->assertJsonValidationErrors('prerequisite');
         $rca->update(['jenis_penyebab' => 'Man']);
         $this->putJson("/api/risiko/analisis-risiko/3b/{$item3b->id}", $payload)->assertOk();
         $this->putJson("/api/risiko/analisis-risiko/3c/{$item3c->id}", $payload)->assertOk();

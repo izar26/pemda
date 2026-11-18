@@ -398,8 +398,17 @@ export function useRisikoWizardProgress(enabled = true) {
   const dokumen3C = identifikasi3CResponse?.data ?? null
   const meta3C = identifikasi3CResponse?.meta ?? null
 
+  const readFormCompleteness = (code: string): boolean | undefined => {
+    const entry = readiness?.form_completeness?.[code]
+    if (typeof entry === 'boolean') return entry
+    if (entry && typeof entry === 'object' && 'is_complete' in entry) {
+      return Boolean(entry.is_complete)
+    }
+    return undefined
+  }
+
   const isStep2BCompleted = Boolean(
-    readiness?.form_completeness?.['2b']?.is_complete ??
+    readFormCompleteness('2b') ??
     readiness?.is_2b_complete ??
     (konteks2B &&
       konteks2B.sumber_data_id &&
@@ -409,14 +418,14 @@ export function useRisikoWizardProgress(enabled = true) {
   )
 
   const isStep2CCompleted = Boolean(
-    readiness?.form_completeness?.['2c']?.is_complete ??
+    readFormCompleteness('2c') ??
     readiness?.is_2c_complete ??
     (isStep2BCompleted &&
       (opdMeta?.operasional_summary?.programs_count || 0) > 0)
   )
 
   const isStep3ACompleted = Boolean(
-    readiness?.form_completeness?.['3a']?.is_complete ??
+    readFormCompleteness('3a') ??
     readiness?.is_3a_complete ??
     (isStep2CCompleted &&
       dokumen3A &&
@@ -425,19 +434,19 @@ export function useRisikoWizardProgress(enabled = true) {
   )
 
   const isStep3BCompleted = Boolean(
-    readiness?.form_completeness?.['3b']?.is_complete ??
+    readFormCompleteness('3b') ??
     readiness?.is_3b_complete ??
     (isStep3ACompleted && dokumen3B && (dokumen3B.items?.length || 0) > 0)
   )
 
   const isStep3CCompleted = Boolean(
-    readiness?.form_completeness?.['3c']?.is_complete ??
+    readFormCompleteness('3c') ??
     readiness?.is_3c_complete ??
     (isStep3BCompleted && dokumen3C && (dokumen3C.items?.length || 0) > 0)
   )
 
   const isStepRCACompleted = Boolean(
-    readiness?.form_completeness?.['rca']?.is_complete ??
+    readFormCompleteness('rca') ??
     readiness?.is_rca_complete ??
     (isStep3CCompleted &&
       dokumen3A?.items &&
@@ -451,7 +460,11 @@ export function useRisikoWizardProgress(enabled = true) {
       dokumen3C.items.every((it) => it.has_rca))
   )
 
-  const steps: ResolvedWizardStep[] = RISIKO_WIZARD_STEPS.map((step) => {
+  const isDraftSubmission = !readiness || readiness.status === 'draft'
+  const backendUnlockedForms = readiness?.unlocked_forms
+  let allPreviousCompleted = Boolean(activePeriode)
+
+  const steps: ResolvedWizardStep[] = RISIKO_WIZARD_STEPS.map((step, index) => {
     const isInRevision = Boolean(
       readiness &&
         readiness.status !== 'draft' &&
@@ -459,50 +472,41 @@ export function useRisikoWizardProgress(enabled = true) {
     )
 
     let isCompleted = false
-    let isUnlocked = false
-
     if (step.id === '2b') {
       isCompleted = isStep2BCompleted
-      isUnlocked = Boolean(activePeriode)
     } else if (step.id === '2c') {
       isCompleted = isStep2CCompleted
-      isUnlocked = Boolean(activePeriode) && isStep2BCompleted
     } else if (step.id === '3a') {
       isCompleted = isStep3ACompleted
-      isUnlocked = Boolean(activePeriode) && isStep2CCompleted
     } else if (step.id === '3b') {
       isCompleted = isStep3BCompleted
-      isUnlocked = Boolean(activePeriode) && isStep3ACompleted
     } else if (step.id === '3c') {
       isCompleted = isStep3CCompleted
-      isUnlocked = Boolean(activePeriode) && isStep3BCompleted
     } else if (step.id === 'rca') {
       isCompleted = isStepRCACompleted
-      isUnlocked = Boolean(activePeriode) && isStep3CCompleted
-    } else if (step.id === '4') {
-      isUnlocked = Boolean(activePeriode) && isStepRCACompleted
-      isCompleted = Boolean(
-        readiness?.form_completeness?.['4']?.is_complete ??
-        readiness?.is_4_complete
-      )
-    } else if (step.id === '5' || step.id === '6') {
-      isUnlocked = Boolean(activePeriode && readiness?.is_4_complete)
-      isCompleted = Boolean(
-        step.id === '5'
-          ? (readiness?.form_completeness?.['5']?.is_complete ??
-              readiness?.is_5_complete)
-          : (readiness?.form_completeness?.['6']?.is_complete ??
-              readiness?.is_6_complete)
-      )
     } else {
       const formCode = step.id.toLowerCase()
       isCompleted = Boolean(
-        readiness?.form_completeness?.[formCode]?.is_complete ??
+        readFormCompleteness(formCode) ??
         (readiness as Record<string, unknown> | undefined)?.[
           `is_${formCode}_complete`
         ]
       )
-      isUnlocked = Boolean(activePeriode && readiness?.is_6_complete)
+    }
+
+    // Strict sequential prefix locking in draft mode; post-submit stays navigable for review/revision
+    const isUnlocked = !activePeriode
+      ? false
+      : !isDraftSubmission
+        ? true
+        : backendUnlockedForms
+          ? backendUnlockedForms.includes(step.id)
+          : index === 0
+            ? true
+            : allPreviousCompleted
+
+    if (!isCompleted) {
+      allPreviousCompleted = false
     }
 
     return {
@@ -517,7 +521,6 @@ export function useRisikoWizardProgress(enabled = true) {
   const activeRouteStep = RISIKO_WIZARD_STEPS.find((s) =>
     pathname.startsWith(s.url)
   )
-  const isDraftSubmission = !readiness || readiness.status === 'draft'
   const editableForms = readiness?.editable_forms ?? []
   const isCurrentFormLocked = readiness
     ? isDraftSubmission

@@ -15,11 +15,13 @@ use App\Models\Risiko\KonteksPenilaian;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class KonteksOperasionalTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected User $admin;
 
@@ -133,6 +135,9 @@ class KonteksOperasionalTest extends TestCase
             'status' => 'final',
             'created_by' => $this->admin->id,
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->puprOpd->id, (string) $this->activePeriode->id, '2c');
+        $this->seedPrerequisitesBefore((string) $this->diskominfoOpd->id, (string) $this->activePeriode->id, '2c');
     }
 
     public function test_can_store_konteks_operasional_with_batch_items(): void

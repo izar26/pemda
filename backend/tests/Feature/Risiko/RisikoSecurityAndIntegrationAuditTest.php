@@ -28,11 +28,13 @@ use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class RisikoSecurityAndIntegrationAuditTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected PeriodePenilaian $activePeriode;
 
@@ -351,6 +353,8 @@ class RisikoSecurityAndIntegrationAuditTest extends TestCase
 
     public function test_reorder_triggers_eloquent_audit_logging(): void
     {
+        $this->seedPrerequisitesBefore((string) $this->opdA->id, (string) $this->activePeriode->id, '3b');
+
         $item1 = IdentifikasiRisikoOpdItem::create([
             'identifikasi_risiko_opd_id' => $this->doc3bA->id,
             'kategori_risiko' => 'Risiko Strategis',

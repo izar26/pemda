@@ -19,11 +19,13 @@ use App\Services\Risiko\Handlers\KomunikasiPengendalian8Handler;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\SeedsRisikoPrerequisites;
 use Tests\TestCase;
 
 class KomunikasiPengendalianTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsRisikoPrerequisites;
 
     protected Opd $opd;
 
@@ -145,6 +147,8 @@ class KomunikasiPengendalianTest extends TestCase
             'pengendalian_ada' => false,
             'rencana_tindak' => 'Arsip digital',
         ]);
+
+        $this->seedPrerequisitesBefore((string) $this->opd->id, (string) $this->periode->id, '8');
     }
 
     public function test_opd_can_list_komunikasi_pengendalian_with_prefilled_target_waktu(): void
