@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { LaporanRiskCodeBadge } from './laporan-risk-code-badge'
 
 interface AnalisisItem {
