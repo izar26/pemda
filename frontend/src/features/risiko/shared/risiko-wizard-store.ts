@@ -452,146 +452,64 @@ export function useRisikoWizardProgress(enabled = true) {
   )
 
   const steps: ResolvedWizardStep[] = RISIKO_WIZARD_STEPS.map((step) => {
+    const isInRevision = Boolean(
+      readiness &&
+        readiness.status !== 'draft' &&
+        readiness.editable_forms?.includes(step.id)
+    )
+
+    let isCompleted = false
+    let isUnlocked = false
+
     if (step.id === '2b') {
-      return {
-        ...step,
-        isCompleted: isStep2BCompleted,
-        isUnlocked: Boolean(activePeriode),
-        status: isStep2BCompleted
-          ? 'completed'
-          : activePeriode
-            ? 'available'
-            : 'locked',
-      }
-    }
-
-    if (step.id === '2c') {
-      const isUnlocked = Boolean(activePeriode) && isStep2BCompleted
-      return {
-        ...step,
-        isCompleted: isStep2CCompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isStep2CCompleted
-            ? 'completed'
-            : 'available',
-      }
-    }
-
-    if (step.id === '3a') {
-      const isUnlocked = Boolean(activePeriode) && isStep2CCompleted
-      return {
-        ...step,
-        isCompleted: isStep3ACompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isStep3ACompleted
-            ? 'completed'
-            : 'available',
-      }
-    }
-
-    if (step.id === '3b') {
-      const isUnlocked = Boolean(activePeriode) && isStep3ACompleted
-      return {
-        ...step,
-        isCompleted: isStep3BCompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isStep3BCompleted
-            ? 'completed'
-            : 'available',
-      }
-    }
-
-    if (step.id === '3c') {
-      const isUnlocked = Boolean(activePeriode) && isStep3BCompleted
-      return {
-        ...step,
-        isCompleted: isStep3CCompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isStep3CCompleted
-            ? 'completed'
-            : 'available',
-      }
-    }
-
-    if (step.id === 'rca') {
-      const isUnlocked = Boolean(activePeriode) && isStep3CCompleted
-      return {
-        ...step,
-        isCompleted: isStepRCACompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isStepRCACompleted
-            ? 'completed'
-            : 'available',
-      }
-    }
-
-    if (step.id === '4') {
-      const isUnlocked = Boolean(activePeriode) && isStepRCACompleted
-      const isCompleted = Boolean(
+      isCompleted = isStep2BCompleted
+      isUnlocked = Boolean(activePeriode)
+    } else if (step.id === '2c') {
+      isCompleted = isStep2CCompleted
+      isUnlocked = Boolean(activePeriode) && isStep2BCompleted
+    } else if (step.id === '3a') {
+      isCompleted = isStep3ACompleted
+      isUnlocked = Boolean(activePeriode) && isStep2CCompleted
+    } else if (step.id === '3b') {
+      isCompleted = isStep3BCompleted
+      isUnlocked = Boolean(activePeriode) && isStep3ACompleted
+    } else if (step.id === '3c') {
+      isCompleted = isStep3CCompleted
+      isUnlocked = Boolean(activePeriode) && isStep3BCompleted
+    } else if (step.id === 'rca') {
+      isCompleted = isStepRCACompleted
+      isUnlocked = Boolean(activePeriode) && isStep3CCompleted
+    } else if (step.id === '4') {
+      isUnlocked = Boolean(activePeriode) && isStepRCACompleted
+      isCompleted = Boolean(
         readiness?.form_completeness?.['4']?.is_complete ??
         readiness?.is_4_complete
       )
-      return {
-        ...step,
-        isCompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isCompleted
-            ? 'completed'
-            : 'available',
-      }
-    }
-
-    if (step.id === '5' || step.id === '6') {
-      const isUnlocked = Boolean(activePeriode && readiness?.is_4_complete)
-      const isCompleted = Boolean(
+    } else if (step.id === '5' || step.id === '6') {
+      isUnlocked = Boolean(activePeriode && readiness?.is_4_complete)
+      isCompleted = Boolean(
         step.id === '5'
           ? (readiness?.form_completeness?.['5']?.is_complete ??
               readiness?.is_5_complete)
           : (readiness?.form_completeness?.['6']?.is_complete ??
               readiness?.is_6_complete)
       )
-      return {
-        ...step,
-        isCompleted,
-        isUnlocked,
-        status: !isUnlocked
-          ? 'locked'
-          : isCompleted
-            ? 'completed'
-            : 'available',
-      }
+    } else {
+      const formCode = step.id.toLowerCase()
+      isCompleted = Boolean(
+        readiness?.form_completeness?.[formCode]?.is_complete ??
+        (readiness as Record<string, unknown> | undefined)?.[
+          `is_${formCode}_complete`
+        ]
+      )
+      isUnlocked = Boolean(activePeriode && readiness?.is_6_complete)
     }
-
-    const formCode = step.id.toLowerCase()
-    const isCompleted = Boolean(
-      readiness?.form_completeness?.[formCode]?.is_complete ??
-      (readiness as Record<string, unknown> | undefined)?.[
-        `is_${formCode}_complete`
-      ]
-    )
-    const isUnlocked = Boolean(activePeriode && readiness?.is_6_complete)
 
     return {
       ...step,
       isCompleted,
       isUnlocked,
-      isInRevision: Boolean(
-        readiness &&
-          readiness.status !== 'draft' &&
-          readiness.editable_forms?.includes(step.id)
-      ),
+      isInRevision,
       status: !isUnlocked ? 'locked' : isCompleted ? 'completed' : 'available',
     }
   })

@@ -62,7 +62,7 @@ export function WizardStepper({
       <TooltipProvider delayDuration={150}>
         <nav
           aria-label='Progress Pengisian Risiko'
-          className='hidden w-full items-center justify-between gap-1 py-1 sm:flex'
+          className='hidden w-full items-center gap-1 overflow-x-auto py-1 sm:flex'
         >
           {steps.map((step) => {
             const isCurrent = step.id === currentStepId
@@ -79,13 +79,13 @@ export function WizardStepper({
                     onClick={() => handleStepClick(step)}
                     disabled={isLocked}
                     className={cn(
-                      'flex min-w-0 flex-1 items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-[11px] font-medium transition-all select-none',
+                      'flex min-w-[52px] flex-1 shrink-0 items-center justify-center gap-1 rounded-md border px-1.5 py-1.5 text-[11px] font-medium transition-all select-none',
                       isCurrent
                         ? isInRevision
-                          ? 'border-amber-500 bg-amber-500 font-bold text-white shadow-xs ring-1 ring-amber-400/50'
+                          ? 'border-destructive bg-destructive font-bold text-white shadow-xs ring-1 ring-destructive/40'
                           : 'border-primary bg-primary font-bold text-primary-foreground shadow-xs ring-1 ring-primary/40'
                         : isInRevision
-                          ? 'border-amber-500/50 bg-amber-500/15 font-semibold text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
+                          ? 'border-destructive/50 bg-destructive/10 font-semibold text-destructive hover:bg-destructive/20'
                           : isCompleted
                             ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400'
                             : isLocked
@@ -95,13 +95,13 @@ export function WizardStepper({
                   >
                     <span
                       className={cn(
-                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full font-mono text-[9px] font-bold',
+                        'flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-0.5 font-mono text-[9px] font-bold',
                         isCurrent
                           ? isInRevision
-                            ? 'bg-white text-amber-600'
+                            ? 'bg-white text-destructive'
                             : 'bg-primary-foreground text-primary'
                           : isInRevision
-                            ? 'bg-amber-500 text-white'
+                            ? 'bg-destructive text-white'
                             : isCompleted
                               ? 'bg-emerald-600 text-white'
                               : isLocked
@@ -113,7 +113,7 @@ export function WizardStepper({
                     </span>
                     <span
                       className={cn(
-                        'truncate font-mono text-[10px] font-semibold tracking-tight',
+                        'font-mono text-[10px] font-semibold tracking-tight whitespace-nowrap',
                         isLocked ? 'text-muted-foreground' : ''
                       )}
                     >
@@ -141,22 +141,26 @@ export function WizardStepper({
                     <span
                       className={cn(
                         'font-semibold',
-                        isCurrent
-                          ? 'text-primary'
-                          : isCompleted
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : isLocked
-                              ? 'text-muted-foreground'
-                              : 'text-foreground'
+                        isInRevision
+                          ? 'text-destructive'
+                          : isCurrent
+                            ? 'text-primary'
+                            : isCompleted
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : isLocked
+                                ? 'text-muted-foreground'
+                                : 'text-foreground'
                       )}
                     >
-                      {isCompleted
-                        ? '✓ Sudah Selesai'
-                        : isLocked
-                          ? '🔒 Masih Terkunci'
-                          : isCurrent
-                            ? '⚡ Sedang Dikerjakan'
-                            : '📝 Siap Dikerjakan'}
+                      {isInRevision
+                        ? '⚠ Perlu Revisi'
+                        : isCompleted
+                          ? '✓ Sudah Selesai'
+                          : isLocked
+                            ? '🔒 Masih Terkunci'
+                            : isCurrent
+                              ? '⚡ Sedang Dikerjakan'
+                              : '📝 Siap Dikerjakan'}
                     </span>
                   </div>
                 </TooltipContent>
@@ -172,6 +176,7 @@ export function WizardStepper({
           {steps.map((step) => {
             const isCurrent = step.id === currentStepId
             const isCompleted = step.isCompleted
+            const isInRevision = Boolean(step.isInRevision)
             const isLocked = !step.isUnlocked
             const cleanTitle = getCleanStepTitle(step.title)
 
@@ -181,16 +186,20 @@ export function WizardStepper({
                 type='button'
                 onClick={() => handleStepClick(step)}
                 disabled={isLocked}
-                title={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})`}
+                title={`Langkah ${step.stepNumber}: ${cleanTitle} (Form ${step.code})${isInRevision ? ' - Perlu Revisi' : ''}`}
                 className={cn(
                   'h-full flex-1 rounded-full transition-all',
-                  isCurrent
-                    ? 'bg-primary ring-2 ring-primary/40'
-                    : isCompleted
-                      ? 'bg-emerald-500'
-                      : isLocked
-                        ? 'bg-slate-300 dark:bg-slate-600'
-                        : 'bg-slate-400 dark:bg-slate-500'
+                  isInRevision
+                    ? isCurrent
+                      ? 'bg-destructive ring-2 ring-destructive/40'
+                      : 'bg-destructive/80'
+                    : isCurrent
+                      ? 'bg-primary ring-2 ring-primary/40'
+                      : isCompleted
+                        ? 'bg-emerald-500'
+                        : isLocked
+                          ? 'bg-slate-300 dark:bg-slate-600'
+                          : 'bg-slate-400 dark:bg-slate-500'
                 )}
               />
             )
@@ -223,6 +232,14 @@ export function WizardStepper({
               >
                 Form {activeStep?.code}
               </Badge>
+              {activeStep?.isInRevision && (
+                <Badge
+                  variant='destructive'
+                  className='h-4 px-1 py-0 text-[10px]'
+                >
+                  Perlu Revisi
+                </Badge>
+              )}
             </div>
             <p className='mt-0.5 text-[10px] text-muted-foreground'>
               Langkah {activeStep?.stepNumber} dari {totalSteps}

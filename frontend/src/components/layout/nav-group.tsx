@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
-import { CheckCircle2, ChevronRight, Lock } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
@@ -161,6 +161,7 @@ function SidebarWizardMenuLink({
   const isActive = checkIsActive(href, item)
   const isLocked = step ? !step.isUnlocked : false
   const isCompleted = step ? step.isCompleted : false
+  const isInRevision = Boolean(step?.isInRevision)
   const stepNum = step?.stepNumber ?? 1
 
   function handleLockedClick(e: React.MouseEvent) {
@@ -180,9 +181,11 @@ function SidebarWizardMenuLink({
     ? step && !step.isImplemented
       ? `${item.title} (Tahap Lanjutan)`
       : `${item.title} (Terkunci)`
-    : isCompleted
-    ? `${item.title} (Selesai)`
-    : item.title
+    : isInRevision
+      ? `${item.title} (Perlu Revisi)`
+      : isCompleted
+        ? `${item.title} (Selesai)`
+        : item.title
 
   return (
     <SidebarMenuItem className='relative'>
@@ -192,7 +195,11 @@ function SidebarWizardMenuLink({
           aria-hidden='true'
           className={cn(
             'pointer-events-none absolute left-[18px] top-7 -bottom-2 w-[1.5px] z-0 transition-colors',
-            isCompleted ? 'bg-emerald-500/50' : 'bg-sidebar-border'
+            isInRevision
+              ? 'bg-red-500/60'
+              : isCompleted
+                ? 'bg-emerald-500/50'
+                : 'bg-sidebar-border'
           )}
         />
       )}
@@ -221,21 +228,33 @@ function SidebarWizardMenuLink({
             <span
               className={cn(
                 'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold font-mono transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
-                  : isCompleted
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                  : 'bg-sidebar-accent text-sidebar-foreground border border-sidebar-border'
+                isInRevision
+                  ? isActive
+                    ? 'bg-red-500 text-white ring-2 ring-red-400/40'
+                    : 'bg-red-500/20 text-red-400 border border-red-500/60'
+                  : isActive
+                    ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
+                    : isCompleted
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                      : 'bg-sidebar-accent text-sidebar-foreground border border-sidebar-border'
               )}
             >
-              {isCompleted ? (
+              {isInRevision ? (
+                <AlertCircle className='h-3 w-3' />
+              ) : isCompleted ? (
                 <CheckCircle2 className='h-3 w-3' />
               ) : (
                 stepNum
               )}
             </span>
             <span className='truncate whitespace-nowrap flex-1'>{item.title}</span>
-            {item.badge && <NavBadge variant={item.badgeVariant}>{item.badge}</NavBadge>}
+            {isInRevision ? (
+              <NavBadge variant='destructive'>Revisi</NavBadge>
+            ) : (
+              item.badge && (
+                <NavBadge variant={item.badgeVariant}>{item.badge}</NavBadge>
+              )
+            )}
           </Link>
         </SidebarMenuButton>
       )}

@@ -71,17 +71,6 @@ export function AppSidebar() {
           }
         }
 
-        // Konteks Strategis (Operator action required / revisi)
-        if (item.url === '/risiko/konteks-strategis') {
-          if (pendingCounts.operator_action_required) {
-            return {
-              ...item,
-              badge: 'Perlu Revisi',
-              badgeVariant: 'destructive' as const,
-            }
-          }
-        }
-
         return item
       }),
     }))

@@ -275,8 +275,8 @@ export function ApprovalTierStepper({
           className
         )}
       >
-        <div className='mb-3 flex items-center justify-between px-1'>
-          <div className='flex items-center gap-2'>
+        <div className='mb-3 flex flex-wrap items-center justify-between gap-2 px-1'>
+          <div className='flex flex-wrap items-center gap-x-2 gap-y-0.5'>
             <span className='text-xs font-bold tracking-tight text-foreground uppercase'>
               Alur Verifikasi 4-Tier Berjenjang
             </span>
@@ -287,14 +287,14 @@ export function ApprovalTierStepper({
           </div>
           <Badge
             variant='outline'
-            className='px-2 py-0.5 font-mono text-[10px]'
+            className='shrink-0 px-2 py-0.5 font-mono text-[10px]'
           >
             Status: {status}
           </Badge>
         </div>
 
         {/* Stepper Grid / Flex */}
-        <div className='relative grid grid-cols-1 gap-3 sm:grid-cols-5 sm:gap-2'>
+        <div className='relative grid grid-cols-1 gap-2 overflow-x-clip md:grid-cols-5'>
           {nodes.map((node, index) => {
             const isLast = index === nodes.length - 1
             const styles = getNodeStyles(node.state)
@@ -302,12 +302,12 @@ export function ApprovalTierStepper({
             return (
               <Tooltip key={node.id}>
                 <TooltipTrigger asChild>
-                  <div className='group relative flex cursor-default cursor-pointer flex-row items-center rounded-lg p-2 text-left transition-colors hover:bg-accent/50 sm:flex-col sm:items-center sm:text-center'>
+                  <div className='group relative flex cursor-pointer flex-row items-center rounded-lg p-2 text-left transition-colors hover:bg-accent/50 md:flex-col md:items-center md:text-center'>
                     {/* Connecting line for desktop */}
                     {!isLast && (
                       <div
                         className={cn(
-                          'absolute top-[22px] right-[-50%] left-[50%] z-0 hidden h-[2px] transition-colors sm:block',
+                          'absolute top-[26px] right-[-50%] left-[50%] z-0 hidden h-[2px] transition-colors md:block',
                           styles.line
                         )}
                       />
@@ -316,7 +316,7 @@ export function ApprovalTierStepper({
                     {/* Step Icon / Circle */}
                     <div
                       className={cn(
-                        'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all sm:h-9 sm:w-9',
+                        'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all md:h-9 md:w-9',
                         styles.circle
                       )}
                     >
@@ -330,28 +330,28 @@ export function ApprovalTierStepper({
                     </div>
 
                     {/* Node Details */}
-                    <div className='ml-3 min-w-0 flex-1 space-y-0.5 sm:mt-2 sm:ml-0'>
-                      <div className='flex items-center gap-1.5 sm:justify-center'>
+                    <div className='ml-3 min-w-0 flex-1 space-y-0.5 md:mt-2 md:ml-0 md:w-full'>
+                      <div className='flex items-center gap-1.5 md:justify-center'>
                         <span
                           className={cn('line-clamp-1 text-xs', styles.text)}
                         >
                           {node.roleTitle}
                         </span>
                       </div>
-                      <p className='max-w-[150px] truncate text-[11px] text-muted-foreground sm:mx-auto'>
+                      <p className='max-w-full truncate text-[11px] text-muted-foreground md:mx-auto'>
                         {node.actorName}
                       </p>
                       <Badge
                         variant='outline'
                         className={cn(
-                          'h-4.5 px-1.5 py-0 text-[10px] leading-none font-medium',
+                          'h-4.5 max-w-full truncate px-1.5 py-0 text-[10px] leading-none font-medium',
                           styles.badge
                         )}
                       >
                         {node.statusLabel}
                       </Badge>
                       {node.dateText && (
-                        <p className='text-[9px] text-muted-foreground/70 sm:mx-auto'>
+                        <p className='text-[9px] text-muted-foreground/70 md:mx-auto'>
                           {node.dateText}
                         </p>
                       )}

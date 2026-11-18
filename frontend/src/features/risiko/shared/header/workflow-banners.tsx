@@ -185,8 +185,8 @@ export function RisikoWorkflowBanners({
             guidance.borderCls
           )}
         >
-          <div className='flex items-center justify-between gap-2 border-b border-border/50 pb-2.5'>
-            <div className='flex items-center gap-2'>
+          <div className='flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2.5'>
+            <div className='flex min-w-0 items-center gap-2'>
               <guidance.headerIcon
                 className={cn('h-4 w-4 shrink-0', guidance.headerIconCls)}
               />
@@ -194,7 +194,10 @@ export function RisikoWorkflowBanners({
                 {guidance.title}
               </span>
             </div>
-            <Badge variant='outline' className='text-[10px] font-medium'>
+            <Badge
+              variant='outline'
+              className='shrink-0 text-[10px] font-medium whitespace-nowrap'
+            >
               {guidance.badgeText}
             </Badge>
           </div>
