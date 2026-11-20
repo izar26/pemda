@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pemda_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-pemda}
+      POSTGRES_USER: ${DB_USERNAME:-pemda_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SecurePemdaPassword2026!}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-pemda_user} -d ${DB_DATABASE:-pemda}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pemda_net
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: pemda_backend
+    restart: always
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - storage_public:/var/www/html/storage/app/public
+      - storage_logs:/var/www/html/storage/logs
+    env_file:
+      - .env.docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pemda_net
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: pemda_queue
+    restart: always
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - storage_public:/var/www/html/storage/app/public
+      - storage_logs:/var/www/html/storage/logs
+    env_file:
+      - .env.docker
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    networks:
+      - pemda_net
+
+  cron:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: pemda_cron
+    restart: always
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - storage_public:/var/www/html/storage/app/public
+      - storage_logs:/var/www/html/storage/logs
+    env_file:
+      - .env.docker
+    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"]
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    networks:
+      - pemda_net
+
+  webserver:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+      args:
+        VITE_API_BASE_URL: "/api"
+        VITE_TURNSTILE_SITE_KEY: "${VITE_TURNSTILE_SITE_KEY:-}"
+    container_name: pemda_webserver
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - storage_public:/var/www/html/storage/app/public:ro
+    depends_on:
+      - backend
+    networks:
+      - pemda_net
+
+volumes:
+  postgres_data:
+    name: pemda_postgres_data
+  storage_public:
+    name: pemda_storage_public
+  storage_logs:
+    name: pemda_storage_logs
+
+networks:
+  pemda_net:
+    name: pemda_net
+    driver: bridge
