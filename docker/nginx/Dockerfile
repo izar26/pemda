@@ -5,8 +5,8 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Enable pnpm via Corepack
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Enable pnpm v9 matching lockfile version 9.0
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Copy dependency manifests for caching
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
